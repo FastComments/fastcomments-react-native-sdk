@@ -1,5 +1,5 @@
 import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
-import {FastCommentsCommentWithState} from "../components/comment";
+import {FastCommentsComment, FastCommentsCommentWithState} from "../components/comment";
 import {FastCommentsSessionUser} from "./user";
 
 export interface CommentState {
@@ -16,7 +16,7 @@ export interface FastCommentsState {
     config: FastCommentsCommentWidgetConfig;
     translations: Record<string, string>;  // TODO
     currentUser: FastCommentsSessionUser;
-    commentsTree: FastCommentsCommentWithState[];
+    commentsTree: FastCommentsComment[];
     blockingErrorMessage: string; // TODO
     hasBillingIssue: boolean;
     isSiteAdmin: boolean;
