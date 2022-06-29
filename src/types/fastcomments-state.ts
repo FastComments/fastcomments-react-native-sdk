@@ -10,6 +10,8 @@ export interface CommentState {
     voteFailureById?: string;
     commentRepliesHiddenById?: boolean;
     isEditing?: boolean;
+    wasPostedCurrentSession?: boolean;
+    requiresVerification?: boolean;
 }
 
 export interface FastCommentsState {

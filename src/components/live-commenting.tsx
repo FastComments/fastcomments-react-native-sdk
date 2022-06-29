@@ -28,7 +28,7 @@ export function FastCommentsLiveCommenting(state: FastCommentsState) {
             }
             <div style={styles.comments}>
                 {paginationBeforeComments}
-                {CommentsList(state)}
+                {state.commentsVisible && CommentsList(state)}
             </div>
             {paginationAfterComments}
         </div>;

@@ -1,9 +1,8 @@
 import {FastCommentsState} from "../types/fastcomments-state";
+import {FastCommentsComment} from "./comment";
 
 export function CommentsList(state: FastCommentsState) {
     return state.commentsTree.map((comment) =>
-        <div key={comment._id}>
-
-        </div>
+        <FastCommentsComment comment={comment} state={state} key={comment._id} />
     )
 }
