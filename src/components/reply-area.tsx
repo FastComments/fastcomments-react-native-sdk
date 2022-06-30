@@ -1,6 +1,6 @@
-import {FastCommentsState} from "../types/fastcomments-state";
+import { FastCommentsCommentWithState } from "./comment";
 
-export function ReplyArea(state: FastCommentsState) {
+export function ReplyArea(commentWithState: FastCommentsCommentWithState) {
     return <div>
 
     </div>;

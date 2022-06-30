@@ -22,14 +22,33 @@ export function CommentNotices(props: FastCommentsCommentWithState) {
     }
 
     if (notice) {
-        return <div style={noticeStyles}>{notice}</div>
+        return <div style={noticeStyles}><Text>notice</Text></div>
     } else {
         return null;
     }
 }
 
 const styles = StyleSheet.create({
-    spamNotice: {},
-    requiresVerificationApprovalNotice: {},
-    awaitingApprovalNotice: {}
+    spamNotice: {
+        "paddingTop": 15,
+        "paddingRight": 0,
+        "paddingBottom": 15,
+        "paddingLeft": 0,
+        "fontSize": 12,
+        "color": "red"
+    },
+    requiresVerificationApprovalNotice: {
+        "paddingTop": 15,
+        "paddingRight": 0,
+        "paddingBottom": 15,
+        "paddingLeft": 0,
+        "fontSize": 12,
+    },
+    awaitingApprovalNotice: {
+        "paddingTop": 15,
+        "paddingRight": 0,
+        "paddingBottom": 15,
+        "paddingLeft": 0,
+        "fontSize": 12,
+    }
 });

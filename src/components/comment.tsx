@@ -1,64 +1,59 @@
+import RenderHtml from 'react-native-render-html';
 
 // This is a subset of the API comment object.
-import {FastCommentsBadge} from "./badge";
 import {FastCommentsState} from "../types/fastcomments-state";
-import {StyleSheet} from "react-native";
+import {StyleSheet, View} from "react-native";
 import {CommentMenu} from "./comment-menu";
 import {CommentNotices} from "./comment-notices";
-
-export interface FastCommentsComment {
-    anonUserId?: string;
-    _id: string;
-    userId?: string;
-    commenterName?: string;
-    commenterLink?: string;
-    commentHTML: string;
-    parentId?: string | null;
-    date: number;
-    votes?: number;
-    votesUp?: number;
-    votesDown?: number;
-    verified: boolean;
-    avatarSrc?: string;
-    hasImages?: boolean;
-    isByAdmin?: boolean;
-    isByModerator?: boolean;
-    isPinned?: boolean;
-    isSpam?: boolean;
-    displayLabel?: string;
-    badges?: FastCommentsBadge[];
-    isDeleted?: boolean;
-    isVotedUp?: boolean;
-    isVotedDown?: boolean;
-    myVoteId?: string;
-    isBlocked?: boolean;
-    isFlagged?: boolean;
-    approved?: boolean; // this is only false upon submission, normally it is undefined
-}
+import {CommentUserInfo} from "./comment-user-info";
+import {FastCommentsComment} from "../types/comment";
+import {ReplyArea} from "./reply-area";
 
 export interface FastCommentsCommentWithState {
     comment: FastCommentsComment;
     state: FastCommentsState;
 }
 
-export function FastCommentsComment(props: FastCommentsCommentWithState) {
-    const {comment, state} = props;
+export function FastCommentsCommentView(commentWithState: FastCommentsCommentWithState) {
+    const {comment, state} = commentWithState;
     const isMyComment = state.currentUser && (comment.userId === state.currentUser.id || comment.anonUserId === state.currentUser.id);
 
-    return <div>
-        <div style={styles.topRight}>
-            {comment.isPinned && <div style={styles.pin}></div>}
-            {!state.config.readonly && CommentMenu(props)}
-        </div>
-        {CommentNotices(props)}
-    </div>;
+    const html = comment.isDeleted
+        ? state.translations.DELETED_PLACEHOLDER
+        : (
+            comment.isBlocked
+                ? state.translations.YOU_BLOCKED_THIS_USER
+                : comment.commentHTML
+        );
+
+    return <View>
+        <View style={styles.topRight}>
+            {comment.isPinned && <View style={styles.pin}/>}
+            {!state.config.readonly && CommentMenu(commentWithState)}
+        </View>
+        <CommentNotices comment={comment} state={state}/>
+        <CommentUserInfo comment={comment} state={state}/>
+        <RenderHtml source={{html}}/>
+        <View style={styles.commentBottom}>
+            <View style={styles.commentBottomToolbar}>
+                <View style={styles.commentBottomToolbarVote}>
+
+                </View>
+                <View style={styles.commentBottomToolbarReply}>
+
+                </View>
+            </View>
+            {state.commentState[comment._id]?.replyBoxOpen && ReplyArea(commentWithState)}
+        </View>
+    </View>;
 }
 
 const styles = StyleSheet.create({
-    topRight: {
-
-    },
-    pin: {
-
-    }
+    topRight: {},
+    pin: {},
+    userInfo: {},
+    commentBottom: {},
+    commentBottomToolbar: {},
+    commentBottomToolbarVote: {},
+    commentBottomToolbarReply: {},
 })

@@ -1,5 +1,6 @@
 import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
-import {FastCommentsComment, FastCommentsCommentWithState} from "../components/comment";
+import {FastCommentsCommentWithState} from "../components/comment";
+import {FastCommentsComment} from "./comment";
 import {FastCommentsSessionUser} from "./user";
 
 export interface CommentState {
@@ -12,6 +13,19 @@ export interface CommentState {
     isEditing?: boolean;
     wasPostedCurrentSession?: boolean;
     requiresVerification?: boolean;
+}
+
+export enum UserPresencePollStateEnum {
+    Disabled = 0,
+    Poll = 1
+}
+
+export interface UserPresenceState {
+    heartbeatActive?: boolean;
+    presencePollState?: UserPresencePollStateEnum;
+    /** This is only maintained for users the user may saw (left comments etc). **/
+    usersOnlineMap: Record<string, boolean>;
+    userIdsToCommentIds: Record<string, string[]>;
 }
 
 export interface FastCommentsState {
@@ -35,4 +49,5 @@ export interface FastCommentsState {
     hasMore: boolean;
     sortDirection: 'OF' | 'NF' | 'MR';
     notificationCount?: number;
+    userPresenceState: UserPresenceState;
 }

@@ -54,7 +54,8 @@
   },
   "dependencies": {
     "lodash": "^4.17.21",
-    "react-native-webview": "^11.14.3"
+    "react-native-webview": "^11.14.3",
+    "react-native-render-html": "^6.3.4"
   },
   "peerDependencies": {
     "fastcomments-typescript": "*",
