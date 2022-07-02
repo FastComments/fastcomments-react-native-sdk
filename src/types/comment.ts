@@ -28,4 +28,5 @@ export interface FastCommentsComment {
     isBlocked?: boolean;
     isFlagged?: boolean;
     approved?: boolean; // this is only false upon submission, normally it is undefined
+    children?: FastCommentsComment[]; // populated after fetch
 }

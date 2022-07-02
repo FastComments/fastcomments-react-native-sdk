@@ -1,3 +1,8 @@
+import { FastCommentsSSOSimple } from "fastcomments-typescript/src/fast-comments-comment-widget-config";
+
+// examples:
+// - Logged into fastcomments.com, or by entering email to comment, and verified their session
+// - Secure SSO
 export interface FastCommentsLoggedInUser {
     id: string;
     username: string; // from username or display name
@@ -10,6 +15,7 @@ export interface FastCommentsLoggedInUser {
     sessionId?: string;
 }
 
+// entered email, or maybe no email, to comment and never verified their session or fully logged in
 export interface FastCommentsAnonUser {
     isAnonSession: boolean;
     id: string;
@@ -20,4 +26,4 @@ export interface FastCommentsAnonUser {
     sessionId?: string;
 }
 
-export type FastCommentsSessionUser = FastCommentsLoggedInUser | FastCommentsAnonUser | null;
+export type FastCommentsSessionUser = FastCommentsLoggedInUser | FastCommentsAnonUser | FastCommentsSSOSimple | null;

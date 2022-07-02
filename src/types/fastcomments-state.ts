@@ -2,6 +2,8 @@ import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
 import {FastCommentsCommentWithState} from "../components/comment";
 import {FastCommentsComment} from "./comment";
 import {FastCommentsSessionUser} from "./user";
+import {FastCommentsIconType} from "./icon";
+import {UserNotification} from "./user-notification";
 
 export interface CommentState {
     replyBoxOpen?: boolean;
@@ -11,6 +13,7 @@ export interface CommentState {
     voteFailureById?: string;
     commentRepliesHiddenById?: boolean;
     isEditing?: boolean;
+    editKey?: string;
     wasPostedCurrentSession?: boolean;
     requiresVerification?: boolean;
 }
@@ -28,12 +31,25 @@ export interface UserPresenceState {
     userIdsToCommentIds: Record<string, string[]>;
 }
 
+export interface UserNotificationState {
+    isOpen: boolean;
+    isLoading: boolean;
+    count: number;
+    notifications: UserNotification[];
+    isPaginationInProgress: boolean;
+    isSubscribed: boolean;
+    reRenderCallback?: Function; // TODO used in sdk?
+    pageClickEventListener?: Function; // TODO used in sdk?
+}
+
 export interface FastCommentsState {
+    apiHost: string;
     config: FastCommentsCommentWidgetConfig;
     translations: Record<string, string>;  // TODO
     currentUser: FastCommentsSessionUser;
     commentsTree: FastCommentsComment[];
-    blockingErrorMessage: string; // TODO
+    allComments: FastCommentsComment[];
+    blockingErrorMessage?: string; // TODO
     hasBillingIssue: boolean;
     isSiteAdmin: boolean;
     isDemo: boolean;
@@ -50,4 +66,6 @@ export interface FastCommentsState {
     sortDirection: 'OF' | 'NF' | 'MR';
     notificationCount?: number;
     userPresenceState: UserPresenceState;
+    userNotificationState: UserNotificationState;
+    icons: Record<FastCommentsIconType, string>;
 }

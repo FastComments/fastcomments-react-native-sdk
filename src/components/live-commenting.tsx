@@ -2,14 +2,20 @@
 
 import {FastCommentsState} from "../types/fastcomments-state";
 import {message} from "./message";
-import {StyleSheet, Text} from "react-native";
+import {StyleSheet, Text, View} from "react-native";
+import {MenuProvider} from "react-native-popup-menu";
 import {PaginationNext} from "./pagination-next";
 import {PaginationPrev} from "./pagination-prev";
 import {CommentsList} from "./comments-list";
+import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
+import {FastCommentsLiveCommentingService} from "../services/fastcomments";
 
-export function FastCommentsLiveCommenting(state: FastCommentsState) {
+export function FastCommentsLiveCommenting(config: FastCommentsCommentWidgetConfig) {
+    const service = new FastCommentsLiveCommentingService(config);
+    const state = service.getState();
+
     if (state.blockingErrorMessage) {
-        return <div>{message(state.blockingErrorMessage)}</div>;
+        return <View>{message(state.blockingErrorMessage)}</View>;
     } else if (!(state.commentsTree.length === 0 && state.config.readonly && (state.config.hideCommentsUnderCountTextFormat || state.config.useShowCommentsToggle))) {
         const paginationBeforeComments = state.commentsVisible && state.config.paginationBeforeComments
             ? PaginationNext(state)
@@ -19,7 +25,7 @@ export function FastCommentsLiveCommenting(state: FastCommentsState) {
         const paginationAfterComments = state.commentsVisible && !state.config.paginationBeforeComments
             ? PaginationNext(state)
             : null;
-        return <div>
+        return <MenuProvider>
             {
                 state.hasBillingIssue && state.isSiteAdmin && <Text style={styles.red}>{state.translations.BILLING_INFO_INV}</Text>
             }
@@ -31,7 +37,7 @@ export function FastCommentsLiveCommenting(state: FastCommentsState) {
                 {state.commentsVisible && CommentsList(state)}
             </div>
             {paginationAfterComments}
-        </div>;
+        </MenuProvider>;
     }
 }
 

@@ -1,13 +1,13 @@
-import {StyleSheet, Text} from "react-native";
+import {StyleSheet, Text, View} from "react-native";
 
 export function message(message: string) {
-    return <div style={styles.wrapper}>
-        <div style={styles.message}>
+    return <View style={styles.wrapper}>
+        <View style={styles.message}>
             {/* TODO: login links etc? */}
             <Text style={styles.messageText}>{message}</Text>
             {/* TODO: Icon */}
-        </div>
-    </div>;
+        </View>
+    </View>;
 }
 
 const styles = StyleSheet.create({
