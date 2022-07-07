@@ -3,10 +3,10 @@ import {FastCommentsState} from "../types/fastcomments-state";
 import {FastCommentsComment} from "../types/comment";
 import {createURLQueryString, makeRequest} from "./http";
 import {GetCommentsResponse} from "../types/dto";
+import {ensureRepliesOpenToComment, getCommentsTreeAndCommentsById} from "./comment-trees";
 
 interface FastCommentsInternalState {
     isFirstRequest: boolean;
-    areCommentDatesMaintained: boolean;
     ssoConfigString?: string;
     lastGenDate?: number;
     lastComments: FastCommentsComment[];
@@ -18,6 +18,7 @@ export class FastCommentsLiveCommentingService {
 
     constructor(config: FastCommentsCommentWidgetConfig) {
         this.state = {
+            instanceId: Math.random() + '.' + Date.now(),
             apiHost: config.apiHost ? config.apiHost : (config.region === 'eu' ? 'https://eu.fastcomments.com' : 'https://fastcomments.com'),
             PAGE_SIZE: 30,
             blockingErrorMessage: undefined,
@@ -59,7 +60,6 @@ export class FastCommentsLiveCommentingService {
 
         this.internalState = {
             isFirstRequest: true,
-            areCommentDatesMaintained: false,
             ssoConfigString: undefined,
             lastGenDate: undefined,
             lastComments: [],
@@ -185,7 +185,7 @@ export class FastCommentsLiveCommentingService {
             state.commentCountOnClient = state.allComments.length;
 
             if (response.moderatingTenantIds) {
-                config.moderatingTenantIds = response.moderatingTenantIds;
+                state.moderatingTenantIds = response.moderatingTenantIds;
             }
 
             if (internalState.isFirstRequest && config.readonly && state.commentCountOnClient === 0 && !state.translations.NO_COMMENTS) {
@@ -195,106 +195,47 @@ export class FastCommentsLiveCommentingService {
 
             if (response.user) {
                 state.currentUser = response.user;
-                onAuthenticationChange(config.instanceId, 'user-set', currentUser);
+                config.onAuthenticationChange && config.onAuthenticationChange('user-set', state.currentUser);
             }
 
             if (state.commentsVisible === undefined) {
                 state.commentsVisible = !(config.hideCommentsUnderCountTextFormat || config.useShowCommentsToggle);
             }
 
-            const result = getCommentsTreeAndCommentsById(config.collapseReplies, commentRepliesHiddenById, state.allComments);
+            const result = getCommentsTreeAndCommentsById(config.collapseReplies, state.commentState, state.allComments);
             state.commentsById = result.commentsById;
             state.commentsTree = result.comments;
 
             if (config.jumpToId) {
-                ensureRepliesOpenToComment(commentRepliesHiddenById, commentsById, config.jumpToId);
+                ensureRepliesOpenToComment(state.commentState, state.commentsById, config.jumpToId);
             }
-
-            WAITING_SPINNER_VOTE_HTML = '<span class="fast-comments-waiting">' + translations.SAVING_VOTE + '</span>';
-            WAITING_SPINNER_COMMENT_HTML = '<span class="fast-comments-waiting">' + translations.SAVING_COMMENT + '</span>';
-            ERROR_HTML = '<span class="fc-red">' + translations.ERROR_MESSAGE + '</span>';
 
             state.isSiteAdmin = response.isSiteAdmin;
             state.hasBillingIssue = response.hasBillingIssue;
             internalState.lastGenDate = response.lastGenDate;
             state.isDemo = response.isDemo;
             if (Number.isFinite(response.commentCount)) {
-                commentCountOnServer = response.commentCount;
+                state.commentCountOnServer = response.commentCount;
             }
 
-            function completeRender() {
-                saveUIStateAndRestore(renderCommentsTree);
-
-                if (config.jumpToId) {
-                    scrollToComment(config.instanceId, config.jumpToId, 200);
-                    delete config.jumpToId; // don't jump next render
-                    if (typeof response.pageNumber === 'number') {
-                        page = response.pageNumber;
-                    }
-                }
-                updateConfig(config.instanceId, config);
-
-                // Don't create websocket connections if they're overloading us.
-                // also, urlIdClean is not available at this point.
-                if (!isRateLimited && isFirstRequest && response.urlIdWS !== null && response.tenantIdWS && response.userIdWS) {
-                    UserPresenceState.presencePollState = response.presencePollState;
-                    persistSubscriberState(response.urlIdWS, response.tenantIdWS, response.userIdWS);
-                }
-                if (isFirstRequest) {
-                    extensions.forEach(function (extension) {
-                        if (extension.onInitialRenderComplete) {
-                            extension.onInitialRenderComplete();
-                        }
-                    });
-                }
-                isFirstRequest = false;
-                if (!areCommentDatesMaintained) {
-                    maintainCommentDates(targetElement, config, translations, commentsById);
-                    areCommentDatesMaintained = true;
-                }
-                onCommentsRendered(config.instanceId, response.comments);
-                nextCB && nextCB();
-            }
-
-            let extensionsToLoad = [];
-
-            if (isFirstRequest) {
-                if (isSiteAdmin) {
-                    extensionsToLoad.push(['moderation', '/js/comment-ui/extensions/comment-ui.moderation.extension.min.js']);
-                }
-                if (config.useSingleLineCommentInput) {
-                    extensionsToLoad.push(['single-line-comment-input', '/js/comment-ui/extensions/comment-ui.single-line-comment-input.extension.min.js']);
-                }
-                if (config.hasDarkBackground && !extensions.some(function (extension) {
-                    return extension.id === 'dark';
-                })) {
-                    extensionsToLoad.push(['dark', '/js/comment-ui/extensions/comment-ui.dark.extension.min.js']);
-                    targetElement.classList.add('dark');
-                }
-                if (config.wrap && !extensions.some(function (extension) {
-                    return extension.id === 'wrapped';
-                })) {
-                    extensionsToLoad.push(['wrapped', '/js/comment-ui/extensions/comment-ui.wrapped.extension.min.js']);
-                    targetElement.classList.add('wrapped');
+            if (config.jumpToId) {
+                // scrollToComment(config.instanceId, config.jumpToId, 200); // TODO how?
+                delete config.jumpToId; // don't jump next render
+                if (typeof response.pageNumber === 'number') {
+                    state.page = response.pageNumber;
                 }
             }
 
-            let remainingToLoad = extensionsToLoad.length;
-
-            function handleExtensionLoaded() {
-                remainingToLoad--;
-                if (remainingToLoad === 0) {
-                    completeRender();
-                }
+            // Don't create websocket connections if they're overloading us.
+            // also, urlIdClean is not available at this point.
+            if (!isRateLimited && internalState.isFirstRequest && response.urlIdWS !== null && response.tenantIdWS && response.userIdWS) {
+                state.userPresenceState.presencePollState = response.presencePollState;
+                persistSubscriberState(response.urlIdWS, response.tenantIdWS, response.userIdWS);
             }
-
-            if (extensionsToLoad.length > 0) {
-                for (const extension of extensionsToLoad) {
-                    addExtension(extension[0], extension[1], true, handleExtensionLoaded);
-                }
-            } else {
-                completeRender();
-            }
+            internalState.isFirstRequest = false;
+            config.onCommentsRendered && config.onCommentsRendered(response.comments);
+            nextCB && nextCB();
+            // saveUIStateAndRestore(renderCommentsTree); // TODO tell React to rerender
         } catch (e) {
             // TODO handle failures
             console.error(e);

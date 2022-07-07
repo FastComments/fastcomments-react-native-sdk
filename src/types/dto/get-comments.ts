@@ -1,26 +1,29 @@
-import { FastCommentsCommentWidgetConfig } from "fastcomments-typescript";
+import { FastCommentsCommentWidgetConfig, FastCommentsWidgetComment } from "fastcomments-typescript";
 import {CommonHTTPResponse} from "../../services/http";
-import {FastCommentsComment} from "../comment";
 import {FastCommentsSessionUser} from "../user";
+import {UserPresencePollStateEnum} from "../fastcomments-state";
 
 export interface GetCommentsResponse extends CommonHTTPResponse {
-    comments?: FastCommentsComment[];
-    customConfig?: FastCommentsCommentWidgetConfig;
-    user?: FastCommentsSessionUser;
-    urlIdClean?: string;
-    userIdWS?: string;
-    urlIdWS?: string;
-    lastGenDate?: number;
-    includesPastPages?: boolean;
-    isDemo?: boolean;
     commentCount?: number;
-    isSiteAdmin?: boolean;
+    comments?: FastCommentsWidgetComment[];
+    customConfig?: FastCommentsCommentWidgetConfig;
     hasBillingIssue?: boolean;
+    includesPastPages?: boolean;
     isCommentsHidden?: boolean;
-    moduleData?: object;
-    pageNumber?: number;
-    isWhiteLabeled?: boolean;
-    isProd?: boolean;
     isCrawler?: boolean;
+    isDemo?: boolean;
+    isProd?: boolean;
+    isSiteAdmin?: boolean;
+    isWhiteLabeled?: boolean;
+    lastGenDate?: number;
+    moderatingTenantIds?: string[];
+    moduleData?: object;
     notificationCount?: boolean;
+    pageNumber?: number;
+    tenantIdWS?: string;
+    urlIdClean?: string;
+    urlIdWS?: string;
+    user?: FastCommentsSessionUser;
+    userIdWS?: string;
+    presencePollState?: UserPresencePollStateEnum;
 }

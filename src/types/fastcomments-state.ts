@@ -1,6 +1,4 @@
-import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
-import {FastCommentsCommentWithState} from "../components/comment";
-import {FastCommentsComment} from "./comment";
+import {FastCommentsCommentWidgetConfig, FastCommentsWidgetComment} from "fastcomments-typescript";
 import {FastCommentsSessionUser} from "./user";
 import {FastCommentsIconType} from "./icon";
 import {UserNotification} from "./user-notification";
@@ -9,9 +7,9 @@ export interface CommentState {
     replyBoxOpen?: boolean;
     isSaveInProgress?: boolean,
     logoutFailure?: boolean,
-    responseFailureById?: string;
-    voteFailureById?: string;
-    commentRepliesHiddenById?: boolean;
+    responseFailure?: string;
+    voteFailure?: string;
+    repliesHidden?: boolean;
     isEditing?: boolean;
     editKey?: string;
     wasPostedCurrentSession?: boolean;
@@ -43,29 +41,31 @@ export interface UserNotificationState {
 }
 
 export interface FastCommentsState {
+    PAGE_SIZE: 30;
+    allComments: FastCommentsWidgetComment[];
     apiHost: string;
-    config: FastCommentsCommentWidgetConfig;
-    translations: Record<string, string>;  // TODO
-    currentUser: FastCommentsSessionUser;
-    commentsTree: FastCommentsComment[];
-    allComments: FastCommentsComment[];
     blockingErrorMessage?: string; // TODO
-    hasBillingIssue: boolean;
-    isSiteAdmin: boolean;
-    isDemo: boolean;
-    commentsVisible: boolean;
-    commentCountOnServer: number;
     commentCountOnClient: number;
-    newRootCommentCount: number;
+    commentCountOnServer: number;
     commentState: Record<string, CommentState>;
-    commentsById: Record<string, FastCommentsCommentWithState>;
+    commentsById: Record<string, FastCommentsWidgetComment>;
+    commentsTree: FastCommentsWidgetComment[];
+    commentsVisible: boolean;
+    config: FastCommentsCommentWidgetConfig;
+    currentUser: FastCommentsSessionUser;
+    hasBillingIssue: boolean;
+    hasMore: boolean;
+    icons: Record<FastCommentsIconType, string>;
+    instanceId: string; // TODO is this useful since we are not using iframes?
+    isDemo: boolean;
+    isSiteAdmin: boolean;
+    moderatingTenantIds?: string[];
+    newRootCommentCount: number;
+    notificationCount?: number;
     page: number;
     pagesLoaded?: number[];
-    PAGE_SIZE: 30;
-    hasMore: boolean;
     sortDirection: 'OF' | 'NF' | 'MR';
-    notificationCount?: number;
-    userPresenceState: UserPresenceState;
+    translations: Record<string, string>;  // TODO
     userNotificationState: UserNotificationState;
-    icons: Record<FastCommentsIconType, string>;
+    userPresenceState: UserPresenceState;
 }
