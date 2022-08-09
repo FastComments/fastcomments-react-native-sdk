@@ -1,9 +1,8 @@
 import { FastCommentsWidgetComment } from "fastcomments-typescript";
 import {CommentState} from "../types/fastcomments-state";
-import {FastCommentsCommentWithState} from "../components/comment";
 
 export function getCommentsTreeAndCommentsById(collapseRepliesByDefault: boolean, commentState: Record<string, CommentState>, rawComments: FastCommentsWidgetComment[]) {
-    const commentsById = {};
+    const commentsById: Record<string, FastCommentsWidgetComment> = {};
     const commentsLength = rawComments.length;
     const resultComments = [];
 
@@ -31,7 +30,7 @@ export function getCommentsTreeAndCommentsById(collapseRepliesByDefault: boolean
             if (!commentsById[parentId].children) {
                 commentsById[parentId].children = [comment];
             } else { // checking if comment is already in children causes lag
-                commentsById[parentId].children.push(comment);
+                commentsById[parentId].children!.push(comment);
             }
         } else {
             resultComments.push(comment);
@@ -44,7 +43,7 @@ export function getCommentsTreeAndCommentsById(collapseRepliesByDefault: boolean
         while (parentId) {
             comment = commentsById[parentId];
             if (comment) {
-                comment.nestedChildrenCount++;
+                comment.nestedChildrenCount!++;
                 parentId = comment.parentId;
             } else {
                 break;
@@ -59,7 +58,7 @@ export function getCommentsTreeAndCommentsById(collapseRepliesByDefault: boolean
 }
 
 export function ensureRepliesOpenToComment(commentState: Record<string, CommentState>, commentsById: Record<string, FastCommentsWidgetComment>, commentId: string) {
-    let parentId = commentId;
+    let parentId: string | null | undefined = commentId;
     let iterations = 0;
     while(parentId && iterations < 100) {
         iterations++;
@@ -82,7 +81,7 @@ export function ensureRepliesOpenToComment(commentState: Record<string, CommentS
  * @param {Object} comment
  * @param {boolean} newCommentsToBottom
  */
-export function addCommentToTree(allComments, commentsTree, commentsById, comment, newCommentsToBottom) {
+export function addCommentToTree(allComments: FastCommentsWidgetComment[], commentsTree: FastCommentsWidgetComment[], commentsById: Record<string, FastCommentsWidgetComment>, comment: FastCommentsWidgetComment, newCommentsToBottom: boolean) {
     if (comment.parentId && !commentsById[comment.parentId]) { // don't use memory for this comment since its parent is not visible. they should be received in-order to the client.
         return;
     }
@@ -92,9 +91,9 @@ export function addCommentToTree(allComments, commentsTree, commentsById, commen
             commentsById[comment.parentId].children = [comment];
         } else {
             if (newCommentsToBottom) {
-                commentsById[comment.parentId].children.push(comment);
+                commentsById[comment.parentId].children!.push(comment);
             } else {
-                commentsById[comment.parentId].children.unshift(comment);
+                commentsById[comment.parentId].children!.unshift(comment);
             }
         }
     } else {
@@ -120,7 +119,7 @@ export function addCommentToTree(allComments, commentsTree, commentsById, commen
             }
         }
     }
-    updateNestedChildrenCountInTree(commentsTree, commentsById, comment.parentId, 1);
+    updateNestedChildrenCountInTree(commentsById, comment.parentId, 1);
 }
 
 /**
@@ -130,7 +129,7 @@ export function addCommentToTree(allComments, commentsTree, commentsById, commen
  * @param {Object.<string, Object>} commentsById
  * @param {Object} comment
  */
-export function removeCommentFromTree(allComments, commentsTree, commentsById, comment) {
+export function removeCommentFromTree(allComments: FastCommentsWidgetComment[], commentsTree: FastCommentsWidgetComment[], commentsById: Record<string, FastCommentsWidgetComment>, comment: FastCommentsWidgetComment) {
     const allCommentsIndex = allComments.indexOf(comment);
     if (allCommentsIndex > -1) {
         allComments.splice(allCommentsIndex, 1);
@@ -150,17 +149,16 @@ export function removeCommentFromTree(allComments, commentsTree, commentsById, c
         }
     }
     delete commentsById[comment._id];
-    updateNestedChildrenCountInTree(commentsTree, commentsById, comment.parentId, -1);
+    updateNestedChildrenCountInTree(commentsById, comment.parentId, -1);
 }
 
 /**
  *
- * @param {Array.<Object>} commentsTree
  * @param {Object.<string, Object>} commentsById
  * @param {string} parentId
  * @param {number} inc
  */
-export function updateNestedChildrenCountInTree(commentsTree, commentsById, parentId, inc) {
+export function updateNestedChildrenCountInTree(commentsById: Record<string, FastCommentsWidgetComment>, parentId: string | null | undefined, inc: number) {
     while (parentId) {
         const comment = commentsById[parentId];
         if (comment) {
@@ -175,30 +173,45 @@ export function updateNestedChildrenCountInTree(commentsTree, commentsById, pare
     }
 }
 
-/**
- *
- * @param {translations} translations
- * @param {Array.<Object>} commentsTree
- * @param {Object.<string, Object>} commentsById
- * @param {Object.<string, boolean>} commentRepliesHiddenById
- * @param {string} parentId
- */
-export function updateNestedChildrenCountInDOM(translations, commentsTree, commentsById, commentRepliesHiddenById, parentId) {
-    while (parentId) {
-        const comment = commentsById[parentId];
-        if (!comment) {
+export function iterateCommentsTree(nodes: FastCommentsWidgetComment[], cb: (comment: FastCommentsWidgetComment) => boolean | 'delete' | undefined | void) {
+    let i = nodes.length;
+    while (i--) {
+        const comment = nodes[i];
+        const result = cb(comment);
+        if (result === false) {
             break;
         }
-        const element = document.getElementById(parentId);
-
-        if (element) {
-            const toggleRepliesElement = element.querySelector('.toggle-replies');
-            if (toggleRepliesElement) {
-                // TODO
-                // toggleRepliesElement.outerHTML = getCommentReplyToggleHTML(translations, commentRepliesHiddenById, comment);
-            }
+        if (comment.children) {
+            iterateCommentsTree(comment.children, cb);
         }
-
-        parentId = comment.parentId;
     }
 }
+
+
+// /**
+//  *
+//  * @param {translations} translations
+//  * @param {Array.<Object>} commentsTree
+//  * @param {Object.<string, Object>} commentsById
+//  * @param {Object.<string, boolean>} commentRepliesHiddenById
+//  * @param {string} parentId
+//  */
+// export function updateNestedChildrenCountInDOM(translations, commentsTree, commentsById, commentRepliesHiddenById, parentId) {
+//     while (parentId) {
+//         const comment = commentsById[parentId];
+//         if (!comment) {
+//             break;
+//         }
+//         const element = document.getElementById(parentId);
+//
+//         if (element) {
+//             const toggleRepliesElement = element.querySelector('.toggle-replies');
+//             if (toggleRepliesElement) {
+//                 // TODO
+//                 // toggleRepliesElement.outerHTML = getCommentReplyToggleHTML(translations, commentRepliesHiddenById, comment);
+//             }
+//         }
+//
+//         parentId = comment.parentId;
+//     }
+// }

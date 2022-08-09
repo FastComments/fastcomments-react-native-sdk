@@ -17,7 +17,7 @@ export async function makeRequest<T>({apiHost, method, url, body, attemptsRemain
         attemptsRemaining = 2;
     }
 
-    const headers = {
+    const headers: Record<string, string> = {
         'Accept': 'application/json',
     };
 
@@ -38,7 +38,7 @@ export async function makeRequest<T>({apiHost, method, url, body, attemptsRemain
             if (result.status !== 400 && attemptsRemaining > 0 && method === 'GET') { // 400 bad request is not retryable
                 return new Promise((resolve, reject) => {
                     setTimeout(async function () {
-                        attemptsRemaining--;
+                        attemptsRemaining!--;
                         try {
                             resolve(await makeRequest({apiHost, method, url, body, attemptsRemaining}));
                         } catch (e) {
@@ -57,12 +57,13 @@ export async function makeRequest<T>({apiHost, method, url, body, attemptsRemain
     }
 }
 
-export function createURLQueryString(obj: Record<string, string | number | boolean | null | undefined>) {
+export function createURLQueryString(obj: Record<string, string | string[] | number | boolean | null | undefined>) {
     let result = [];
     for (const key in obj) {
         const value = obj[key];
-        if (value) {
-            result.push(key + '=' + encodeURIComponent(obj[key]));
+        if (value !== undefined) {
+            // @ts-ignore
+            result.push(key + '=' + encodeURIComponent(value));
         }
     }
     return '?' + result.join('&');

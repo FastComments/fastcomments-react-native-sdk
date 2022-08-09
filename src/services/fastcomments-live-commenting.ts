@@ -1,25 +1,31 @@
-import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
+import {FastCommentsCommentWidgetConfig, FastCommentsWidgetComment} from "fastcomments-typescript";
 import {FastCommentsState} from "../types/fastcomments-state";
-import {FastCommentsComment} from "../types/comment";
 import {createURLQueryString, makeRequest} from "./http";
 import {GetCommentsResponse} from "../types/dto";
 import {ensureRepliesOpenToComment, getCommentsTreeAndCommentsById} from "./comment-trees";
+import {Dispatch, SetStateAction} from "react";
+import {SubscriberInstance, subscribeToChanges} from "./subscribe-to-changes";
+import {checkBlockedComments} from "./blocking";
+import {DefaultIcons} from "../resources/default-icons";
+import {setupUserPresenceState} from "./user-presense";
 
 interface FastCommentsInternalState {
     isFirstRequest: boolean;
-    ssoConfigString?: string;
     lastGenDate?: number;
-    lastComments: FastCommentsComment[];
+    lastComments: FastCommentsWidgetComment[];
+    lastSubscriberInstance?: SubscriberInstance;
 }
 
 export class FastCommentsLiveCommentingService {
     private readonly state: FastCommentsState;
     private readonly internalState: FastCommentsInternalState;
+    private setState!: Dispatch<SetStateAction<FastCommentsState>>;
 
     constructor(config: FastCommentsCommentWidgetConfig) {
         this.state = {
             instanceId: Math.random() + '.' + Date.now(),
             apiHost: config.apiHost ? config.apiHost : (config.region === 'eu' ? 'https://eu.fastcomments.com' : 'https://fastcomments.com'),
+            wsHost: config.wsHost ? config.wsHost : (config.region === 'eu' ? 'wss://ws-eu.fastcomments.com' : 'wss://wsfastcomments.com'),
             PAGE_SIZE: 30,
             blockingErrorMessage: undefined,
             commentCountOnClient: 0,
@@ -32,14 +38,14 @@ export class FastCommentsLiveCommentingService {
             currentUser: !config.sso && config.simpleSSO && config.simpleSSO.username ? config.simpleSSO : undefined,
             hasBillingIssue: false,
             hasMore: false,
-            icons: undefined,
+            icons: DefaultIcons,
             isDemo: false,
             isSiteAdmin: false,
             newRootCommentCount: 0,
             notificationCount: 0,
             page: typeof config.startingPage === 'number' ? config.startingPage : 0,
             pagesLoaded: [],
-            sortDirection: config.defaultSortDirection,
+            sortDirection: config.defaultSortDirection || 'MR',
             translations: {},
             userPresenceState: {
                 heartbeatActive: false,
@@ -55,14 +61,15 @@ export class FastCommentsLiveCommentingService {
                 isPaginationInProgress: false,
                 isSubscribed: false,
             },
-            config
+            config,
+            ssoConfigString: config.sso ? JSON.stringify(config.sso) : undefined,
         };
 
         this.internalState = {
             isFirstRequest: true,
-            ssoConfigString: undefined,
             lastGenDate: undefined,
             lastComments: [],
+            lastSubscriberInstance: undefined,
         };
     }
 
@@ -70,12 +77,19 @@ export class FastCommentsLiveCommentingService {
         return this.state;
     }
 
-    async fetchAndRender(nextCB, isPrev): Promise<void> {
+    setStateCallback(setState: Dispatch<SetStateAction<FastCommentsState>>) {
+        this.setState = setState;
+    }
+
+    async fetchRemoteState(isPrev: boolean): Promise<void> {
         const internalState = this.internalState;
         const state = this.state;
         const config = this.state.config;
         config.onInit && config.onInit();
-        const queryParams: Record<string, string | number> = {
+        if (config.urlId === undefined || config.urlId === null) {
+            throw new Error('FastComments initialization failure: Configuration parameter "urlId" must be defined!');
+        }
+        const queryParams: Record<string, string | number | undefined> = {
             urlId: config.urlId,
             page: state.page,
             lastGenDate: internalState.lastGenDate
@@ -99,8 +113,8 @@ export class FastCommentsLiveCommentingService {
             queryParams.includeNotificationCount = 'true';
         }
 
-        if (internalState.ssoConfigString) {
-            queryParams.sso = internalState.ssoConfigString;
+        if (state.ssoConfigString) {
+            queryParams.sso = state.ssoConfigString;
         }
 
         queryParams.direction = state.sortDirection;
@@ -202,7 +216,7 @@ export class FastCommentsLiveCommentingService {
                 state.commentsVisible = !(config.hideCommentsUnderCountTextFormat || config.useShowCommentsToggle);
             }
 
-            const result = getCommentsTreeAndCommentsById(config.collapseReplies, state.commentState, state.allComments);
+            const result = getCommentsTreeAndCommentsById(!!config.collapseReplies, state.commentState, state.allComments);
             state.commentsById = result.commentsById;
             state.commentsTree = result.comments;
 
@@ -210,11 +224,11 @@ export class FastCommentsLiveCommentingService {
                 ensureRepliesOpenToComment(state.commentState, state.commentsById, config.jumpToId);
             }
 
-            state.isSiteAdmin = response.isSiteAdmin;
-            state.hasBillingIssue = response.hasBillingIssue;
+            state.isSiteAdmin = !!response.isSiteAdmin;
+            state.hasBillingIssue = !!response.hasBillingIssue;
             internalState.lastGenDate = response.lastGenDate;
-            state.isDemo = response.isDemo;
-            if (Number.isFinite(response.commentCount)) {
+            state.isDemo = !!response.isDemo;
+            if (response.commentCount !== undefined && Number.isFinite(response.commentCount)) {
                 state.commentCountOnServer = response.commentCount;
             }
 
@@ -228,13 +242,12 @@ export class FastCommentsLiveCommentingService {
 
             // Don't create websocket connections if they're overloading us.
             // also, urlIdClean is not available at this point.
-            if (!isRateLimited && internalState.isFirstRequest && response.urlIdWS !== null && response.tenantIdWS && response.userIdWS) {
+            if (!isRateLimited && internalState.isFirstRequest && response.urlIdWS && response.tenantIdWS && response.userIdWS) {
                 state.userPresenceState.presencePollState = response.presencePollState;
-                persistSubscriberState(response.urlIdWS, response.tenantIdWS, response.userIdWS);
+                this.persistSubscriberState(response.urlIdWS, response.tenantIdWS, response.userIdWS);
             }
             internalState.isFirstRequest = false;
-            config.onCommentsRendered && config.onCommentsRendered(response.comments);
-            nextCB && nextCB();
+            config.onCommentsRendered && config.onCommentsRendered(response.comments || []);
             // saveUIStateAndRestore(renderCommentsTree); // TODO tell React to rerender
         } catch (e) {
             // TODO handle failures
@@ -242,7 +255,7 @@ export class FastCommentsLiveCommentingService {
         }
     }
 
-    handleNewCustomConfig(customConfig: FastCommentsCommentWidgetConfig, overwrite?: boolean) {
+    handleNewCustomConfig(customConfig: FastCommentsCommentWidgetConfig | null | undefined, overwrite?: boolean) {
         const config = this.state.config;
         if (customConfig) {
             for (const key in customConfig) {
@@ -254,7 +267,8 @@ export class FastCommentsLiveCommentingService {
                     } else {
                         config[key] = customConfig[key];
                     }
-                } else if ((config[key] === undefined || overwrite) || key === 'wrap' || key === 'hasDarkBackground') { // undefined is important here (test comment thread viewer w/ customizations like hideCommentsUnderCountTextFormat/useShowCommentsToggle
+                } else if ((config[key as keyof FastCommentsCommentWidgetConfig] === undefined || overwrite) || key === 'wrap' || key === 'hasDarkBackground') { // undefined is important here (test comment thread viewer w/ customizations like hideCommentsUnderCountTextFormat/useShowCommentsToggle
+                    // @ts-ignore
                     config[key] = customConfig[key];
                 }
             }
@@ -266,5 +280,48 @@ export class FastCommentsLiveCommentingService {
         if (config.translations) {
             this.state.translations = config.translations;
         }
+    }
+
+    persistSubscriberState(newUrlIdWS: string, newTenantIdWS: string, newUserIdWS: string) {
+        const state = this.state;
+        const internalState = this.internalState;
+        const didChange = state.urlIdWS !== newUrlIdWS || state.tenantIdWS !== newTenantIdWS || state.userIdWS !== newUserIdWS;
+        if (!didChange) {
+            return;
+        }
+        state.urlIdWS = newUrlIdWS;
+        state.tenantIdWS = newTenantIdWS;
+        state.userIdWS = newUserIdWS;
+
+        if (internalState.lastSubscriberInstance) {
+            internalState.lastSubscriberInstance.close();
+        }
+
+        internalState.lastSubscriberInstance = subscribeToChanges(state.config, state.tenantIdWS, state.config.urlId!, state.urlIdWS, state.userIdWS, async (commentIds: string[]) => {
+            return await checkBlockedComments(state, commentIds);
+        }, this.handleLiveEvent, () => {
+            this.setState(this.state);
+        }, function connectionStatusChange(isConnected, lastEventTime) {
+            // if we have a current user, update the status icon on their comments!
+            if (state.currentUser && 'id' in state.currentUser) {
+                state.userPresenceState.usersOnlineMap[state.currentUser.id] = isConnected;
+            }
+            // if we are reconnecting, re-fetch all user statuses and render them
+            if (isConnected) {
+                const isReconnect = !!lastEventTime;
+                if (isReconnect) {
+                    // reset user presence state because we know nothing since we disconnected
+                    state.userPresenceState.userIdsToCommentIds = {};
+                    state.userPresenceState.usersOnlineMap = {};
+                    // getAndRenderLatestNotificationCount(); // TODO
+                }
+                // noinspection JSIgnoredPromiseFromCall
+                setupUserPresenceState(state.config, newUrlIdWS, state);
+            }
+        });
+    }
+
+    handleLiveEvent(event: object): boolean {
+
     }
 }

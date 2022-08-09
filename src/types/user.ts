@@ -26,4 +26,4 @@ export interface FastCommentsAnonUser {
     sessionId?: string;
 }
 
-export type FastCommentsSessionUser = FastCommentsLoggedInUser | FastCommentsAnonUser | FastCommentsSSOSimple | null;
+export type FastCommentsSessionUser = FastCommentsLoggedInUser | FastCommentsAnonUser | FastCommentsSSOSimple | null | undefined;

@@ -2,6 +2,7 @@ import {FastCommentsCommentWidgetConfig, FastCommentsWidgetComment} from "fastco
 import {FastCommentsSessionUser} from "./user";
 import {FastCommentsIconType} from "./icon";
 import {UserNotification} from "./user-notification";
+import {SubscriberInstance} from "../services/subscribe-to-changes";
 
 export interface CommentState {
     replyBoxOpen?: boolean;
@@ -44,6 +45,7 @@ export interface FastCommentsState {
     PAGE_SIZE: 30;
     allComments: FastCommentsWidgetComment[];
     apiHost: string;
+    wsHost: string;
     blockingErrorMessage?: string; // TODO
     commentCountOnClient: number;
     commentCountOnServer: number;
@@ -63,9 +65,14 @@ export interface FastCommentsState {
     newRootCommentCount: number;
     notificationCount?: number;
     page: number;
-    pagesLoaded?: number[];
+    pagesLoaded: number[];
     sortDirection: 'OF' | 'NF' | 'MR';
     translations: Record<string, string>;  // TODO
     userNotificationState: UserNotificationState;
     userPresenceState: UserPresenceState;
+    urlIdWS?: string;
+    tenantIdWS?: string;
+    userIdWS?: string;
+    lastSubscriberInstance?: SubscriberInstance;
+    ssoConfigString?: string;
 }

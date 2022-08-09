@@ -8,11 +8,15 @@ import {PaginationNext} from "./pagination-next";
 import {PaginationPrev} from "./pagination-prev";
 import {CommentsList} from "./comments-list";
 import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
-import {FastCommentsLiveCommentingService} from "../services/fastcomments";
+import {FastCommentsLiveCommentingService} from "../services/fastcomments-live-commenting";
+import {useState} from "react";
 
 export function FastCommentsLiveCommenting(config: FastCommentsCommentWidgetConfig) {
     const service = new FastCommentsLiveCommentingService(config);
-    const state = service.getState();
+    const [state, setState] = useState(service.getState());
+    service.setStateCallback(setState);
+    // noinspection JSIgnoredPromiseFromCall
+    service.fetchRemoteState(false);
 
     if (state.blockingErrorMessage) {
         return <View>{message(state.blockingErrorMessage)}</View>;
@@ -38,6 +42,8 @@ export function FastCommentsLiveCommenting(config: FastCommentsCommentWidgetConf
             </div>
             {paginationAfterComments}
         </MenuProvider>;
+    } else {
+        return <View>{message('todo')}</View>;
     }
 }
 
