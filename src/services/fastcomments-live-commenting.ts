@@ -2,18 +2,22 @@ import {FastCommentsCommentWidgetConfig, FastCommentsWidgetComment} from "fastco
 import {FastCommentsState} from "../types/fastcomments-state";
 import {createURLQueryString, makeRequest} from "./http";
 import {GetCommentsResponse} from "../types/dto";
-import {ensureRepliesOpenToComment, getCommentsTreeAndCommentsById} from "./comment-trees";
+import {addCommentToTree, ensureRepliesOpenToComment, getCommentsTreeAndCommentsById} from "./comment-trees";
 import {Dispatch, SetStateAction} from "react";
 import {SubscriberInstance, subscribeToChanges} from "./subscribe-to-changes";
 import {checkBlockedComments} from "./blocking";
 import {DefaultIcons} from "../resources/default-icons";
-import {setupUserPresenceState} from "./user-presense";
+import {addCommentToUserPresenceState, handleNewRemoteUser, setupUserPresenceState} from "./user-presense";
+import {WebsocketLiveEvent} from "../types/dto/websocket-live-event";
+import {repositionComment} from "./comment-positioning";
+import {incOverallCommentCount} from "./comment-count";
 
 interface FastCommentsInternalState {
     isFirstRequest: boolean;
     lastGenDate?: number;
     lastComments: FastCommentsWidgetComment[];
     lastSubscriberInstance?: SubscriberInstance;
+    broadcastIdsSent: string[];
 }
 
 export class FastCommentsLiveCommentingService {
@@ -70,6 +74,7 @@ export class FastCommentsLiveCommentingService {
             lastGenDate: undefined,
             lastComments: [],
             lastSubscriberInstance: undefined,
+            broadcastIdsSent: [],
         };
     }
 
@@ -321,7 +326,240 @@ export class FastCommentsLiveCommentingService {
         });
     }
 
-    handleLiveEvent(event: object): boolean {
+    handleLiveEvent(dataJSON: WebsocketLiveEvent): boolean {
+        if ('broadcastId' in dataJSON && this.internalState.broadcastIdsSent.includes(dataJSON.broadcastId)) {
+            return false;
+        }
+        if ('bId' in dataJSON && this.internalState.broadcastIdsSent.includes(dataJSON.bId)) {
+            return false;
+        }
+        let needsReRender = false;
+        switch (dataJSON.type) {
+            case 'new-badge':
+                for (const comment of this.state.allComments) {
+                    if (comment.userId === dataJSON.badge.userId) {
+                        if (!comment.badges) {
+                            comment.badges = [dataJSON.badge];
+                        } else if (!comment.badges.some(function (badge) { // handle race conditions
+                            return badge.id === dataJSON.badge.id;
+                        })) {
+                            comment.badges.push(dataJSON.badge)
+                        }
+                    }
+                }
+                this.internalState.broadcastIdsSent.push(dataJSON.broadcastId);
+                break;
+            case 'removed-badge':
+                for (const comment of this.state.allComments) {
+                    if (comment.userId === dataJSON.badge.userId && comment.badges) {
+                        const newBadges = [];
+                        for (const badge of comment.badges) {
+                            if (badge.id !== dataJSON.badge.id) {
+                                newBadges.push(badge);
+                            }
+                        }
+                        comment.badges = newBadges;
+                    }
+                }
+                this.internalState.broadcastIdsSent.push(dataJSON.broadcastId);
+                break;
+            case 'notification':
+                if (this.state.userNotificationState.count) {
+                    this.state.userNotificationState.count++;
+                } else {
+                    this.state.userNotificationState.count = 1;
+                }
+                if (this.state.userNotificationState.notifications) {
+                    this.state.userNotificationState.notifications.unshift(dataJSON.notification);
+                }
+                break;
+            case 'presence-update':
+                if (dataJSON.uj) {
+                    for (const userJoined of dataJSON.uj) {
+                        this.state.userPresenceState.usersOnlineMap[userJoined] = true;
+                    }
+                }
+                if (dataJSON.ul) {
+                    for (const userLeft of dataJSON.ul) {
+                        this.state.userPresenceState.usersOnlineMap[userLeft] = false;
+                    }
+                }
+                break;
+            case 'new-vote':
+                const newVoteComment = this.state.commentsById[dataJSON.vote.commentId];
+                if (newVoteComment) {
+                    if (newVoteComment.votes === null || newVoteComment.votes === undefined) {
+                        newVoteComment.votes = 0;
+                    }
+                    newVoteComment.votes += dataJSON.vote.direction;
+                    if (dataJSON.vote.direction > 0) {
+                        if (newVoteComment.votesUp === null || newVoteComment.votesUp === undefined) {
+                            newVoteComment.votesUp = 0;
+                        }
+                        newVoteComment.votesUp++;
+                        if (this.state.currentUser && 'id' in this.state.currentUser && this.state.currentUser.id && dataJSON.vote.userId === this.state.currentUser.id) {
+                            newVoteComment.isVotedUp = true;
+                        }
+                    } else {
+                        if (newVoteComment.votesDown === null || newVoteComment.votesDown === undefined) {
+                            newVoteComment.votesDown = 0;
+                        }
+                        newVoteComment.votesDown++;
+                        if (this.state.currentUser && 'id' in this.state.currentUser && this.state.currentUser.id && dataJSON.vote.userId === this.state.currentUser.id) {
+                            newVoteComment.isVotedDown = true;
+                        }
+                    }
+                }
+                break;
+            case 'deleted-vote':
+                const deletedVoteComment = this.state.commentsById[dataJSON.vote.commentId];
+                if (deletedVoteComment) {
+                    // votes always set as vote was originally populated for it to be deleted
+                    deletedVoteComment.votes! += (dataJSON.vote.direction * -1);
+                    if (dataJSON.vote.direction > 0) {
+                        if (deletedVoteComment.votesUp) {
+                            deletedVoteComment.votesUp--;
+                        }
+                        if (this.state.currentUser && 'id' in this.state.currentUser && this.state.currentUser.id && deletedVoteComment.isVotedUp && dataJSON.vote.userId === this.state.currentUser.id) {
+                            delete deletedVoteComment.isVotedUp;
+                        }
+                    } else {
+                        if (deletedVoteComment.votesDown) {
+                            deletedVoteComment.votesDown--;
+                        }
+                        if (this.state.currentUser && 'id' in this.state.currentUser && this.state.currentUser.id && deletedVoteComment.isVotedDown && dataJSON.vote.userId === this.state.currentUser.id) {
+                            delete deletedVoteComment.isVotedDown;
+                        }
+                    }
+                }
+                break;
+            case 'deleted-comment':
+                if (this.state.commentsById[dataJSON.comment._id]) {
+                    needsReRender = true;
+                }
+                break;
+            case 'new-comment':
+            case 'updated-comment':
+                const dataJSONComment = dataJSON.comment;
+                const dataJSONExtraInfo = dataJSON.extraInfo;
+                const showLiveRightAway = this.state.config.showLiveRightAway;
+                const commentsById = this.state.commentsById;
+                // the hidden check here is for approving, un-approving, and then re-approving a comment
+                if (dataJSON.type === 'new-comment' && commentsById[dataJSONComment._id]) {
+                    if (!commentsById[dataJSONComment._id].approved && dataJSONComment.approved) {
+                        dataJSON.type = 'updated-comment'; // we'll just set the comment as approved
+                    } else {
+                        return false;
+                    }
+                }
 
+                /*
+                    What we want to do is show a count on the first visible parent comment like:
+                    "8 New Comments - Click to show"
+                    This means that if you could have:
+                    Visible Comment (2 new comments, click to show)
+                        - Hidden New Comment
+                            - Hidden New Comment
+                    So we need to walk the tree to find the first visible parent comment, and also
+                    calculate how many hidden comments are under that parent.
+
+                    If parentId is null - like when replying to a page instead of a parent comment - we can just
+                    treat the page as the root and don't have to walk any tree.
+
+                    ASSUMPTION: We should always receive the comments in order so that we can just walk
+                    the tree backwards.
+
+                    Then we just need to render that text/button. Clicking it then goes and changes the hidden
+                    flag on said comments and re-renders that part of the tree.
+                 */
+
+                const isNew = !commentsById[dataJSONComment._id];
+                if (isNew) {
+                    commentsById[dataJSONComment._id] = dataJSONComment;
+                } else {
+                    for (const key in dataJSONComment) {
+                        // @ts-ignore
+                        commentsById[dataJSONComment._id][key as keyof FastCommentsWidgetComment] = dataJSONComment[key as keyof FastCommentsWidgetComment];
+                    }
+                }
+
+                if (!isNew) {
+                    if (dataJSONExtraInfo) {
+                        if (dataJSONExtraInfo.commentPositions) {
+                            repositionComment(dataJSONComment._id, dataJSONExtraInfo.commentPositions, this.state);
+                        }
+                    }
+                } else {
+                    const presenceChanges = {};
+                    addCommentToUserPresenceState(this.state.userPresenceState, dataJSONComment, presenceChanges);
+                    dataJSONComment.isLive = true; // so we can animate the background color
+                    // commentsVisible check is here because if comments are hidden, we want this comment to show as soon as comments are un-hidden.
+                    const newCommentHidden = this.state.commentsVisible && !showLiveRightAway;
+                    dataJSONComment.hidden = newCommentHidden; // don't irritate the user with content popping in and out.
+
+                    let updateRoot = false, currentParent = null;
+                    if (!dataJSONComment.parentId) {
+                        updateRoot = true;
+                    } else {
+                        currentParent = commentsById[dataJSONComment.parentId];
+                        // TODO What was this supposed to do? It does not look like it was working correctly as we would hit iteratedCount when a new comment comes in that is a child of a comment that is not visible.
+                        // let iteratedCount = 0;
+                        // while ((!currentParent || currentParent.hidden === true) && iteratedCount < 5000) {
+                        //     if (currentParent && !currentParent.parentId) {
+                        //         updateRoot = true;
+                        //         break; // reached top of page
+                        //     }
+                        //     currentParent = currentParent ? commentsById[currentParent.parentId] : null;
+                        //     iteratedCount++;
+                        // }
+                        // if (iteratedCount >= 4998) {
+                        //     console.warn('FC - iteration hit limit', iteratedCount);
+                        // }
+                    }
+
+                    addCommentToTree(this.state.allComments, this.state.commentsTree, commentsById, dataJSONComment, !!this.state.config.newCommentsToBottom);
+                    incOverallCommentCount(this.state.config, this.state, dataJSONComment.parentId);
+
+                    // TODO update the "Show X Comments" button text live like vanilla js widget
+                    // const showCommentsMessageButton = document.querySelector('.comments-toggle');
+                    // if (showCommentsMessageButton) {
+                    //     showCommentsMessageButton.innerHTML = getShowHideCommentsCountText(translations, commentsVisible, commentCountOnServer);
+                    // }
+
+                    if (updateRoot) {
+                        if (newCommentHidden) {
+                            this.state.newRootCommentCount++;
+                            // TODO update the "Show New X Comments" button text live.
+                            // const messageRootTarget = getElementById('new-comments-message-root');
+                            // if (messageRootTarget) { // element may not be in DOM - like if comments hidden.
+                            //     messageRootTarget.classList.remove('hidden');
+                            //     messageRootTarget.innerHTML = getNewCommentCountText(translations, newRootCommentCount);
+                            // }
+                        } else {
+                            needsReRender = true;
+                        }
+                    } else if (currentParent) {
+                        if (newCommentHidden) {
+                            if (!('hiddenChildrenCount' in currentParent)) {
+                                currentParent.hiddenChildrenCount = 1;
+                            } else {
+                                currentParent.hiddenChildrenCount!++;
+                            }
+                        }
+                    }
+
+                    const userIdsChanged = Object.keys(presenceChanges);
+                    // noinspection JSIgnoredPromiseFromCall - fire and forget
+                    if (userIdsChanged.length > 0) {
+                        handleNewRemoteUser(this.state.config, this.state.urlIdWS!, this.state.userPresenceState, userIdsChanged);
+                    }
+                }
+                break;
+            case 'new-config':
+                this.handleNewCustomConfig(dataJSON.config, true);
+                needsReRender = true;
+                break;
+        }
+        return needsReRender;
     }
 }

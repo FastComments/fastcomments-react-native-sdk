@@ -1,6 +1,7 @@
 import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
 import {createURLQueryString, makeRequest} from "./http";
 import {FastCommentsState} from "../types/fastcomments-state";
+import {WebsocketLiveEvent} from "../types/dto/websocket-live-event";
 
 function extractCommentIdFromEvent(liveEvent) {
     if (liveEvent.type === 'new-comment') {
@@ -19,7 +20,7 @@ export function subscribeToChanges(
     urlIdWS: string,
     userIdWS: string,
     checkBlockedComments: (commentIds: string[]) => Promise<Record<string, boolean>>,
-    handleLiveEvent: (event: object) => boolean, // TODO type for event
+    handleLiveEvent: (event: WebsocketLiveEvent) => boolean,
     doRerender: () => void,
     onConnectionStatusChange: (isConnected: boolean, lastEventTime: number) => void,
     lastLiveEventTime?: number

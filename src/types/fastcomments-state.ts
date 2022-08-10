@@ -41,6 +41,8 @@ export interface UserNotificationState {
     pageClickEventListener?: Function; // TODO used in sdk?
 }
 
+export type FastCommentsSortDirection = 'OF' | 'NF' | 'MR';
+
 export interface FastCommentsState {
     PAGE_SIZE: 30;
     allComments: FastCommentsWidgetComment[];
@@ -66,7 +68,7 @@ export interface FastCommentsState {
     notificationCount?: number;
     page: number;
     pagesLoaded: number[];
-    sortDirection: 'OF' | 'NF' | 'MR';
+    sortDirection: FastCommentsSortDirection;
     translations: Record<string, string>;  // TODO
     userNotificationState: UserNotificationState;
     userPresenceState: UserPresenceState;
