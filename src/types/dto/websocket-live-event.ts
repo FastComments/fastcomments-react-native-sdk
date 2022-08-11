@@ -42,18 +42,21 @@ export interface WebsocketLiveVote {
 export interface WebsocketLiveNewVoteEvent {
     broadcastId: string;
     type: 'new-vote';
+    timestamp: number;
     vote: WebsocketLiveVote;
 }
 
 export interface WebsocketLiveDeletedVoteEvent {
     broadcastId: string;
     type: 'deleted-vote';
+    timestamp: number;
     vote: WebsocketLiveVote;
 }
 
 export interface WebsocketLiveDeletedCommentEvent {
     broadcastId: string;
     type: 'deleted-comment';
+    timestamp: number;
     comment: FastCommentsWidgetComment;
 }
 
@@ -69,6 +72,7 @@ export type FastCommentsCommentPositions = Record<'OF' | 'NF' | 'MR', FastCommen
 export interface WebsocketLiveNewOrUpdatedCommentEvent {
     broadcastId: string;
     type: 'new-comment' | 'updated-comment';
+    timestamp: number;
     comment: FastCommentsWidgetComment;
     extraInfo?: {
         commentPositions: FastCommentsCommentPositions

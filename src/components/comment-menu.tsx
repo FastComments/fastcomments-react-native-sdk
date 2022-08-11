@@ -5,7 +5,7 @@ import {FastCommentsCommentWithState} from "./comment";
 import {Icon} from "./icon";
 import {FastCommentsIconType} from "../types/icon";
 
-async function startEditingComment(props: FastCommentsCommentWithState) {
+async function startEditingComment(_props: FastCommentsCommentWithState) {
     // makeRequest(config, 'GET', '/comments/' + tenantIdToUse + '/' + commentId + '/text' + createURLQueryString({
     //     sso: ssoConfigString,
     //     editKey: commentsById[commentId].editKey
@@ -36,25 +36,25 @@ async function startEditingComment(props: FastCommentsCommentWithState) {
     // });
 }
 
-async function setCommentPinStatus(props: FastCommentsCommentWithState, doPin: boolean) {
+async function setCommentPinStatus(_props: FastCommentsCommentWithState, _doPin: boolean) {
 
 }
 
-async function setCommentBlockedStatus(props: FastCommentsCommentWithState, doBlock: boolean) {
+async function setCommentBlockedStatus(_props: FastCommentsCommentWithState, _doBlock: boolean) {
 
 }
 
-async function setCommentFlaggedStatus(props: FastCommentsCommentWithState, doFlag: boolean) {
+async function setCommentFlaggedStatus(_props: FastCommentsCommentWithState, _doFlag: boolean) {
 
 }
 
 export function CommentMenu(props: FastCommentsCommentWithState) {
     const {comment, state} = props;
     const currentUser = state.currentUser;
-    const isMyComment = currentUser && (comment.userId === currentUser.id || comment.anonUserId === currentUser.id);
-    const canEdit = !comment.isDeleted && ((currentUser && currentUser.authorized && (state.isSiteAdmin || isMyComment)) || (state.commentState[comment._id]?.isEditing)); // can have edit key and be anon
+    const isMyComment = currentUser && 'id' in currentUser && (comment.userId === currentUser.id || comment.anonUserId === currentUser.id);
+    const canEdit = !comment.isDeleted && ((currentUser && 'authorized' in currentUser && currentUser.authorized && (state.isSiteAdmin || isMyComment)) || (state.commentState[comment._id]?.isEditing)); // can have edit key and be anon
     const canPin = state.isSiteAdmin && !comment.parentId;
-    const canBlockOrFlag = !comment.isDeleted && !comment.isByAdmin && !comment.isByModerator && !isMyComment && currentUser && currentUser.authorized;
+    const canBlockOrFlag = !comment.isDeleted && !comment.isByAdmin && !comment.isByModerator && !isMyComment && currentUser && 'authorized' in currentUser && currentUser.authorized;
 
     const editOption = canEdit ? <MenuOption onSelect={() => startEditingComment(props)}>
         <Icon iconConfig={state.icons} type={FastCommentsIconType.EDIT_BIG}/><Text>{props.state.translations.COMMENT_MENU_EDIT}</Text>

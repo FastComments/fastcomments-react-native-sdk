@@ -1,12 +1,13 @@
 import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
 import {createURLQueryString, makeRequest} from "./http";
-import {FastCommentsState} from "../types/fastcomments-state";
-import {WebsocketLiveEvent} from "../types/dto/websocket-live-event";
+import {WebsocketLiveEvent, WebsocketLiveNewOrUpdatedCommentEvent} from "../types/dto/websocket-live-event";
+import {EventLogEntryData, GetEventLogResponse} from "../types/dto/get-event-log";
 
-function extractCommentIdFromEvent(liveEvent) {
+function extractCommentIdFromEvent(liveEvent: WebsocketLiveNewOrUpdatedCommentEvent) {
     if (liveEvent.type === 'new-comment') {
         return liveEvent.comment._id;
     }
+    return 'undefined';
 }
 
 export interface SubscriberInstance {
@@ -15,6 +16,7 @@ export interface SubscriberInstance {
 
 export function subscribeToChanges(
     config: FastCommentsCommentWidgetConfig,
+    wsHost: string,
     tenantIdWS: string,
     urlId: string,
     urlIdWS: string,
@@ -22,9 +24,9 @@ export function subscribeToChanges(
     checkBlockedComments: (commentIds: string[]) => Promise<Record<string, boolean>>,
     handleLiveEvent: (event: WebsocketLiveEvent) => boolean,
     doRerender: () => void,
-    onConnectionStatusChange: (isConnected: boolean, lastEventTime: number) => void,
+    onConnectionStatusChange: (isConnected: boolean, lastEventTime: number | undefined) => void,
     lastLiveEventTime?: number
-): SubscriberInstance | undefined {
+): SubscriberInstance | undefined | void {
     try {
         if (config.disableLiveCommenting) {
             return;
@@ -36,28 +38,30 @@ export function subscribeToChanges(
         // However, sometimes the client disconnects, some things happen, and then it reconnects.
         // To keep the server-side architecture simple, we store an event log on the server, and when the client reconnects
         // it simply fetches any events in the log that it would have missed.
-        function fetchEventLog(startTime: number, endTime: number, cb) {
+        async function fetchEventLog(startTime: number | undefined, endTime: number) {
             // console.log('FastComments: fetchEventLog.', startTime, endTime);
-            makeRequest(config, 'GET', '/event-log/' + config.tenantId + '/' + createURLQueryString({
+            const response = await makeRequest<GetEventLogResponse>({apiHost: config.apiHost!, method: 'GET', url: '/event-log/' + config.tenantId + '/' + createURLQueryString({
                 urlId, // important this isn't urlIdWS. urlIdWS contains tenant id and is only meant for the pubsub server.
                 startTime,
                 endTime,
-            }), null, function success(response) {
-                if (response && response.events) {
-                    // console.log('FastComments: fetchEventLog SUCCESS', response.events.length);
+            })});
 
-                    function handleEvents(eventsDataParsed, blockedCommentIdMap) {
+            if (response && response.status === 'success') {
+                if (response.events) {
+                    // console.log('FastComments: fetchEventLog SUCCESS', response.events.length);
+                    function handleEvents(eventsDataParsed: EventLogEntryData[], blockedCommentIdMap?: Record<string, boolean>) {
                         let needsReRender = false;
                         for (const eventDataParsed of eventsDataParsed) {
-                            lastLiveEventTime = Math.max(lastLiveEventTime, eventDataParsed.timestamp + 1);
-                            if ((!blockedCommentIdMap || !blockedCommentIdMap[extractCommentIdFromEvent(eventDataParsed)]) && handleLiveEvent(eventDataParsed)) {
+                            lastLiveEventTime = Math.max(lastLiveEventTime || 0, eventDataParsed.timestamp + 1);
+                            // the as WebsocketLiveNewOrUpdatedCommentEvent cast is kind of wrong here, but probably better than ts-ignore.
+                            // we could check the type before we call the method, but that's kind of the point of having the method in the first place.
+                            if ((!blockedCommentIdMap || !blockedCommentIdMap[extractCommentIdFromEvent(eventDataParsed as WebsocketLiveNewOrUpdatedCommentEvent)]) && handleLiveEvent(eventDataParsed)) {
                                 needsReRender = true;
                             }
                         }
                         if (needsReRender) {
                             doRerender && doRerender();
                         }
-                        cb && cb();
                     }
 
                     const eventsParsed = response
@@ -76,9 +80,8 @@ export function subscribeToChanges(
                         }
 
                         if (ids.length > 0) {
-                            checkBlockedComments(ids, function (blockedCommentIdMap) {
-                                handleEvents(eventsParsed, blockedCommentIdMap);
-                            });
+                            const blockedCommentIdMap = await checkBlockedComments(ids);
+                            handleEvents(eventsParsed, blockedCommentIdMap);
                         } else {
                             handleEvents(eventsParsed);
                         }
@@ -87,18 +90,13 @@ export function subscribeToChanges(
                     }
                 } else {
                     // console.log('FastComments: fetchEventLog SUCCESS - Empty response', response.events);
-                    cb && cb();
                 }
-            }, function failure(e) {
-                console.error('FastComments: fetchEventLog FAILURE', e);
-                if (cb) {
-                    cb();
-                } else {
-                    setTimeout(function () {
-                        fetchEventLog(startTime, Date.now());
-                    }, 5000 * Math.random());
-                }
-            });
+            } else {
+                console.error('FastComments: fetchEventLog FAILURE', response);
+                setTimeout(function () {
+                    fetchEventLog(startTime, Date.now());
+                }, 5000 * Math.random());
+            }
         }
 
         if (config.usePolling) {
@@ -106,15 +104,17 @@ export function subscribeToChanges(
                 lastLiveEventTime = Date.now();
             }
 
-            function pollNext() {
+            async function pollNext() {
                 if (!isIntentionallyClosed) {
-                    fetchEventLog(lastLiveEventTime, Date.now(), timeNext);
+                    await fetchEventLog(lastLiveEventTime, Date.now());
+                    timeNext();
                 }
             }
 
             function timeNext() {
                 if (!isIntentionallyClosed) {
                     setTimeout(function () {
+                        // noinspection JSIgnoredPromiseFromCall
                         pollNext();
                     }, 2000);
                 }
@@ -129,14 +129,15 @@ export function subscribeToChanges(
             }
         } else {
             // console.log('FastComments: connecting...');
-            const socket = new WebSocket(state.wsHost + '/sub?urlId=' + urlIdWS + '&userIdWS=' + userIdWS + '&tenantIdWS=' + tenantIdWS);
+            const socket = new WebSocket(wsHost + '/sub?urlId=' + urlIdWS + '&userIdWS=' + userIdWS + '&tenantIdWS=' + tenantIdWS);
 
-            socket.onopen = function () {
+            socket.onopen = async function () {
                 if (isIntentionallyClosed) {
                     return;
                 }
                 // console.log('FastComments: connected.');
                 if (lastLiveEventTime) {
+                    // noinspection ES6MissingAwait
                     fetchEventLog(lastLiveEventTime, Date.now());
                 }
                 onConnectionStatusChange && onConnectionStatusChange(true, lastLiveEventTime);
@@ -144,16 +145,13 @@ export function subscribeToChanges(
 
             socket.onclose = function () {
                 // console.log('FastComments: disconnected.');
-                if ('removeAllListeners' in socket) { // not supported on FF?
-                    socket.removeAllListeners();
-                }
                 if (!lastLiveEventTime) {
                     lastLiveEventTime = Date.now();
                 }
                 if (!isIntentionallyClosed) {
                     onConnectionStatusChange && onConnectionStatusChange(false, lastLiveEventTime);
                     setTimeout(function () {
-                        subscribeToChanges(config, tenantIdWS, urlId, urlIdWS, userIdWS, checkBlockedComments, handleLiveEvent, doRerender, onConnectionStatusChange, lastLiveEventTime);
+                        subscribeToChanges(config, wsHost, tenantIdWS, urlId, urlIdWS, userIdWS, checkBlockedComments, handleLiveEvent, doRerender, onConnectionStatusChange, lastLiveEventTime);
                     }, 2000 * Math.random());
                 }
             };
@@ -164,7 +162,7 @@ export function subscribeToChanges(
                 }
                 // console.log('FastComments: live event.');
                 const eventDataParsed = JSON.parse(decodeURIComponent(event.data));
-                lastLiveEventTime = Math.max(lastLiveEventTime, eventDataParsed.timestamp);
+                lastLiveEventTime = Math.max(lastLiveEventTime || 0, eventDataParsed.timestamp);
 
                 if (checkBlockedComments) {
                     const id = extractCommentIdFromEvent(eventDataParsed);

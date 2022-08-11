@@ -16,7 +16,7 @@ interface FastCommentsInternalState {
     isFirstRequest: boolean;
     lastGenDate?: number;
     lastComments: FastCommentsWidgetComment[];
-    lastSubscriberInstance?: SubscriberInstance;
+    lastSubscriberInstance?: SubscriberInstance | void;
     broadcastIdsSent: string[];
 }
 
@@ -302,7 +302,7 @@ export class FastCommentsLiveCommentingService {
             internalState.lastSubscriberInstance.close();
         }
 
-        internalState.lastSubscriberInstance = subscribeToChanges(state.config, state.tenantIdWS, state.config.urlId!, state.urlIdWS, state.userIdWS, async (commentIds: string[]) => {
+        internalState.lastSubscriberInstance = subscribeToChanges(state.config, state.wsHost, state.tenantIdWS, state.config.urlId!, state.urlIdWS, state.userIdWS, async (commentIds: string[]) => {
             return await checkBlockedComments(state, commentIds);
         }, this.handleLiveEvent, () => {
             this.setState(this.state);
