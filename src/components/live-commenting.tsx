@@ -1,17 +1,16 @@
 // use this if you want to use the default layout and layout mechanism
 
-import {FastCommentsState} from "../types/fastcomments-state";
 import {message} from "./message";
 import {StyleSheet, Text, View} from "react-native";
-import {MenuProvider} from "react-native-popup-menu";
 import {PaginationNext} from "./pagination-next";
 import {PaginationPrev} from "./pagination-prev";
 import {CommentsList} from "./comments-list";
 import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
 import {FastCommentsLiveCommentingService} from "../services/fastcomments-live-commenting";
-import {useState} from "react";
+// @ts-ignore
+import React, { useState } from 'react';
 
-export function FastCommentsLiveCommenting(config: FastCommentsCommentWidgetConfig) {
+export function FastCommentsLiveCommenting({config}: { config: FastCommentsCommentWidgetConfig }) {
     const service = new FastCommentsLiveCommentingService(config);
     const [state, setState] = useState(service.getState());
     service.setStateCallback(setState);
@@ -29,8 +28,7 @@ export function FastCommentsLiveCommenting(config: FastCommentsCommentWidgetConf
         const paginationAfterComments = state.commentsVisible && !state.config.paginationBeforeComments
             ? PaginationNext(state)
             : null;
-        return <MenuProvider>
-            {
+        return <View>{
                 state.hasBillingIssue && state.isSiteAdmin && <Text style={styles.red}>{state.translations.BILLING_INFO_INV}</Text>
             }
             {
@@ -41,7 +39,7 @@ export function FastCommentsLiveCommenting(config: FastCommentsCommentWidgetConf
                 {state.commentsVisible && CommentsList(state)}
             </div>
             {paginationAfterComments}
-        </MenuProvider>;
+        </View>;
     } else {
         return <View>{message('todo')}</View>;
     }

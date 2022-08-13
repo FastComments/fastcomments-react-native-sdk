@@ -1,12 +1,11 @@
-import {FastCommentsBadge} from "../types/badge";
-import {StyleSheet, Image, Text} from "react-native";
+import { FastCommentsBadge } from "fastcomments-typescript";
+import {StyleSheet, Image, Text, View} from "react-native";
 
 export function CommentUserBadge(badge: FastCommentsBadge) {
     if (badge.displaySrc) {
-        const title = badge.displayLabel ? badge.displayLabel + (badge.description ? ': ' + badge.description : '') : null;
-        return <div style={styles.imageBadge} title={title}>
+        return <View style={styles.imageBadge}>
             <Image style={styles.imageBadgeImage} source={{uri: badge.displaySrc}}/>
-        </div>;
+        </View>;
     } else {
         const textBadgeStyles = styles.textBadge;
         if (badge.backgroundColor) {

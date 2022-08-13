@@ -1,5 +1,5 @@
 import {FastCommentsCommentWithState} from "./comment";
-import {StyleSheet, Text} from "react-native";
+import {StyleSheet, Text, View} from "react-native";
 
 export function CommentNotices(props: FastCommentsCommentWithState) {
     const {comment, state} = props;
@@ -22,7 +22,7 @@ export function CommentNotices(props: FastCommentsCommentWithState) {
     }
 
     if (notice) {
-        return <div style={noticeStyles}><Text>notice</Text></div>
+        return <View style={noticeStyles}><Text>notice</Text></View>
     } else {
         return null;
     }

@@ -2,11 +2,9 @@
   "name": "fastcomments-react-native-sdk",
   "version": "0.0.1",
   "description": "React Native FastComments Components",
-  "main": "lib/commonjs/index",
-  "module": "lib/module/index",
-  "types": "lib/typescript/index.d.ts",
-  "react-native": "src/index",
-  "source": "src/index",
+  "main": "index",
+  "react-native": "index",
+  "source": "index",
   "files": [
     "src",
     "lib",
@@ -23,7 +21,8 @@
   ],
   "scripts": {
     "test": "jest",
-    "compile": "tsc --noEmit",
+    "compile-test": "tsc --noEmit",
+    "compile": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "release": "release-it",
     "pods": "cd example && pod-install --quiet",
@@ -56,9 +55,9 @@
   },
   "dependencies": {
     "lodash": "^4.17.21",
-    "react-native-webview": "^11.14.3",
+    "react-native-dropdown-picker": "^5.4.2",
     "react-native-render-html": "^6.3.4",
-    "react-native-popup-menu": "^0.15.12"
+    "react-native-webview": "^11.14.3"
   },
   "peerDependencies": {
     "fastcomments-typescript": "*",

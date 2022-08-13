@@ -1,5 +1,5 @@
 import {FastCommentsCommentWithState} from "./comment";
-import {StyleSheet, ViewStyle} from "react-native";
+import {StyleSheet} from "react-native";
 
 export function CommentUserActivityIcon(commentState: FastCommentsCommentWithState) {
     const {comment, state} = commentState;
@@ -7,7 +7,7 @@ export function CommentUserActivityIcon(commentState: FastCommentsCommentWithSta
         return null;
     }
     const userPresenceState = state.userPresenceState;
-    const isUserOnline = userPresenceState.usersOnlineMap[comment.userId] === true || userPresenceState.usersOnlineMap[comment.anonUserId] === true;
+    const isUserOnline = (comment.userId && userPresenceState.usersOnlineMap[comment.userId]) || (comment.anonUserId && userPresenceState.usersOnlineMap[comment.anonUserId]);
     if (isUserOnline) {
         return <div style={styles.online} title={state.translations.USER_VIEWING_THREAD}></div>;
     } else {

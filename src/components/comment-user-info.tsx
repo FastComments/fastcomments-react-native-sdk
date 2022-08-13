@@ -36,8 +36,8 @@ export function CommentUserInfo(commentWithState: FastCommentsCommentWithState) 
 
     const usernameElement = <View>
         {state.config.hideAvatars && activityIcon}
-        {commenterLeftLink ? <Pressable onPress={() => Linking.openURL(comment.commenterLink)}>
-            {({pressed}) =>
+        {commenterLeftLink ? <Pressable onPress={() => Linking.openURL(comment.commenterLink!)}>
+            {() =>
                 <Text style={styles.usernameWithLink}>{commenterName}</Text>
             }
         </Pressable> : <Text style={styles.username}>{commenterName}</Text>}

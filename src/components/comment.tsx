@@ -18,7 +18,7 @@ export interface FastCommentsCommentWithState {
 
 export function FastCommentsCommentView(commentWithState: FastCommentsCommentWithState) {
     const {comment, state} = commentWithState;
-    const isMyComment = state.currentUser && 'id' in state.currentUser && (comment.userId === state.currentUser.id || comment.anonUserId === state.currentUser.id);
+    // const isMyComment = state.currentUser && 'id' in state.currentUser && (comment.userId === state.currentUser.id || comment.anonUserId === state.currentUser.id);
 
     const html = comment.isDeleted
         ? state.translations.DELETED_PLACEHOLDER
@@ -55,7 +55,7 @@ export function FastCommentsCommentView(commentWithState: FastCommentsCommentWit
 
                 </View>
             </View>
-            {state.commentState[comment._id]?.replyBoxOpen && ReplyArea(commentWithState)}
+            {state.commentState[comment._id]?.replyBoxOpen && ReplyArea(commentWithState.state)}
         </View>
     </View>;
 }

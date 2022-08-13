@@ -1,9 +1,9 @@
-import {Menu, MenuOption, MenuOptions, MenuTrigger,} from 'react-native-popup-menu';
-import {Text} from 'react-native';
+import DropDownPicker from 'react-native-dropdown-picker';
 
 import {FastCommentsCommentWithState} from "./comment";
-import {Icon} from "./icon";
 import {FastCommentsIconType} from "../types/icon";
+import {useState} from "react";
+import {resolveIcon} from "../services/icons";
 
 async function startEditingComment(_props: FastCommentsCommentWithState) {
     // makeRequest(config, 'GET', '/comments/' + tenantIdToUse + '/' + commentId + '/text' + createURLQueryString({
@@ -56,46 +56,118 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
     const canPin = state.isSiteAdmin && !comment.parentId;
     const canBlockOrFlag = !comment.isDeleted && !comment.isByAdmin && !comment.isByModerator && !isMyComment && currentUser && 'authorized' in currentUser && currentUser.authorized;
 
-    const editOption = canEdit ? <MenuOption onSelect={() => startEditingComment(props)}>
-        <Icon iconConfig={state.icons} type={FastCommentsIconType.EDIT_BIG}/><Text>{props.state.translations.COMMENT_MENU_EDIT}</Text>
-    </MenuOption> : null;
+    const menuItems = [];
 
-    const pinOption = canPin ? (props.comment.isPinned ?
-        <MenuOption onSelect={() => setCommentPinStatus(props, false)}>
-            <Icon iconConfig={state.icons} type={FastCommentsIconType.UNPIN_BIG}/><Text>{props.state.translations.COMMENT_MENU_UNPIN}</Text>
-        </MenuOption>
-        : <MenuOption onSelect={() => setCommentPinStatus(props, true)}>
-            <Icon iconConfig={state.icons} type={FastCommentsIconType.PIN_BIG}/><Text>{props.state.translations.COMMENT_MENU_PIN}</Text>
-        </MenuOption>) : null;
+    if (canEdit) {
+        menuItems.push({
+            label: props.state.translations.COMMENT_MENU_EDIT,
+            value: 'edit',
+            icon: resolveIcon(state.icons, FastCommentsIconType.EDIT_BIG)
+        });
+    }
 
-    const deleteOption = canEdit ? <MenuOption onSelect={() => startEditingComment(props)}>
-        <Icon iconConfig={state.icons} type={FastCommentsIconType.TRASH}/><Text>{props.state.translations.COMMENT_MENU_DELETE}</Text>
-    </MenuOption> : null;
+    if (canPin) {
+        if (props.comment.isPinned) {
+            menuItems.push({
+                label: props.state.translations.COMMENT_MENU_UNPIN,
+                value: 'unpin',
+                icon: resolveIcon(state.icons, FastCommentsIconType.UNPIN_BIG)
+            });
+        } else {
+            menuItems.push({
+                label: props.state.translations.COMMENT_MENU_PIN,
+                value: 'pin',
+                icon: resolveIcon(state.icons, FastCommentsIconType.PIN_BIG)
+            });
+        }
+    }
 
-    const blockOption = canBlockOrFlag ? (props.comment.isBlocked ?
-        <MenuOption onSelect={() => setCommentBlockedStatus(props, false)}>
-            <Icon iconConfig={state.icons} type={FastCommentsIconType.BLOCK}/><Text>{props.state.translations.COMMENT_MENU_UNBLOCK_USER}</Text>
-        </MenuOption>
-        : <MenuOption onSelect={() => setCommentBlockedStatus(props, true)}>
-            <Icon iconConfig={state.icons} type={FastCommentsIconType.BLOCK}/><Text>{props.state.translations.COMMENT_MENU_BLOCK_USER}</Text>
-        </MenuOption>) : null;
+    if (canEdit) {
+        menuItems.push({
+            label: props.state.translations.COMMENT_MENU_DELETE,
+            value: 'delete',
+            icon: resolveIcon(state.icons, FastCommentsIconType.TRASH)
+        });
+    }
 
-    const flagOption = canBlockOrFlag ? (props.comment.isFlagged ?
-        <MenuOption onSelect={() => setCommentFlaggedStatus(props, false)}>
-            <Icon iconConfig={state.icons} type={FastCommentsIconType.BLOCK}/><Text>{props.state.translations.COMMENT_MENU_UNFLAG}</Text>
-        </MenuOption>
-        : <MenuOption onSelect={() => setCommentFlaggedStatus(props, true)}>
-            <Icon iconConfig={state.icons} type={FastCommentsIconType.BLOCK}/><Text>{props.state.translations.COMMENT_MENU_FLAG}</Text>
-        </MenuOption>) : null;
+    if (canBlockOrFlag) {
+        if (props.comment.isBlocked) {
+            menuItems.push({
+                label: props.state.translations.COMMENT_MENU_UNBLOCK_USER,
+                value: 'unblock',
+                icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK)
+            });
+        } else {
+            menuItems.push({
+                label: props.state.translations.COMMENT_MENU_BLOCK_USER,
+                value: 'block',
+                icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK)
+            });
+        }
+    }
 
-    return <Menu>
-        <MenuTrigger text='Select action'/>
-        <MenuOptions>
-            {editOption}
-            {pinOption}
-            {deleteOption}
-            {blockOption}
-            {flagOption}
-        </MenuOptions>
-    </Menu>;
+    if (canBlockOrFlag) {
+        if (props.comment.isFlagged) {
+            menuItems.push({
+                label: props.state.translations.COMMENT_MENU_UNFLAG,
+                value: 'unflag',
+                icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK)
+            });
+        } else {
+            menuItems.push({
+                label: props.state.translations.COMMENT_MENU_FLAG,
+                value: 'flag',
+                icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK)
+            });
+        }
+    }
+
+    const [open, setOpen] = useState(false);
+    const [items, setItems] = useState(menuItems);
+
+    const setValue = (newValue: any) => {
+        switch (newValue) {
+            case 'edit':
+                // noinspection JSIgnoredPromiseFromCall
+                startEditingComment(props);
+                break;
+            case 'unpin':
+                // noinspection JSIgnoredPromiseFromCall
+                setCommentPinStatus(props, false);
+                break;
+            case 'pin':
+                // noinspection JSIgnoredPromiseFromCall
+                setCommentPinStatus(props, true);
+                break;
+            case 'delete':
+                break;
+            case 'unblock':
+                // noinspection JSIgnoredPromiseFromCall
+                setCommentBlockedStatus(props, false);
+                break;
+            case 'block':
+                // noinspection JSIgnoredPromiseFromCall
+                setCommentBlockedStatus(props, true);
+                break;
+            case 'unflag':
+                // noinspection JSIgnoredPromiseFromCall
+                setCommentFlaggedStatus(props, false);
+                break;
+            case 'flag':
+                // noinspection JSIgnoredPromiseFromCall
+                setCommentFlaggedStatus(props, true);
+                break;
+        }
+    };
+
+    return (
+        <DropDownPicker
+            open={open}
+            value={null}
+            items={items}
+            setOpen={setOpen}
+            setValue={setValue}
+            setItems={setItems}
+        />
+    );
 }
