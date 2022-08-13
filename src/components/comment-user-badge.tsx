@@ -17,7 +17,7 @@ export function CommentUserBadge(badge: FastCommentsBadge) {
         if (badge.textColor) {
             textBadgeStyles.color = badge.textColor;
         }
-        return <View style={textBadgeStyles} title={badge.description}>
+        return <View style={textBadgeStyles}>
             <Text numberOfLines={1}>{badge.displayLabel}</Text>
         </View>;
     }
