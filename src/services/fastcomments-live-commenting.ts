@@ -209,6 +209,7 @@ export class FastCommentsLiveCommentingService {
 
             if (internalState.isFirstRequest && config.readonly && state.commentCountOnClient === 0 && !state.translations.NO_COMMENTS) {
                 config.onCommentsRendered && config.onCommentsRendered([]);
+                this.setState(state);
                 return;
             }
 
@@ -253,10 +254,12 @@ export class FastCommentsLiveCommentingService {
             }
             internalState.isFirstRequest = false;
             config.onCommentsRendered && config.onCommentsRendered(response.comments || []);
+            this.setState(state);
             // saveUIStateAndRestore(renderCommentsTree); // TODO tell React to rerender
         } catch (e) {
             // TODO handle failures
             console.error(e);
+            this.setState(state);
         }
     }
 
