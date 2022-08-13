@@ -17,9 +17,9 @@ export function CommentUserBadge(badge: FastCommentsBadge) {
         if (badge.textColor) {
             textBadgeStyles.color = badge.textColor;
         }
-        return <div style={textBadgeStyles} title={badge.description}>
+        return <View style={textBadgeStyles} title={badge.description}>
             <Text numberOfLines={1}>{badge.displayLabel}</Text>
-        </div>;
+        </View>;
     }
 }
 

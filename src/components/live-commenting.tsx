@@ -34,10 +34,10 @@ export function FastCommentsLiveCommenting({config}: { config: FastCommentsComme
             {
                 state.isDemo && <Text style={styles.red}>{state.translations.DEMO_CREATE_ACCT}</Text>
             }
-            <div style={styles.comments}>
+            <View style={styles.comments}>
                 {paginationBeforeComments}
                 {state.commentsVisible && CommentsList(state)}
-            </div>
+            </View>
             {paginationAfterComments}
         </View>;
     } else {

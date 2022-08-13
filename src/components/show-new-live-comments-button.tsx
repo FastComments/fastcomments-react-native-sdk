@@ -1,11 +1,11 @@
 import {FastCommentsState} from "../types/fastcomments-state";
-import {Text, StyleSheet} from "react-native";
+import {Text, StyleSheet, View} from "react-native";
 
 export function ShowNewLiveCommentsButton(state: FastCommentsState) {
-    return <div style={styles.button}>
+    return <View style={styles.button}>
         <Text style={styles.count}>{Number(state.newRootCommentCount).toLocaleString()}</Text>
         <Text style={styles.text}>{state.newRootCommentCount > 1 ? state.translations.NEW_COMMENTS_CLICK_SHOW : state.translations.NEW_COMMENT_CLICK_SHOW}</Text>
-    </div>;
+    </View>;
 }
 
 const styles = StyleSheet.create({

@@ -1,10 +1,10 @@
 import {FastCommentsState} from "../types/fastcomments-state";
-import {StyleSheet, Text} from "react-native";
+import {StyleSheet, Text, View} from "react-native";
 
 export function PaginationPrev(state: FastCommentsState) {
-    return <div style={styles.pagination}>
+    return <View style={styles.pagination}>
         <Text>{state.translations.PREV_30}</Text>
-    </div>;
+    </View>;
 }
 
 const styles = StyleSheet.create({
