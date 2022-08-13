@@ -38,7 +38,7 @@ export class FastCommentsLiveCommentingService {
             commentsById: {},
             commentsTree: [],
             allComments: [],
-            commentsVisible: false,
+            commentsVisible: undefined,
             currentUser: !config.sso && config.simpleSSO && config.simpleSSO.username ? config.simpleSSO : undefined,
             hasBillingIssue: false,
             hasMore: false,

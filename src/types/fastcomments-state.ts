@@ -54,7 +54,7 @@ export interface FastCommentsState {
     commentState: Record<string, CommentState>;
     commentsById: Record<string, FastCommentsWidgetComment>;
     commentsTree: FastCommentsWidgetComment[];
-    commentsVisible: boolean;
+    commentsVisible?: boolean;
     config: FastCommentsCommentWidgetConfig;
     currentUser: FastCommentsSessionUser;
     hasBillingIssue: boolean;
