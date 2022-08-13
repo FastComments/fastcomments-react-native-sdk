@@ -2,9 +2,9 @@
   "name": "fastcomments-react-native-sdk",
   "version": "0.0.1",
   "description": "React Native FastComments Components",
-  "main": "index",
-  "react-native": "index",
-  "source": "index",
+  "main": "index.ts",
+  "react-native": "index.ts",
+  "source": "index.ts",
   "files": [
     "src",
     "lib",
