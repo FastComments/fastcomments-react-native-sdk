@@ -17,6 +17,8 @@ export function FastCommentsLiveCommenting({config}: { config: FastCommentsComme
     // noinspection JSIgnoredPromiseFromCall
     service.fetchRemoteState(false);
 
+    // return <Text>Test</Text>;
+
     if (state.blockingErrorMessage) {
         return <View>{message(state.blockingErrorMessage)}</View>;
     } else if (!(state.commentsTree.length === 0 && state.config.readonly && (state.config.hideCommentsUnderCountTextFormat || state.config.useShowCommentsToggle))) {
@@ -34,10 +36,10 @@ export function FastCommentsLiveCommenting({config}: { config: FastCommentsComme
             {
                 state.isDemo && <Text style={styles.red}>{state.translations.DEMO_CREATE_ACCT}</Text>
             }
-            <Text>Comments list:</Text>
             <View style={styles.comments}>
                 {paginationBeforeComments}
-                {state.commentsVisible && CommentsList(state)}
+                {/*{state.commentsVisible && CommentsList(state)}*/}
+                {CommentsList(state)}
             </View>
             {paginationAfterComments}
         </View>;

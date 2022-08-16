@@ -1,0 +1,25 @@
+{
+  "name": "fastcomments-react-native-sdk-example",
+  "description": "Example app for fastcomments-react-native-sdk",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "start": "react-native start",
+    "start-reset-cache": "react-native start --reset-cache",
+    "clear-watchman-cache": "watchman watch-del-all"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.10",
+    "@babel/plugin-transform-react-jsx": "^7.18.10",
+    "@babel/runtime": "^7.12.5",
+    "babel-plugin-module-resolver": "^4.0.0",
+    "metro-config": "^0.66.2",
+    "metro-core": "^0.66.2",
+    "metro-react-native-babel-preset": "^0.66.2",
+    "metro-resolver": "^0.66.2",
+    "react": "18.0.0",
+    "react-native": "^0.69.4"
+  }
+}
