@@ -10,6 +10,8 @@ import {FastCommentsLiveCommentingService} from "../services/fastcomments-live-c
 // @ts-ignore
 import React, {useEffect, useState} from 'react';
 import {FastCommentsState} from "../types/fastcomments-state";
+import RenderHtml from 'react-native-render-html';
+import { useWindowDimensions } from 'react-native';
 
 export function FastCommentsLiveCommenting({config}: { config: FastCommentsCommentWidgetConfig }) {
     const service = new FastCommentsLiveCommentingService({...config}); // shallow clone is important to prevent extra re-renders
@@ -34,11 +36,12 @@ export function FastCommentsLiveCommenting({config}: { config: FastCommentsComme
         const paginationAfterComments = state.commentsVisible && !state.config.paginationBeforeComments
             ? PaginationNext(state)
             : null;
+        const { width } = useWindowDimensions();
         return <View>{
             state.hasBillingIssue && state.isSiteAdmin && <Text style={styles.red}>{state.translations.BILLING_INFO_INV}</Text>
         }
             {
-                state.isDemo && <Text style={styles.red}>{state.translations.DEMO_CREATE_ACCT}</Text>
+                state.isDemo && <Text style={styles.red}><RenderHtml source={{html: state.translations.DEMO_CREATE_ACCT}} contentWidth={width}/></Text>
             }
             <View style={styles.comments}>
                 {paginationBeforeComments}

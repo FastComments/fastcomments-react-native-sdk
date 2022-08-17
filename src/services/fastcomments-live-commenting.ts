@@ -3,7 +3,6 @@ import {FastCommentsState} from "../types/fastcomments-state";
 import {createURLQueryString, makeRequest} from "./http";
 import {GetCommentsResponse} from "../types/dto";
 import {addCommentToTree, ensureRepliesOpenToComment, getCommentsTreeAndCommentsById} from "./comment-trees";
-import {Dispatch, SetStateAction} from "react";
 import {SubscriberInstance, subscribeToChanges} from "./subscribe-to-changes";
 import {checkBlockedComments} from "./blocking";
 import {DefaultIcons} from "../resources/default-icons";
