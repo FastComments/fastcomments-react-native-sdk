@@ -1,3 +1,6 @@
+import {Image, ImageProps} from "react-native";
+import {ComponentElement} from "react";
+
 export enum FastCommentsIconType {
     APPROVE,
     BAN,
@@ -34,3 +37,6 @@ export enum FastCommentsIconType {
     BLOCK,
     FLAG,
 }
+
+export type FastCommentsIconGetter = () => ComponentElement<ImageProps, Image>;
+export type IconConfig = Record<FastCommentsIconType, FastCommentsIconGetter>;

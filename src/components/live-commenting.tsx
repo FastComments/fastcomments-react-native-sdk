@@ -8,16 +8,20 @@ import {CommentsList} from "./comments-list";
 import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
 import {FastCommentsLiveCommentingService} from "../services/fastcomments-live-commenting";
 // @ts-ignore
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
+import {FastCommentsState} from "../types/fastcomments-state";
 
 export function FastCommentsLiveCommenting({config}: { config: FastCommentsCommentWidgetConfig }) {
-    const service = new FastCommentsLiveCommentingService(config);
+    const service = new FastCommentsLiveCommentingService({...config}); // shallow clone is important to prevent extra re-renders
     const [state, setState] = useState(service.getState());
-    service.setStateCallback(setState);
-    // noinspection JSIgnoredPromiseFromCall
-    service.fetchRemoteState(false);
-
-    // return <Text>Test</Text>;
+    useEffect(() => {
+        // noinspection JSIgnoredPromiseFromCall
+        service.fetchRemoteState(false, (state: FastCommentsState) => {
+            console.log('Setting state...');
+            setState(state);
+            console.log('Set state...');
+        });
+    }, [config]);
 
     if (state.blockingErrorMessage) {
         return <View>{message(state.blockingErrorMessage)}</View>;
@@ -31,8 +35,8 @@ export function FastCommentsLiveCommenting({config}: { config: FastCommentsComme
             ? PaginationNext(state)
             : null;
         return <View>{
-                state.hasBillingIssue && state.isSiteAdmin && <Text style={styles.red}>{state.translations.BILLING_INFO_INV}</Text>
-            }
+            state.hasBillingIssue && state.isSiteAdmin && <Text style={styles.red}>{state.translations.BILLING_INFO_INV}</Text>
+        }
             {
                 state.isDemo && <Text style={styles.red}>{state.translations.DEMO_CREATE_ACCT}</Text>
             }
@@ -52,7 +56,5 @@ const styles = StyleSheet.create({
     red: {
         color: "red"
     },
-    comments: {
-
-    }
+    comments: {}
 });

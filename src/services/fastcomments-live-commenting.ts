@@ -23,7 +23,7 @@ interface FastCommentsInternalState {
 export class FastCommentsLiveCommentingService {
     private readonly state: FastCommentsState;
     private readonly internalState: FastCommentsInternalState;
-    private setState!: Dispatch<SetStateAction<FastCommentsState>>;
+    private setState!: (state: FastCommentsState) => void;
 
     constructor(config: FastCommentsCommentWidgetConfig) {
         this.state = {
@@ -82,11 +82,7 @@ export class FastCommentsLiveCommentingService {
         return this.state;
     }
 
-    setStateCallback(setState: Dispatch<SetStateAction<FastCommentsState>>) {
-        this.setState = setState;
-    }
-
-    async fetchRemoteState(isPrev: boolean): Promise<void> {
+    async fetchRemoteState(isPrev: boolean, setState: (state: FastCommentsState) => void): Promise<void> {
         const internalState = this.internalState;
         const state = this.state;
         const config = this.state.config;
@@ -103,6 +99,7 @@ export class FastCommentsLiveCommentingService {
         if (internalState.lastComments.length === 0) {
             // We only send these on the initial request (when lastComments is empty).
             queryParams.includei10n = 'true';
+            queryParams.useFullTranslationIds = 'true';
 
             if (config.locale) {
                 queryParams.locale = config.locale;
@@ -146,6 +143,7 @@ export class FastCommentsLiveCommentingService {
                 method: 'GET',
                 url: url + createURLQueryString(queryParams),
             });
+            console.log('got', response);
             const isRateLimited = response.code === 'rate-limited';
 
             this.handleNewCustomConfig(response.customConfig);
@@ -209,8 +207,7 @@ export class FastCommentsLiveCommentingService {
 
             if (internalState.isFirstRequest && config.readonly && state.commentCountOnClient === 0 && !state.translations.NO_COMMENTS) {
                 config.onCommentsRendered && config.onCommentsRendered([]);
-                this.setState(state);
-                return;
+                setState(state);
             }
 
             if (response.user) {
@@ -254,12 +251,13 @@ export class FastCommentsLiveCommentingService {
             }
             internalState.isFirstRequest = false;
             config.onCommentsRendered && config.onCommentsRendered(response.comments || []);
-            this.setState(state);
+            console.log('RESULTING STATE', JSON.stringify(state));
+            setState(state);
             // saveUIStateAndRestore(renderCommentsTree); // TODO tell React to rerender
         } catch (e) {
             // TODO handle failures
             console.error(e);
-            this.setState(state);
+            setState(state);
         }
     }
 

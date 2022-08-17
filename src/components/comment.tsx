@@ -1,6 +1,8 @@
+// @ts-ignore TODO remove
+import * as React from 'react';
+
 import RenderHtml from 'react-native-render-html';
 
-// This is a subset of the API comment object.
 import {FastCommentsState} from "../types/fastcomments-state";
 import {StyleSheet, View, Text} from "react-native";
 import {CommentMenu} from "./comment-menu";
@@ -10,6 +12,7 @@ import {ReplyArea} from "./reply-area";
 import {useState} from "react";
 import { FastCommentsWidgetComment } from 'fastcomments-typescript';
 import {getDisplayDate} from "../services/comment-date";
+import { useWindowDimensions } from 'react-native';
 
 export interface FastCommentsCommentWithState {
     comment: FastCommentsWidgetComment;
@@ -37,6 +40,8 @@ export function FastCommentsCommentView(commentWithState: FastCommentsCommentWit
         setDisplayDate(getDisplayDate(state.config, state.translations, dateObj));
     }, 60_000);
 
+    const { width } = useWindowDimensions();
+
     return <View>
         <View style={styles.topRight}>
             {comment.isPinned && <View style={styles.pin}/>}
@@ -45,7 +50,7 @@ export function FastCommentsCommentView(commentWithState: FastCommentsCommentWit
         <CommentNotices comment={comment} state={state}/>
         <CommentUserInfo comment={comment} state={state}/>
         <Text>{displayDate}</Text>
-        <RenderHtml source={{html}}/>
+        <RenderHtml source={{html}} contentWidth={width}/>
         <View style={styles.commentBottom}>
             <View style={styles.commentBottomToolbar}>
                 <View style={styles.commentBottomToolbarVote}>

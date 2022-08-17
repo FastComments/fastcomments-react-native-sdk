@@ -1,3 +1,6 @@
+// @ts-ignore TODO remove
+import * as React from 'react';
+
 import {Image} from "react-native";
 import {FastCommentsIconType} from "../types/icon";
 

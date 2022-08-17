@@ -1,5 +1,5 @@
-import {FastCommentsIconType} from "../types/icon";
+import {FastCommentsIconType, IconConfig} from "../types/icon";
 
-export function resolveIcon(iconConfig: Record<FastCommentsIconType, string>, type: FastCommentsIconType) {
-    return `./../resources/icons/${iconConfig[type]}`;
+export function resolveIcon(iconConfig: IconConfig, type: FastCommentsIconType) {
+    return iconConfig[type];
 }

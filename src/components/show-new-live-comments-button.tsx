@@ -1,3 +1,6 @@
+// @ts-ignore TODO remove
+import * as React from 'react';
+
 import {FastCommentsState} from "../types/fastcomments-state";
 import {Text, StyleSheet, View} from "react-native";
 

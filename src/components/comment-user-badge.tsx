@@ -1,3 +1,6 @@
+// @ts-ignore TODO remove
+import * as React from 'react';
+
 import { FastCommentsBadge } from "fastcomments-typescript";
 import {StyleSheet, Image, Text, View} from "react-native";
 

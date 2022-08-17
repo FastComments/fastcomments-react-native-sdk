@@ -1,3 +1,6 @@
+// @ts-ignore TODO remove
+import * as React from 'react';
+
 import {FastCommentsSortDirection, FastCommentsState} from "../types/fastcomments-state";
 import DropDownPicker from 'react-native-dropdown-picker';
 import {useState} from "react";

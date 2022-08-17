@@ -1,3 +1,6 @@
+// @ts-ignore TODO remove
+import * as React from 'react';
+
 import DropDownPicker from 'react-native-dropdown-picker';
 
 import {FastCommentsCommentWithState} from "./comment";

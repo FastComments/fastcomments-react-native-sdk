@@ -1,3 +1,6 @@
+// @ts-ignore TODO remove
+import * as React from 'react';
+
 import {FastCommentsCommentWithState} from "./comment";
 import {CommentUserActivityIcon} from "./comment-user-activity-icon";
 import {CommentUserBadge} from "./comment-user-badge";

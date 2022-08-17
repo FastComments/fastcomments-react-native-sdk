@@ -1,3 +1,6 @@
+// @ts-ignore TODO remove
+import * as React from 'react';
+
 import {FastCommentsCommentWithState} from "./comment";
 import {StyleSheet, View} from "react-native";
 
@@ -9,9 +12,9 @@ export function CommentUserActivityIcon(commentState: FastCommentsCommentWithSta
     const userPresenceState = state.userPresenceState;
     const isUserOnline = (comment.userId && userPresenceState.usersOnlineMap[comment.userId]) || (comment.anonUserId && userPresenceState.usersOnlineMap[comment.anonUserId]);
     if (isUserOnline) {
-        return <View style={styles.online}> </View>;
+        return <View style={styles.online}></View>;
     } else {
-        return <View style={styles.offline}> </View>;
+        return <View style={styles.offline}></View>;
     }
 }
 
