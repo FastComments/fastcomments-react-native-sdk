@@ -14,9 +14,11 @@ import RenderHtml from 'react-native-render-html';
 import { useWindowDimensions } from 'react-native';
 
 export function FastCommentsLiveCommenting({config}: { config: FastCommentsCommentWidgetConfig }) {
-    const service = new FastCommentsLiveCommentingService({...config}); // shallow clone is important to prevent extra re-renders
-    const [state, setState] = useState(service.getState());
+    // TODO cleanup having to have two FastCommentsLiveCommentingService instances (this fixes hot reloading issues, but can replace initial state w/ static method)
+    const serviceInitialState = new FastCommentsLiveCommentingService({...config}); // shallow clone is important to prevent extra re-renders
+    const [state, setState] = useState(serviceInitialState.getState());
     useEffect(() => {
+        const service = new FastCommentsLiveCommentingService({...config}); // shallow clone is important to prevent extra re-renders
         // noinspection JSIgnoredPromiseFromCall
         service.fetchRemoteState(false, (state: FastCommentsState) => {
             console.log('Setting state...');

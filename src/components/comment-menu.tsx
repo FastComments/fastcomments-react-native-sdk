@@ -1,12 +1,11 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
 
-import DropDownPicker from 'react-native-dropdown-picker';
-
 import {FastCommentsCommentWithState} from "./comment";
 import {FastCommentsIconType} from "../types/icon";
 import {useState} from "react";
 import {resolveIcon} from "../services/icons";
+import {Alert, Modal, Pressable, View, Text, StyleSheet} from "react-native";
 
 async function startEditingComment(_props: FastCommentsCommentWithState) {
     // makeRequest(config, 'GET', '/comments/' + tenantIdToUse + '/' + commentId + '/text' + createURLQueryString({
@@ -65,7 +64,11 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
         menuItems.push({
             label: props.state.translations.COMMENT_MENU_EDIT,
             value: 'edit',
-            icon: resolveIcon(state.icons, FastCommentsIconType.EDIT_BIG)
+            icon: resolveIcon(state.icons, FastCommentsIconType.EDIT_BIG),
+            handler: () => {
+                // noinspection JSIgnoredPromiseFromCall
+                startEditingComment(props);
+            }
         });
     }
 
@@ -74,13 +77,21 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
             menuItems.push({
                 label: props.state.translations.COMMENT_MENU_UNPIN,
                 value: 'unpin',
-                icon: resolveIcon(state.icons, FastCommentsIconType.UNPIN_BIG)
+                icon: resolveIcon(state.icons, FastCommentsIconType.UNPIN_BIG),
+                handler: () => {
+                    // noinspection JSIgnoredPromiseFromCall
+                    setCommentPinStatus(props, false);
+                }
             });
         } else {
             menuItems.push({
                 label: props.state.translations.COMMENT_MENU_PIN,
                 value: 'pin',
-                icon: resolveIcon(state.icons, FastCommentsIconType.PIN_BIG)
+                icon: resolveIcon(state.icons, FastCommentsIconType.PIN_BIG),
+                handler: () => {
+                    // noinspection JSIgnoredPromiseFromCall
+                    setCommentPinStatus(props, true);
+                }
             });
         }
     }
@@ -89,7 +100,11 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
         menuItems.push({
             label: props.state.translations.COMMENT_MENU_DELETE,
             value: 'delete',
-            icon: resolveIcon(state.icons, FastCommentsIconType.TRASH)
+            icon: resolveIcon(state.icons, FastCommentsIconType.TRASH),
+            handler: () => {
+                // noinspection JSIgnoredPromiseFromCall
+                startEditingComment(props);
+            }
         });
     }
 
@@ -98,13 +113,21 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
             menuItems.push({
                 label: props.state.translations.COMMENT_MENU_UNBLOCK_USER,
                 value: 'unblock',
-                icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK)
+                icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK),
+                handler: () => {
+                    // noinspection JSIgnoredPromiseFromCall
+                    setCommentBlockedStatus(props, false);
+                }
             });
         } else {
             menuItems.push({
                 label: props.state.translations.COMMENT_MENU_BLOCK_USER,
                 value: 'block',
-                icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK)
+                icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK),
+                handler: () => {
+                    // noinspection JSIgnoredPromiseFromCall
+                    setCommentBlockedStatus(props, true);
+                }
             });
         }
     }
@@ -114,63 +137,107 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
             menuItems.push({
                 label: props.state.translations.COMMENT_MENU_UNFLAG,
                 value: 'unflag',
-                icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK)
+                icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK),
+                handler: () => {
+                    // noinspection JSIgnoredPromiseFromCall
+                    setCommentFlaggedStatus(props, false);
+                }
             });
         } else {
             menuItems.push({
                 label: props.state.translations.COMMENT_MENU_FLAG,
                 value: 'flag',
-                icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK)
+                icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK),
+                handler: () => {
+                    // noinspection JSIgnoredPromiseFromCall
+                    setCommentFlaggedStatus(props, true);
+                }
             });
         }
     }
 
-    const [open, setOpen] = useState(false);
-    const [items, setItems] = useState(menuItems);
-
-    const setValue = (newValue: any) => {
-        switch (newValue) {
-            case 'edit':
-                // noinspection JSIgnoredPromiseFromCall
-                startEditingComment(props);
-                break;
-            case 'unpin':
-                // noinspection JSIgnoredPromiseFromCall
-                setCommentPinStatus(props, false);
-                break;
-            case 'pin':
-                // noinspection JSIgnoredPromiseFromCall
-                setCommentPinStatus(props, true);
-                break;
-            case 'delete':
-                break;
-            case 'unblock':
-                // noinspection JSIgnoredPromiseFromCall
-                setCommentBlockedStatus(props, false);
-                break;
-            case 'block':
-                // noinspection JSIgnoredPromiseFromCall
-                setCommentBlockedStatus(props, true);
-                break;
-            case 'unflag':
-                // noinspection JSIgnoredPromiseFromCall
-                setCommentFlaggedStatus(props, false);
-                break;
-            case 'flag':
-                // noinspection JSIgnoredPromiseFromCall
-                setCommentFlaggedStatus(props, true);
-                break;
-        }
-    };
-
+    // TODO common modal-menu component
+    const [modalVisible, setModalVisible] = useState(false);
     return (
-        <DropDownPicker
-            open={open}
-            value={null}
-            items={items}
-            setOpen={setOpen}
-            setValue={setValue}
-            setItems={setItems}
-        />
+        <View style={styles.centeredView}>
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => {
+                    setModalVisible(!modalVisible);
+                }}
+            >
+                <View style={styles.centeredView}>
+                    <View style={styles.modalView}>
+                        {menuItems.map((item) =>
+                            <Pressable
+                                key={item.label}
+                                style={[styles.button, styles.buttonClose]} onPress={item.handler}
+                            >
+                                <Text style={styles.textStyle}>{item.label}</Text>
+                            </Pressable>
+                            )}
+                        <Pressable
+                            style={[styles.button, styles.buttonClose]}
+                            onPress={() => setModalVisible(!modalVisible)}
+                        >
+                            <Text style={styles.textStyle}>{state.translations.CANCEL}</Text>
+                        </Pressable>
+                    </View>
+                </View>
+            </Modal>
+            <Pressable
+                style={[styles.button, styles.buttonOpen]}
+                onPress={() => setModalVisible(true)}
+            >
+                <Text style={styles.textStyle}>...</Text>
+            </Pressable>
+        </View>
     );
 }
+
+const styles = StyleSheet.create({
+    centeredView: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: 22
+    },
+    modalView: {
+        margin: 20,
+        backgroundColor: "white",
+        borderRadius: 20,
+        padding: 35,
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5
+    },
+    button: {
+        marginBottom: 10,
+        borderRadius: 20,
+        padding: 10,
+        elevation: 2
+    },
+    buttonOpen: {
+        backgroundColor: "#F194FF",
+    },
+    buttonClose: {
+        backgroundColor: "#2196F3",
+    },
+    textStyle: {
+        color: "white",
+        fontWeight: "bold",
+        textAlign: "center"
+    },
+    modalText: {
+        marginBottom: 15,
+        textAlign: "center"
+    }
+});
