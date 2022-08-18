@@ -66,7 +66,11 @@ export function FastCommentsCommentView(commentWithState: FastCommentsCommentWit
 }
 
 const styles = StyleSheet.create({
-    topRight: {},
+    topRight: {
+        position: "absolute",
+        top: 0,
+        right: 0
+    },
     pin: {},
     userInfo: {},
     commentBottom: {},

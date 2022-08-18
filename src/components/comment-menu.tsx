@@ -1,13 +1,14 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
+import {useState} from 'react';
 
 import {FastCommentsCommentWithState} from "./comment";
 import {FastCommentsIconType} from "../types/icon";
-import {useState} from "react";
 import {resolveIcon} from "../services/icons";
-import {Alert, Modal, Pressable, View, Text, StyleSheet} from "react-native";
+import {ActivityIndicator, Modal, Pressable, StyleSheet, Text, View} from "react-native";
 
 async function startEditingComment(_props: FastCommentsCommentWithState) {
+    await new Promise((resolve) => setTimeout(resolve, 5000));
     // makeRequest(config, 'GET', '/comments/' + tenantIdToUse + '/' + commentId + '/text' + createURLQueryString({
     //     sso: ssoConfigString,
     //     editKey: commentsById[commentId].editKey
@@ -65,9 +66,8 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
             label: props.state.translations.COMMENT_MENU_EDIT,
             value: 'edit',
             icon: resolveIcon(state.icons, FastCommentsIconType.EDIT_BIG),
-            handler: () => {
-                // noinspection JSIgnoredPromiseFromCall
-                startEditingComment(props);
+            handler: async () => {
+                await startEditingComment(props);
             }
         });
     }
@@ -78,9 +78,8 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
                 label: props.state.translations.COMMENT_MENU_UNPIN,
                 value: 'unpin',
                 icon: resolveIcon(state.icons, FastCommentsIconType.UNPIN_BIG),
-                handler: () => {
-                    // noinspection JSIgnoredPromiseFromCall
-                    setCommentPinStatus(props, false);
+                handler: async () => {
+                    await setCommentPinStatus(props, false);
                 }
             });
         } else {
@@ -88,9 +87,8 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
                 label: props.state.translations.COMMENT_MENU_PIN,
                 value: 'pin',
                 icon: resolveIcon(state.icons, FastCommentsIconType.PIN_BIG),
-                handler: () => {
-                    // noinspection JSIgnoredPromiseFromCall
-                    setCommentPinStatus(props, true);
+                handler: async () => {
+                    await setCommentPinStatus(props, true);
                 }
             });
         }
@@ -101,9 +99,8 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
             label: props.state.translations.COMMENT_MENU_DELETE,
             value: 'delete',
             icon: resolveIcon(state.icons, FastCommentsIconType.TRASH),
-            handler: () => {
-                // noinspection JSIgnoredPromiseFromCall
-                startEditingComment(props);
+            handler: async () => {
+                await startEditingComment(props);
             }
         });
     }
@@ -114,9 +111,8 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
                 label: props.state.translations.COMMENT_MENU_UNBLOCK_USER,
                 value: 'unblock',
                 icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK),
-                handler: () => {
-                    // noinspection JSIgnoredPromiseFromCall
-                    setCommentBlockedStatus(props, false);
+                handler: async () => {
+                    await setCommentBlockedStatus(props, false);
                 }
             });
         } else {
@@ -124,9 +120,8 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
                 label: props.state.translations.COMMENT_MENU_BLOCK_USER,
                 value: 'block',
                 icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK),
-                handler: () => {
-                    // noinspection JSIgnoredPromiseFromCall
-                    setCommentBlockedStatus(props, true);
+                handler: async () => {
+                    await setCommentBlockedStatus(props, true);
                 }
             });
         }
@@ -138,9 +133,8 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
                 label: props.state.translations.COMMENT_MENU_UNFLAG,
                 value: 'unflag',
                 icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK),
-                handler: () => {
-                    // noinspection JSIgnoredPromiseFromCall
-                    setCommentFlaggedStatus(props, false);
+                handler: async () => {
+                    await setCommentFlaggedStatus(props, false);
                 }
             });
         } else {
@@ -148,9 +142,8 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
                 label: props.state.translations.COMMENT_MENU_FLAG,
                 value: 'flag',
                 icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK),
-                handler: () => {
-                    // noinspection JSIgnoredPromiseFromCall
-                    setCommentFlaggedStatus(props, true);
+                handler: async () => {
+                    await setCommentFlaggedStatus(props, true);
                 }
             });
         }
@@ -158,6 +151,7 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
 
     // TODO common modal-menu component
     const [modalVisible, setModalVisible] = useState(false);
+    const [isLoading, setLoading] = useState(false);
     return (
         <View style={styles.centeredView}>
             <Modal
@@ -173,25 +167,35 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
                         {menuItems.map((item) =>
                             <Pressable
                                 key={item.label}
-                                style={[styles.button, styles.buttonClose]} onPress={item.handler}
+                                style={styles.menuOptionButton} onPress={async () => {
+                                setLoading(true);
+                                await item.handler();
+                                setLoading(false);
+                            }}
                             >
-                                <Text style={styles.textStyle}>{item.label}</Text>
+                                {item.icon()}
+                                <Text style={styles.menuOptionText}>{item.label}</Text>
                             </Pressable>
-                            )}
+                        )}
                         <Pressable
-                            style={[styles.button, styles.buttonClose]}
+                            style={styles.modalCancel}
                             onPress={() => setModalVisible(!modalVisible)}
                         >
-                            <Text style={styles.textStyle}>{state.translations.CANCEL}</Text>
+                            {resolveIcon(state.icons, FastCommentsIconType.CROSS)(16, 16)}
                         </Pressable>
+                        {
+                            isLoading && <View style={styles.loadingView}>
+                                <ActivityIndicator size="large"/>
+                            </View>
+                        }
                     </View>
                 </View>
             </Modal>
             <Pressable
-                style={[styles.button, styles.buttonOpen]}
+                style={styles.menuButton}
                 onPress={() => setModalVisible(true)}
             >
-                <Text style={styles.textStyle}>...</Text>
+                {resolveIcon(state.icons, FastCommentsIconType.EDIT_SMALL)()}
             </Pressable>
         </View>
     );
@@ -219,25 +223,41 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 5
     },
-    button: {
+    menuOptionButton: {
+        flexDirection: 'row',
+        minWidth: 100,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
         marginBottom: 10,
-        borderRadius: 20,
         padding: 10,
-        elevation: 2
+        elevation: 2,
+        color: 'black'
     },
-    buttonOpen: {
-        backgroundColor: "#F194FF",
+    menuButton: {
+        padding: 10,
+        justifyContent: 'center',
+        alignItems: 'center'
     },
-    buttonClose: {
-        backgroundColor: "#2196F3",
-    },
-    textStyle: {
-        color: "white",
+    menuOptionText: {
+        paddingLeft: 10,
+        color: "black",
         fontWeight: "bold",
-        textAlign: "center"
+        textAlign: "left"
     },
-    modalText: {
-        marginBottom: 15,
-        textAlign: "center"
+    modalCancel: {
+        position: 'absolute',
+        top: 10,
+        right: 10
+    },
+    loadingView: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#ffffff80'
     }
 });

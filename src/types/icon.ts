@@ -1,4 +1,3 @@
-import {Image, ImageProps} from "react-native";
 import {ComponentElement} from "react";
 
 export enum FastCommentsIconType {
@@ -38,5 +37,5 @@ export enum FastCommentsIconType {
     FLAG,
 }
 
-export type FastCommentsIconGetter = () => ComponentElement<ImageProps, Image>;
+export type FastCommentsIconGetter = (width?: number, height?: number) => ComponentElement<any, any>;
 export type IconConfig = Record<FastCommentsIconType, FastCommentsIconGetter>;
