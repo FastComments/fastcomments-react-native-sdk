@@ -128,14 +128,14 @@ export function subscribeToChanges(
                 }
             }
         } else {
-            // console.log('FastComments: connecting...');
+            console.log('FastComments: connecting...');
             const socket = new WebSocket(wsHost + '/sub?urlId=' + urlIdWS + '&userIdWS=' + userIdWS + '&tenantIdWS=' + tenantIdWS);
 
             socket.onopen = async function () {
                 if (isIntentionallyClosed) {
                     return;
                 }
-                // console.log('FastComments: connected.');
+                console.log('FastComments: connected.');
                 if (lastLiveEventTime) {
                     // noinspection ES6MissingAwait
                     fetchEventLog(lastLiveEventTime, Date.now());
@@ -144,7 +144,7 @@ export function subscribeToChanges(
             };
 
             socket.onclose = function () {
-                // console.log('FastComments: disconnected.');
+                console.log('FastComments: disconnected.');
                 if (!lastLiveEventTime) {
                     lastLiveEventTime = Date.now();
                 }

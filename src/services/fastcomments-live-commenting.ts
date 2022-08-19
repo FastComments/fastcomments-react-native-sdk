@@ -30,7 +30,7 @@ export class FastCommentsLiveCommentingService {
         this.state = {
             instanceId: Math.random() + '.' + Date.now(),
             apiHost: config.apiHost ? config.apiHost : (config.region === 'eu' ? 'https://eu.fastcomments.com' : 'https://fastcomments.com'),
-            wsHost: config.wsHost ? config.wsHost : (config.region === 'eu' ? 'wss://ws-eu.fastcomments.com' : 'wss://wsfastcomments.com'),
+            wsHost: config.wsHost ? config.wsHost : (config.region === 'eu' ? 'wss://ws-eu.fastcomments.com' : 'wss://ws.fastcomments.com'),
             PAGE_SIZE: 30,
             blockingErrorMessage: undefined,
             commentCountOnClient: 0,
@@ -309,7 +309,9 @@ export class FastCommentsLiveCommentingService {
 
         internalState.lastSubscriberInstance = subscribeToChanges(state.config, state.wsHost, state.tenantIdWS, state.config.urlId!, state.urlIdWS, state.userIdWS, async (commentIds: string[]) => {
             return await checkBlockedComments(state, commentIds);
-        }, this.handleLiveEvent, () => {
+        }, (dataJSON: WebsocketLiveEvent) => {
+            return this.handleLiveEvent(dataJSON);
+        }, () => {
             this.setState(this.state);
         }, function connectionStatusChange(isConnected, lastEventTime) {
             // if we have a current user, update the status icon on their comments!
@@ -332,6 +334,7 @@ export class FastCommentsLiveCommentingService {
     }
 
     handleLiveEvent(dataJSON: WebsocketLiveEvent): boolean {
+        console.log('handleLiveEvent', dataJSON); // TODO remove
         if ('broadcastId' in dataJSON && broadcastIdsSent.includes(dataJSON.broadcastId)) {
             return false;
         }
