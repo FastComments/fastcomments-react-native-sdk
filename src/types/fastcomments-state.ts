@@ -6,12 +6,7 @@ import {SubscriberInstance} from "../services/subscribe-to-changes";
 
 export interface CommentState {
     replyBoxOpen?: boolean;
-    isSaveInProgress?: boolean,
-    logoutFailure?: boolean,
-    responseFailure?: string;
-    voteFailure?: string;
     repliesHidden?: boolean;
-    isEditing?: boolean;
     editKey?: string;
     wasPostedCurrentSession?: boolean;
     requiresVerification?: boolean;
@@ -77,4 +72,5 @@ export interface FastCommentsState {
     userIdWS?: string;
     lastSubscriberInstance?: SubscriberInstance;
     ssoConfigString?: string;
+    render: () => void; // This is kinda gross, but makes migrating from vanillaJS version easy. After benchmarking re-evaluate this mechanism.
 }

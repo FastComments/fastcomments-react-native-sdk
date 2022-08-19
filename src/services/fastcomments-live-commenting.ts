@@ -10,13 +10,14 @@ import {addCommentToUserPresenceState, handleNewRemoteUser, setupUserPresenceSta
 import {WebsocketLiveEvent} from "../types/dto/websocket-live-event";
 import {repositionComment} from "./comment-positioning";
 import {incOverallCommentCount} from "./comment-count";
+import {broadcastIdsSent} from "./broadcast-id";
+import {mergeSimpleSSO} from "./sso";
 
 interface FastCommentsInternalState {
     isFirstRequest: boolean;
     lastGenDate?: number;
     lastComments: FastCommentsWidgetComment[];
     lastSubscriberInstance?: SubscriberInstance | void;
-    broadcastIdsSent: string[];
 }
 
 export class FastCommentsLiveCommentingService {
@@ -25,6 +26,7 @@ export class FastCommentsLiveCommentingService {
     private setState!: (state: FastCommentsState) => void;
 
     constructor(config: FastCommentsCommentWidgetConfig) {
+        mergeSimpleSSO(config);
         this.state = {
             instanceId: Math.random() + '.' + Date.now(),
             apiHost: config.apiHost ? config.apiHost : (config.region === 'eu' ? 'https://eu.fastcomments.com' : 'https://fastcomments.com'),
@@ -66,6 +68,7 @@ export class FastCommentsLiveCommentingService {
             },
             config,
             ssoConfigString: config.sso ? JSON.stringify(config.sso) : undefined,
+            render: () => {}
         };
 
         this.internalState = {
@@ -73,7 +76,6 @@ export class FastCommentsLiveCommentingService {
             lastGenDate: undefined,
             lastComments: [],
             lastSubscriberInstance: undefined,
-            broadcastIdsSent: [],
         };
     }
 
@@ -82,6 +84,9 @@ export class FastCommentsLiveCommentingService {
     }
 
     async fetchRemoteState(isPrev: boolean, setState: (state: FastCommentsState) => void): Promise<void> {
+        this.state.render = function() {
+            setState(state);
+        }
         const internalState = this.internalState;
         const state = this.state;
         const config = this.state.config;
@@ -327,10 +332,10 @@ export class FastCommentsLiveCommentingService {
     }
 
     handleLiveEvent(dataJSON: WebsocketLiveEvent): boolean {
-        if ('broadcastId' in dataJSON && this.internalState.broadcastIdsSent.includes(dataJSON.broadcastId)) {
+        if ('broadcastId' in dataJSON && broadcastIdsSent.includes(dataJSON.broadcastId)) {
             return false;
         }
-        if ('bId' in dataJSON && this.internalState.broadcastIdsSent.includes(dataJSON.bId)) {
+        if ('bId' in dataJSON && broadcastIdsSent.includes(dataJSON.bId)) {
             return false;
         }
         let needsReRender = false;
@@ -347,7 +352,7 @@ export class FastCommentsLiveCommentingService {
                         }
                     }
                 }
-                this.internalState.broadcastIdsSent.push(dataJSON.broadcastId);
+                broadcastIdsSent.push(dataJSON.broadcastId);
                 break;
             case 'removed-badge':
                 for (const comment of this.state.allComments) {
@@ -361,7 +366,7 @@ export class FastCommentsLiveCommentingService {
                         comment.badges = newBadges;
                     }
                 }
-                this.internalState.broadcastIdsSent.push(dataJSON.broadcastId);
+                broadcastIdsSent.push(dataJSON.broadcastId);
                 break;
             case 'notification':
                 if (this.state.userNotificationState.count) {

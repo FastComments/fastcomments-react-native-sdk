@@ -1,42 +1,31 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
-import {useState} from 'react';
+import {Dispatch, SetStateAction, useState} from 'react';
 
 import {FastCommentsCommentWithState} from "./comment";
 import {FastCommentsIconType} from "../types/icon";
 import {resolveIcon} from "../services/icons";
 import {ActivityIndicator, Modal, Pressable, StyleSheet, Text, View} from "react-native";
+import {createURLQueryString, makeRequest} from "../services/http";
+import {GetCommentTextResponse} from "../types/dto/get-comment-text";
+import { CommentActionEdit } from './comment-action-edit';
+import {CommentPromptDelete} from "./comment-action-delete";
 
-async function startEditingComment(_props: FastCommentsCommentWithState) {
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-    // makeRequest(config, 'GET', '/comments/' + tenantIdToUse + '/' + commentId + '/text' + createURLQueryString({
-    //     sso: ssoConfigString,
-    //     editKey: commentsById[commentId].editKey
-    // }), null, function (response) {
-    //     if (response.status === 'success') {
-    //         // set the comment as being edited
-    //         commentsEditingById[commentId] = isEditing;
-    //         commentsById[commentId].comment = response.commentText;
-    //
-    //         delete commentsById[commentId].editFailure; // TODO DEPRECATE FOR COMMON ERR HANDLING
-    //         delete commentsById[commentId].editFailureExpiration; // TODO DEPRECATE FOR COMMON ERR HANDLING
-    //
-    //         // re-render it
-    //         reRenderComment(commentsById[commentId]);
-    //         setTimeout(function () {
-    //             const textarea = getElementById('input-for-parent-' + commentId);
-    //             if (textarea && textarea.scrollHeight > 0) {
-    //                 textarea.style.height = (textarea.scrollHeight + 10) + 'px';
-    //             }
-    //         }, 10);
-    //     } else {
-    //         commentsById[commentId].errorMessage = translations.ERROR_MESSAGE;
-    //         reRenderComment(commentsById[commentId]);
-    //     }
-    // }, function () {
-    //     commentsById[commentId].errorMessage = translations.ERROR_MESSAGE;
-    //     reRenderComment(commentsById[commentId]);
-    // });
+async function startEditingComment(props: FastCommentsCommentWithState, setModalId: Dispatch<SetStateAction<string | null>>) {
+    const response = await makeRequest<GetCommentTextResponse>({
+        apiHost: props.state.apiHost,
+        method: 'GET',
+        url: '/comments/' + props.state.config.tenantId + '/' + props.comment._id + '/text' + createURLQueryString({
+            sso: props.state.ssoConfigString,
+            editKey: props.state.commentState[props.comment._id]?.editKey
+        })
+    });
+    if (response.status === 'success') {
+        props.comment.comment = response.commentText;
+        setModalId('edit');
+    } else {
+        // TODO show error
+    }
 }
 
 async function setCommentPinStatus(_props: FastCommentsCommentWithState, _doPin: boolean) {
@@ -55,19 +44,20 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
     const {comment, state} = props;
     const currentUser = state.currentUser;
     const isMyComment = currentUser && 'id' in currentUser && (comment.userId === currentUser.id || comment.anonUserId === currentUser.id);
-    const canEdit = !comment.isDeleted && ((currentUser && 'authorized' in currentUser && currentUser.authorized && (state.isSiteAdmin || isMyComment)) || (state.commentState[comment._id]?.isEditing)); // can have edit key and be anon
+    console.log('isMyComment', isMyComment, currentUser, comment.userId, comment.anonUserId);
+    const canEdit = !comment.isDeleted && ((currentUser && 'authorized' in currentUser && currentUser.authorized && (state.isSiteAdmin || isMyComment))); // can have edit key and be anon
     const canPin = state.isSiteAdmin && !comment.parentId;
     const canBlockOrFlag = !comment.isDeleted && !comment.isByAdmin && !comment.isByModerator && !isMyComment && currentUser && 'authorized' in currentUser && currentUser.authorized;
 
-    const menuItems = [];
+    const menuItems: any[] = [];
 
     if (canEdit) {
         menuItems.push({
             label: props.state.translations.COMMENT_MENU_EDIT,
             value: 'edit',
             icon: resolveIcon(state.icons, FastCommentsIconType.EDIT_BIG),
-            handler: async () => {
-                await startEditingComment(props);
+            handler: async (setModalId: Dispatch<SetStateAction<string | null>>) => {
+                await startEditingComment(props, setModalId);
             }
         });
     }
@@ -100,7 +90,11 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
             value: 'delete',
             icon: resolveIcon(state.icons, FastCommentsIconType.TRASH),
             handler: async () => {
-                await startEditingComment(props);
+                await CommentPromptDelete({
+                    comment,
+                    state,
+                    close: () => setModalIdVisible(null)
+                });
             }
         });
     }
@@ -150,55 +144,62 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
     }
 
     // TODO common modal-menu component
-    const [modalVisible, setModalVisible] = useState(false);
+    const [activeModalId, setModalIdVisible] = useState<string | null>(null);
     const [isLoading, setLoading] = useState(false);
-    return (
-        <View style={styles.centeredView}>
-            <Modal
-                animationType="slide"
-                transparent={true}
-                visible={modalVisible}
-                onRequestClose={() => {
-                    setModalVisible(!modalVisible);
-                }}
-            >
-                <View style={styles.centeredView}>
-                    <View style={styles.modalView}>
-                        {menuItems.map((item) =>
-                            <Pressable
-                                key={item.label}
-                                style={styles.menuOptionButton} onPress={async () => {
-                                setLoading(true);
-                                await item.handler();
-                                setLoading(false);
-                            }}
-                            >
-                                {item.icon()}
-                                <Text style={styles.menuOptionText}>{item.label}</Text>
-                            </Pressable>
-                        )}
+
+    return (<View style={styles.centeredView}>
+        <Modal
+            animationType="slide"
+            transparent={true}
+            visible={activeModalId === 'menu'}
+            onRequestClose={() => {
+                setModalIdVisible(null);
+            }}
+        >
+            <View style={styles.centeredView}>
+                <View style={styles.modalView}>
+                    {menuItems.map((item) =>
                         <Pressable
-                            style={styles.modalCancel}
-                            onPress={() => setModalVisible(!modalVisible)}
+                            key={item.label}
+                            style={styles.menuOptionButton} onPress={async () => {
+                            setLoading(true);
+                            await item.handler(setModalIdVisible);
+                            setLoading(false);
+                        }}
                         >
-                            {resolveIcon(state.icons, FastCommentsIconType.CROSS)(16, 16)}
+                            {item.icon()}
+                            <Text style={styles.menuOptionText}>{item.label}</Text>
                         </Pressable>
-                        {
-                            isLoading && <View style={styles.loadingView}>
-                                <ActivityIndicator size="large"/>
-                            </View>
-                        }
-                    </View>
+                    )}
+                    <Pressable
+                        style={styles.modalCancel}
+                        onPress={() => setModalIdVisible(null)}
+                    >
+                        {resolveIcon(state.icons, FastCommentsIconType.CROSS)(16, 16)}
+                    </Pressable>
+                    {
+                        isLoading && <View style={styles.loadingView}>
+                            <ActivityIndicator size="large"/>
+                        </View>
+                    }
                 </View>
-            </Modal>
-            <Pressable
-                style={styles.menuButton}
-                onPress={() => setModalVisible(true)}
-            >
-                {resolveIcon(state.icons, FastCommentsIconType.EDIT_SMALL)()}
-            </Pressable>
-        </View>
-    );
+            </View>
+        </Modal>
+        <Modal
+            animationType="slide"
+            transparent={true}
+            visible={activeModalId === 'edit'}
+            onRequestClose={() => {
+                setModalIdVisible(null);
+            }}>
+            <CommentActionEdit comment={comment} state={state} close={() => setModalIdVisible(null)}/>
+        </Modal>
+        <Pressable
+            style={styles.menuButton}
+            onPress={() => setModalIdVisible('menu')}>
+            {resolveIcon(state.icons, FastCommentsIconType.EDIT_SMALL)()}
+        </Pressable>
+    </View>);
 }
 
 const styles = StyleSheet.create({
