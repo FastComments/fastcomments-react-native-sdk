@@ -26,7 +26,7 @@ export function getCommentsTreeAndCommentsById(collapseRepliesByDefault: boolean
                 commentState[comment._id.get()].repliesHidden.set(true);
             }
         }
-        const parentId = comment.parentId.get();
+        const parentId = comment.parentId?.get();
         if (parentId && commentsById[parentId]) {
             if (!commentsById[parentId].children) {
                 commentsById[parentId].children = [comment.get()];
@@ -40,7 +40,7 @@ export function getCommentsTreeAndCommentsById(collapseRepliesByDefault: boolean
 
     for (i = 0; i < commentsLength; i++) {
         comment = rawComments[i];
-        let parentId = comment.parentId.get();
+        let parentId = comment.parentId?.get();
         while (parentId) {
             comment = commentsById[parentId];
             if (comment) {
@@ -141,7 +141,7 @@ export function addCommentToTree(allComments: State<FastCommentsWidgetComment[]>
  */
 export function removeCommentFromTree(allComments: State<FastCommentsWidgetComment[]>, commentsTree: State<FastCommentsWidgetComment[]>, commentsById: State<Record<string, FastCommentsWidgetComment>>, comment: FastCommentsWidgetComment) {
     allComments.set((allComments) => {
-        const allCommentsIndex = allComments.indexOf(comment);
+        const allCommentsIndex = allComments.findIndex((otherComment) => otherComment._id === comment._id);
         console.log('allCommentsIndex', allCommentsIndex); // TODO REMOVE
         if (allCommentsIndex > -1) {
             allComments.splice(allCommentsIndex, 1);
@@ -150,9 +150,9 @@ export function removeCommentFromTree(allComments: State<FastCommentsWidgetComme
     });
     if (comment.parentId && commentsById[comment.parentId].get()) {
         const parentChildrenState = commentsById[comment.parentId].children;
-        const parentChildren = parentChildrenState.get();
+        const parentChildren = parentChildrenState?.get();
         if (parentChildren) {
-            const index = parentChildren.indexOf(comment);
+            const index = parentChildren.findIndex((otherComment) => otherComment._id === comment._id);
             if (index > -1) {
                 parentChildrenState.set((parentChildrenState) => {
                     parentChildrenState!.splice(index, 1);
@@ -161,7 +161,7 @@ export function removeCommentFromTree(allComments: State<FastCommentsWidgetComme
             }
         }
     } else {
-        const index = commentsTree.get().indexOf(comment);
+        const index = commentsTree.get().findIndex((otherComment) => otherComment._id === comment._id);
         console.log('commentsTree index', index); // TODO REMOVE
         if (index > -1) {
             commentsTree.set((commentsTree) => {
@@ -170,8 +170,8 @@ export function removeCommentFromTree(allComments: State<FastCommentsWidgetComme
             });
         }
     }
-    commentsById[comment._id].set(none);
     updateNestedChildrenCountInTree(commentsById, comment.parentId, -1);
+    commentsById[comment._id].set(none);
 }
 
 /**
@@ -184,11 +184,6 @@ export function updateNestedChildrenCountInTree(commentsById: State<Record<strin
     while (parentId) {
         const comment = commentsById[parentId];
         if (comment) {
-            if (comment.nestedChildrenCount.get() === undefined) {
-                comment.nestedChildrenCount.set(1);
-            } else {
-
-            }
             comment.nestedChildrenCount.set((nestedChildrenCount) => {
                 if (nestedChildrenCount === undefined) {
                     nestedChildrenCount = 1;
@@ -197,7 +192,7 @@ export function updateNestedChildrenCountInTree(commentsById: State<Record<strin
                 }
                 return nestedChildrenCount;
             });
-            parentId = comment.parentId.get();
+            parentId = comment.parentId?.get();
         } else {
             break;
         }

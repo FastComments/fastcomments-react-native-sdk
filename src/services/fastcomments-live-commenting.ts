@@ -477,6 +477,7 @@ export class FastCommentsLiveCommentingService {
                     if (!commentsById[dataJSONComment._id].approved.get() && dataJSONComment.approved) {
                         dataJSON.type = 'updated-comment'; // we'll just set the comment as approved
                     } else {
+                        console.log('returning', commentsById[dataJSONComment._id].get()); // TODO REMOVE
                         return;
                     }
                 }
@@ -501,12 +502,13 @@ export class FastCommentsLiveCommentingService {
                     flag on said comments and re-renders that part of the tree.
                  */
 
-                const isNew = !commentsById[dataJSONComment._id];
+                const isNew = !(commentsById[dataJSONComment._id].get());
                 if (isNew) {
                     commentsById[dataJSONComment._id].set(dataJSONComment);
                 } else {
                     commentsById[dataJSONComment._id].merge(dataJSONComment);
                 }
+                console.log('isNew?', isNew);
 
                 if (!isNew) {
                     if (dataJSONExtraInfo) {
@@ -578,8 +580,8 @@ export class FastCommentsLiveCommentingService {
                     }
 
                     const userIdsChanged = Object.keys(presenceChanges);
-                    // noinspection JSIgnoredPromiseFromCall - fire and forget
                     if (userIdsChanged.length > 0) {
+                        // noinspection JSIgnoredPromiseFromCall - fire and forget
                         handleNewRemoteUser(this.state.config.get(), this.state.urlIdWS.get()!, this.state.userPresenceState, userIdsChanged);
                     }
                 }
