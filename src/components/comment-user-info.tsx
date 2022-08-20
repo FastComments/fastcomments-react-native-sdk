@@ -6,57 +6,58 @@ import {CommentUserActivityIcon} from "./comment-user-activity-icon";
 import {CommentUserBadge} from "./comment-user-badge";
 import {View, Text, StyleSheet, Pressable, Linking, Image} from "react-native";
 import {getDefaultAvatarSrc} from "../services/default-avatar";
+import { FastCommentsBadge } from 'fastcomments-typescript';
+import {State} from "@hookstate/core";
 
-export function CommentUserInfo(commentWithState: FastCommentsCommentWithState) {
-    const {comment, state} = commentWithState;
-
-    const activityIcon = CommentUserActivityIcon(commentWithState);
+export function CommentUserInfo({comment, state}: FastCommentsCommentWithState) {
+    const activityIcon = CommentUserActivityIcon({comment, state});
 
     /**
      commenterInfoHTML += '<b class="username">' + (config.hideAvatars ? activityIconHTML : '') + (commenterLeftLink ? '<a href="' + comment.commenterLink + '" class="website-url" rel="noreferrer noopener nofollow" target="_blank">' : '') + commenterName + (commenterLeftLink ? '</a>' : '') + '</b>';
 
      */
-    const commenterLeftLink = !comment.isBlocked && comment.commenterLink;
+    const commenterLeftLink = !comment.isBlocked.get() && comment.commenterLink.get();
 
     let displayLabel = null;
-    if (comment.displayLabel) {
-        displayLabel = <Text style={styles.label}>{comment.displayLabel}</Text>;
+    if (comment.displayLabel.get()) {
+        displayLabel = <Text style={styles.label}>{comment.displayLabel.get()}</Text>;
     } else {
-        if (comment.isByAdmin) {
-            displayLabel = <Text style={styles.label}>{state.translations.ADMIN_LABEL}</Text>;
-        } else if (comment.isByModerator) {
-            displayLabel = <Text style={styles.label}>{state.translations.MODERATOR_LABEL}</Text>;
+        if (comment.isByAdmin.get()) {
+            displayLabel = <Text style={styles.label}>{state.translations.ADMIN_LABEL.get()}</Text>;
+        } else if (comment.isByModerator.get()) {
+            displayLabel = <Text style={styles.label}>{state.translations.MODERATOR_LABEL.get()}</Text>;
         }
     }
 
-    let commenterName = comment.commenterName;
+    let commenterName = comment.commenterName.get();
 
-    if (comment.isDeleted) {
-        commenterName = state.translations.DELETED_PLACEHOLDER;
-    } else if (comment.isBlocked) {
-        commenterName = state.translations.BLOCKED_USER_PLACEHOLDER;
+    if (comment.isDeleted.get()) {
+        commenterName = state.translations.DELETED_PLACEHOLDER.get();
+    } else if (comment.isBlocked.get()) {
+        commenterName = state.translations.BLOCKED_USER_PLACEHOLDER.get();
     }
 
     const usernameElement = <View>
-        {state.config.hideAvatars && activityIcon}
-        {commenterLeftLink ? <Pressable onPress={() => Linking.openURL(comment.commenterLink!)}>
+        {state.config.hideAvatars.get() && activityIcon}
+        {commenterLeftLink ? <Pressable onPress={() => Linking.openURL(comment.commenterLink.get()!)}>
             {() =>
                 <Text style={styles.usernameWithLink}>{commenterName}</Text>
             }
         </Pressable> : <Text style={styles.username}>{commenterName}</Text>}
     </View>;
 
-    const avatar = state.config.hideAvatars ? null :
+    const avatar = state.config.hideAvatars.get() ? null :
         (
-            comment.avatarSrc && !comment.isBlocked
-                ? <View style={styles.avatarWrapper}><Image style={styles.avatarImage} source={{uri: comment.avatarSrc}}/>{activityIcon}</View>
-                : <View style={styles.avatarWrapperDefault}><Image style={styles.avatarImage} source={{uri: getDefaultAvatarSrc(state.config)}}/>{activityIcon}</View>
+            comment.avatarSrc.get() && !comment.isBlocked.get()
+                ? <View style={styles.avatarWrapper}><Image style={styles.avatarImage} source={{uri: comment.avatarSrc.get()}}/>{activityIcon}</View>
+                : <View style={styles.avatarWrapperDefault}><Image style={styles.avatarImage} source={{uri: getDefaultAvatarSrc(state.config.get())}}/>{activityIcon}</View>
         );
 
+    // TODO best way to handle undefined comment.badges instead of cast? TS compilation error
     return <View>
-        {comment.badges && comment.badges.map((badge) => CommentUserBadge(badge))}
-        {!comment.verified && !(state.commentState[comment._id]?.wasPostedCurrentSession && state.commentState[comment._id]?.requiresVerification) && !state.config.disableUnverifiedLabel &&
-            <Text style={styles.label}>{state.translations.UNVERIFIED_COMMENT}</Text>
+        {(comment.badges as State<FastCommentsBadge[]>).map((badge) => CommentUserBadge(badge))}
+        {!comment.verified.get() && !(state.commentState[comment._id.get()]?.wasPostedCurrentSession.get() && state.commentState[comment._id.get()]?.requiresVerification.get()) && !state.config.disableUnverifiedLabel.get() &&
+            <Text style={styles.label}>{state.translations.UNVERIFIED_COMMENT.get()}</Text>
         }
         {displayLabel}
         {usernameElement}

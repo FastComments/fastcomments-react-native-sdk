@@ -7,20 +7,21 @@ import {ReplyArea} from "./reply-area";
 import {ShowHideCommentsToggle} from "./show-hide-comments-toggle";
 import {SelectSortDirection} from "./select-sort-direction";
 import {ShowNewLiveCommentsButton} from "./show-new-live-comments-button";
+import {State} from "@hookstate/core";
 
-export function LiveCommentingTopArea(state: FastCommentsState) {
+export function LiveCommentingTopArea(state: State<FastCommentsState>) {
     return <View>
         <View>{
-            state.config.inputAfterComments !== true && ReplyArea(state)
+            state.config.inputAfterComments.get() !== true && ReplyArea(state)
         }</View>
         <View>{
-            state.config.useShowCommentsToggle && state.commentCountOnServer > 0 && ShowHideCommentsToggle(state)
+            state.config.useShowCommentsToggle.get() && state.commentCountOnServer.get() > 0 && ShowHideCommentsToggle(state)
         }</View>
         <View>{
-            state.commentsVisible && state.commentCountOnServer > 1 && SelectSortDirection(state)
+            state.commentsVisible.get() && state.commentCountOnServer.get() > 1 && SelectSortDirection(state)
         }</View>
         <View>{
-            state.commentsVisible && state.newRootCommentCount > 1 && ShowNewLiveCommentsButton(state)
+            state.commentsVisible.get() && state.newRootCommentCount.get() > 1 && ShowNewLiveCommentsButton(state)
         }</View>
     </View>;
 }

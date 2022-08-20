@@ -3,7 +3,7 @@ import * as React from 'react';
 
 import {StyleSheet, Text, View} from "react-native";
 
-export function message(message: string) {
+export function message(message: string | undefined) {
     return <View style={styles.wrapper}>
         <View style={styles.message}>
             {/* TODO: login links etc? */}

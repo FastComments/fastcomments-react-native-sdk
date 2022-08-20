@@ -13,31 +13,34 @@ import {useState} from "react";
 import { FastCommentsWidgetComment } from 'fastcomments-typescript';
 import {getDisplayDate} from "../services/comment-date";
 import { useWindowDimensions } from 'react-native';
+import {State} from "@hookstate/core";
 
 export interface FastCommentsCommentWithState {
-    comment: FastCommentsWidgetComment;
-    state: FastCommentsState;
+    comment: State<FastCommentsWidgetComment>;
+    state: State<FastCommentsState>;
 }
 
 export function FastCommentsCommentView(commentWithState: FastCommentsCommentWithState) {
     const {comment, state} = commentWithState;
     // const isMyComment = state.currentUser && 'id' in state.currentUser && (comment.userId === state.currentUser.id || comment.anonUserId === state.currentUser.id);
 
-    const html = comment.isDeleted
-        ? state.translations.DELETED_PLACEHOLDER
+    console.log('is deleted?', comment.isDeleted.get());
+
+    const html = comment.isDeleted.get()
+        ? state.translations.DELETED_PLACEHOLDER.get()
         : (
-            comment.isBlocked
-                ? state.translations.YOU_BLOCKED_THIS_USER
-                : comment.commentHTML
+            comment.isBlocked.get()
+                ? state.translations.YOU_BLOCKED_THIS_USER.get()
+                : comment.commentHTML.get()
         );
 
-    const dateObj = new Date(comment.date);
-    const [displayDate, setDisplayDate] = useState(getDisplayDate(state.config, state.translations, dateObj));
+    const dateObj = new Date(comment.date.get());
+    const [displayDate, setDisplayDate] = useState(getDisplayDate(state.config.get(), state.translations.get(), dateObj));
 
     // Technically having a separate timer per comment is not optimal. But, JS timers are very light and we'll only render 30 comments most of the time.
     // It would be cool to have only one timer, like in the VanillaJS library.
     setInterval(function() {
-        setDisplayDate(getDisplayDate(state.config, state.translations, dateObj));
+        setDisplayDate(getDisplayDate(state.config.get(), state.translations.get(), dateObj));
     }, 60_000);
 
     const { width } = useWindowDimensions();
@@ -60,7 +63,7 @@ export function FastCommentsCommentView(commentWithState: FastCommentsCommentWit
 
                 </View>
             </View>
-            {state.commentState[comment._id]?.replyBoxOpen && ReplyArea(commentWithState.state)}
+            {state.commentState[comment._id.get()]?.replyBoxOpen && ReplyArea(commentWithState.state)}
         </View>
     </View>;
 }

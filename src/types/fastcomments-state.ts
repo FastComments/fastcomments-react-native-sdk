@@ -72,5 +72,4 @@ export interface FastCommentsState {
     userIdWS?: string;
     lastSubscriberInstance?: SubscriberInstance;
     ssoConfigString?: string;
-    render: () => void; // This is kinda gross, but makes migrating from vanillaJS version easy. After benchmarking re-evaluate this mechanism.
 }

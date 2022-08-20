@@ -4,13 +4,12 @@ import * as React from 'react';
 import {FastCommentsCommentWithState} from "./comment";
 import {StyleSheet, View} from "react-native";
 
-export function CommentUserActivityIcon(commentState: FastCommentsCommentWithState) {
-    const {comment, state} = commentState;
-    if (state.config.disableLiveCommenting) {
+export function CommentUserActivityIcon({comment, state}: FastCommentsCommentWithState) {
+    if (state.config.disableLiveCommenting.get()) {
         return null;
     }
-    const userPresenceState = state.userPresenceState;
-    const isUserOnline = (comment.userId && userPresenceState.usersOnlineMap[comment.userId]) || (comment.anonUserId && userPresenceState.usersOnlineMap[comment.anonUserId]);
+    const userPresenceState = state.userPresenceState.get();
+    const isUserOnline = (comment.userId && userPresenceState.usersOnlineMap[comment.userId.get()!]) || (comment.anonUserId && userPresenceState.usersOnlineMap[comment.anonUserId.get()!]);
     if (isUserOnline) {
         return <View style={styles.online}></View>;
     } else {

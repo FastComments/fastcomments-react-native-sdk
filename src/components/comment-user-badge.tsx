@@ -3,25 +3,26 @@ import * as React from 'react';
 
 import { FastCommentsBadge } from "fastcomments-typescript";
 import {StyleSheet, Image, Text, View} from "react-native";
+import {State} from "@hookstate/core";
 
-export function CommentUserBadge(badge: FastCommentsBadge) {
-    if (badge.displaySrc) {
+export function CommentUserBadge(badge: State<FastCommentsBadge>) {
+    if (badge.displaySrc.get()) {
         return <View style={styles.imageBadge}>
-            <Image style={styles.imageBadgeImage} source={{uri: badge.displaySrc}}/>
+            <Image style={styles.imageBadgeImage} source={{uri: badge.displaySrc.get()}}/>
         </View>;
     } else {
         const textBadgeStyles = styles.textBadge;
-        if (badge.backgroundColor) {
-            textBadgeStyles.backgroundColor = badge.backgroundColor;
+        if (badge.backgroundColor.get()) {
+            textBadgeStyles.backgroundColor = badge.backgroundColor.get();
         }
         if (badge.borderColor) {
-            textBadgeStyles.borderColor = badge.borderColor;
+            textBadgeStyles.borderColor = badge.borderColor.get();
         }
         if (badge.textColor) {
-            textBadgeStyles.color = badge.textColor;
+            textBadgeStyles.color = badge.textColor.get();
         }
         return <View style={textBadgeStyles}>
-            <Text numberOfLines={1}>{badge.displayLabel}</Text>
+            <Text numberOfLines={1}>{badge.displayLabel.get()}</Text>
         </View>;
     }
 }

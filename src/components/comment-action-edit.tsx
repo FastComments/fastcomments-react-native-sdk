@@ -16,12 +16,12 @@ async function saveCommentText({comment, state}: FastCommentsCommentWithState, n
     const tenantId = getActionTenantId({comment, state});
     const broadcastId = newBroadcastId();
     const response = await makeRequest<UpdateCommentTextResponse>({
-        apiHost: state.apiHost,
+        apiHost: state.apiHost.get(),
         method: 'POST',
         url: '/comments/' + tenantId + '/' + comment._id + '/update-text/' + createURLQueryString({
-            urlId: state.config.urlId,
-            editKey: state.commentState[comment._id]?.editKey,
-            sso: state.ssoConfigString,
+            urlId: state.config.urlId.get(),
+            editKey: state.commentState[comment._id.get()]?.editKey.get(),
+            sso: state.ssoConfigString.get(),
             broadcastId
         }),
         body: {
@@ -32,9 +32,11 @@ async function saveCommentText({comment, state}: FastCommentsCommentWithState, n
         }
     });
     if (response.status === 'success') {
-        comment.approved = response.comment.approved;
-        comment.comment = response.comment.comment;
-        comment.commentHTML = response.comment.commentHTML;
+        comment.merge({
+            approved: response.comment.approved,
+            comment: response.comment.comment,
+            commentHTML: response.comment.commentHTML,
+        });
     } else {
         // TODO error handling
         // TODO handle code 'edit-key-invalid')
@@ -43,18 +45,17 @@ async function saveCommentText({comment, state}: FastCommentsCommentWithState, n
 
 export function CommentActionEdit({comment, state, close}: CommentActionEditProps) {
     const [isLoading, setLoading] = useState(false);
-    const [commentText, onChangeText] = useState(comment.comment);
     // TODO common comment writing component
     // TODO ask before closing if content changed
     return <View style={styles.centeredView}>
         <View style={styles.modalView}>
-            <TextInput style={styles.textarea} multiline={true} value={commentText} onChangeText={onChangeText}/>
+            <TextInput style={styles.textarea} multiline={true} value={comment.comment.get()} onChangeText={(value) => comment.comment.set(value)}/>
             <Pressable
                 style={styles.saveButton}
                 onPress={async () => {
                     setLoading(true);
                     try {
-                        await saveCommentText({comment, state}, commentText as string);
+                        await saveCommentText({comment, state}, comment.comment.get()!);
                         setLoading(false);
                         close();
                     } catch (e) {
@@ -63,13 +64,13 @@ export function CommentActionEdit({comment, state, close}: CommentActionEditProp
                     }
                 }}
             >
-                <Text>{state.translations.SAVE}</Text>
+                <Text>{state.translations.SAVE.get()}</Text>
             </Pressable>
             <Pressable
                 style={styles.modalCancel}
                 onPress={close}
             >
-                {resolveIcon(state.icons, FastCommentsIconType.CROSS)(16, 16)}
+                {resolveIcon(state.icons.get(), FastCommentsIconType.CROSS)(16, 16)}
             </Pressable>
             {
                 isLoading && <View style={styles.loadingView}>

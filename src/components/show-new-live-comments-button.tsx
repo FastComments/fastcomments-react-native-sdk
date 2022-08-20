@@ -3,11 +3,12 @@ import * as React from 'react';
 
 import {FastCommentsState} from "../types/fastcomments-state";
 import {Text, StyleSheet, View} from "react-native";
+import {State} from "@hookstate/core";
 
-export function ShowNewLiveCommentsButton(state: FastCommentsState) {
+export function ShowNewLiveCommentsButton(state: State<FastCommentsState>) {
     return <View style={styles.button}>
-        <Text style={styles.count}>{Number(state.newRootCommentCount).toLocaleString()}</Text>
-        <Text style={styles.text}>{state.newRootCommentCount > 1 ? state.translations.NEW_COMMENTS_CLICK_SHOW : state.translations.NEW_COMMENT_CLICK_SHOW}</Text>
+        <Text style={styles.count}>{Number(state.newRootCommentCount.get()).toLocaleString()}</Text>
+        <Text style={styles.text}>{state.newRootCommentCount.get() > 1 ? state.translations.NEW_COMMENTS_CLICK_SHOW.get() : state.translations.NEW_COMMENT_CLICK_SHOW.get()}</Text>
     </View>;
 }
 

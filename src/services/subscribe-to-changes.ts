@@ -23,7 +23,6 @@ export function subscribeToChanges(
     userIdWS: string,
     checkBlockedComments: (commentIds: string[]) => Promise<Record<string, boolean>>,
     handleLiveEvent: (event: WebsocketLiveEvent) => boolean,
-    doRerender: () => void,
     onConnectionStatusChange: (isConnected: boolean, lastEventTime: number | undefined) => void,
     lastLiveEventTime?: number
 ): SubscriberInstance | undefined | void {
@@ -50,17 +49,11 @@ export function subscribeToChanges(
                 if (response.events) {
                     // console.log('FastComments: fetchEventLog SUCCESS', response.events.length);
                     function handleEvents(eventsDataParsed: EventLogEntryData[], blockedCommentIdMap?: Record<string, boolean>) {
-                        let needsReRender = false;
                         for (const eventDataParsed of eventsDataParsed) {
                             lastLiveEventTime = Math.max(lastLiveEventTime || 0, eventDataParsed.timestamp + 1);
                             // the as WebsocketLiveNewOrUpdatedCommentEvent cast is kind of wrong here, but probably better than ts-ignore.
                             // we could check the type before we call the method, but that's kind of the point of having the method in the first place.
-                            if ((!blockedCommentIdMap || !blockedCommentIdMap[extractCommentIdFromEvent(eventDataParsed as WebsocketLiveNewOrUpdatedCommentEvent)]) && handleLiveEvent(eventDataParsed)) {
-                                needsReRender = true;
-                            }
-                        }
-                        if (needsReRender) {
-                            doRerender && doRerender();
+                            (!blockedCommentIdMap || !blockedCommentIdMap[extractCommentIdFromEvent(eventDataParsed as WebsocketLiveNewOrUpdatedCommentEvent)]) && handleLiveEvent(eventDataParsed);
                         }
                     }
 
@@ -151,7 +144,7 @@ export function subscribeToChanges(
                 if (!isIntentionallyClosed) {
                     onConnectionStatusChange && onConnectionStatusChange(false, lastLiveEventTime);
                     setTimeout(function () {
-                        subscribeToChanges(config, wsHost, tenantIdWS, urlId, urlIdWS, userIdWS, checkBlockedComments, handleLiveEvent, doRerender, onConnectionStatusChange, lastLiveEventTime);
+                        subscribeToChanges(config, wsHost, tenantIdWS, urlId, urlIdWS, userIdWS, checkBlockedComments, handleLiveEvent, onConnectionStatusChange, lastLiveEventTime);
                     }, 2000 * Math.random());
                 }
             };
@@ -169,19 +162,13 @@ export function subscribeToChanges(
                     if (id) {
                         const blockedCommentsInfo = await checkBlockedComments([id]);
                         if (!blockedCommentsInfo[id]) {
-                            if (handleLiveEvent(eventDataParsed)) {
-                                doRerender && doRerender();
-                            }
+                            handleLiveEvent(eventDataParsed);
                         }
                     } else {
-                        if (handleLiveEvent(eventDataParsed)) {
-                            doRerender && doRerender();
-                        }
+                        handleLiveEvent(eventDataParsed);
                     }
                 } else {
-                    if (handleLiveEvent(eventDataParsed)) {
-                        doRerender && doRerender();
-                    }
+                    handleLiveEvent(eventDataParsed);
                 }
             };
 

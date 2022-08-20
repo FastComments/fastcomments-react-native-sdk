@@ -8,46 +8,42 @@ import {CommentsList} from "./comments-list";
 import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
 import {FastCommentsLiveCommentingService} from "../services/fastcomments-live-commenting";
 // @ts-ignore
-import React, {useEffect, useState} from 'react';
-import {FastCommentsState} from "../types/fastcomments-state";
+import React, {useEffect} from 'react';
 import RenderHtml from 'react-native-render-html';
 import { useWindowDimensions } from 'react-native';
+import {useHookstate} from "@hookstate/core";
 
 export function FastCommentsLiveCommenting({config}: { config: FastCommentsCommentWidgetConfig }) {
-    // TODO cleanup having to have two FastCommentsLiveCommentingService instances (this fixes hot reloading issues, but can replace initial state w/ static method)
-    const serviceInitialState = new FastCommentsLiveCommentingService({...config}); // shallow clone is important to prevent extra re-renders
-    const [state, setState] = useState(serviceInitialState.getState());
+    const serviceInitialState = FastCommentsLiveCommentingService.createFastCommentsStateFromConfig({...config}); // shallow clone is important to prevent extra re-renders
+    const state = useHookstate(serviceInitialState);
+    const service = new FastCommentsLiveCommentingService(state);
     useEffect(() => {
-        const service = new FastCommentsLiveCommentingService({...config}); // shallow clone is important to prevent extra re-renders
         // noinspection JSIgnoredPromiseFromCall
-        service.fetchRemoteState(false, (state: FastCommentsState) => {
-            console.log('Setting state...');
-            setState(state);
-            console.log('Set state...');
-        });
+        service.fetchRemoteState(false);
     }, [config]);
 
-    if (state.blockingErrorMessage) {
-        return <View>{message(state.blockingErrorMessage)}</View>;
-    } else if (!(state.commentsTree.length === 0 && state.config.readonly && (state.config.hideCommentsUnderCountTextFormat || state.config.useShowCommentsToggle))) {
-        const paginationBeforeComments = state.commentsVisible && state.config.paginationBeforeComments
+    if (state.blockingErrorMessage.get()) {
+        return <View>{message(state.blockingErrorMessage.get())}</View>;
+    } else if (!(state.commentsTree.length === 0 && state.config.readonly.get() && (state.config.hideCommentsUnderCountTextFormat.get() || state.config.useShowCommentsToggle.get()))) {
+        const paginationBeforeComments = state.commentsVisible.get() && state.config.paginationBeforeComments.get()
             ? PaginationNext(state)
-            : state.page > 0 && !state.pagesLoaded.includes(state.page - 1)
+            : state.page.get() > 0 && !state.pagesLoaded.get().includes(state.page.get() - 1)
                 ? PaginationPrev(state)
                 : null;
-        const paginationAfterComments = state.commentsVisible && !state.config.paginationBeforeComments
+        const paginationAfterComments = state.commentsVisible.get() && !state.config.paginationBeforeComments.get()
             ? PaginationNext(state)
             : null;
         const { width } = useWindowDimensions();
         return <View>{
-            state.hasBillingIssue && state.isSiteAdmin && <Text style={styles.red}>{state.translations.BILLING_INFO_INV}</Text>
+            state.hasBillingIssue.get() && state.isSiteAdmin.get() && <Text style={styles.red}>{state.translations.BILLING_INFO_INV.get()}</Text>
         }
             {
-                state.isDemo && <Text style={styles.red}><RenderHtml source={{html: state.translations.DEMO_CREATE_ACCT}} contentWidth={width}/></Text>
+                state.isDemo.get() && <Text style={styles.red}><RenderHtml source={{html: state.translations.DEMO_CREATE_ACCT.get()}} contentWidth={width}/></Text>
             }
             <View style={styles.comments}>
                 {paginationBeforeComments}
                 {/*{state.commentsVisible && CommentsList(state)}*/}
+                <Text>{state.commentsTree.length}</Text>
                 {CommentsList(state)}
             </View>
             {paginationAfterComments}

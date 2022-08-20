@@ -11,17 +11,17 @@ import {GetCommentTextResponse} from "../types/dto/get-comment-text";
 import { CommentActionEdit } from './comment-action-edit';
 import {CommentPromptDelete} from "./comment-action-delete";
 
-async function startEditingComment(props: FastCommentsCommentWithState, setModalId: Dispatch<SetStateAction<string | null>>) {
+async function startEditingComment({state, comment}: FastCommentsCommentWithState, setModalId: Dispatch<SetStateAction<string | null>>) {
     const response = await makeRequest<GetCommentTextResponse>({
-        apiHost: props.state.apiHost,
+        apiHost: state.apiHost.get(),
         method: 'GET',
-        url: '/comments/' + props.state.config.tenantId + '/' + props.comment._id + '/text' + createURLQueryString({
-            sso: props.state.ssoConfigString,
-            editKey: props.state.commentState[props.comment._id]?.editKey
+        url: '/comments/' + state.config.tenantId.get() + '/' + comment._id.get() + '/text' + createURLQueryString({
+            sso: state.ssoConfigString.get(),
+            editKey: state.commentState[comment._id.get()]?.editKey.get()
         })
     });
     if (response.status === 'success') {
-        props.comment.comment = response.commentText;
+        comment.comment.set(response.commentText);
         setModalId('edit');
     } else {
         // TODO show error
@@ -40,45 +40,44 @@ async function setCommentFlaggedStatus(_props: FastCommentsCommentWithState, _do
 
 }
 
-export function CommentMenu(props: FastCommentsCommentWithState) {
-    const {comment, state} = props;
-    const currentUser = state.currentUser;
-    const isMyComment = currentUser && 'id' in currentUser && (comment.userId === currentUser.id || comment.anonUserId === currentUser.id);
-    console.log('isMyComment', isMyComment, currentUser, comment.userId, comment.anonUserId);
-    const canEdit = !comment.isDeleted && ((currentUser && 'authorized' in currentUser && currentUser.authorized && (state.isSiteAdmin || isMyComment))); // can have edit key and be anon
+export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
+    const currentUser = state.currentUser.get();
+    const isMyComment = currentUser && 'id' in currentUser && (comment.userId.get() === currentUser.id || comment.anonUserId.get() === currentUser.id);
+    console.log('isMyComment', isMyComment, currentUser, comment.userId.get(), comment.anonUserId.get()); // TODO REMOVE
+    const canEdit = !comment.isDeleted.get() && ((currentUser && 'authorized' in currentUser && currentUser.authorized && (state.isSiteAdmin || isMyComment))); // can have edit key and be anon
     const canPin = state.isSiteAdmin && !comment.parentId;
-    const canBlockOrFlag = !comment.isDeleted && !comment.isByAdmin && !comment.isByModerator && !isMyComment && currentUser && 'authorized' in currentUser && currentUser.authorized;
+    const canBlockOrFlag = !comment.isDeleted.get() && !comment.isByAdmin.get() && !comment.isByModerator.get() && !isMyComment && currentUser && 'authorized' in currentUser && currentUser.authorized;
 
-    const menuItems: any[] = [];
+    const menuItems: any[] = []; // creating an array for every comment rendered is not ideal
 
     if (canEdit) {
         menuItems.push({
-            label: props.state.translations.COMMENT_MENU_EDIT,
+            label: state.translations.COMMENT_MENU_EDIT.get(),
             value: 'edit',
-            icon: resolveIcon(state.icons, FastCommentsIconType.EDIT_BIG),
+            icon: resolveIcon(state.icons.get(), FastCommentsIconType.EDIT_BIG),
             handler: async (setModalId: Dispatch<SetStateAction<string | null>>) => {
-                await startEditingComment(props, setModalId);
+                await startEditingComment({comment, state}, setModalId);
             }
         });
     }
 
     if (canPin) {
-        if (props.comment.isPinned) {
+        if (comment.isPinned.get()) {
             menuItems.push({
-                label: props.state.translations.COMMENT_MENU_UNPIN,
+                label: state.translations.COMMENT_MENU_UNPIN.get(),
                 value: 'unpin',
-                icon: resolveIcon(state.icons, FastCommentsIconType.UNPIN_BIG),
+                icon: resolveIcon(state.icons.get(), FastCommentsIconType.UNPIN_BIG),
                 handler: async () => {
-                    await setCommentPinStatus(props, false);
+                    await setCommentPinStatus({comment, state}, false);
                 }
             });
         } else {
             menuItems.push({
-                label: props.state.translations.COMMENT_MENU_PIN,
+                label: state.translations.COMMENT_MENU_PIN.get(),
                 value: 'pin',
-                icon: resolveIcon(state.icons, FastCommentsIconType.PIN_BIG),
+                icon: resolveIcon(state.icons.get(), FastCommentsIconType.PIN_BIG),
                 handler: async () => {
-                    await setCommentPinStatus(props, true);
+                    await setCommentPinStatus({comment, state}, true);
                 }
             });
         }
@@ -86,9 +85,9 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
 
     if (canEdit) {
         menuItems.push({
-            label: props.state.translations.COMMENT_MENU_DELETE,
+            label: state.translations.COMMENT_MENU_DELETE.get(),
             value: 'delete',
-            icon: resolveIcon(state.icons, FastCommentsIconType.TRASH),
+            icon: resolveIcon(state.icons.get(), FastCommentsIconType.TRASH),
             handler: async () => {
                 await CommentPromptDelete({
                     comment,
@@ -100,44 +99,44 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
     }
 
     if (canBlockOrFlag) {
-        if (props.comment.isBlocked) {
+        if (comment.isBlocked.get()) {
             menuItems.push({
-                label: props.state.translations.COMMENT_MENU_UNBLOCK_USER,
+                label: state.translations.COMMENT_MENU_UNBLOCK_USER.get(),
                 value: 'unblock',
-                icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK),
+                icon: resolveIcon(state.icons.get(), FastCommentsIconType.BLOCK),
                 handler: async () => {
-                    await setCommentBlockedStatus(props, false);
+                    await setCommentBlockedStatus({comment, state}, false);
                 }
             });
         } else {
             menuItems.push({
-                label: props.state.translations.COMMENT_MENU_BLOCK_USER,
+                label: state.translations.COMMENT_MENU_BLOCK_USER.get(),
                 value: 'block',
-                icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK),
+                icon: resolveIcon(state.icons.get(), FastCommentsIconType.BLOCK),
                 handler: async () => {
-                    await setCommentBlockedStatus(props, true);
+                    await setCommentBlockedStatus({comment, state}, true);
                 }
             });
         }
     }
 
     if (canBlockOrFlag) {
-        if (props.comment.isFlagged) {
+        if (comment.isFlagged.get()) {
             menuItems.push({
-                label: props.state.translations.COMMENT_MENU_UNFLAG,
+                label: state.translations.COMMENT_MENU_UNFLAG.get(),
                 value: 'unflag',
-                icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK),
+                icon: resolveIcon(state.icons.get(), FastCommentsIconType.BLOCK),
                 handler: async () => {
-                    await setCommentFlaggedStatus(props, false);
+                    await setCommentFlaggedStatus({comment, state}, false);
                 }
             });
         } else {
             menuItems.push({
-                label: props.state.translations.COMMENT_MENU_FLAG,
+                label: state.translations.COMMENT_MENU_FLAG.get(),
                 value: 'flag',
-                icon: resolveIcon(state.icons, FastCommentsIconType.BLOCK),
+                icon: resolveIcon(state.icons.get(), FastCommentsIconType.BLOCK),
                 handler: async () => {
-                    await setCommentFlaggedStatus(props, true);
+                    await setCommentFlaggedStatus({comment, state}, true);
                 }
             });
         }
@@ -175,7 +174,7 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
                         style={styles.modalCancel}
                         onPress={() => setModalIdVisible(null)}
                     >
-                        {resolveIcon(state.icons, FastCommentsIconType.CROSS)(16, 16)}
+                        {resolveIcon(state.icons.get(), FastCommentsIconType.CROSS)(16, 16)}
                     </Pressable>
                     {
                         isLoading && <View style={styles.loadingView}>
@@ -197,7 +196,7 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
         <Pressable
             style={styles.menuButton}
             onPress={() => setModalIdVisible('menu')}>
-            {resolveIcon(state.icons, FastCommentsIconType.EDIT_SMALL)()}
+            {resolveIcon(state.icons.get(), FastCommentsIconType.EDIT_SMALL)()}
         </Pressable>
     </View>);
 }

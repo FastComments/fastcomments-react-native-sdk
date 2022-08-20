@@ -1,45 +1,46 @@
-import { FastCommentsWidgetComment } from "fastcomments-typescript";
+import {FastCommentsWidgetComment} from "fastcomments-typescript";
 import {CommentState} from "../types/fastcomments-state";
+import {none, State} from "@hookstate/core";
 
-export function getCommentsTreeAndCommentsById(collapseRepliesByDefault: boolean, commentState: Record<string, CommentState>, rawComments: FastCommentsWidgetComment[]) {
+export function getCommentsTreeAndCommentsById(collapseRepliesByDefault: boolean, commentState: State<Record<string, CommentState>>, rawComments: State<FastCommentsWidgetComment[]>) {
     const commentsById: Record<string, FastCommentsWidgetComment> = {};
     const commentsLength = rawComments.length;
-    const resultComments = [];
+    const resultComments: FastCommentsWidgetComment[] = [];
 
     let comment, i;
     for (i = 0; i < commentsLength; i++) {
         const comment = rawComments[i];
-        commentsById[comment._id] = comment;
+        commentsById[comment._id.get()] = comment.get();
     }
 
     for (i = 0; i < commentsLength; i++) {
         comment = rawComments[i];
-        comment.nestedChildrenCount = 0;
+        comment.nestedChildrenCount.set(0);
         //!commentsById[comment.parentId] check for user profile feed
-        if (collapseRepliesByDefault && (!comment.parentId || !commentsById[comment.parentId]) && (commentState[comment._id]?.repliesHidden === undefined)) {
-            if (!commentState[comment._id]) {
-                commentState[comment._id] = {
+        if (collapseRepliesByDefault && (!comment.parentId || !commentsById[comment.parentId?.get()!]) && (commentState[comment._id.get()]?.repliesHidden === undefined)) {
+            if (!commentState[comment._id.get()]) {
+                commentState[comment._id.get()].set({
                     repliesHidden: true
-                };
+                });
             } else {
-                commentState[comment._id].repliesHidden = true;
+                commentState[comment._id.get()].repliesHidden.set(true);
             }
         }
-        const parentId = comment.parentId;
+        const parentId = comment.parentId.get();
         if (parentId && commentsById[parentId]) {
             if (!commentsById[parentId].children) {
-                commentsById[parentId].children = [comment];
+                commentsById[parentId].children = [comment.get()];
             } else { // checking if comment is already in children causes lag
-                commentsById[parentId].children!.push(comment);
+                commentsById[parentId].children!.push(comment.get());
             }
         } else {
-            resultComments.push(comment);
+            resultComments.push(comment.get());
         }
     }
 
     for (i = 0; i < commentsLength; i++) {
         comment = rawComments[i];
-        let parentId = comment.parentId;
+        let parentId = comment.parentId.get();
         while (parentId) {
             comment = commentsById[parentId];
             if (comment) {
@@ -57,13 +58,13 @@ export function getCommentsTreeAndCommentsById(collapseRepliesByDefault: boolean
     };
 }
 
-export function ensureRepliesOpenToComment(commentState: Record<string, CommentState>, commentsById: Record<string, FastCommentsWidgetComment>, commentId: string) {
+export function ensureRepliesOpenToComment(commentState: State<Record<string, CommentState>>, commentsById: Record<string, FastCommentsWidgetComment>, commentId: string) {
     let parentId: string | null | undefined = commentId;
     let iterations = 0;
-    while(parentId && iterations < 100) {
+    while (parentId && iterations < 100) {
         iterations++;
         if (commentState[parentId]) {
-            delete commentState[parentId].repliesHidden;
+            commentState[parentId].repliesHidden.set(none);
         }
         if (commentsById[parentId]) {
             parentId = commentsById[parentId].parentId;
@@ -81,19 +82,22 @@ export function ensureRepliesOpenToComment(commentState: Record<string, CommentS
  * @param {Object} comment
  * @param {boolean} newCommentsToBottom
  */
-export function addCommentToTree(allComments: FastCommentsWidgetComment[], commentsTree: FastCommentsWidgetComment[], commentsById: Record<string, FastCommentsWidgetComment>, comment: FastCommentsWidgetComment, newCommentsToBottom: boolean) {
+export function addCommentToTree(allComments: State<FastCommentsWidgetComment[]>, commentsTree: State<FastCommentsWidgetComment[]>, commentsById: State<Record<string, FastCommentsWidgetComment>>, comment: FastCommentsWidgetComment, newCommentsToBottom: boolean) {
     if (comment.parentId && !commentsById[comment.parentId]) { // don't use memory for this comment since its parent is not visible. they should be received in-order to the client.
         return;
     }
-    allComments.push(comment);
+    allComments.merge([comment]);
     if (comment.parentId) {
         if (!commentsById[comment.parentId].children) {
-            commentsById[comment.parentId].children = [comment];
+            commentsById[comment.parentId].children.set([comment]);
         } else {
             if (newCommentsToBottom) {
-                commentsById[comment.parentId].children!.push(comment);
+                commentsById[comment.parentId].children.merge([comment]);
             } else {
-                commentsById[comment.parentId].children!.unshift(comment);
+                commentsById[comment.parentId].children.set((children) => {
+                    children!.unshift(comment);
+                    return children;
+                });
             }
         }
     } else {
@@ -102,20 +106,26 @@ export function addCommentToTree(allComments: FastCommentsWidgetComment[], comme
             let found = false;
             for (let i = 0; i < commentsTree.length; i++) {
                 if (!commentsTree[i].isPinned) {
-                    commentsTree.splice(i, 0, comment);
+                    commentsTree.set((commentsTree) => {
+                        commentsTree.splice(i, 0, comment);
+                        return commentsTree;
+                    });
                     found = true;
                     break;
                 }
             }
             // means they're all pinned
             if (!found) {
-                commentsTree.push(comment);
+                commentsTree.merge([comment]);
             }
         } else {
             if (newCommentsToBottom) {
-                commentsTree.push(comment);
+                commentsTree.merge([comment]);
             } else {
-                commentsTree.unshift(comment);
+                commentsTree.set((commentsTree) => {
+                    commentsTree.unshift(comment);
+                    return commentsTree;
+                });
             }
         }
     }
@@ -129,26 +139,38 @@ export function addCommentToTree(allComments: FastCommentsWidgetComment[], comme
  * @param {Object.<string, Object>} commentsById
  * @param {Object} comment
  */
-export function removeCommentFromTree(allComments: FastCommentsWidgetComment[], commentsTree: FastCommentsWidgetComment[], commentsById: Record<string, FastCommentsWidgetComment>, comment: FastCommentsWidgetComment) {
-    const allCommentsIndex = allComments.indexOf(comment);
-    if (allCommentsIndex > -1) {
-        allComments.splice(allCommentsIndex, 1);
-    }
-    if (comment.parentId && commentsById[comment.parentId]) {
-        const parentChildren = commentsById[comment.parentId].children;
+export function removeCommentFromTree(allComments: State<FastCommentsWidgetComment[]>, commentsTree: State<FastCommentsWidgetComment[]>, commentsById: State<Record<string, FastCommentsWidgetComment>>, comment: FastCommentsWidgetComment) {
+    allComments.set((allComments) => {
+        const allCommentsIndex = allComments.indexOf(comment);
+        console.log('allCommentsIndex', allCommentsIndex); // TODO REMOVE
+        if (allCommentsIndex > -1) {
+            allComments.splice(allCommentsIndex, 1);
+        }
+        return allComments;
+    });
+    if (comment.parentId && commentsById[comment.parentId].get()) {
+        const parentChildrenState = commentsById[comment.parentId].children;
+        const parentChildren = parentChildrenState.get();
         if (parentChildren) {
             const index = parentChildren.indexOf(comment);
             if (index > -1) {
-                parentChildren.splice(index, 1);
+                parentChildrenState.set((parentChildrenState) => {
+                    parentChildrenState!.splice(index, 1);
+                    return parentChildrenState;
+                });
             }
         }
     } else {
-        const index = commentsTree.indexOf(comment);
+        const index = commentsTree.get().indexOf(comment);
+        console.log('commentsTree index', index); // TODO REMOVE
         if (index > -1) {
-            commentsTree.splice(index, 1);
+            commentsTree.set((commentsTree) => {
+                commentsTree.splice(index, 1);
+                return commentsTree;
+            });
         }
     }
-    delete commentsById[comment._id];
+    commentsById[comment._id].set(none);
     updateNestedChildrenCountInTree(commentsById, comment.parentId, -1);
 }
 
@@ -158,15 +180,24 @@ export function removeCommentFromTree(allComments: FastCommentsWidgetComment[], 
  * @param {string} parentId
  * @param {number} inc
  */
-export function updateNestedChildrenCountInTree(commentsById: Record<string, FastCommentsWidgetComment>, parentId: string | null | undefined, inc: number) {
+export function updateNestedChildrenCountInTree(commentsById: State<Record<string, FastCommentsWidgetComment>>, parentId: string | null | undefined, inc: number) {
     while (parentId) {
         const comment = commentsById[parentId];
         if (comment) {
-            if (comment.nestedChildrenCount === undefined) {
-                comment.nestedChildrenCount = 0;
+            if (comment.nestedChildrenCount.get() === undefined) {
+                comment.nestedChildrenCount.set(1);
+            } else {
+
             }
-            comment.nestedChildrenCount += inc;
-            parentId = comment.parentId;
+            comment.nestedChildrenCount.set((nestedChildrenCount) => {
+                if (nestedChildrenCount === undefined) {
+                    nestedChildrenCount = 1;
+                } else {
+                    nestedChildrenCount += inc;
+                }
+                return nestedChildrenCount;
+            });
+            parentId = comment.parentId.get();
         } else {
             break;
         }

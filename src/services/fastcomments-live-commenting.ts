@@ -12,6 +12,8 @@ import {repositionComment} from "./comment-positioning";
 import {incOverallCommentCount} from "./comment-count";
 import {broadcastIdsSent} from "./broadcast-id";
 import {mergeSimpleSSO} from "./sso";
+import {none, State} from "@hookstate/core";
+import {removeCommentOnClient} from "./remove-comment-on-client";
 
 interface FastCommentsInternalState {
     isFirstRequest: boolean;
@@ -21,13 +23,22 @@ interface FastCommentsInternalState {
 }
 
 export class FastCommentsLiveCommentingService {
-    private readonly state: FastCommentsState;
+    private readonly state: State<FastCommentsState>;
     private readonly internalState: FastCommentsInternalState;
-    private setState!: (state: FastCommentsState) => void;
 
-    constructor(config: FastCommentsCommentWidgetConfig) {
+    constructor(state: State<FastCommentsState>) {
+        this.state = state;
+        this.internalState = {
+            isFirstRequest: true,
+            lastGenDate: undefined,
+            lastComments: [],
+            lastSubscriberInstance: undefined,
+        };
+    }
+
+    static createFastCommentsStateFromConfig(config: FastCommentsCommentWidgetConfig): FastCommentsState {
         mergeSimpleSSO(config);
-        this.state = {
+        return {
             instanceId: Math.random() + '.' + Date.now(),
             apiHost: config.apiHost ? config.apiHost : (config.region === 'eu' ? 'https://eu.fastcomments.com' : 'https://fastcomments.com'),
             wsHost: config.wsHost ? config.wsHost : (config.region === 'eu' ? 'wss://ws-eu.fastcomments.com' : 'wss://ws.fastcomments.com'),
@@ -67,36 +78,21 @@ export class FastCommentsLiveCommentingService {
                 isSubscribed: false,
             },
             config,
-            ssoConfigString: config.sso ? JSON.stringify(config.sso) : undefined,
-            render: () => {}
-        };
-
-        this.internalState = {
-            isFirstRequest: true,
-            lastGenDate: undefined,
-            lastComments: [],
-            lastSubscriberInstance: undefined,
+            ssoConfigString: config.sso ? JSON.stringify(config.sso) : undefined
         };
     }
 
-    getState(): FastCommentsState {
-        return this.state;
-    }
-
-    async fetchRemoteState(isPrev: boolean, setState: (state: FastCommentsState) => void): Promise<void> {
-        this.state.render = function() {
-            setState(state);
-        }
-        const internalState = this.internalState;
+    async fetchRemoteState(isPrev: boolean): Promise<void> {
         const state = this.state;
-        const config = this.state.config;
+        const internalState = this.internalState;
+        const config = this.state.config.get();
         config.onInit && config.onInit();
         if (config.urlId === undefined || config.urlId === null) {
             throw new Error('FastComments initialization failure: Configuration parameter "urlId" must be defined!');
         }
         const queryParams: Record<string, string | number | undefined> = {
             urlId: config.urlId,
-            page: state.page,
+            page: state.page.get(),
             lastGenDate: internalState.lastGenDate
         };
 
@@ -120,10 +116,10 @@ export class FastCommentsLiveCommentingService {
         }
 
         if (state.ssoConfigString) {
-            queryParams.sso = state.ssoConfigString;
+            queryParams.sso = state.ssoConfigString.get();
         }
 
-        queryParams.direction = state.sortDirection;
+        queryParams.direction = state.sortDirection.get();
 
         if (config.jumpToId) {
             queryParams.fetchPageForCommentId = config.jumpToId;
@@ -143,7 +139,7 @@ export class FastCommentsLiveCommentingService {
 
         try {
             const response = await makeRequest<GetCommentsResponse>({
-                apiHost: this.state.apiHost,
+                apiHost: this.state.apiHost.get(),
                 method: 'GET',
                 url: url + createURLQueryString(queryParams),
             });
@@ -153,31 +149,31 @@ export class FastCommentsLiveCommentingService {
             this.handleNewCustomConfig(response.customConfig);
 
             if (isRateLimited) {
-                state.blockingErrorMessage = state.translations.EXCEEDED_QUOTA;
+                state.blockingErrorMessage.set(state.translations.EXCEEDED_QUOTA.get());
             } else if (response.code === 'domain-unauthorized') {
-                state.blockingErrorMessage = state.translations.DOMAIN_NOT_AUTHORIZED;
+                state.blockingErrorMessage.set(state.translations.DOMAIN_NOT_AUTHORIZED.get());
             } else if (response.code === 'unauthorized-page') {
-                state.blockingErrorMessage = state.translations.UNAUTHORIZED_VIEW_THIS_PAGE;
+                state.blockingErrorMessage.set(state.translations.UNAUTHORIZED_VIEW_THIS_PAGE.get());
             } else if (response.code === 'invalid-tenant') {
-                state.blockingErrorMessage = state.translations.INVALID_TENANT;
+                state.blockingErrorMessage.set(state.translations.INVALID_TENANT.get());
             } else if (response.code === 'malformed-sso') {
-                state.blockingErrorMessage = state.translations.MALFORMED_SSO;
+                state.blockingErrorMessage.set(state.translations.MALFORMED_SSO.get());
                 if (response.reason && response.reason !== 'SSO Request Malformed') {
-                    state.blockingErrorMessage += ' ' + response.reason;
+                    state.blockingErrorMessage.set(state.blockingErrorMessage.get() + ' ' + response.reason);
                 }
             } else if (response.isCommentsHidden) {
-                state.blockingErrorMessage = state.translations.BILLING_INFO_INV_60_DAYS;
+                state.blockingErrorMessage.set(state.translations.BILLING_INFO_INV_60_DAYS.get());
             }
 
             if (typeof response.pageNumber === 'number') {
-                state.page = response.pageNumber;
-                if (!state.pagesLoaded.includes(state.page)) {
-                    state.pagesLoaded.push(state.page);
+                state.page.set(response.pageNumber);
+                if (!state.pagesLoaded.get().includes(state.page.get())) {
+                    state.pagesLoaded.merge([state.page.get()]);
                 }
             }
 
             if (typeof response.notificationCount === 'number') {
-                state.userNotificationState.count = response.notificationCount;
+                state.userNotificationState.count.set(response.notificationCount);
             }
 
             const responseComments = response.comments || [];
@@ -185,83 +181,81 @@ export class FastCommentsLiveCommentingService {
             if (isLiveChatStyle) {
                 responseComments.reverse();
             }
-            state.hasMore = responseComments.length >= state.PAGE_SIZE;
+            state.hasMore.set(responseComments.length >= state.PAGE_SIZE.get());
 
             if (!response.includesPastPages) {
                 if (isPrev) {
-                    state.allComments = responseComments.concat(internalState.lastComments);
-                } else if (state.page > 0) { // for example for changing sort direction
+                    state.allComments.set(responseComments.concat(internalState.lastComments));
+                } else if (state.page.get() > 0) { // for example for changing sort direction
                     if (isLiveChatStyle) {
-                        state.allComments = responseComments.concat(internalState.lastComments);
+                        state.allComments.set(responseComments.concat(internalState.lastComments));
                     } else {
-                        state.allComments = internalState.lastComments.concat(responseComments);
+                        state.allComments.set(internalState.lastComments.concat(responseComments));
                     }
                 } else {
-                    state.allComments = responseComments;
+                    state.allComments.set(responseComments);
                 }
             } else {
-                state.allComments = responseComments;
+                state.allComments.set(responseComments);
             }
-            internalState.lastComments = JSON.parse(JSON.stringify(state.allComments));
-            state.commentCountOnClient = state.allComments.length;
+            internalState.lastComments = JSON.parse(JSON.stringify(state.allComments.get())); // TODO optimize away
+            state.commentCountOnClient.set(state.allComments.length);
 
             if (response.moderatingTenantIds) {
-                state.moderatingTenantIds = response.moderatingTenantIds;
+                state.moderatingTenantIds.set(response.moderatingTenantIds);
             }
 
-            if (internalState.isFirstRequest && config.readonly && state.commentCountOnClient === 0 && !state.translations.NO_COMMENTS) {
+            if (internalState.isFirstRequest && config.readonly && state.commentCountOnClient.get() === 0 && !state.translations.NO_COMMENTS.get()) {
                 config.onCommentsRendered && config.onCommentsRendered([]);
-                setState(state);
             }
 
             if (response.user) {
-                state.currentUser = response.user;
-                config.onAuthenticationChange && config.onAuthenticationChange('user-set', state.currentUser);
+                state.currentUser.set(response.user);
+                config.onAuthenticationChange && config.onAuthenticationChange('user-set', state.currentUser.get()!);
             }
 
-            if (state.commentsVisible === undefined) {
-                state.commentsVisible = !(config.hideCommentsUnderCountTextFormat || config.useShowCommentsToggle);
+            if (state.commentsVisible.get() === undefined) {
+                state.commentsVisible.set(!(config.hideCommentsUnderCountTextFormat || config.useShowCommentsToggle));
             }
 
             const result = getCommentsTreeAndCommentsById(!!config.collapseReplies, state.commentState, state.allComments);
-            state.commentsById = result.commentsById;
-            state.commentsTree = result.comments;
+            // TODO OPTIMIZE - is this faster than many merge() calls in state.commentsTree?
+            state.commentsById.set(result.commentsById);
+            state.commentsTree.set(result.comments);
 
             if (config.jumpToId) {
-                ensureRepliesOpenToComment(state.commentState, state.commentsById, config.jumpToId);
+                // TODO OPTIMIZE - would passing State<state.commentsById> be faster here?
+                ensureRepliesOpenToComment(state.commentState, state.commentsById.get(), config.jumpToId);
             }
 
-            state.isSiteAdmin = !!response.isSiteAdmin;
-            state.hasBillingIssue = !!response.hasBillingIssue;
+            state.isSiteAdmin.set(!!response.isSiteAdmin);
+            state.hasBillingIssue.set(!!response.hasBillingIssue);
             internalState.lastGenDate = response.lastGenDate;
-            state.isDemo = !!response.isDemo;
+            state.isDemo.set(!!response.isDemo);
             if (response.commentCount !== undefined && Number.isFinite(response.commentCount)) {
-                state.commentCountOnServer = response.commentCount;
+                state.commentCountOnServer.set(response.commentCount);
             }
 
             if (config.jumpToId) {
                 // scrollToComment(config.instanceId, config.jumpToId, 200); // TODO how?
                 delete config.jumpToId; // don't jump next render
                 if (typeof response.pageNumber === 'number') {
-                    state.page = response.pageNumber;
+                    state.page.set(response.pageNumber);
                 }
             }
 
             // Don't create websocket connections if they're overloading us.
             // also, urlIdClean is not available at this point.
             if (!isRateLimited && internalState.isFirstRequest && response.urlIdWS && response.tenantIdWS && response.userIdWS) {
-                state.userPresenceState.presencePollState = response.presencePollState;
+                state.userPresenceState.presencePollState.set(response.presencePollState);
                 this.persistSubscriberState(response.urlIdWS, response.tenantIdWS, response.userIdWS);
             }
             internalState.isFirstRequest = false;
             config.onCommentsRendered && config.onCommentsRendered(response.comments || []);
-            console.log('RESULTING STATE', JSON.stringify(state));
-            setState(state);
-            // saveUIStateAndRestore(renderCommentsTree); // TODO tell React to rerender
+            // console.log('RESULTING STATE', JSON.stringify(state.get())); // TODO remove
         } catch (e) {
             // TODO handle failures
             console.error(e);
-            setState(state);
         }
     }
 
@@ -272,63 +266,65 @@ export class FastCommentsLiveCommentingService {
                 // for the customization page (css is sent from server, but newer version from client)
                 // if the custom config has translations, merge them with what the client specified
                 if (key === 'translations') {
-                    if (config[key]) {
-                        config[key] = Object.assign({}, customConfig[key], config[key]);
+                    if (config[key].get()) {
+                        config[key].set(Object.assign({}, customConfig[key], config[key].get()));
                     } else {
-                        config[key] = customConfig[key];
+                        config[key].set(customConfig[key]);
                     }
                 } else if ((config[key as keyof FastCommentsCommentWidgetConfig] === undefined || overwrite) || key === 'wrap' || key === 'hasDarkBackground') { // undefined is important here (test comment thread viewer w/ customizations like hideCommentsUnderCountTextFormat/useShowCommentsToggle
                     // @ts-ignore
-                    config[key] = customConfig[key];
+                    config[key].set(customConfig[key]);
                 }
             }
-            if (!this.state.sortDirection && config.defaultSortDirection) {
-                this.state.sortDirection = config.defaultSortDirection;
+            if (!this.state.sortDirection.get()) {
+                const defaultSortDirection = config.defaultSortDirection.get();
+                if (typeof defaultSortDirection === 'string') {
+                    this.state.sortDirection.set(defaultSortDirection);
+                }
             }
         }
 
-        if (config.translations) {
-            this.state.translations = config.translations;
+        const configTranslations = config.translations.get();
+        if (configTranslations) {
+            this.state.translations.merge(configTranslations);
         }
     }
 
     persistSubscriberState(newUrlIdWS: string, newTenantIdWS: string, newUserIdWS: string) {
         const state = this.state;
         const internalState = this.internalState;
-        const didChange = state.urlIdWS !== newUrlIdWS || state.tenantIdWS !== newTenantIdWS || state.userIdWS !== newUserIdWS;
+        const didChange = state.urlIdWS.get() !== newUrlIdWS || state.tenantIdWS.get() !== newTenantIdWS || state.userIdWS.get() !== newUserIdWS;
         if (!didChange) {
             return;
         }
-        state.urlIdWS = newUrlIdWS;
-        state.tenantIdWS = newTenantIdWS;
-        state.userIdWS = newUserIdWS;
+        state.urlIdWS.set(newUrlIdWS);
+        state.tenantIdWS.set(newTenantIdWS);
+        state.userIdWS.set(newUserIdWS);
 
         if (internalState.lastSubscriberInstance) {
             internalState.lastSubscriberInstance.close();
         }
 
-        internalState.lastSubscriberInstance = subscribeToChanges(state.config, state.wsHost, state.tenantIdWS, state.config.urlId!, state.urlIdWS, state.userIdWS, async (commentIds: string[]) => {
-            return await checkBlockedComments(state, commentIds);
+        internalState.lastSubscriberInstance = subscribeToChanges(state.config.get(), state.wsHost.get(), state.tenantIdWS.get()!, state.config.urlId.get()!, state.urlIdWS.get()!, state.userIdWS.get()!, async (commentIds: string[]) => {
+            return await checkBlockedComments(state.get(), commentIds);
         }, (dataJSON: WebsocketLiveEvent) => {
             return this.handleLiveEvent(dataJSON);
-        }, () => {
-            this.setState(this.state);
         }, function connectionStatusChange(isConnected, lastEventTime) {
             // if we have a current user, update the status icon on their comments!
             if (state.currentUser && 'id' in state.currentUser) {
-                state.userPresenceState.usersOnlineMap[state.currentUser.id] = isConnected;
+                state.userPresenceState.usersOnlineMap[state.currentUser.id.get()].set(isConnected);
             }
             // if we are reconnecting, re-fetch all user statuses and render them
             if (isConnected) {
                 const isReconnect = !!lastEventTime;
                 if (isReconnect) {
                     // reset user presence state because we know nothing since we disconnected
-                    state.userPresenceState.userIdsToCommentIds = {};
-                    state.userPresenceState.usersOnlineMap = {};
+                    state.userPresenceState.userIdsToCommentIds.set({});
+                    state.userPresenceState.usersOnlineMap.set({});
                     // getAndRenderLatestNotificationCount(); // TODO
                 }
                 // noinspection JSIgnoredPromiseFromCall
-                setupUserPresenceState(state.config, newUrlIdWS, state);
+                setupUserPresenceState(state, newUrlIdWS);
             }
         });
     }
@@ -345,13 +341,13 @@ export class FastCommentsLiveCommentingService {
         switch (dataJSON.type) {
             case 'new-badge':
                 for (const comment of this.state.allComments) {
-                    if (comment.userId === dataJSON.badge.userId) {
-                        if (!comment.badges) {
-                            comment.badges = [dataJSON.badge];
-                        } else if (!comment.badges.some(function (badge) { // handle race conditions
+                    if (comment.userId.get() === dataJSON.badge.userId) {
+                        if (!comment.badges.get()) {
+                            comment.badges.merge([dataJSON.badge]);
+                        } else if (!comment.badges.get()!.some(function (badge) { // handle race conditions
                             return badge.id === dataJSON.badge.id;
                         })) {
-                            comment.badges.push(dataJSON.badge)
+                            comment.badges.merge([dataJSON.badge]);
                         }
                     }
                 }
@@ -359,92 +355,117 @@ export class FastCommentsLiveCommentingService {
                 break;
             case 'removed-badge':
                 for (const comment of this.state.allComments) {
-                    if (comment.userId === dataJSON.badge.userId && comment.badges) {
+                    if (comment.userId.get() === dataJSON.badge.userId && comment.badges.get()) {
                         const newBadges = [];
-                        for (const badge of comment.badges) {
+                        for (const badge of comment.badges.get()!) {
                             if (badge.id !== dataJSON.badge.id) {
                                 newBadges.push(badge);
                             }
                         }
-                        comment.badges = newBadges;
+                        comment.badges.merge(newBadges);
                     }
                 }
                 broadcastIdsSent.push(dataJSON.broadcastId);
                 break;
             case 'notification':
-                if (this.state.userNotificationState.count) {
-                    this.state.userNotificationState.count++;
-                } else {
-                    this.state.userNotificationState.count = 1;
-                }
-                if (this.state.userNotificationState.notifications) {
-                    this.state.userNotificationState.notifications.unshift(dataJSON.notification);
+                this.state.userNotificationState.count.set((count) => {
+                    if (count) {
+                        count++;
+                    } else {
+                        count = 1;
+                    }
+                    return count;
+                });
+                if (this.state.userNotificationState.notifications.get()) {
+                    this.state.userNotificationState.notifications.set((notifications) => {
+                        notifications.unshift(dataJSON.notification);
+                        return notifications;
+                    });
                 }
                 break;
             case 'presence-update':
                 if (dataJSON.uj) {
                     for (const userJoined of dataJSON.uj) {
-                        this.state.userPresenceState.usersOnlineMap[userJoined] = true;
+                        this.state.userPresenceState.usersOnlineMap[userJoined].set(true);
                     }
                 }
                 if (dataJSON.ul) {
                     for (const userLeft of dataJSON.ul) {
-                        this.state.userPresenceState.usersOnlineMap[userLeft] = false;
+                        this.state.userPresenceState.usersOnlineMap[userLeft].set(false);
                     }
                 }
                 break;
             case 'new-vote':
                 const newVoteComment = this.state.commentsById[dataJSON.vote.commentId];
-                if (newVoteComment) {
-                    if (newVoteComment.votes === null || newVoteComment.votes === undefined) {
-                        newVoteComment.votes = 0;
-                    }
-                    newVoteComment.votes += dataJSON.vote.direction;
-                    if (dataJSON.vote.direction > 0) {
-                        if (newVoteComment.votesUp === null || newVoteComment.votesUp === undefined) {
-                            newVoteComment.votesUp = 0;
+                if (newVoteComment.get()) {
+                    newVoteComment.votes.set((votes) => {
+                        if (votes === null || votes === undefined) {
+                            votes = 0;
+                        } else {
+                            votes += dataJSON.vote.direction;
                         }
-                        newVoteComment.votesUp++;
-                        if (this.state.currentUser && 'id' in this.state.currentUser && this.state.currentUser.id && dataJSON.vote.userId === this.state.currentUser.id) {
-                            newVoteComment.isVotedUp = true;
+                        return votes;
+                    })
+                    if (dataJSON.vote.direction > 0) {
+                        newVoteComment.votesUp.set((votesUp) => {
+                            if (votesUp === null || votesUp === undefined) {
+                                votesUp = 0;
+                            } else {
+                                votesUp++;
+                            }
+                            return votesUp;
+                        });
+                        if (this.state.currentUser && 'id' in this.state.currentUser && this.state.currentUser.id && dataJSON.vote.userId === this.state.currentUser.id.get()) {
+                            newVoteComment.isVotedUp.set(true);
                         }
                     } else {
-                        if (newVoteComment.votesDown === null || newVoteComment.votesDown === undefined) {
-                            newVoteComment.votesDown = 0;
-                        }
-                        newVoteComment.votesDown++;
-                        if (this.state.currentUser && 'id' in this.state.currentUser && this.state.currentUser.id && dataJSON.vote.userId === this.state.currentUser.id) {
-                            newVoteComment.isVotedDown = true;
+                        newVoteComment.votesDown.set((votesDown) => {
+                            if (votesDown === null || votesDown === undefined) {
+                                votesDown = 0;
+                            } else {
+                                votesDown++;
+                            }
+                            return votesDown;
+                        });
+                        if (this.state.currentUser && 'id' in this.state.currentUser && this.state.currentUser.id && dataJSON.vote.userId === this.state.currentUser.id.get()) {
+                            newVoteComment.isVotedDown.set(true);
                         }
                     }
                 }
                 break;
             case 'deleted-vote':
                 const deletedVoteComment = this.state.commentsById[dataJSON.vote.commentId];
-                if (deletedVoteComment) {
-                    // votes always set as vote was originally populated for it to be deleted
-                    deletedVoteComment.votes! += (dataJSON.vote.direction * -1);
+                if (deletedVoteComment.get()) {
+                    deletedVoteComment.votes.set((votes) => {
+                        // votes always set as vote was originally populated for it to be deleted
+                        votes! += (dataJSON.vote.direction * -1);
+                        return votes;
+                    });
                     if (dataJSON.vote.direction > 0) {
-                        if (deletedVoteComment.votesUp) {
-                            deletedVoteComment.votesUp--;
-                        }
-                        if (this.state.currentUser && 'id' in this.state.currentUser && this.state.currentUser.id && deletedVoteComment.isVotedUp && dataJSON.vote.userId === this.state.currentUser.id) {
-                            delete deletedVoteComment.isVotedUp;
+                        deletedVoteComment.votesUp.set((votesUp) => {
+                            if (votesUp) {
+                                votesUp--;
+                            }
+                            return votesUp;
+                        });
+                        if (this.state.currentUser && 'id' in this.state.currentUser && this.state.currentUser.id && deletedVoteComment.isVotedUp && dataJSON.vote.userId === this.state.currentUser.id.get()) {
+                            deletedVoteComment.isVotedUp.set(none);
                         }
                     } else {
-                        if (deletedVoteComment.votesDown) {
-                            deletedVoteComment.votesDown--;
-                        }
-                        if (this.state.currentUser && 'id' in this.state.currentUser && this.state.currentUser.id && deletedVoteComment.isVotedDown && dataJSON.vote.userId === this.state.currentUser.id) {
-                            delete deletedVoteComment.isVotedDown;
+                        deletedVoteComment.votesDown.set((votesDown) => {
+                            if (votesDown) {
+                                votesDown--;
+                            }
+                            return votesDown;
+                        });
+                        if (this.state.currentUser && 'id' in this.state.currentUser && this.state.currentUser.id && deletedVoteComment.isVotedDown && dataJSON.vote.userId === this.state.currentUser.id.get()) {
+                            deletedVoteComment.isVotedDown.set(none);
                         }
                     }
                 }
                 break;
             case 'deleted-comment':
-                if (this.state.commentsById[dataJSON.comment._id]) {
-                    needsReRender = true;
-                }
+                removeCommentOnClient({state: this.state, comment: this.state.commentsById[dataJSON.comment._id]});
                 break;
             case 'new-comment':
             case 'updated-comment':
@@ -453,8 +474,8 @@ export class FastCommentsLiveCommentingService {
                 const showLiveRightAway = this.state.config.showLiveRightAway;
                 const commentsById = this.state.commentsById;
                 // the hidden check here is for approving, un-approving, and then re-approving a comment
-                if (dataJSON.type === 'new-comment' && commentsById[dataJSONComment._id]) {
-                    if (!commentsById[dataJSONComment._id].approved && dataJSONComment.approved) {
+                if (dataJSON.type === 'new-comment' && commentsById[dataJSONComment._id].get()) {
+                    if (!commentsById[dataJSONComment._id].approved.get() && dataJSONComment.approved) {
                         dataJSON.type = 'updated-comment'; // we'll just set the comment as approved
                     } else {
                         return false;
@@ -483,12 +504,9 @@ export class FastCommentsLiveCommentingService {
 
                 const isNew = !commentsById[dataJSONComment._id];
                 if (isNew) {
-                    commentsById[dataJSONComment._id] = dataJSONComment;
+                    commentsById[dataJSONComment._id].set(dataJSONComment);
                 } else {
-                    for (const key in dataJSONComment) {
-                        // @ts-ignore
-                        commentsById[dataJSONComment._id][key as keyof FastCommentsWidgetComment] = dataJSONComment[key as keyof FastCommentsWidgetComment];
-                    }
+                    commentsById[dataJSONComment._id].merge(dataJSONComment);
                 }
 
                 if (!isNew) {
@@ -526,7 +544,7 @@ export class FastCommentsLiveCommentingService {
                     }
 
                     addCommentToTree(this.state.allComments, this.state.commentsTree, commentsById, dataJSONComment, !!this.state.config.newCommentsToBottom);
-                    incOverallCommentCount(this.state.config, this.state, dataJSONComment.parentId);
+                    incOverallCommentCount(this.state.config.get(), this.state, dataJSONComment.parentId);
 
                     // TODO update the "Show X Comments" button text live like vanilla js widget
                     // const showCommentsMessageButton = document.querySelector('.comments-toggle');
@@ -536,7 +554,10 @@ export class FastCommentsLiveCommentingService {
 
                     if (updateRoot) {
                         if (newCommentHidden) {
-                            this.state.newRootCommentCount++;
+                            this.state.newRootCommentCount.set((newRootCommentCount) => {
+                                newRootCommentCount++;
+                                return newRootCommentCount;
+                            });
                             // TODO update the "Show New X Comments" button text live.
                             // const messageRootTarget = getElementById('new-comments-message-root');
                             // if (messageRootTarget) { // element may not be in DOM - like if comments hidden.
@@ -548,18 +569,21 @@ export class FastCommentsLiveCommentingService {
                         }
                     } else if (currentParent) {
                         if (newCommentHidden) {
-                            if (!('hiddenChildrenCount' in currentParent)) {
-                                currentParent.hiddenChildrenCount = 1;
-                            } else {
-                                currentParent.hiddenChildrenCount!++;
-                            }
+                            currentParent.hiddenChildrenCount.set((hiddenChildrenCount) => {
+                                if (!hiddenChildrenCount) {
+                                    hiddenChildrenCount = 1;
+                                } else {
+                                    hiddenChildrenCount++;
+                                }
+                                return hiddenChildrenCount;
+                            });
                         }
                     }
 
                     const userIdsChanged = Object.keys(presenceChanges);
                     // noinspection JSIgnoredPromiseFromCall - fire and forget
                     if (userIdsChanged.length > 0) {
-                        handleNewRemoteUser(this.state.config, this.state.urlIdWS!, this.state.userPresenceState, userIdsChanged);
+                        handleNewRemoteUser(this.state.config.get(), this.state.urlIdWS.get()!, this.state.userPresenceState, userIdsChanged);
                     }
                 }
                 break;

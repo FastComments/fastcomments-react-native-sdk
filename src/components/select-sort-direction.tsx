@@ -4,21 +4,22 @@ import * as React from 'react';
 import {FastCommentsSortDirection, FastCommentsState} from "../types/fastcomments-state";
 import DropDownPicker from 'react-native-dropdown-picker';
 import {useState} from "react";
+import {State} from "@hookstate/core";
 
-export function SelectSortDirection(state: FastCommentsState) {
+export function SelectSortDirection(state: State<FastCommentsState>) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([
-    {label: state.translations.OLDEST_FIRST, value: 'OF'},
-    {label: state.translations.NEWEST_FIRST, value: 'NF'},
-    {label: state.translations.MOST_RELEVANT, value: 'MR'},
+    {label: state.translations.OLDEST_FIRST.get(), value: 'OF'},
+    {label: state.translations.NEWEST_FIRST.get(), value: 'NF'},
+    {label: state.translations.MOST_RELEVANT.get(), value: 'MR'},
   ]);
 
-  const setValue = (newValue: any) => state.sortDirection = newValue as FastCommentsSortDirection;
+  const setValue = (newValue: any) => state.sortDirection.set(newValue as FastCommentsSortDirection);
 
   return (
     <DropDownPicker
       open={open}
-      value={state.sortDirection}
+      value={state.sortDirection.get()}
       items={items}
       setOpen={setOpen}
       setValue={setValue}
