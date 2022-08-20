@@ -22,7 +22,7 @@ export function subscribeToChanges(
     urlIdWS: string,
     userIdWS: string,
     checkBlockedComments: (commentIds: string[]) => Promise<Record<string, boolean>>,
-    handleLiveEvent: (event: WebsocketLiveEvent) => boolean,
+    handleLiveEvent: (event: WebsocketLiveEvent) => void,
     onConnectionStatusChange: (isConnected: boolean, lastEventTime: number | undefined) => void,
     lastLiveEventTime?: number
 ): SubscriberInstance | undefined | void {

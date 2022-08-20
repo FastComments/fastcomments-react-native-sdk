@@ -329,15 +329,14 @@ export class FastCommentsLiveCommentingService {
         });
     }
 
-    handleLiveEvent(dataJSON: WebsocketLiveEvent): boolean {
+    handleLiveEvent(dataJSON: WebsocketLiveEvent) {
         console.log('handleLiveEvent', dataJSON); // TODO remove
         if ('broadcastId' in dataJSON && broadcastIdsSent.includes(dataJSON.broadcastId)) {
-            return false;
+            return;
         }
         if ('bId' in dataJSON && broadcastIdsSent.includes(dataJSON.bId)) {
-            return false;
+            return;
         }
-        let needsReRender = false;
         switch (dataJSON.type) {
             case 'new-badge':
                 for (const comment of this.state.allComments) {
@@ -478,7 +477,7 @@ export class FastCommentsLiveCommentingService {
                     if (!commentsById[dataJSONComment._id].approved.get() && dataJSONComment.approved) {
                         dataJSON.type = 'updated-comment'; // we'll just set the comment as approved
                     } else {
-                        return false;
+                        return;
                     }
                 }
 
@@ -564,8 +563,6 @@ export class FastCommentsLiveCommentingService {
                             //     messageRootTarget.classList.remove('hidden');
                             //     messageRootTarget.innerHTML = getNewCommentCountText(translations, newRootCommentCount);
                             // }
-                        } else {
-                            needsReRender = true;
                         }
                     } else if (currentParent) {
                         if (newCommentHidden) {
@@ -589,9 +586,7 @@ export class FastCommentsLiveCommentingService {
                 break;
             case 'new-config':
                 this.handleNewCustomConfig(dataJSON.config, true);
-                needsReRender = true;
                 break;
         }
-        return needsReRender;
     }
 }
