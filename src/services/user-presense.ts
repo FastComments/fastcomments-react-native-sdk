@@ -150,7 +150,7 @@ function setupUserPresenceHeartbeat(state: FastCommentsState, urlIdWS: string) {
 
 // TODO OPTIMIZE - don't take whole state object
 function setupUserPresencePolling(state: FastCommentsState, urlIdWS: string, userPresenceState: State<UserPresenceState>, userIds: string[]) {
-    if (userPresenceState.presencePollState.get() === UserPresencePollStateEnum.Poll) {
+    if (userPresenceState.presencePollState?.get() === UserPresencePollStateEnum.Poll) {
         const offset = Math.ceil(10000 * Math.random());
         const timeout = 30000 + offset; // every 30 seconds + a random offset
         async function next() {

@@ -218,8 +218,11 @@ export class FastCommentsLiveCommentingService {
                 state.commentsVisible.set(!(config.hideCommentsUnderCountTextFormat || config.useShowCommentsToggle));
             }
 
-            const result = getCommentsTreeAndCommentsById(!!config.collapseReplies, state.commentState, state.allComments);
-            // TODO OPTIMIZE - is this faster than many merge() calls in state.commentsTree?
+            // TODO OPTIMIZE away JSON.parse(JSON.stringify()).
+            //  We can do this by moving allComments outside of state and into internalState.
+            //  Without the deref of the child objects in allComments, deleting comments live breaks.
+            const result = getCommentsTreeAndCommentsById(!!config.collapseReplies, state.commentState, JSON.parse(JSON.stringify(state.allComments.get())));
+            // Doing two sets() here is faster than doing a million of them in getCommentsTreeAndCommentsById.
             state.commentsById.set(result.commentsById);
             state.commentsTree.set(result.comments);
 
@@ -566,7 +569,7 @@ export class FastCommentsLiveCommentingService {
                             //     messageRootTarget.innerHTML = getNewCommentCountText(translations, newRootCommentCount);
                             // }
                         }
-                    } else if (currentParent) {
+                    } else if (currentParent && currentParent?.get()) {
                         if (newCommentHidden) {
                             currentParent.hiddenChildrenCount.set((hiddenChildrenCount) => {
                                 if (!hiddenChildrenCount) {

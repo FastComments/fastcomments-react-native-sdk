@@ -2,7 +2,7 @@ import {FastCommentsWidgetComment} from "fastcomments-typescript";
 import {CommentState} from "../types/fastcomments-state";
 import {none, State} from "@hookstate/core";
 
-export function getCommentsTreeAndCommentsById(collapseRepliesByDefault: boolean, commentState: State<Record<string, CommentState>>, rawComments: State<FastCommentsWidgetComment[]>) {
+export function getCommentsTreeAndCommentsById(collapseRepliesByDefault: boolean, commentState: State<Record<string, CommentState>>, rawComments: FastCommentsWidgetComment[]) {
     const commentsById: Record<string, FastCommentsWidgetComment> = {};
     const commentsLength = rawComments.length;
     const resultComments: FastCommentsWidgetComment[] = [];
@@ -10,37 +10,37 @@ export function getCommentsTreeAndCommentsById(collapseRepliesByDefault: boolean
     let comment, i;
     for (i = 0; i < commentsLength; i++) {
         const comment = rawComments[i];
-        commentsById[comment._id.get()] = comment.get();
+        commentsById[comment._id] = comment;
     }
 
     for (i = 0; i < commentsLength; i++) {
         comment = rawComments[i];
-        comment.nestedChildrenCount.set(0);
+        comment.nestedChildrenCount = 0
         //!commentsById[comment.parentId] check for user profile feed
-        if (collapseRepliesByDefault && (!comment.parentId || !commentsById[comment.parentId?.get()!]) && (commentState[comment._id.get()]?.repliesHidden === undefined)) {
-            if (!commentState[comment._id.get()]) {
-                commentState[comment._id.get()].set({
+        if (collapseRepliesByDefault && (!(comment.parentId) || !commentsById[comment.parentId!]) && (commentState[comment._id]?.repliesHidden?.get() === undefined)) {
+            if (!commentState[comment._id]) {
+                commentState[comment._id].set({
                     repliesHidden: true
                 });
             } else {
-                commentState[comment._id.get()].repliesHidden.set(true);
+                commentState[comment._id].repliesHidden.set(true);
             }
         }
-        const parentId = comment.parentId?.get();
+        const parentId = comment.parentId;
         if (parentId && commentsById[parentId]) {
             if (!commentsById[parentId].children) {
-                commentsById[parentId].children = [comment.get()];
+                commentsById[parentId].children = [comment];
             } else { // checking if comment is already in children causes lag
-                commentsById[parentId].children!.push(comment.get());
+                commentsById[parentId].children!.push(comment);
             }
         } else {
-            resultComments.push(comment.get());
+            resultComments.push(comment);
         }
     }
 
     for (i = 0; i < commentsLength; i++) {
         comment = rawComments[i];
-        let parentId = comment.parentId?.get();
+        let parentId = comment.parentId;
         while (parentId) {
             comment = commentsById[parentId];
             if (comment) {
@@ -83,7 +83,7 @@ export function ensureRepliesOpenToComment(commentState: State<Record<string, Co
  * @param {boolean} newCommentsToBottom
  */
 export function addCommentToTree(allComments: State<FastCommentsWidgetComment[]>, commentsTree: State<FastCommentsWidgetComment[]>, commentsById: State<Record<string, FastCommentsWidgetComment>>, comment: FastCommentsWidgetComment, newCommentsToBottom: boolean) {
-    if (comment.parentId && !commentsById[comment.parentId]) { // don't use memory for this comment since its parent is not visible. they should be received in-order to the client.
+    if (comment.parentId && !(commentsById[comment.parentId]?.get())) { // don't use memory for this comment since its parent is not visible. they should be received in-order to the client.
         return;
     }
     allComments.merge([comment]);
@@ -140,38 +140,61 @@ export function addCommentToTree(allComments: State<FastCommentsWidgetComment[]>
  * @param {Object} comment
  */
 export function removeCommentFromTree(allComments: State<FastCommentsWidgetComment[]>, commentsTree: State<FastCommentsWidgetComment[]>, commentsById: State<Record<string, FastCommentsWidgetComment>>, comment: FastCommentsWidgetComment) {
-    allComments.set((allComments) => {
-        const allCommentsIndex = allComments.findIndex((otherComment) => otherComment._id === comment._id);
-        console.log('allCommentsIndex', allCommentsIndex); // TODO REMOVE
-        if (allCommentsIndex > -1) {
-            allComments.splice(allCommentsIndex, 1);
-        }
-        return allComments;
-    });
-    if (comment.parentId && commentsById[comment.parentId].get()) {
-        const parentChildrenState = commentsById[comment.parentId].children;
+    const commentBeforeRemoval = JSON.parse(JSON.stringify(comment));
+    const allCommentsIndex = allComments.get().findIndex((otherComment) => otherComment._id === commentBeforeRemoval._id);
+    if (allCommentsIndex > -1) {
+        allComments[allCommentsIndex].set(none);
+    }
+
+    // allComments.set((allComments) => {
+    //     const allCommentsIndex = allComments.findIndex((otherComment) => otherComment._id === commentBeforeRemoval._id);
+    //     console.log('allCommentsIndex', allCommentsIndex); // TODO REMOVE
+    //     if (allCommentsIndex > -1) {
+    //         allComments.splice(allCommentsIndex, 1);
+    //     }
+    //     console.log('allComments Spliced', allCommentsIndex); // TODO REMOVE
+    //     return allComments;
+    // });
+    console.log('comment.parentId:');
+    console.log('???', commentBeforeRemoval);
+    if (commentBeforeRemoval.parentId) {
+        console.log('commentsById[commentBeforeRemoval.parentId].get()');
+        console.log(commentsById[commentBeforeRemoval.parentId].get());
+    }
+    if (commentBeforeRemoval.parentId && commentsById[commentBeforeRemoval.parentId].get()) {
+        const parentChildrenState = commentsById[commentBeforeRemoval.parentId].children;
         const parentChildren = parentChildrenState?.get();
         if (parentChildren) {
-            const index = parentChildren.findIndex((otherComment) => otherComment._id === comment._id);
+            const index = parentChildren.findIndex((otherComment) => otherComment._id === commentBeforeRemoval._id);
             if (index > -1) {
-                parentChildrenState.set((parentChildrenState) => {
-                    parentChildrenState!.splice(index, 1);
-                    return parentChildrenState;
-                });
+                // @ts-ignore
+                parentChildrenState[index].set(none);
             }
+            // const index = parentChildren.findIndex((otherComment) => otherComment._id === commentBeforeRemoval._id);
+            // if (index > -1) {
+            //     parentChildrenState.set((parentChildrenState) => {
+            //         parentChildrenState!.splice(index, 1);
+            //         return parentChildrenState;
+            //     });
+            // }
         }
     } else {
-        const index = commentsTree.get().findIndex((otherComment) => otherComment._id === comment._id);
+        const index = commentsTree.get().findIndex((otherComment) => otherComment?._id === commentBeforeRemoval._id);
         console.log('commentsTree index', index); // TODO REMOVE
         if (index > -1) {
-            commentsTree.set((commentsTree) => {
-                commentsTree.splice(index, 1);
-                return commentsTree;
-            });
+            commentsTree[index].set(none);
         }
+        // const index = commentsTree.get().findIndex((otherComment) => otherComment._id === commentBeforeRemoval._id);
+        // console.log('commentsTree index', index); // TODO REMOVE
+        // if (index > -1) {
+        //     commentsTree.set((commentsTree) => {
+        //         commentsTree.splice(index, 1);
+        //         return commentsTree;
+        //     });
+        // }
     }
-    updateNestedChildrenCountInTree(commentsById, comment.parentId, -1);
-    commentsById[comment._id].set(none);
+    updateNestedChildrenCountInTree(commentsById, commentBeforeRemoval.parentId, -1);
+    commentsById[commentBeforeRemoval._id].set(none);
 }
 
 /**

@@ -45,8 +45,8 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
     const isMyComment = currentUser && 'id' in currentUser && (comment.userId.get() === currentUser.id || comment.anonUserId.get() === currentUser.id);
     console.log('isMyComment', isMyComment, currentUser, comment.userId.get(), comment.anonUserId.get()); // TODO REMOVE
     const canEdit = !comment.isDeleted.get() && ((currentUser && 'authorized' in currentUser && currentUser.authorized && (state.isSiteAdmin || isMyComment))); // can have edit key and be anon
-    const canPin = state.isSiteAdmin && !comment.parentId;
-    const canBlockOrFlag = !comment.isDeleted.get() && !comment.isByAdmin.get() && !comment.isByModerator.get() && !isMyComment && currentUser && 'authorized' in currentUser && currentUser.authorized;
+    const canPin = state.isSiteAdmin && !(comment.parentId?.get());
+    const canBlockOrFlag = !comment.isDeleted?.get() && !comment.isByAdmin?.get() && !comment.isByModerator?.get() && !isMyComment && currentUser && 'authorized' in currentUser && currentUser.authorized;
 
     const menuItems: any[] = []; // creating an array for every comment rendered is not ideal
 
