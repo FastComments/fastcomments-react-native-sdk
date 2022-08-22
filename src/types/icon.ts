@@ -1,4 +1,4 @@
-import {ComponentElement} from "react";
+import {ImageURISource} from "react-native";
 
 export enum FastCommentsIconType {
     APPROVE,
@@ -15,6 +15,7 @@ export enum FastCommentsIconType {
     PIN_BIG,
     UNPIN_BIG,
     PIN_SMALL,
+    PIN_RED,
     EDIT_SMALL,
     EDIT_BIG,
     TRASH,
@@ -37,5 +38,4 @@ export enum FastCommentsIconType {
     FLAG,
 }
 
-export type FastCommentsIconGetter = (width?: number, height?: number) => ComponentElement<any, any>;
-export type IconConfig = Record<FastCommentsIconType, FastCommentsIconGetter>;
+export type IconConfig = Record<FastCommentsIconType, ImageURISource>;

@@ -1,19 +1,19 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
+import {useState} from 'react';
 
 import RenderHtml from 'react-native-render-html';
 
 import {FastCommentsState} from "../types/fastcomments-state";
-import {StyleSheet, View, Text} from "react-native";
+import {Image, StyleSheet, Text, useWindowDimensions, View} from "react-native";
 import {CommentMenu} from "./comment-menu";
 import {CommentNotices} from "./comment-notices";
 import {CommentUserInfo} from "./comment-user-info";
 import {ReplyArea} from "./reply-area";
-import {useState} from "react";
-import { FastCommentsWidgetComment } from 'fastcomments-typescript';
+import {FastCommentsWidgetComment} from 'fastcomments-typescript';
 import {getDisplayDate} from "../services/comment-date";
-import { useWindowDimensions } from 'react-native';
 import {State} from "@hookstate/core";
+import {FastCommentsIconType} from "../types/icon";
 
 export interface FastCommentsCommentWithState {
     comment: State<FastCommentsWidgetComment>;
@@ -47,8 +47,8 @@ export function FastCommentsCommentView(commentWithState: FastCommentsCommentWit
 
     return <View>
         <View style={styles.topRight}>
-            {comment.isPinned && <View style={styles.pin}/>}
-            {!state.config.readonly && CommentMenu(commentWithState)}
+            {comment.isPinned.get() && <Image source={state.icons.get()[FastCommentsIconType.PIN_RED]} style={{width: 24, height: 24}} />}
+            {!(state.config.readonly.get()) && CommentMenu(commentWithState)}
         </View>
         <CommentNotices comment={comment} state={state}/>
         <CommentUserInfo comment={comment} state={state}/>

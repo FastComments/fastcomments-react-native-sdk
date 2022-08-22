@@ -102,29 +102,32 @@ export async function handleNewRemoteUser(config: FastCommentsCommentWidgetConfi
  * @param {Object.<string, boolean>} [changes]
  */
 export function addCommentToUserPresenceState(state: State<UserPresenceState>, comment: FastCommentsWidgetComment, changes: Record<string, boolean>) {
-    if (comment.userId) {
-        // TODO OPTIMIZE
-        if (!state.userIdsToCommentIds[comment.userId].get()) {
-            state.userIdsToCommentIds[comment.userId].set([]);
-            if (changes && state.usersOnlineMap[comment.userId].get() === undefined) {
-                changes[comment.userId] = true;
+    if (comment.userId || comment.anonUserId) { // OPTIMIZATION
+        state.userIdsToCommentIds.set((userIdsToCommentIds) => {
+            if (comment.userId) {
+                if (!userIdsToCommentIds[comment.userId]) {
+                    userIdsToCommentIds[comment.userId] = [];
+                    if (changes && state.usersOnlineMap[comment.userId] === undefined) {
+                        changes[comment.userId] = true;
+                    }
+                }
+                if (!userIdsToCommentIds[comment.userId].includes(comment._id)) {
+                    userIdsToCommentIds[comment.userId].push(comment._id);
+                }
             }
-        }
-        if (!state.userIdsToCommentIds[comment.userId].get().includes(comment._id)) {
-            state.userIdsToCommentIds[comment.userId].merge([comment._id]);
-        }
-    }
-    if (comment.anonUserId) {
-        // TODO OPTIMIZE
-        if (!state.userIdsToCommentIds[comment.anonUserId]) {
-            state.userIdsToCommentIds[comment.anonUserId].set([]);
-            if (changes && state.usersOnlineMap[comment.anonUserId].get() === undefined) {
-                changes[comment.anonUserId] = true;
+            if (comment.anonUserId) {
+                if (!userIdsToCommentIds[comment.anonUserId]) {
+                    userIdsToCommentIds[comment.anonUserId] = [];
+                    if (changes && state.usersOnlineMap[comment.anonUserId] === undefined) {
+                        changes[comment.anonUserId] = true;
+                    }
+                }
+                if (!userIdsToCommentIds[comment.anonUserId].includes(comment._id)) {
+                    userIdsToCommentIds[comment.anonUserId].push(comment._id);
+                }
             }
-        }
-        if (!state.userIdsToCommentIds[comment.anonUserId].get().includes(comment._id)) {
-            state.userIdsToCommentIds[comment.anonUserId].merge([comment._id]);
-        }
+            return userIdsToCommentIds;
+        });
     }
 }
 
@@ -141,7 +144,8 @@ function setupUserPresenceHeartbeat(state: FastCommentsState, urlIdWS: string) {
                     sso: state.ssoConfigString
                 })
             });
-        } catch (e) {}
+        } catch (e) {
+        }
         setTimeout(next, 1800000); // every 30 minutes on success or failure
     }
 

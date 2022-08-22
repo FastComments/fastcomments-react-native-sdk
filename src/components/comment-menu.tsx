@@ -4,8 +4,7 @@ import {Dispatch, SetStateAction, useState} from 'react';
 
 import {FastCommentsCommentWithState} from "./comment";
 import {FastCommentsIconType} from "../types/icon";
-import {resolveIcon} from "../services/icons";
-import {ActivityIndicator, Modal, Pressable, StyleSheet, Text, View} from "react-native";
+import {ActivityIndicator, Image, Modal, Pressable, StyleSheet, Text, View} from "react-native";
 import {createURLQueryString, makeRequest} from "../services/http";
 import {GetCommentTextResponse} from "../types/dto/get-comment-text";
 import { CommentActionEdit } from './comment-action-edit';
@@ -54,7 +53,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
         menuItems.push({
             label: state.translations.COMMENT_MENU_EDIT.get(),
             value: 'edit',
-            icon: resolveIcon(state.icons.get(), FastCommentsIconType.EDIT_BIG),
+            icon: () => <Image source={state.icons.get()[FastCommentsIconType.EDIT_BIG]} style={{width: 24, height: 24}} />,
             handler: async (setModalId: Dispatch<SetStateAction<string | null>>) => {
                 await startEditingComment({comment, state}, setModalId);
             }
@@ -66,7 +65,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
             menuItems.push({
                 label: state.translations.COMMENT_MENU_UNPIN.get(),
                 value: 'unpin',
-                icon: resolveIcon(state.icons.get(), FastCommentsIconType.UNPIN_BIG),
+                icon: () => <Image source={state.icons.get()[FastCommentsIconType.UNPIN_BIG]} style={{width: 24, height: 24}} />,
                 handler: async () => {
                     await setCommentPinStatus({comment, state}, false);
                 }
@@ -75,7 +74,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
             menuItems.push({
                 label: state.translations.COMMENT_MENU_PIN.get(),
                 value: 'pin',
-                icon: resolveIcon(state.icons.get(), FastCommentsIconType.PIN_BIG),
+                icon: () => <Image source={state.icons.get()[FastCommentsIconType.PIN_BIG]} style={{width: 24, height: 24}} />,
                 handler: async () => {
                     await setCommentPinStatus({comment, state}, true);
                 }
@@ -87,7 +86,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
         menuItems.push({
             label: state.translations.COMMENT_MENU_DELETE.get(),
             value: 'delete',
-            icon: resolveIcon(state.icons.get(), FastCommentsIconType.TRASH),
+            icon: () => <Image source={state.icons.get()[FastCommentsIconType.TRASH]} style={{width: 24, height: 24}} />,
             handler: async () => {
                 await CommentPromptDelete({
                     comment,
@@ -103,7 +102,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
             menuItems.push({
                 label: state.translations.COMMENT_MENU_UNBLOCK_USER.get(),
                 value: 'unblock',
-                icon: resolveIcon(state.icons.get(), FastCommentsIconType.BLOCK),
+                icon: () => <Image source={state.icons.get()[FastCommentsIconType.BLOCK]} style={{width: 24, height: 24}} />,
                 handler: async () => {
                     await setCommentBlockedStatus({comment, state}, false);
                 }
@@ -112,7 +111,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
             menuItems.push({
                 label: state.translations.COMMENT_MENU_BLOCK_USER.get(),
                 value: 'block',
-                icon: resolveIcon(state.icons.get(), FastCommentsIconType.BLOCK),
+                icon: () => <Image source={state.icons.get()[FastCommentsIconType.BLOCK]} style={{width: 24, height: 24}} />,
                 handler: async () => {
                     await setCommentBlockedStatus({comment, state}, true);
                 }
@@ -125,7 +124,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
             menuItems.push({
                 label: state.translations.COMMENT_MENU_UNFLAG.get(),
                 value: 'unflag',
-                icon: resolveIcon(state.icons.get(), FastCommentsIconType.BLOCK),
+                icon: () => <Image source={state.icons.get()[FastCommentsIconType.BLOCK]} style={{width: 24, height: 24}} />,
                 handler: async () => {
                     await setCommentFlaggedStatus({comment, state}, false);
                 }
@@ -134,7 +133,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
             menuItems.push({
                 label: state.translations.COMMENT_MENU_FLAG.get(),
                 value: 'flag',
-                icon: resolveIcon(state.icons.get(), FastCommentsIconType.BLOCK),
+                icon: () => <Image source={state.icons.get()[FastCommentsIconType.BLOCK]} style={{width: 24, height: 24}} />,
                 handler: async () => {
                     await setCommentFlaggedStatus({comment, state}, true);
                 }
@@ -174,7 +173,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
                         style={styles.modalCancel}
                         onPress={() => setModalIdVisible(null)}
                     >
-                        {resolveIcon(state.icons.get(), FastCommentsIconType.CROSS)(16, 16)}
+                        {<Image source={state.icons.get()[FastCommentsIconType.CROSS]} style={{width: 16, height: 16}} />}
                     </Pressable>
                     {
                         isLoading && <View style={styles.loadingView}>
@@ -196,7 +195,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
         <Pressable
             style={styles.menuButton}
             onPress={() => setModalIdVisible('menu')}>
-            {resolveIcon(state.icons.get(), FastCommentsIconType.EDIT_SMALL)()}
+            {<Image source={state.icons.get()[FastCommentsIconType.EDIT_SMALL]} style={{width: 24, height: 24}} />}
         </Pressable>
     </View>);
 }
