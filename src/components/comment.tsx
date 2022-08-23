@@ -13,7 +13,7 @@ import {ReplyArea} from "./reply-area";
 import {FastCommentsWidgetComment} from 'fastcomments-typescript';
 import {getDisplayDate} from "../services/comment-date";
 import {State} from "@hookstate/core";
-import {FastCommentsIconType} from "../types/icon";
+import {FastCommentsImageAsset} from "../types/image-asset";
 
 export interface FastCommentsCommentWithState {
     comment: State<FastCommentsWidgetComment>;
@@ -23,8 +23,6 @@ export interface FastCommentsCommentWithState {
 export function FastCommentsCommentView(commentWithState: FastCommentsCommentWithState) {
     const {comment, state} = commentWithState;
     // const isMyComment = state.currentUser && 'id' in state.currentUser && (comment.userId === state.currentUser.id || comment.anonUserId === state.currentUser.id);
-
-    console.log('is deleted?', comment.isDeleted.get());
 
     const html = comment.isDeleted.get()
         ? state.translations.DELETED_PLACEHOLDER.get()
@@ -47,7 +45,7 @@ export function FastCommentsCommentView(commentWithState: FastCommentsCommentWit
 
     return <View>
         <View style={styles.topRight}>
-            {comment.isPinned.get() && <Image source={state.icons.get()[FastCommentsIconType.PIN_RED]} style={{width: 24, height: 24}} />}
+            {comment.isPinned.get() && <Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_PIN_RED]} style={{width: 24, height: 24}} />}
             {!(state.config.readonly.get()) && CommentMenu(commentWithState)}
         </View>
         <CommentNotices comment={comment} state={state}/>

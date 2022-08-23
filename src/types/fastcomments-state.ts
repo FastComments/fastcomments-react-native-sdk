@@ -1,6 +1,6 @@
 import {FastCommentsCommentWidgetConfig, FastCommentsWidgetComment} from "fastcomments-typescript";
 import {FastCommentsSessionUser} from "./user";
-import {IconConfig} from "./icon";
+import {ImageAssetConfig} from "./image-asset";
 import {UserNotification} from "./user-notification";
 import {SubscriberInstance} from "../services/subscribe-to-changes";
 
@@ -54,7 +54,7 @@ export interface FastCommentsState {
     currentUser: FastCommentsSessionUser;
     hasBillingIssue: boolean;
     hasMore: boolean;
-    icons: IconConfig;
+    imageAssets: ImageAssetConfig;
     instanceId: string; // TODO is this useful since we are not using iframes?
     isDemo: boolean;
     isSiteAdmin: boolean;

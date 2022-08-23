@@ -5,7 +5,7 @@ import {GetCommentsResponse} from "../types/dto";
 import {addCommentToTree, ensureRepliesOpenToComment, getCommentsTreeAndCommentsById} from "./comment-trees";
 import {SubscriberInstance, subscribeToChanges} from "./subscribe-to-changes";
 import {checkBlockedComments} from "./blocking";
-import {DefaultIcons} from "../resources/default-icons";
+import {DefaultImageAssets} from "../resources/default-image-assets";
 import {addCommentToUserPresenceState, handleNewRemoteUser, setupUserPresenceState} from "./user-presense";
 import {WebsocketLiveEvent} from "../types/dto/websocket-live-event";
 import {repositionComment} from "./comment-positioning";
@@ -54,7 +54,7 @@ export class FastCommentsLiveCommentingService {
             currentUser: !config.sso && config.simpleSSO && config.simpleSSO.username ? config.simpleSSO : undefined,
             hasBillingIssue: false,
             hasMore: false,
-            icons: DefaultIcons,
+            imageAssets: DefaultImageAssets,
             isDemo: false,
             isSiteAdmin: false,
             newRootCommentCount: 0,

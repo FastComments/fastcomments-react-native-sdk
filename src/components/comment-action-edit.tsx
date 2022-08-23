@@ -1,6 +1,6 @@
 import {FastCommentsCommentWithState} from "./comment";
 import {StyleSheet, View, Text, TextInput, Pressable, ActivityIndicator, Image} from "react-native";
-import {FastCommentsIconType} from "../types/icon";
+import {FastCommentsImageAsset} from "../types/image-asset";
 import {useState} from "react";
 import {createURLQueryString, makeRequest} from "../services/http";
 import {getActionTenantId} from "../services/tenants";
@@ -69,7 +69,7 @@ export function CommentActionEdit({comment, state, close}: CommentActionEditProp
                 style={styles.modalCancel}
                 onPress={close}
             >
-                {<Image source={state.icons.get()[FastCommentsIconType.CROSS]} style={{width: 16, height: 16}} />}
+                {<Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_CROSS]} style={{width: 16, height: 16}} />}
             </Pressable>
             {
                 isLoading && <View style={styles.loadingView}>

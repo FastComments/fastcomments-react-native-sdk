@@ -50,7 +50,7 @@ export function CommentUserInfo({comment, state}: FastCommentsCommentWithState) 
         (
             comment.avatarSrc.get() && !comment.isBlocked.get()
                 ? <View style={styles.avatarWrapper}><Image style={styles.avatarImage} source={{uri: comment.avatarSrc.get()}}/>{activityIcon}</View>
-                : <View style={styles.avatarWrapperDefault}><Image style={styles.avatarImage} source={{uri: getDefaultAvatarSrc(state.config.get())}}/>{activityIcon}</View>
+                : <View style={styles.avatarWrapperDefault}><Image style={styles.avatarImage} source={state.config.defaultAvatarSrc?.get() ? {uri: state.config.defaultAvatarSrc.get()} : getDefaultAvatarSrc(state)}/>{activityIcon}</View>
         );
 
     // TODO best way to handle undefined comment.badges instead of cast? TS compilation error
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
         "borderStyle": "solid"
     },
     avatarImage: {
-        width: 40,
-        height: 40,
+        width: 56,
+        height: 56,
     }
 })
