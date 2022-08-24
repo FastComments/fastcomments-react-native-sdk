@@ -15,8 +15,7 @@ export function CommentAreaMessage(message: string | undefined) {
 
 const styles = StyleSheet.create({
     wrapper: {
-        display: 'flex',
-        height: 'fit-content',
+        flex: 1,
         minHeight: '140px',
         padding: '30px 0',
         alignItems: 'center',

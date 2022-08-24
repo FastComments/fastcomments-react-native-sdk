@@ -16,7 +16,7 @@ export interface LiveCommentingTopAreaProps {
 export function LiveCommentingTopArea({state}: LiveCommentingTopAreaProps) {
     return <View>
         <View>{
-            state.config.inputAfterComments.get() !== true && ReplyArea({state})
+            state.config.inputAfterComments.get() !== true && <ReplyArea state={state} />
         }</View>
         <View>{
             state.config.useShowCommentsToggle.get() && state.commentCountOnServer.get() > 0 && ShowHideCommentsToggle(state)

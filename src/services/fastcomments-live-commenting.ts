@@ -297,7 +297,7 @@ export class FastCommentsLiveCommentingService {
                     // getAndRenderLatestNotificationCount(); // TODO
                 }
                 // noinspection JSIgnoredPromiseFromCall
-                setupUserPresenceState(state, newUrlIdWS);
+                setupUserPresenceState(state, newUrlIdWS); // TODO can cause exception if handled event after component unmounted, how to detect?
             }
         });
     }

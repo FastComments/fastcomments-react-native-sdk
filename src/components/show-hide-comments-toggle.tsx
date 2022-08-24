@@ -13,7 +13,7 @@ export function ShowHideCommentsToggle(state: State<FastCommentsState>) {
 
 const styles = StyleSheet.create({
     text: {
-        "width": "fit-content",
+        flex: 1,
         "margin": "20px auto",
         "cursor": "pointer",
         "padding": "10px 17px 10px 27px",

@@ -11,12 +11,12 @@ export interface NotificationBellProps {
 }
 
 export function NotificationBell({state}: NotificationBellProps) {
+    const [isOpen, setNotificationsListOpen] = useState(false);
     if (state.config.disableNotificationBell.get()) {
         return null;
     }
     const notificationCount = state.notificationCount.get()!;
     const bellIconType = notificationCount > 0 ? FastCommentsImageAsset.ICON_BELL_RED : FastCommentsImageAsset.ICON_BELL;
-    const [isOpen, setNotificationsListOpen] = useState(false);
 
     return <View>
         <Pressable onPress={() => setNotificationsListOpen(!isOpen)} style={styles.bellContainer}>

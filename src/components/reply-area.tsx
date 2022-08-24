@@ -96,19 +96,27 @@ async function submit({
     let isAuthenticating = false;
     const allowAnon = state.config.allowAnon.get();
 
-    if ((!allowAnon && (!commentReplyState.username || (!allowAnon && !commentReplyState.email))) || !commentReplyState.comment) {
+    const currentUserBeforeSubmit = state.currentUser.get();
+    const lastCurrentUserId = currentUserBeforeSubmit && 'id' in currentUserBeforeSubmit ? currentUserBeforeSubmit.id : null;
+    if (!currentUserBeforeSubmit && commentReplyState.username) {
+        isAuthenticating = true;
+    }
+
+    if (!commentReplyState.comment ||
+        (!allowAnon && (
+            !(commentReplyState.username
+                || currentUserBeforeSubmit?.username)
+            || (!allowAnon && !(commentReplyState.email
+                || (currentUserBeforeSubmit && 'email' in currentUserBeforeSubmit && currentUserBeforeSubmit.email))
+                )
+            )
+        )) {
         return commentReplyState;
     }
     // TODO validate email
     // if (!allowAnon && ... is email invalid ...) {
     //     return;
     // }
-
-    const currentUserBeforeSubmit = state.currentUser.get();
-    const lastCurrentUserId = currentUserBeforeSubmit && 'id' in currentUserBeforeSubmit ? currentUserBeforeSubmit.id : null;
-    if (!currentUserBeforeSubmit && commentReplyState.username) {
-        isAuthenticating = true;
-    }
 
     const tenantIdToUse = getActionTenantId({state, tenantId: parentComment?.tenantId.get()});
     const urlIdToUse = getActionURLID({state, urlId: parentComment?.urlId.get()});
@@ -136,6 +144,8 @@ async function submit({
         moderationGroupIds: state.config.moderationGroupIds.get(),
         isFromMyAccountPage: state.config.tenantId.get() === 'all'
     };
+
+    console.log('saving comment', newComment) // TODO remove
 
     // extensions.forEach((extension) => {
     //     extension.prepareCommentForSaving && extension.prepareCommentForSaving(newComment, replyingToId);
@@ -271,15 +281,15 @@ async function submit({
 }
 
 export function ReplyArea({state, parentComment}: ReplyAreaState) {
-    // parentId check is so that we don't allow new comments to root, but we do allow new comments **inline**
-    if (state.config.readonly.get() || (!parentComment && state.config.noNewRootComments.get())) {
-        return null;
-    }
-
     const [commentReplyState, setNewCommentState] = useState<CommentReplyState>({
         isReplySaving: false,
         showSuccessMessage: false
     });
+
+    // parentId check is so that we don't allow new comments to root, but we do allow new comments **inline**
+    if (state.config.readonly.get() || (!parentComment && state.config.noNewRootComments.get())) {
+        return null;
+    }
 
     const currentUser = state.currentUser?.get();
 
@@ -296,7 +306,7 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
     let ssoLoginWrapper;
     let topBar;
     let commentInputArea;
-    let commentSubmitButton;
+    let commentSubmitButton = <Text>submit button should be hereasdfds</Text>;
 
     if (!currentUser && ssoConfig && !state.config.allowAnon.get()) {
         if (ssoConfig.loginURL || ssoConfig.loginCallback) { // if they don't define a URL, we just show a message.
@@ -403,12 +413,14 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
                         });
                     }
                 }}>
-                    <Text>{commentReplyState.showSuccessMessage ? state.translations.WRITE_ANOTHER_COMMENT.get() : state.translations.SUBMIT_REPLY.get()}</Text>
+                    <Text style={styles.replyButtonText}>{commentReplyState.showSuccessMessage ? state.translations.WRITE_ANOTHER_COMMENT.get() : state.translations.SUBMIT_REPLY.get()}</Text>
                     <Image
                         source={parentComment ? state.imageAssets[FastCommentsImageAsset.ICON_RETURN].get() : state.imageAssets[FastCommentsImageAsset.ICON_BUBBLE].get()}
                         style={{width: 22, height: 22}}/>
                 </Pressable>
             </View>;
+        } else {
+            commentSubmitButton = <Text>submit button should be here</Text>
         }
 
         // TODO
@@ -517,8 +529,7 @@ const styles = StyleSheet.create({
         marginBottom: 5,
     },
     ssoLoginWrapper: {
-        "display": "flex",
-        "height": "fit-content",
+        flex: 1,
         "minHeight": 140,
         "paddingTop": 30,
         "paddingRight": 0,
@@ -564,7 +575,7 @@ const styles = StyleSheet.create({
         "lineHeight": 25
     },
     loggedInInfo: {
-        "width": "calc(100% - 60px)", // TODO
+        // "width": "calc(100% - 60px)", // TODO
         "minWidth": 150
     },
     topBarAvatar: {
@@ -579,7 +590,7 @@ const styles = StyleSheet.create({
         // TODO box shadow
     },
     topBarUsername: {
-        "maxWidth": "calc(50% - 25px)", // TODO
+        // "maxWidth": "calc(50% - 25px)", // TODO
         "overflow": "hidden",
         "verticalAlign": "middle",
         "textOverflow": "ellipsis",
@@ -592,8 +603,8 @@ const styles = StyleSheet.create({
         // animated-background
     },
     replyButtonWrapper: {
-        flex: 1,
-        alignItems: 'flex-end'
+        alignItems: 'flex-end',
+        justifyContent: 'space-between'
     },
     replyButton: {
         "paddingTop": 10,
@@ -604,7 +615,9 @@ const styles = StyleSheet.create({
         "borderTopRightRadius": 7,
         "borderBottomRightRadius": 7,
         "borderBottomLeftRadius": 7,
-        "backgroundColor": "#333",
+        "backgroundColor": "#333"
+    },
+    replyButtonText: {
         "color": "#fff"
     },
     loadingView: {
@@ -623,4 +636,4 @@ const styles = StyleSheet.create({
         "margin": 5,
         "color": "#ff0000"
     }
-})
+});

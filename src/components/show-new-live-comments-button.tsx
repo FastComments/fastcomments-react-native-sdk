@@ -14,7 +14,7 @@ export function ShowNewLiveCommentsButton(state: State<FastCommentsState>) {
 
 const styles = StyleSheet.create({
     button: {
-        "width": "fit-content",
+        flex: 1,
         "marginTop": 20,
         "marginRight": "auto",
         "marginBottom": 0,
