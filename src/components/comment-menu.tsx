@@ -1,10 +1,10 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
-import {Dispatch, SetStateAction, useState} from 'react';
+import {Dispatch, SetStateAction} from 'react';
 
 import {FastCommentsCommentWithState} from "./comment";
 import {FastCommentsImageAsset} from "../types/image-asset";
-import {ActivityIndicator, Image, Modal, Pressable, StyleSheet, Text, View} from "react-native";
+import {Image} from "react-native";
 import {createURLQueryString, makeRequest} from "../services/http";
 import {GetCommentTextResponse} from "../types/dto/get-comment-text";
 import {CommentActionEdit} from './comment-action-edit';
@@ -12,6 +12,7 @@ import {CommentPromptDelete} from "./comment-action-delete";
 import {repositionComment} from "../services/comment-positioning";
 import {PinCommentResponse} from "../types/dto/pin-comment";
 import {BlockCommentResponse} from "../types/dto/block-comment";
+import {ModalMenu} from "./modal-menu";
 
 async function startEditingComment({state, comment}: FastCommentsCommentWithState, setModalId: Dispatch<SetStateAction<string | null>>) {
     const response = await makeRequest<GetCommentTextResponse>({
@@ -113,7 +114,8 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
             icon: <Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_EDIT_BIG]} style={{width: 24, height: 24}}/>,
             handler: async (setModalId: Dispatch<SetStateAction<string | null>>) => {
                 await startEditingComment({comment, state}, setModalId);
-            }
+            },
+            subModalContent: (close: () => void) => <CommentActionEdit comment={comment} state={state} close={close}/>
         });
     }
 
@@ -144,11 +146,11 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
             label: state.translations.COMMENT_MENU_DELETE.get(),
             value: 'delete',
             icon: <Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_TRASH]} style={{width: 24, height: 24}}/>,
-            handler: async () => {
+            handler: async (setModalId: Dispatch<SetStateAction<string | null>>) => {
                 await CommentPromptDelete({
                     comment,
                     state,
-                    close: () => setModalIdVisible(null)
+                    close: () => setModalId(null)
                 });
             }
         });
@@ -198,122 +200,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
         }
     }
 
-    // TODO common modal-menu component
-    const [activeModalId, setModalIdVisible] = useState<string | null>(null);
-    const [isLoading, setLoading] = useState(false);
+    const openButton = <Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_EDIT_SMALL]} style={{width: 16, height: 16}}/>;
 
-    return (<View style={styles.centeredView}>
-        <Modal
-            animationType="slide"
-            transparent={true}
-            visible={activeModalId === 'menu'}
-            onRequestClose={() => {
-                setModalIdVisible(null);
-            }}
-        >
-            <View style={styles.centeredView}>
-                <View style={styles.modalView}>
-                    {menuItems.map((item) =>
-                        <Pressable
-                            key={item.label}
-                            style={styles.menuOptionButton} onPress={async () => {
-                            setLoading(true);
-                            await item.handler(setModalIdVisible);
-                            setLoading(false);
-                        }}
-                        >
-                            {item.icon}
-                            <Text style={styles.menuOptionText}>{item.label}</Text>
-                        </Pressable>
-                    )}
-                    <Pressable
-                        style={styles.modalCancel}
-                        onPress={() => setModalIdVisible(null)}
-                    >
-                        {<Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_CROSS]} style={{width: 16, height: 16}}/>}
-                    </Pressable>
-                    {
-                        isLoading && <View style={styles.loadingView}>
-                            <ActivityIndicator size="large"/>
-                        </View>
-                    }
-                </View>
-            </View>
-        </Modal>
-        <Modal
-            animationType="slide"
-            transparent={true}
-            visible={activeModalId === 'edit'}
-            onRequestClose={() => {
-                setModalIdVisible(null);
-            }}>
-            <CommentActionEdit comment={comment} state={state} close={() => setModalIdVisible(null)}/>
-        </Modal>
-        <Pressable
-            style={styles.menuButton}
-            onPress={() => setModalIdVisible('menu')}>
-            <Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_EDIT_SMALL]} style={{width: 16, height: 16}}/>
-        </Pressable>
-    </View>);
+    return <ModalMenu state={state} items={menuItems} openButton={openButton} />;
 }
-
-const styles = StyleSheet.create({
-    centeredView: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        marginTop: 22
-    },
-    modalView: {
-        margin: 20,
-        backgroundColor: "white",
-        borderRadius: 20,
-        padding: 35,
-        alignItems: "center",
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 2
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 5
-    },
-    menuOptionButton: {
-        flexDirection: 'row',
-        minWidth: 100,
-        justifyContent: 'flex-start',
-        alignItems: 'center',
-        marginBottom: 10,
-        padding: 10,
-        elevation: 2,
-        color: 'black'
-    },
-    menuButton: {
-        padding: 10,
-        justifyContent: 'center',
-        alignItems: 'center'
-    },
-    menuOptionText: {
-        paddingLeft: 10,
-        color: "black",
-        fontWeight: "bold",
-        textAlign: "left"
-    },
-    modalCancel: {
-        position: 'absolute',
-        top: 10,
-        right: 10
-    },
-    loadingView: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#ffffff80'
-    }
-});

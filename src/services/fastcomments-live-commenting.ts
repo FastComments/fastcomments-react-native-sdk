@@ -14,6 +14,7 @@ import {broadcastIdsSent} from "./broadcast-id";
 import {mergeSimpleSSO} from "./sso";
 import {none, State} from "@hookstate/core";
 import {removeCommentOnClient} from "./remove-comment-on-client";
+import {handleNewCustomConfig} from "./custom-config";
 
 interface FastCommentsInternalState {
     isFirstRequest: boolean;
@@ -146,7 +147,7 @@ export class FastCommentsLiveCommentingService {
             console.log('got', response);
             const isRateLimited = response.code === 'rate-limited';
 
-            this.handleNewCustomConfig(response.customConfig);
+            handleNewCustomConfig(this.state, response.customConfig);
 
             if (isRateLimited) {
                 state.blockingErrorMessage.set(state.translations.EXCEEDED_QUOTA.get());
@@ -259,37 +260,6 @@ export class FastCommentsLiveCommentingService {
         } catch (e) {
             // TODO handle failures
             console.error(e);
-        }
-    }
-
-    handleNewCustomConfig(customConfig: FastCommentsCommentWidgetConfig | null | undefined, overwrite?: boolean) {
-        const config = this.state.config;
-        if (customConfig) {
-            for (const key in customConfig) {
-                // for the customization page (css is sent from server, but newer version from client)
-                // if the custom config has translations, merge them with what the client specified
-                if (key === 'translations') {
-                    if (config[key].get()) {
-                        config[key].set(Object.assign({}, customConfig[key], config[key].get()));
-                    } else {
-                        config[key].set(customConfig[key]);
-                    }
-                } else if ((config[key as keyof FastCommentsCommentWidgetConfig] === undefined || overwrite) || key === 'wrap' || key === 'hasDarkBackground') { // undefined is important here (test comment thread viewer w/ customizations like hideCommentsUnderCountTextFormat/useShowCommentsToggle
-                    // @ts-ignore
-                    config[key].set(customConfig[key]);
-                }
-            }
-            if (!this.state.sortDirection.get()) {
-                const defaultSortDirection = config.defaultSortDirection.get();
-                if (typeof defaultSortDirection === 'string') {
-                    this.state.sortDirection.set(defaultSortDirection);
-                }
-            }
-        }
-
-        const configTranslations = config.translations.get();
-        if (configTranslations) {
-            this.state.translations.merge(configTranslations);
         }
     }
 
@@ -548,7 +518,7 @@ export class FastCommentsLiveCommentingService {
                     }
 
                     addCommentToTree(this.state.allComments, this.state.commentsTree, commentsById, dataJSONComment, !!this.state.config.newCommentsToBottom);
-                    incOverallCommentCount(this.state.config.get(), this.state, dataJSONComment.parentId);
+                    incOverallCommentCount(this.state.config.countAll.get(), this.state, dataJSONComment.parentId);
 
                     // TODO update the "Show X Comments" button text live like vanilla js widget
                     // const showCommentsMessageButton = document.querySelector('.comments-toggle');
@@ -590,7 +560,7 @@ export class FastCommentsLiveCommentingService {
                 }
                 break;
             case 'new-config':
-                this.handleNewCustomConfig(dataJSON.config, true);
+                handleNewCustomConfig(this.state, dataJSON.config, true);
                 break;
         }
     }

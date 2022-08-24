@@ -11,7 +11,7 @@ export interface CommentActionDeleteProps extends FastCommentsCommentWithState {
 }
 
 async function deleteComment({comment, state}: FastCommentsCommentWithState) {
-    const tenantId = getActionTenantId({comment, state});
+    const tenantId = getActionTenantId({state, tenantId: comment.tenantId.get()});
     const broadcastId = newBroadcastId();
     const response = await makeRequest<DeleteCommentResponse>({
         apiHost: state.apiHost.get(),

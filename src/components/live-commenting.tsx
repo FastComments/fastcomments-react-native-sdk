@@ -1,6 +1,6 @@
 // use this if you want to use the default layout and layout mechanism
 
-import {message} from "./message";
+import {CommentAreaMessage} from "./comment-area-message";
 import {StyleSheet, Text, View} from "react-native";
 import {PaginationNext} from "./pagination-next";
 import {PaginationPrev} from "./pagination-prev";
@@ -12,6 +12,7 @@ import React, {useEffect} from 'react';
 import RenderHtml from 'react-native-render-html';
 import { useWindowDimensions } from 'react-native';
 import {useHookstate} from "@hookstate/core";
+import {LiveCommentingTopArea} from "./live-commenting-top-area";
 
 export function FastCommentsLiveCommenting({config}: { config: FastCommentsCommentWidgetConfig }) {
     const serviceInitialState = FastCommentsLiveCommentingService.createFastCommentsStateFromConfig({...config}); // shallow clone is important to prevent extra re-renders
@@ -23,7 +24,7 @@ export function FastCommentsLiveCommenting({config}: { config: FastCommentsComme
     }, [config]);
 
     if (state.blockingErrorMessage.get()) {
-        return <View>{message(state.blockingErrorMessage.get())}</View>;
+        return <View>{CommentAreaMessage(state.blockingErrorMessage.get())}</View>;
     } else if (!(state.commentsTree.length === 0 && state.config.readonly.get() && (state.config.hideCommentsUnderCountTextFormat.get() || state.config.useShowCommentsToggle.get()))) {
         const paginationBeforeComments = state.commentsVisible.get() && state.config.paginationBeforeComments.get()
             ? PaginationNext(state)
@@ -40,6 +41,7 @@ export function FastCommentsLiveCommenting({config}: { config: FastCommentsComme
             {
                 state.isDemo.get() && <Text style={styles.red}><RenderHtml source={{html: state.translations.DEMO_CREATE_ACCT.get()}} contentWidth={width}/></Text>
             }
+            <LiveCommentingTopArea state={state} />
             <View style={styles.comments}>
                 {paginationBeforeComments}
                 {/*{state.commentsVisible && CommentsList(state)}*/}
@@ -49,7 +51,7 @@ export function FastCommentsLiveCommenting({config}: { config: FastCommentsComme
             {paginationAfterComments}
         </View>;
     } else {
-        return <View>{message('todo')}</View>;
+        return <View>{CommentAreaMessage('todo')}</View>;
     }
 }
 

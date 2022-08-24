@@ -61,7 +61,7 @@ export function FastCommentsCommentView(commentWithState: FastCommentsCommentWit
 
                 </View>
             </View>
-            {state.commentState[comment._id.get()]?.replyBoxOpen && ReplyArea(commentWithState.state)}
+            {state.commentState[comment._id.get()]?.replyBoxOpen && <ReplyArea state={state} parentComment={comment} />}
         </View>
     </View>;
 }

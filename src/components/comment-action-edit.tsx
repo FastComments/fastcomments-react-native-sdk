@@ -1,18 +1,19 @@
 import {FastCommentsCommentWithState} from "./comment";
-import {StyleSheet, View, Text, TextInput, Pressable, ActivityIndicator, Image} from "react-native";
+import {StyleSheet, View, Text, Pressable, ActivityIndicator, Image} from "react-native";
 import {FastCommentsImageAsset} from "../types/image-asset";
 import {useState} from "react";
 import {createURLQueryString, makeRequest} from "../services/http";
 import {getActionTenantId} from "../services/tenants";
 import {UpdateCommentTextResponse} from "../types/dto/update-comment-text";
 import {newBroadcastId} from "../services/broadcast-id";
+import {CommentTextArea} from "./comment-text-area";
 
 export interface CommentActionEditProps extends FastCommentsCommentWithState {
     close: () => void;
 }
 
 async function saveCommentText({comment, state}: FastCommentsCommentWithState, newValue: string) {
-    const tenantId = getActionTenantId({comment, state});
+    const tenantId = getActionTenantId({state, tenantId: comment.tenantId.get()});
     const broadcastId = newBroadcastId();
     const response = await makeRequest<UpdateCommentTextResponse>({
         apiHost: state.apiHost.get(),
@@ -48,7 +49,7 @@ export function CommentActionEdit({comment, state, close}: CommentActionEditProp
     // TODO ask before closing if content changed
     return <View style={styles.centeredView}>
         <View style={styles.modalView}>
-            <TextInput style={styles.textarea} multiline={true} value={comment.comment.get()} onChangeText={(value) => comment.comment.set(value)}/>
+            <CommentTextArea state={state} value={comment.comment.get()} onChangeText={(newValue: string) => comment.comment.set(newValue)} />
             <Pressable
                 style={styles.saveButton}
                 onPress={async () => {
@@ -112,6 +113,7 @@ const styles = StyleSheet.create({
         right: 10
     },
     loadingView: {
+        // TODO common
         position: 'absolute',
         top: 0,
         left: 0,
@@ -121,11 +123,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#ffffff80'
-    },
-    textarea: {
-        alignSelf: 'stretch',
-        borderWidth: 1,
-        borderColor: 'black'
     },
     saveButton: {
         marginTop: 10

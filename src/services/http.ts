@@ -43,7 +43,7 @@ export async function makeRequest<T>({apiHost, method, url, body, attemptsRemain
                         try {
                             resolve(await makeRequest({apiHost, method, url, body, attemptsRemaining}));
                         } catch (e) {
-                            reject(e);
+                            reject(e as T);
                         }
                     }, 1500 * Math.random());
                 });

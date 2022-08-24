@@ -4,5 +4,5 @@ import {decOverallCommentCount} from "./comment-count";
 
 export function removeCommentOnClient({state, comment}: FastCommentsCommentWithState) {
     removeCommentFromTree(state.allComments, state.commentsTree, state.commentsById, comment.get());
-    decOverallCommentCount(state.config.get(), state, comment.parentId?.get());
+    decOverallCommentCount(state.config.countAll.get(), state, comment.parentId?.get());
 }
