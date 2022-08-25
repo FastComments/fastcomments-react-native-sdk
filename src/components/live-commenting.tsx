@@ -44,9 +44,7 @@ export function FastCommentsLiveCommenting({config}: { config: FastCommentsComme
             <LiveCommentingTopArea state={state} />
             <View style={styles.comments}>
                 {paginationBeforeComments}
-                {/*{state.commentsVisible && CommentsList(state)}*/}
-                <Text>{state.commentsTree.length}</Text>
-                {CommentsList(state)}
+                {state.commentsVisible.get() && CommentsList(state)}
             </View>
             {paginationAfterComments}
         </View>;
