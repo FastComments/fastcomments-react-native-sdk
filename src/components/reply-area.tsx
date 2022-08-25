@@ -2,7 +2,7 @@
 import * as React from 'react';
 
 import {FastCommentsState} from "../types/fastcomments-state";
-import {View, Text, StyleSheet, Pressable, Image, Linking, ActivityIndicator} from "react-native";
+import {View, Text, StyleSheet, Pressable, Image, Linking, ActivityIndicator, TextInput, useWindowDimensions} from "react-native";
 import {State} from "@hookstate/core";
 import {FastCommentsWidgetComment} from "fastcomments-typescript";
 import {FastCommentsImageAsset} from '../types/image-asset';
@@ -21,6 +21,15 @@ import {handleNewCustomConfig} from "../services/custom-config";
 import {incOverallCommentCount} from "../services/comment-count";
 import {addCommentToTree} from "../services/comment-trees";
 import {setupUserPresenceState} from "../services/user-presense";
+import {persistSubscriberState} from "../services/live";
+import RenderHtml from 'react-native-render-html';
+
+// TODO replace with translatedError response which would reduce initial bundle size
+const SignUpErrorsTranslationIds: Record<string, string> = {
+    'username-taken': 'USERNAME_TAKEN',
+    'invalid-name': 'INVALID_USERNAME',
+    'invalid-name-is-email': 'USERNAME_CANT_BE_EMAIL'
+};
 
 export interface ReplyAreaState {
     state: State<FastCommentsState>
@@ -34,54 +43,64 @@ interface CommentReplyState {
     comment?: string
     isReplySaving: boolean
     showSuccessMessage: boolean
+    showAuthInputForm: boolean
     lastSaveResponse?: SaveCommentResponse
 }
 
-async function logout(_state: State<FastCommentsState>) {
+async function logout(state: State<FastCommentsState>) {
+    if (state.config.sso.get()) {
+        if (state.config.sso.get()!.logoutURL) {
+            await Linking.openURL(state.config.sso.get()!.logoutURL!);
+            return;
+        } else if (state.config.sso.get()!.logoutCallback) {
+            state.config.sso.get()!.logoutCallback!('');
+        }
+    }
+    await makeRequest({
+        apiHost: state.apiHost.get()!,
+        method: 'PUT',
+        url: '/auth/logout'
+    });
+    const currentUser = state.currentUser.get();
+    let currentUserId = currentUser && 'id' in currentUser && currentUser.id;
+
+    // reset SSO config to log out the user.
+    if (state.config.sso.get()) {
+        state.config.sso.set((sso) => {
+            if (sso) {
+                sso.userDataJSONBase64 = null;
+                sso.verificationHash = null;
+            }
+            return sso;
+        });
+    }
+    // update the cached sso state passed in all api calls
+    // if we allow anon, just turn off SSO in API calls - since we will just use anon commenting until widget is reloaded with SSO config again.
+    state.ssoConfigString.set(state.config.allowAnon.get() ? undefined : (state.config.sso.get() ? JSON.stringify(state.config.sso.get()!) : undefined));
+    // reset the currently logged in user
+    state.currentUser.set(null);
+    persistSubscriberState(state, state.urlIdWS.get()!, state.tenantIdWS.get()!, null); // reconnect w/o a user
     // TODO
-    // if (config.sso) {
-    //     if (config.sso.logoutURL) {
-    //         return redirect(config.instanceId, config.sso.logoutURL);
-    //     } else if (config.sso.logoutCallback) {
-    //         if (config.sso.logoutCallback instanceof Function) {
-    //             config.sso.logoutCallback(config.instanceId);
-    //         } else {
-    //             logout(config.instanceId);
-    //         }
-    //     }
-    // }
-    //
-    // const parentId = getNamedItem(event, 'data-parent-id').value;
-    //
-    // delete logoutFailureById[parentId];
-    //
-    // makeRequest(config, 'PUT', '/auth/logout', null, function () {
-    //     let currentUserId = currentUser ? currentUser.id : null;
-    //     currentUser = null;
-    //
-    //     if (config.sso) {
-    //         // reset SSO state to prevent confusion if developer doesn't reload widget
-    //         config.sso.userDataJSONBase64 = null;
-    //         config.sso.verificationHash = null;
-    //     }
-    //
-    //     // if we allow anon, just turn off SSO in API calls - since we will just use anon commenting until widget is reloaded with SSO config again.
-    //     ssoConfigString = config.allowAnon ? null : config.sso ? JSON.stringify(config.sso) : null;
-    //     persistSubscriberState(urlIdWS, tenantIdWS, null); // reconnect w/o a user
     //     onAuthenticationChange(config.instanceId, 'logout', currentUser);
-    //     for (const key in NotificationState) {
-    //         delete NotificationState[key];
-    //     }
-    //     delete UserPresenceState.usersOnlineMap[currentUserId];
-    //     delete UserPresenceState.userIdsToCommentIds[currentUserId];
-    //     setupUserPresenceState(targetElement, config, translations, urlIdWS, UserPresenceState, commentsById, commentsTree);
-    //     saveUIStateAndRestore(renderCommentsTree);
-    // }, function () {
-    //     logoutFailureById[parentId] = true;
-    //     saveUIStateAndRestore(renderCommentsTree);
-    // });
+    state.userNotificationState.set({ // TODO put default somewhere since also defined in fastcomments-state
+        isOpen: false,
+        isLoading: false,
+        count: 0,
+        notifications: [],
+        isPaginationInProgress: false,
+        isSubscribed: false,
+    });
+    state.userPresenceState.set((userPresenceState) => {
+        if (currentUserId) {
+            delete userPresenceState.usersOnlineMap[currentUserId];
+            delete userPresenceState.userIdsToCommentIds[currentUserId];
+        }
+        return userPresenceState;
+    });
+    await setupUserPresenceState(state, state.urlIdWS.get()!);
 }
 
+// TODO why is default webstorm formatting terrible? fix
 async function submit({
                           state,
                           parentComment
@@ -104,10 +123,10 @@ async function submit({
 
     if (!commentReplyState.comment ||
         (!allowAnon && (
-            !(commentReplyState.username
-                || currentUserBeforeSubmit?.username)
-            || (!allowAnon && !(commentReplyState.email
-                || (currentUserBeforeSubmit && 'email' in currentUserBeforeSubmit && currentUserBeforeSubmit.email))
+                !(commentReplyState.username
+                    || currentUserBeforeSubmit?.username)
+                || (!allowAnon && !(commentReplyState.email
+                        || (currentUserBeforeSubmit && 'email' in currentUserBeforeSubmit && currentUserBeforeSubmit.email))
                 )
             )
         )) {
@@ -190,7 +209,7 @@ async function submit({
                     return parentState;
                 });
             }
-            addCommentToTree(state.allComments, state.commentsTree, state.commentsById, response.comment, !!state.config.newCommentsToBottom);
+            addCommentToTree(state.allComments, state.commentsTree, state.commentsById, response.comment, !!state.config.newCommentsToBottom.get());
             incOverallCommentCount(state.config.countAll.get(), state, response.comment.parentId);
 
             if (response.user) {
@@ -256,6 +275,7 @@ async function submit({
             websiteUrl: commentReplyState.websiteUrl,
             comment: commentReplyState.comment,
             isReplySaving: false,
+            showAuthInputForm: false,
             showSuccessMessage,
             lastSaveResponse: response
         };
@@ -274,6 +294,7 @@ async function submit({
             websiteUrl: commentReplyState.websiteUrl,
             comment: commentReplyState.comment,
             isReplySaving: false,
+            showAuthInputForm: false,
             showSuccessMessage: false,
             lastSaveResponse: response
         };
@@ -281,32 +302,45 @@ async function submit({
 }
 
 export function ReplyArea({state, parentComment}: ReplyAreaState) {
+    const currentUser = state.currentUser?.get();
+    const needsAuth = !currentUser && !!parentComment;
     const [commentReplyState, setNewCommentState] = useState<CommentReplyState>({
         isReplySaving: false,
-        showSuccessMessage: false
+        showSuccessMessage: false,
+        // for root comment area, we don't show the auth input form until they interact to save screen space.
+        showAuthInputForm: needsAuth
     });
+    const {width} = useWindowDimensions();
+    const lastSaveResponse = commentReplyState.lastSaveResponse;
 
     // parentId check is so that we don't allow new comments to root, but we do allow new comments **inline**
     if (state.config.readonly.get() || (!parentComment && state.config.noNewRootComments.get())) {
         return null;
     }
 
-    const currentUser = state.currentUser?.get();
-
+    // TODO OPTIMIZE BENCHMARK: faster solution than using RenderHtml. RenderHtml is easy because the translation is HTML, but it only has <b></b> elements.
+    //  We can't hardcode the order of the bold elements due to localization, so rendering HTML is nice. But we can probably transform this into native elements faster than RenderHtml.
     const replyToText = parentComment
         ? (
             currentUser
-                ? <Text
-                    style={styles.replyingTo}>{state.translations.REPLYING_TO_AS.get().replace('[to]', parentComment.commenterName.get() as string).replace('[from]', currentUser.username)}</Text>
-                : <Text
-                    style={styles.replyingTo}>{state.translations.REPLYING_TO.get().replace('[to]', parentComment.commenterName.get() as string)}</Text>
+                ? <RenderHtml source={{
+                    html:
+                        state
+                            .translations.REPLYING_TO_AS.get().replace('[to]', parentComment.commenterName.get() as string).replace('[from]', currentUser.username)
+                }} contentWidth={width}/>
+                : <RenderHtml source={{
+                    html:
+                        state.translations.REPLYING_TO.get().replace('[to]', parentComment.commenterName.get() as string)
+                }} contentWidth={width}/>
         ) : null;
 
     const ssoConfig = state.config.sso?.get() || state.config.simpleSSO?.get();
     let ssoLoginWrapper;
     let topBar;
     let commentInputArea;
-    let commentSubmitButton = <Text>submit button should be hereasdfds</Text>;
+    let commentSubmitButton;
+    let authFormArea;
+    let replyCancelButton;
 
     if (!currentUser && ssoConfig && !state.config.allowAnon.get()) {
         if (ssoConfig.loginURL || ssoConfig.loginCallback) { // if they don't define a URL, we just show a message.
@@ -349,10 +383,10 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
                                 setModalId(null)
                             }
                         }
-                    ]} openButton={<ThreeDot/>}/>
+                    ]} openButton={<ThreeDot style={{paddingTop: 5, paddingBottom: 5, marginRight: 5}}/>}/>
                     }
+                    <NotificationBell state={state}/>
                 </View>
-                <NotificationBell state={state}/>
             </View>;
         }
 
@@ -361,13 +395,63 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
             commentInputAreaContent = CommentAreaMessage(state.translations.COMMENT_HAS_BEEN_SUBMITTED.get());
         } else {
             commentInputAreaContent =
-                <CommentTextArea state={state} value={commentReplyState.comment}
-                                 onChangeText={(newValue: string) => setNewCommentState({...commentReplyState, comment: newValue})}/>;
+                <CommentTextArea
+                    state={state}
+                    value={commentReplyState.comment}
+                    onChangeText={(newValue: string) => setNewCommentState({...commentReplyState, comment: newValue})}
+                    onFocus={() => needsAuth && !commentReplyState.showAuthInputForm && setNewCommentState({
+                        ...commentReplyState,
+                        showAuthInputForm: true
+                    })}
+                />;
         }
 
         commentInputArea = <View style={[styles.commentInputArea, (commentReplyState.isReplySaving ? styles.commentInputAreaReplySaving : null)]}>
             {commentInputAreaContent}
         </View>;
+
+        const handleSubmit = async () => {
+            if (commentReplyState.showSuccessMessage && !parentComment) {
+                setNewCommentState((commentReplyState) => {
+                    return {
+                        ...commentReplyState,
+                        showSuccessMessage: false
+                    };
+                });
+                // TODO focus on text area
+            } else {
+                setNewCommentState((commentReplyState) => {
+                    return {
+                        ...commentReplyState,
+                        isReplySaving: true
+                    };
+                });
+                try {
+                    const submitResponse = await submit({state, parentComment}, commentReplyState);
+                    setNewCommentState({
+                        username: undefined,
+                        email: undefined,
+                        websiteUrl: undefined,
+                        comment: undefined,
+                        isReplySaving: false,
+                        showAuthInputForm: submitResponse.showAuthInputForm,
+                        showSuccessMessage: submitResponse.showSuccessMessage,
+                        lastSaveResponse: submitResponse.lastSaveResponse
+                    });
+                } catch (e) {
+                    console.error('Failed to save a comment', e);
+                }
+                setNewCommentState((commentReplyState) => {
+                    return {
+                        ...commentReplyState,
+                        isReplySaving: false
+                    };
+                });
+                if (parentComment?.get()) {
+                    state.commentState[parentComment._id.get()].replyBoxOpen.set(false);
+                }
+            }
+        }
 
         // TODO fancy borders like on web
         // result += '<div class="horizontal-border-wrapper">';
@@ -381,104 +465,68 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
 
         if (!commentReplyState.isReplySaving) {
             commentSubmitButton = <View style={styles.replyButtonWrapper}>
-                <Pressable style={styles.replyButton} onPress={async () => {
-                    if (commentReplyState.showSuccessMessage && !parentComment) {
-                        setNewCommentState((commentReplyState) => {
-                            commentReplyState.showSuccessMessage = false;
-                            return commentReplyState;
-                        });
-                        // TODO focus on text area
-                    } else {
-                        setNewCommentState((commentReplyState) => {
-                            commentReplyState.isReplySaving = true;
-                            return commentReplyState;
-                        });
-                        try {
-                            const submitResponse = await submit({state, parentComment}, commentReplyState);
-                            setNewCommentState({
-                                username: undefined,
-                                email: undefined,
-                                websiteUrl: undefined,
-                                comment: undefined,
-                                isReplySaving: false,
-                                showSuccessMessage: submitResponse.showSuccessMessage,
-                                lastSaveResponse: submitResponse.lastSaveResponse
-                            });
-                        } catch (e) {
-                            console.error('Failed to save a comment', e);
-                        }
-                        setNewCommentState((commentReplyState) => {
-                            commentReplyState.isReplySaving = false;
-                            return commentReplyState;
-                        });
-                    }
-                }}>
-                    <Text style={styles.replyButtonText}>{commentReplyState.showSuccessMessage ? state.translations.WRITE_ANOTHER_COMMENT.get() : state.translations.SUBMIT_REPLY.get()}</Text>
+                <Pressable style={styles.replyButton} onPress={handleSubmit}>
+                    <Text
+                        style={styles.replyButtonText}>{commentReplyState.showSuccessMessage ? state.translations.WRITE_ANOTHER_COMMENT.get() : state.translations.SUBMIT_REPLY.get()}</Text>
                     <Image
                         source={parentComment ? state.imageAssets[FastCommentsImageAsset.ICON_RETURN].get() : state.imageAssets[FastCommentsImageAsset.ICON_BUBBLE].get()}
-                        style={{width: 22, height: 22}}/>
+                        style={styles.replyButtonIcon}/>
                 </Pressable>
             </View>;
-        } else {
-            commentSubmitButton = <Text>submit button should be here</Text>
         }
 
-        // TODO
-        // if (!currentUser || (responseFailureById[parentId] === true || (typeof responseFailureById[parentId] === 'object' && SignUpErrorsTranslationIds[responseFailureById[parentId].code]))) { // checking for just true here causes the user to appear to logout on any failure, which is weird.
-        //     result += '<div class="user-info-input auth-input default-hidden">';
-        //     if (ssoConfig && !config.allowAnon) {
-        //         if (ssoConfig.loginURL || ssoConfig.loginCallback) {
-        //             result += '<a class="sso-login" ' + (ssoConfig.loginURL ? 'href="' + ssoConfig.loginURL + '"' : '') + '>' + translations.LOG_IN + '</a>';
-        //         }
-        //     } else {
-        //         if (ssoConfig && (ssoConfig.loginURL || ssoConfig.loginCallback)) {
-        //             result += '<a class="sso-login" ' + (ssoConfig.loginURL ? 'href="' + ssoConfig.loginURL + '"' : '') + '>' + translations.HAVE_AN_ACCOUNT + '</a>';
-        //         }
-        //
-        //         if (!config.disableEmailInputs) {
-        //             result += '<div class="reasoning">' + (config.allowAnon ? translations.ENTER_EMAIL_TO_KEEP_COMMENT : translations.ENTER_EMAIL_TO_COMMENT) + '</div>';
-        //
-        //             // Using autocomplete=email or on here doesn't seem to do anything.
-        //             result += '<input name="fastcomments-email" ' + (config.allowAnon ? '' : 'required') + ' type="email" id="email-input-for-parent-' + parentId + '" data-restore-id="fce-' + parentId + '" placeholder="' + translations.EMAIL_FOR_VERIFICATION + '" maxlength="70" />';
-        //         }
-        //
-        //         // We intentionally don't use autocomplete here. If we use autocomplete=username, then this will auto fill with the user's email, which we don't want to use as a username.
-        //         result += '<input name="fastcomments-username" required type="text" id="username-input-for-parent-' + parentId + '" data-restore-id="fcu-' + parentId + '" placeholder="' + translations.PUBLICLY_DISPLAYED_USERNAME + '" maxlength="70" ' + (config.defaultUsername ? 'value="' + config.defaultUsername + '"' : '') + ' />';
-        //
-        //         if (config.enableCommenterLinks) {
-        //             result += '<input name="fastcomments-link" type="url" id="link-input-for-parent-' + parentId + '" data-restore-id="fcl-' + parentId + '" placeholder="' + translations.ENTER_A_LINK + '" maxlength="500" />';
-        //         }
-        //
-        //         if (responseFailureById[parentId] && SignUpErrorsTranslationIds[responseFailureById[parentId].code]) {
-        //             result += '<div class="fc-red">' + translations[SignUpErrorsTranslationIds[responseFailureById[parentId].code]] + '</div>';
-        //         }
-        //
-        //         if (VERSION === 2) {
-        //             if (!config.disableEmailInputs) {
-        //                 result += '<div class="solicitation-info">' + translations.NO_SOLICITATION_EMAILS + '</div>';
-        //             }
-        //
-        //             if (!commentReplyState.isReplySaving || responseFailureById[parentId]) {
-        //                 result += '<button type="submit" data-parent-id="' + parentId + '" class="fast-comments-reply">' + translations.SUBMIT + '</button>';
-        //             }
-        //         }
-        //     }
-        //
-        //     result += '</div>';
-        // }
+        if (commentReplyState.showAuthInputForm || (lastSaveResponse?.code && SignUpErrorsTranslationIds[lastSaveResponse.code])) { // checking for just true here causes the user to appear to logout on any failure, which is weird.
+            console.log('showing auth input area', commentReplyState.showAuthInputForm, lastSaveResponse?.code);
+            authFormArea = <View style={styles.userInfoInput}>
+                {!state.config.disableEmailInputs.get &&
+                <Text
+                    style={styles.emailReasoning}>
+                    {state.config.allowAnon.get() ? state.translations.ENTER_EMAIL_TO_KEEP_COMMENT.get() : state.translations.ENTER_EMAIL_TO_COMMENT.get()}
+                </Text>}
+                {!state.config.disableEmailInputs.get() &&
+                <TextInput
+                    style={styles.authInput}
+                    multiline={false}
+                    maxLength={70}
+                    placeholder={state.translations.EMAIL_FOR_VERIFICATION.get()}
+                    autoComplete={'email'}
+                    value={commentReplyState.email}
+                    onChangeText={(value) => setNewCommentState({...commentReplyState, email: value})}/>}
+                <TextInput
+                    style={styles.authInput}
+                    multiline={false}
+                    maxLength={70}
+                    placeholder={state.translations.PUBLICLY_DISPLAYED_USERNAME.get()}
+                    autoComplete={'username'}
+                    value={commentReplyState.username}
+                    onChangeText={(value) => setNewCommentState({...commentReplyState, username: value})}/>
+                {state.config.enableCommenterLinks.get() &&
+                <TextInput
+                    maxLength={500}
+                    placeholder={state.translations.ENTER_A_LINK.get()}
+                    onChangeText={(value) => setNewCommentState({...commentReplyState, websiteUrl: value})}/>
+                }
+                {lastSaveResponse?.code && SignUpErrorsTranslationIds[lastSaveResponse.code] &&
+                <Text style={styles.error}>{state.translations[SignUpErrorsTranslationIds[lastSaveResponse.code]].get()}</Text>
+                }
+                {!state.config.disableEmailInputs &&
+                <Text style={styles.solicitationInfo}>{state.translations.NO_SOLICITATION_EMAILS.get()}</Text>
+                }
+            </View>;
+        }
 
         // We don't allow cancelling when replying to top-level comments.
         if (parentComment) {
-            // TODO
-            // result += '<div class="cancel-button-wrapper">';
-            // result += '<button type="button" data-parent-id="' + parentId + '" class="fast-comments-reply-cancel default-hidden" type="button" title="' + translations.CANCEL_REPLY + '"><div class="icon cross"></div></button>';
-            //
-            // result += '</div>';
+            replyCancelButton = <View style={styles.replyCancelButtonWrapper}>
+                <Pressable style={styles.replyCancelButton} onPress={() => state.commentState[parentComment._id.get()].replyBoxOpen.set(false)}>
+                    <Image source={state.imageAssets[FastCommentsImageAsset.ICON_CROSS].get()}
+                           style={{width: 9, height: 9}}/>
+                </Pressable>
+            </View>
         }
     }
 
     let displayError;
-    const lastSaveResponse = commentReplyState.lastSaveResponse;
 
     if (lastSaveResponse && lastSaveResponse.status !== 'success') {
         if (lastSaveResponse.code === 'banned') {
@@ -512,12 +560,14 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
     }
 
     return <View>
-        {replyToText}
+        {replyToText && <View style={styles.replyingTo}>{replyToText}</View>}
         {ssoLoginWrapper}
         {topBar}
         {commentInputArea}
-        {commentSubmitButton}
         {displayError}
+        {authFormArea}
+        {commentSubmitButton}
+        {replyCancelButton}
         {commentReplyState.isReplySaving && <View style={styles.loadingView}>
             <ActivityIndicator size="large"/>
         </View>}
@@ -566,7 +616,8 @@ const styles = StyleSheet.create({
         "fontWeight": "500"
     },
     topBar: {
-        "position": "relative",
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         "minHeight": 25,
         "marginTop": 0,
         "marginRight": 26,
@@ -575,11 +626,14 @@ const styles = StyleSheet.create({
         "lineHeight": 25
     },
     loggedInInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
         // "width": "calc(100% - 60px)", // TODO
         "minWidth": 150
     },
     topBarAvatar: {
         "height": 25,
+        "width": 25,
         "verticalAlign": "middle",
         "marginRight": 5,
         "borderTopLeftRadius": 25,
@@ -597,7 +651,14 @@ const styles = StyleSheet.create({
         "fontWeight": "700",
         "whiteSpace": "nowrap"
     },
-    topBarRight: {},
+    topBarRight: {
+        width: 100,
+        alignItems: 'center',
+        alignContent: 'center',
+        justifyContent: 'center',
+        justifyItems: 'center',
+        flexDirection: 'row',
+    },
     commentInputArea: {},
     commentInputAreaReplySaving: {
         // animated-background
@@ -606,19 +667,29 @@ const styles = StyleSheet.create({
         alignItems: 'flex-end',
         justifyContent: 'space-between'
     },
-    replyButton: {
+    replyButton: { // TODO common button colors
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        marginTop: 10,
+        marginBottom: 10,
+        marginRight: 10,
         "paddingTop": 10,
-        "paddingRight": 27,
+        "paddingRight": 20,
         "paddingBottom": 10,
-        "paddingLeft": 27,
-        "borderTopLeftRadius": 0,
-        "borderTopRightRadius": 7,
-        "borderBottomRightRadius": 7,
-        "borderBottomLeftRadius": 7,
-        "backgroundColor": "#333"
+        "paddingLeft": 20,
+        borderWidth: 1,
+        borderRadius: 7,
+        borderColor: "#a2a2a2",
+        "backgroundColor": "#fbfbfb"
     },
     replyButtonText: {
-        "color": "#fff"
+        "color": "#333"
+    },
+    replyButtonIcon: {
+        width: 22,
+        height: 22,
+        marginLeft: 10
     },
     loadingView: {
         // TODO common
@@ -635,5 +706,62 @@ const styles = StyleSheet.create({
     error: {
         "margin": 5,
         "color": "#ff0000"
+    },
+    userInfoInput: {
+        "marginTop": 10,
+        "marginRight": 0,
+        "marginBottom": 10,
+        "marginLeft": 0,
+        "fontSize": 13
+    },
+    emailReasoning: {
+        fontWeight: '600'
+    },
+    authInput: {
+        "marginTop": 10,
+        "paddingTop": 9,
+        "paddingRight": 12,
+        "paddingBottom": 9,
+        "paddingLeft": 12,
+        "borderTopLeftRadius": 0,
+        "borderTopRightRadius": 6,
+        "borderBottomRightRadius": 6,
+        "borderBottomLeftRadius": 6,
+        "fontSize": 14,
+        "borderWidth": 1,
+        "borderColor": "#a2a2a2",
+        "borderStyle": "solid"
+    },
+    solicitationInfo: {
+        "marginTop": 10
+    },
+    authInputSubmit: {
+        "paddingTop": 10,
+        "paddingRight": 27,
+        "paddingBottom": 10,
+        "paddingLeft": 27,
+        "borderTopLeftRadius": 0,
+        "borderTopRightRadius": 7,
+        "borderBottomRightRadius": 7,
+        "borderBottomLeftRadius": 7,
+        "backgroundColor": "#333"
+    },
+    replyCancelButtonWrapper: {
+        position: 'absolute',
+        top: 0,
+        right: 0
+    },
+    replyCancelButton: {
+        "paddingTop": 10,
+        "paddingRight": 10,
+        "paddingBottom": 10,
+        "paddingLeft": 10,
+        "borderWidth": 1,
+        "borderTopLeftRadius": 4,
+        "borderTopRightRadius": 4,
+        "borderBottomRightRadius": 4,
+        "borderBottomLeftRadius": 4,
+        "borderColor": "#a2a2a2",
+        "backgroundColor": "#fbfbfb"
     }
 });
