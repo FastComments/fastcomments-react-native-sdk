@@ -88,18 +88,24 @@ export function addCommentToTree(allComments: State<FastCommentsWidgetComment[]>
     }
     allComments.merge([comment]);
     if (comment.parentId) {
-        if (!commentsById[comment.parentId].children) {
-            commentsById[comment.parentId].children.set([comment]);
-        } else {
-            if (newCommentsToBottom) {
-                commentsById[comment.parentId].children.merge([comment]);
+        commentsById[comment.parentId].children.set((children) => {
+            if (!children) {
+                children = [comment]
+            } else if (newCommentsToBottom) {
+                children.push(comment);
             } else {
-                commentsById[comment.parentId].children.set((children) => {
-                    children!.unshift(comment);
-                    return children;
-                });
+                children.unshift(comment);
             }
-        }
+            return [...children];
+        });
+        // We do this to tell the tree to re-render.
+        // commentsTree and commentsById use the same references to comment objects. commentsById has "ownership" of the comments. However, adding a child does not trigger the UI, which is based on the tree, to re-render.
+        // we could always have both contain a reference to a State<Comment> that is unwrapped every time we use it, but this has extra overhead.
+        // It may be better to store the children in state.commentState[id], but this adds a hashmap lookup on render (which is still better than N time here!).
+        // *Another* solution would be for commentsTree to just be a tree of ids (like an index) and the actual documents are owned by commentsById. This would have constant time updates/iteration, but slower overall.
+        commentsTree.set((tree) => {
+            return [...tree];
+        });
     } else {
         // ensure pinned comments stay at the top
         if (commentsTree.length > 0 && commentsTree[0].isPinned) {
@@ -232,6 +238,21 @@ export function iterateCommentsTree(nodes: FastCommentsWidgetComment[], cb: (com
         }
         if (comment.children) {
             iterateCommentsTree(comment.children, cb);
+        }
+    }
+}
+
+export function iterateCommentsTreeState(nodes: State<FastCommentsWidgetComment[]>, cb: (comment: State<FastCommentsWidgetComment>) => false | 'delete' | undefined | void) {
+    let i = nodes.length;
+    while (i--) {
+        const comment = nodes[i];
+        const result = cb(comment);
+        if (result === false) {
+            break;
+        }
+        if (comment.children) {
+            // @ts-ignore
+            iterateCommentsTreeState(comment.children, cb);
         }
     }
 }
