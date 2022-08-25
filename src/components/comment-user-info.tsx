@@ -56,7 +56,7 @@ export function CommentUserInfo({comment, state}: FastCommentsCommentWithState) 
     // TODO best way to handle undefined comment.badges instead of cast? TS compilation error
     return <View>
         {(comment.badges as State<FastCommentsBadge[]>).map((badge) => CommentUserBadge(badge))}
-        {!comment.verified.get() && !(state.commentState[comment._id.get()]?.wasPostedCurrentSession.get() && state.commentState[comment._id.get()]?.requiresVerification.get()) && !state.config.disableUnverifiedLabel.get() &&
+        {!comment.verified.get() && !(state.commentState[comment._id.get()]?.wasPostedCurrentSession?.get() && state.commentState[comment._id.get()]?.requiresVerification.get()) && !state.config.disableUnverifiedLabel.get() &&
             <Text style={styles.label}>{state.translations.UNVERIFIED_COMMENT.get()}</Text>
         }
         {displayLabel}
