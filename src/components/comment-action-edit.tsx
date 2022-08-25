@@ -20,7 +20,7 @@ async function saveCommentText({comment, state}: FastCommentsCommentWithState, n
         method: 'POST',
         url: '/comments/' + tenantId + '/' + comment._id + '/update-text/' + createURLQueryString({
             urlId: state.config.urlId.get(),
-            editKey: state.commentState[comment._id.get()]?.editKey.get(),
+            editKey: state.commentState[comment._id.get()]?.editKey?.get(),
             sso: state.ssoConfigString.get(),
             broadcastId
         }),
