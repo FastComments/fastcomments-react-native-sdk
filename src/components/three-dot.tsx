@@ -1,17 +1,25 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
-import {View, StyleSheet} from "react-native";
+import {View, StyleSheet, ViewStyle} from "react-native";
 
-export function ThreeDot() {
-    return <View style={styles.dots}>
+export interface ThreeDotProps {
+    style?: ViewStyle
+}
+
+export function ThreeDot({style}: ThreeDotProps) {
+    return <View style={[styles.dots, style]}>
+        <View style={styles.dot}/>
+        <View style={styles.dot}/>
         <View style={styles.dot}/>
     </View>
 }
 
 const styles = StyleSheet.create({
     dots: {
-        flex: 1,
-        alignItems: 'center',
+        flexDirection: 'row',
+        alignItems: "center",
+        alignContent: 'center',
+        justifyItems: 'center',
         justifyContent: 'space-between'
     },
     dot: {
