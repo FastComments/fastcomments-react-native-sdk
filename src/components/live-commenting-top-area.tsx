@@ -2,7 +2,7 @@
 import * as React from 'react';
 
 import {FastCommentsState} from "../types/fastcomments-state";
-import {View} from "react-native";
+import {StyleSheet, View} from "react-native";
 import {ReplyArea} from "./reply-area";
 import {ShowHideCommentsToggle} from "./show-hide-comments-toggle";
 import {SelectSortDirection} from "./select-sort-direction";
@@ -16,7 +16,7 @@ export interface LiveCommentingTopAreaProps {
 export function LiveCommentingTopArea({state}: LiveCommentingTopAreaProps) {
     return <View>
         <View>{
-            state.config.inputAfterComments.get() !== true && <ReplyArea state={state} />
+            state.config.inputAfterComments.get() !== true && <View style={styles.replyArea}><ReplyArea state={state}/></View>
         }</View>
         <View>{
             state.config.useShowCommentsToggle.get() && state.commentCountOnServer.get() > 0 && ShowHideCommentsToggle(state)
@@ -30,6 +30,11 @@ export function LiveCommentingTopArea({state}: LiveCommentingTopAreaProps) {
     </View>;
 }
 
-// const styles = StyleSheet.create({
-//
-// });
+const styles = StyleSheet.create({
+    replyArea: {
+        "marginTop": 25,
+        "marginRight": 15,
+        "marginBottom": 30,
+        "marginLeft": 15
+    }
+});
