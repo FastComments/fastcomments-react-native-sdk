@@ -6,9 +6,10 @@ export interface CommentTextAreaProps {
     state: State<FastCommentsState>
     value?: string
     onChangeText: (value: string) => void
+    onFocus?: () => void
 }
 
-export function CommentTextArea({state, value, onChangeText}: CommentTextAreaProps) {
+export function CommentTextArea({state, value, onChangeText, onFocus}: CommentTextAreaProps) {
     // TODO toolbar
     // TODO toolbar w/ gif selector
     if (state.config.experimentalWYSIWYG.get()) {
@@ -22,6 +23,7 @@ export function CommentTextArea({state, value, onChangeText}: CommentTextAreaPro
             placeholder={state.translations.ENTER_COMMENT_HERE.get()}
             value={value}
             onChangeText={(value) => onChangeText(value)}
+            onFocus={onFocus}
         />
     }
 }
@@ -30,6 +32,7 @@ const styles = StyleSheet.create({
     textarea: {
         alignSelf: 'stretch',
         borderWidth: 1,
-        borderColor: 'black'
+        borderColor: 'black',
+        borderRadius: 11
     },
 })
