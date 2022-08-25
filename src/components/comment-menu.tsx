@@ -20,7 +20,7 @@ async function startEditingComment({state, comment}: FastCommentsCommentWithStat
         method: 'GET',
         url: `/comments/${state.config.tenantId.get()}/${comment._id.get()}/text${createURLQueryString({
             sso: state.ssoConfigString.get(),
-            editKey: state.commentState[comment._id.get()]?.editKey.get()
+            editKey: state.commentState[comment._id.get()]?.editKey?.get()
         })}`
     });
     if (response.status === 'success') {
@@ -111,7 +111,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
         menuItems.push({
             label: state.translations.COMMENT_MENU_EDIT.get(),
             value: 'edit',
-            icon: <Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_EDIT_BIG]} style={{width: 24, height: 24}}/>,
+            icon: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_EDIT_BIG].get()} style={{width: 24, height: 24}}/>,
             handler: async (setModalId: Dispatch<SetStateAction<string | null>>) => {
                 await startEditingComment({comment, state}, setModalId);
             },
@@ -124,7 +124,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
             menuItems.push({
                 label: state.translations.COMMENT_MENU_UNPIN.get(),
                 value: 'unpin',
-                icon: <Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_UNPIN_BIG]} style={{width: 24, height: 24}}/>,
+                icon: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_UNPIN_BIG].get()} style={{width: 24, height: 24}}/>,
                 handler: async () => {
                     await setCommentPinStatus({comment, state}, false);
                 }
@@ -133,7 +133,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
             menuItems.push({
                 label: state.translations.COMMENT_MENU_PIN.get(),
                 value: 'pin',
-                icon: <Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_PIN_BIG]} style={{width: 24, height: 24}}/>,
+                icon: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_PIN_BIG].get()} style={{width: 24, height: 24}}/>,
                 handler: async () => {
                     await setCommentPinStatus({comment, state}, true);
                 }
@@ -145,7 +145,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
         menuItems.push({
             label: state.translations.COMMENT_MENU_DELETE.get(),
             value: 'delete',
-            icon: <Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_TRASH]} style={{width: 24, height: 24}}/>,
+            icon: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_TRASH].get()} style={{width: 24, height: 24}}/>,
             handler: async (setModalId: Dispatch<SetStateAction<string | null>>) => {
                 await CommentPromptDelete({
                     comment,
@@ -161,7 +161,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
             menuItems.push({
                 label: state.translations.COMMENT_MENU_UNBLOCK_USER.get(),
                 value: 'unblock',
-                icon: <Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_BLOCK]} style={{width: 24, height: 24}}/>,
+                icon: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_BLOCK].get()} style={{width: 24, height: 24}}/>,
                 handler: async () => {
                     await setCommentBlockedStatus({comment, state}, false);
                 }
@@ -170,7 +170,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
             menuItems.push({
                 label: state.translations.COMMENT_MENU_BLOCK_USER.get(),
                 value: 'block',
-                icon: <Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_BLOCK]} style={{width: 24, height: 24}}/>,
+                icon: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_BLOCK].get()} style={{width: 24, height: 24}}/>,
                 handler: async () => {
                     await setCommentBlockedStatus({comment, state}, true);
                 }
@@ -183,7 +183,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
             menuItems.push({
                 label: state.translations.COMMENT_MENU_UNFLAG.get(),
                 value: 'unflag',
-                icon: <Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_BLOCK]} style={{width: 24, height: 24}}/>,
+                icon: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_BLOCK].get()} style={{width: 24, height: 24}}/>,
                 handler: async () => {
                     await setCommentFlaggedStatus({comment, state}, false);
                 }
@@ -192,7 +192,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
             menuItems.push({
                 label: state.translations.COMMENT_MENU_FLAG.get(),
                 value: 'flag',
-                icon: <Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_BLOCK]} style={{width: 24, height: 24}}/>,
+                icon: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_BLOCK].get()} style={{width: 24, height: 24}}/>,
                 handler: async () => {
                     await setCommentFlaggedStatus({comment, state}, true);
                 }
@@ -200,7 +200,7 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
         }
     }
 
-    const openButton = <Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_EDIT_SMALL]} style={{width: 16, height: 16}}/>;
+    const openButton = <Image source={state.imageAssets[FastCommentsImageAsset.ICON_EDIT_SMALL].get()} style={{width: 16, height: 16, margin: 10}}/>;
 
     return <ModalMenu state={state} items={menuItems} openButton={openButton} />;
 }
