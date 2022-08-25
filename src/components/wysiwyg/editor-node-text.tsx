@@ -1,20 +1,31 @@
 import {EditorNodeProps} from "./editor-node";
 import {TextInput} from "react-native";
-import {MutableRefObject, useEffect, useState} from "react";
+import {MutableRefObject, useRef} from "react";
+import {useHookstateEffect} from "@hookstate/core";
 
-export function EditorNodeText({node}: EditorNodeProps) {
-    const [value, setValue] = useState(node.content.get());
-    useEffect(() => {
+export function EditorNodeText({node, onBlur, onFocus}: EditorNodeProps) {
+    useHookstateEffect(() => {
         // TODO how to detect if text goes beyond one line?
-    }, [value]);
-    useEffect(() => {
-        if (node.isSelected.get()) {
-            node.ref.get()?.current?.focus();
+    }, [node.content]);
+
+    const ref = useRef<TextInput>();
+    useHookstateEffect(() => {
+        if (node.isFocused.get()) {
+            ref.current?.focus();
         }
-    }, [node.isSelected.get()]);
+    }, [node.isFocused]);
+
     return <TextInput
-        value={value}
-        onChangeText={(newValue: string) => (setValue(newValue))}
-        ref={node.ref.get() as MutableRefObject<TextInput>}
+        value={node.content.get()}
+        onChangeText={(newValue: string) => (node.content.set(newValue))}
+        onBlur={() => {
+            onBlur && onBlur();
+        }
+        }
+        onFocus={() => {
+            onFocus && onFocus();
+        }
+        }
+        ref={ref as MutableRefObject<TextInput>}
     />;
 }

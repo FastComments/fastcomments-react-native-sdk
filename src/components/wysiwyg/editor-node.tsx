@@ -1,5 +1,3 @@
-import {TextInput} from "react-native";
-import {MutableRefObject} from "react";
 import {State} from "@hookstate/core";
 import {EditorNodeText} from "./editor-node-text";
 
@@ -14,21 +12,24 @@ export enum EditorNodeType {
 }
 
 export interface EditorNodeDefinition {
+    id: number,
     previous: EditorNodeDefinition | null
     next: EditorNodeDefinition | null
     content: string
     type: EditorNodeType
-    ref?: MutableRefObject<TextInput | undefined>
-    isSelected: boolean
+    isDeleted?: boolean // used for communication between elements
+    isFocused: boolean
 }
 
 export interface EditorNodeProps {
     node: State<EditorNodeDefinition>;
+    onBlur?: () => void
+    onFocus?: () => void
 }
 
-export function EditorNode({node}: EditorNodeProps) {
+export function EditorNode({node, onBlur, onFocus}: EditorNodeProps) {
     if (node.type.get() === EditorNodeType.TEXT) {
-        return <EditorNodeText node={node} />;
+        return <EditorNodeText node={node} onBlur={onBlur} onFocus={onFocus} />;
     }
     return null;
 }
