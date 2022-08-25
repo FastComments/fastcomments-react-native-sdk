@@ -69,7 +69,7 @@ export interface FastCommentsState {
     userPresenceState: UserPresenceState;
     urlIdWS?: string;
     tenantIdWS?: string;
-    userIdWS?: string;
+    userIdWS?: string | null;
     lastSubscriberInstance?: SubscriberInstance;
     ssoConfigString?: string;
 }
