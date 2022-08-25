@@ -23,67 +23,69 @@ export interface ModalMenuProps {
 export function ModalMenu({state, items, openButton} : ModalMenuProps) {
     const [activeModalId, setModalIdVisible] = useState<string | null>(null);
     const [isLoading, setLoading] = useState(false);
-    return <View style={styles.centeredView}>
-        <Modal
-            animationType="slide"
-            transparent={true}
-            visible={activeModalId === 'menu'}
-            onRequestClose={() => {
-                setModalIdVisible(null);
-            }}
-        >
+    return <View style={styles.rootView}>
             <View style={styles.centeredView}>
-                <View style={styles.modalView}>
-                    {items.map((item) =>
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={activeModalId === 'menu'}
+                onRequestClose={() => {
+                    setModalIdVisible(null);
+                }}
+            >
+                <View style={styles.centeredView}>
+                    <View style={styles.modalView}>
+                        {items.map((item) =>
+                            <Pressable
+                                key={item.label}
+                                style={styles.menuOptionButton} onPress={async () => {
+                                setLoading(true);
+                                await item.handler(setModalIdVisible);
+                                setLoading(false);
+                            }}
+                            >
+                                {item.icon}
+                                <Text style={styles.menuOptionText}>{item.label}</Text>
+                            </Pressable>
+                        )}
                         <Pressable
-                            key={item.label}
-                            style={styles.menuOptionButton} onPress={async () => {
-                            setLoading(true);
-                            await item.handler(setModalIdVisible);
-                            setLoading(false);
-                        }}
+                            style={styles.modalCancel}
+                            onPress={() => setModalIdVisible(null)}
                         >
-                            {item.icon}
-                            <Text style={styles.menuOptionText}>{item.label}</Text>
+                            {<Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_CROSS]} style={{width: 16, height: 16}}/>}
                         </Pressable>
-                    )}
-                    <Pressable
-                        style={styles.modalCancel}
-                        onPress={() => setModalIdVisible(null)}
-                    >
-                        {<Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_CROSS]} style={{width: 16, height: 16}}/>}
-                    </Pressable>
-                    {
-                        isLoading && <View style={styles.loadingView}>
-                            <ActivityIndicator size="large"/>
-                        </View>
-                    }
+                        {
+                            isLoading && <View style={styles.loadingView}>
+                                <ActivityIndicator size="large"/>
+                            </View>
+                        }
+                    </View>
                 </View>
-            </View>
-        </Modal>
-        <Modal
-            animationType="slide"
-            transparent={true}
-            visible={activeModalId === 'edit'}
-            onRequestClose={() => {
-                setModalIdVisible(null);
-            }}>
-            {activeModalId !== 'edit' && items && items.find((item) => item.subModalContent && item.id === activeModalId)?.subModalContent!(() => setModalIdVisible(null))}
-        </Modal>
-        <Pressable
-            style={styles.menuButton}
-            onPress={() => setModalIdVisible('menu')}>
+            </Modal>
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={activeModalId === 'edit'}
+                onRequestClose={() => {
+                    setModalIdVisible(null);
+                }}>
+                {activeModalId !== 'edit' && items && items.find((item) => item.subModalContent && item.id === activeModalId)?.subModalContent!(() => setModalIdVisible(null))}
+            </Modal>
+        </View>
+        <Pressable onPress={() => setModalIdVisible('menu')}>
             {openButton}
         </Pressable>
     </View>;
 }
 
 const styles = StyleSheet.create({
+    rootView: {
+        flexDirection: 'row', // gets inline menu items like three-dot centered
+    },
     centeredView: {
         flex: 1,
         justifyContent: "center",
-        alignItems: "center",
-        marginTop: 22
+        alignItems: "center"
     },
     modalView: {
         margin: 20,
@@ -109,11 +111,6 @@ const styles = StyleSheet.create({
         padding: 10,
         elevation: 2,
         color: 'black'
-    },
-    menuButton: {
-        padding: 10,
-        justifyContent: 'center',
-        alignItems: 'center'
     },
     menuOptionText: {
         paddingLeft: 10,
