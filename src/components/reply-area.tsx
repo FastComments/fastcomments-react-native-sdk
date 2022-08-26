@@ -489,8 +489,9 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
                     multiline={false}
                     maxLength={70}
                     placeholder={state.translations.EMAIL_FOR_VERIFICATION.get()}
-                    autoComplete={'email'}
+                    autoComplete='email'
                     value={commentReplyState.email}
+                    returnKeyType={state.config.enableCommenterLinks.get() ? 'next' : 'send'}
                     onChangeText={(value) => setNewCommentState({...commentReplyState, email: value})}/>}
                 <TextInput
                     style={styles.authInput}
@@ -499,6 +500,7 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
                     placeholder={state.translations.PUBLICLY_DISPLAYED_USERNAME.get()}
                     autoComplete={'username'}
                     value={commentReplyState.username}
+                    returnKeyType={state.config.enableCommenterLinks.get() ? 'next' : 'send'}
                     onChangeText={(value) => setNewCommentState({...commentReplyState, username: value})}/>
                 {state.config.enableCommenterLinks.get() &&
                 <TextInput

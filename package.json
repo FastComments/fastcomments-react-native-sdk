@@ -61,6 +61,7 @@
     "@hookstate/core": "^4.0.0-rc21",
     "lodash": "^4.17.21",
     "react-native-dropdown-picker": "^5.4.2",
+    "react-native-image-picker": "^4.10.0",
     "react-native-render-html": "^6.3.4",
     "react-native-webview": "^11.14.3"
   },

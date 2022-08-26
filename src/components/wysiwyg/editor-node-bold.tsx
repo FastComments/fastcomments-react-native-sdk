@@ -4,18 +4,18 @@ import {MutableRefObject, useRef} from "react";
 import {useHookstateEffect} from "@hookstate/core";
 import {getNextNodeId} from "./node-id";
 
-export function createTextNode(startingValue: string): EditorNodeDefinition {
+export function createBoldNode(startingValue: string): EditorNodeDefinition {
     return {
         id: getNextNodeId(),
         previous: null,
         next: null,
         content: startingValue,
-        type: EditorNodeType.TEXT,
+        type: EditorNodeType.TEXT_BOLD,
         isFocused: false
     }
 }
 
-export function EditorNodeText({node, onBlur, onFocus}: EditorNodeProps) {
+export function EditorNodeBold({node, onBlur, onFocus}: EditorNodeProps) {
     useHookstateEffect(() => {
         // TODO how to detect if text goes beyond one line?
     }, [node.content]);
@@ -39,5 +39,6 @@ export function EditorNodeText({node, onBlur, onFocus}: EditorNodeProps) {
         }
         }
         ref={ref as MutableRefObject<TextInput>}
+        style={{fontWeight: 'bold'}}
     />;
 }
