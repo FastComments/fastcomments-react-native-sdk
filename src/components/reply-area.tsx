@@ -691,7 +691,9 @@ const styles = StyleSheet.create({
     replyButtonIcon: {
         width: 22,
         height: 22,
-        marginLeft: 10
+        marginLeft: 10,
+        aspectRatio: 1,
+        resizeMode: 'stretch'
     },
     loadingView: {
         // TODO common

@@ -2,9 +2,12 @@ import {FastCommentsState} from "../types/fastcomments-state";
 import {State} from "@hookstate/core";
 import {Text, StyleSheet, Image} from "react-native";
 import {Editor} from "./wysiwyg/wysiwyg-editor";
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {EditorToolbar, EditorToolbarConfig} from "./wysiwyg/editor-toolbar";
 import {FastCommentsImageAsset} from "../types/image-asset";
+import {nodesToString, stringToNodes} from "./wysiwyg/editor-node-transform";
+import {EditorFormatConfigurationHTML} from "./wysiwyg/transformers";
+import {EditorNodeDefinition} from "./wysiwyg/editor-node";
 
 export interface CommentTextAreaProps {
     state: State<FastCommentsState>
@@ -17,7 +20,7 @@ export function CommentTextArea({state, value, onChangeText, onFocus: _onFocus}:
     // TODO toolbar supports inline reacts - support for extension customizing toolbar?
     // TODO gif selector
     const [isFocused, setFocused] = useState(false);
-    const placeholder = !isFocused && <Text style={styles.placeholder}>{state.translations.ENTER_COMMENT_HERE.get()}</Text>
+    const placeholder = <Text style={styles.placeholder}>{state.translations.ENTER_COMMENT_HERE.get()}</Text>
     const toolbarConfig: EditorToolbarConfig = {
         boldButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_BOLD].get()} style={styles.toolbarButton}/>,
         italicButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_ITALIC].get()} style={styles.toolbarButton}/>,
@@ -48,26 +51,32 @@ export function CommentTextArea({state, value, onChangeText, onFocus: _onFocus}:
             });
         }
     }
+    const maxLength = state.config.maxCommentCharacterLength.get() || 2000;
+    const [editorNodes, setEditorNodes] = useState(stringToNodes(EditorFormatConfigurationHTML, value || ''));
+    const [isEmpty, setIsEmpty] = useState(!!value);
+    useEffect(() => {
+        if (!value) { // normally, let the widget handle updating the nodes itself. However, if we clear the value, then we want to clear the nodes.
+            setEditorNodes(stringToNodes(EditorFormatConfigurationHTML, value || ''));
+        }
+    }, [value]);
+
+    function onChange(nodes: State<EditorNodeDefinition[]>) {
+        const newText = nodesToString(nodes, EditorFormatConfigurationHTML, maxLength);
+        setIsEmpty(!newText);
+        onChangeText(newText);
+    }
+
     return <Editor
-        value={value || ''}
+        nodes={editorNodes}
+        onChange={onChange}
         style={styles.textarea}
-        placeholder={placeholder}
+        placeholder={!isFocused && isEmpty && placeholder}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        onChangeText={onChangeText}
-        maxLength={state.config.maxCommentCharacterLength.get() || 2000}
+        maxLength={maxLength}
         toolbar={(config) => <EditorToolbar config={config}/>}
         toolbarConfig={toolbarConfig}
     />
-    // return <TextInput
-    //     style={styles.textarea}
-    //     multiline={!state.config.useSingleLineCommentInput.get()}
-    //     maxLength={state.config.maxCommentCharacterLength.get() || 2000}
-    //     placeholder={state.translations.ENTER_COMMENT_HERE.get()}
-    //     value={value}
-    //     onChangeText={(value) => onChangeText(value)}
-    //     onFocus={onFocus}
-    // />
 }
 
 const styles = StyleSheet.create({
@@ -79,7 +88,7 @@ const styles = StyleSheet.create({
     },
     placeholder: {
         position: 'absolute',
-        padding: 13,
+        padding: 8,
         color: '#000' // TODO don't use #000
     },
     toolbarButton: {

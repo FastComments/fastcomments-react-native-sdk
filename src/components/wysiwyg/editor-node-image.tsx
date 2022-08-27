@@ -5,8 +5,6 @@ import {getNextNodeId} from "./node-id";
 export function createImageNode(startingValue: string): EditorNodeDefinition {
     return {
         id: getNextNodeId(),
-        previous: null,
-        next: null,
         content: startingValue,
         type: EditorNodeType.IMAGE,
         isFocused: false
@@ -14,6 +12,5 @@ export function createImageNode(startingValue: string): EditorNodeDefinition {
 }
 
 export function EditorNodeImage({node}: EditorNodeProps) {
-    // TODO how to support both inline reacts and big images?
-    return <Image source={{uri: node.content.get()}} style={{width: 32, height: 32}}/>;
+    return <Image source={{uri: node.content.get()}} style={{ marginTop: 10, marginBottom: 10 }}/>;
 }

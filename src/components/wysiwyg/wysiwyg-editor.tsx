@@ -1,20 +1,22 @@
-import {Pressable, StyleSheet, ViewStyle} from "react-native";
+import {Pressable, StyleSheet, View, ViewStyle} from "react-native";
 import {EditorNode, EditorNodeDefinition, EditorNodeType} from "./editor-node";
 import {State, useHookstate, useHookstateEffect} from "@hookstate/core";
-import {ReactNode, useState} from "react";
+import {ReactNode, useEffect} from "react";
 import {createTextNode} from "./editor-node-text";
-import {getContentTrimmed} from "./node-trim";
 import {EditorToolbarConfig} from "./editor-toolbar";
-import {Asset} from 'react-native-image-picker';
 import * as ImagePicker from 'react-native-image-picker';
+import {Asset} from 'react-native-image-picker';
 import {createImageNode} from "./editor-node-image";
+import {deleteNode} from "./editor-node-transform";
+import {createBoldNode, createStrikethroughNode, createUnderlineNode} from "./editor-nodes";
 
 export interface EditorProps {
-    value: string
+    /** This library takes an input of nodes, which can be generated from a string via editor-node-transformer. This is so the input format is flexible (markdown, html, etc). **/
+    nodes: EditorNodeDefinition[]
+    onChange: (nodes: State<EditorNodeDefinition[]>) => void
     placeholder?: ReactNode // so you can style it etc
     onBlur?: () => void
     onFocus?: () => void
-    onChangeText: (value: string) => void
     style?: ViewStyle
     maxLength?: number
     toolbarConfig?: EditorToolbarConfig
@@ -23,79 +25,92 @@ export interface EditorProps {
 }
 
 export function Editor(props: EditorProps) {
-    // TODO images
     // TODO backspace on the start of an element should trigger "delete" on element before
-    // TODO "delete" on end of an element, should trigger "delete" on next element
-    // TODO support rendering existing content
-    //  Should take "entity configuration" to map node types to syntax (could provide markdown and HTML default)
+    // TODO why does content move sometimes while typing?
     // TODO multiline (newline element)
     // TODO wysiwyg link button
     // TODO wysiwyg gif button
-    // TODO support both inline reacts and big images
-    const nodes = useHookstate<EditorNodeDefinition[]>([createTextNode(props.value)]);
-    const [lastSelectedNode, setLastSelectedNode] = useState<State<EditorNodeDefinition> | null>(null);
+    // TODO image uploads work (weird runtime issue in library?)
+    const nodes = useHookstate<EditorNodeDefinition[]>(props.nodes);
+
+    useEffect(() => {
+        // for example, if the consumer wants to clear everything.
+        nodes.set(props.nodes);
+    }, [props.nodes]);
+
     if (props.toolbarConfig) {
         if (!props.toolbarConfig.getCurrentNode) {
             // @ts-ignore - TODO better way to do this or useHookstate<EditorNodeDefinition | null>(null); ?
             props.toolbarConfig.getCurrentNode = () => {
-                return lastSelectedNode;
+                // TODO OPTIMIZE: we had a ton of problems with keeping track of the last selected node with storing references to a raw js object or State<>
+                //  due to hookstatejs (or maybe not using it correctly). Maybe a React expert can help us :)
+                //  UPDATE: Probably way to do it is editorState = { lastNode?: Node } - this way optionals are supported via usehookstate
+
+                const hasBeenFocused = nodes.filter((node) => node.lastFocusTime);
+                if (hasBeenFocused.length === 0) {
+                    return null;
+                }
+                hasBeenFocused.sort((a, b) => {
+                    return b.lastFocusTime.get()! - a.lastFocusTime.get()!;
+                });
+                return hasBeenFocused[0];
             }
         }
+
+        function toggleElementType(node: State<EditorNodeDefinition> | null, type: EditorNodeType, createFn: (startingValue: string) => EditorNodeDefinition) {
+            if (node && node.get()) {
+                // TODO only bold selected content
+                // TODO if none selected, add new node and set it as bold
+                const nodeType = node.type.get();
+                if (nodeType !== type) {
+                    nodes.set((nodes) => {
+                        // add a node after this one that is bold, and focus it.
+                        const newNode = createFn('');
+                        newNode.prev = node.get();
+                        newNode.next = node.next.get();
+                        newNode.isFocused = true; // TODO it'd be cool if we could get the keyboard to not go away
+                        node.next.set(newNode);
+                        node.isFocused.set(false);
+                        const currentId = node.id.get();
+                        const currentIndex = nodes.findIndex((searchingNode) => searchingNode.id === currentId);
+                        nodes.splice(currentIndex + 1, 0, newNode);
+                        return nodes;
+                    });
+                } else if (nodeType === type) {
+                    if (!node.content.get() && node.get().prev) {
+                        console.log('node has no content, and has previous node, removing.', node.id.get());
+                        const toFocus = node.prev;
+                        deleteNode(nodes, node.id.get());
+                        // prev is now the current node.
+                        // toFocus.set((toFocus) => {
+                        //     if (toFocus) {
+                        //         toFocus.isFocused = true;
+                        //     }
+                        //     return toFocus;
+                        // });
+                        console.log('no content, removed node. new focused node: ', toFocus);
+                    } else {
+                        // we COULD toggle bold here, but it might be weird.
+                    }
+                }
+            } else {
+                // TODO toggle
+            }
+        }
+
         if (props.toolbarConfig.boldButton && !props.toolbarConfig.toggleBold) {
             props.toolbarConfig.toggleBold = (node: State<EditorNodeDefinition> | null) => {
-                if (node && node.get()) {
-                    // TODO only bold selected content
-                    // TODO if none selected, add new node and set it as bold
-                    const nodeType = node.type.get();
-                    if (nodeType === EditorNodeType.TEXT) {
-                        // replace with bold node - easy!
-                        node.type.set(EditorNodeType.TEXT_BOLD);
-                    } else if (nodeType === EditorNodeType.TEXT_BOLD) {
-                        node.type.set(EditorNodeType.TEXT);
-                    }
-                    // TODO it'd be cool if we could get the keyboard to not go away
-                    node.isFocused.set(true);
-                } else {
-                    // TODO toggle bold
-                }
+                toggleElementType(node, EditorNodeType.TEXT_BOLD, createBoldNode);
             }
         }
         if (props.toolbarConfig.underlineButton && !props.toolbarConfig.toggleUnderline) {
             props.toolbarConfig.toggleUnderline = (node: State<EditorNodeDefinition> | null) => {
-                if (node && node.get()) {
-                    // TODO only underline selected content
-                    // TODO if none selected, add new node and set it as underline
-                    const nodeType = node.type.get();
-                    if (nodeType === EditorNodeType.TEXT) {
-                        // replace with underline node - easy!
-                        node.type.set(EditorNodeType.TEXT_UNDERLINE);
-                    } else if (nodeType === EditorNodeType.TEXT_UNDERLINE) {
-                        node.type.set(EditorNodeType.TEXT);
-                    }
-                    // TODO it'd be cool if we could get the keyboard to not go away
-                    node.isFocused.set(true);
-                } else {
-                    // TODO toggle underline
-                }
+                toggleElementType(node, EditorNodeType.TEXT_UNDERLINE, createUnderlineNode);
             }
         }
         if (props.toolbarConfig.strikethroughButton && !props.toolbarConfig.toggleStrikethrough) {
             props.toolbarConfig.toggleStrikethrough = (node: State<EditorNodeDefinition> | null) => {
-                if (node && node.get()) {
-                    // TODO only strikethrough selected content
-                    // TODO if none selected, add new node and set it as strikethrough
-                    const nodeType = node.type.get();
-                    if (nodeType === EditorNodeType.TEXT) {
-                        // replace with strikethrough node - easy!
-                        node.type.set(EditorNodeType.TEXT_STRIKETHROUGH);
-                    } else if (nodeType === EditorNodeType.TEXT_STRIKETHROUGH) {
-                        node.type.set(EditorNodeType.TEXT);
-                    }
-                    // TODO it'd be cool if we could get the keyboard to not go away
-                    node.isFocused.set(true);
-                } else {
-                    // TODO toggle strikethrough
-                }
+                toggleElementType(node, EditorNodeType.TEXT_STRIKETHROUGH, createStrikethroughNode);
             }
         }
         if (props.toolbarConfig.imageButton) {
@@ -120,7 +135,7 @@ export function Editor(props: EditorProps) {
                     if (node && node.get()) {
                         // before: current node <-> next
                         // after: current node <-> new image <-> next
-                        newImageNode.previous = node.get();
+                        newImageNode.prev = node.get();
                         newImageNode.next = node.next.get();
                         node.next.set(newImageNode);
                     } else {
@@ -134,75 +149,62 @@ export function Editor(props: EditorProps) {
         }
     }
 
-    // TODO OPTIMIZE (?) on value change of each node, call back to top with "onChange" method that contains converted result and recalculate props.value.
     useHookstateEffect(() => {
-        let content = '';
-        for (const node of nodes) {
-            content += node.content.get();
-        }
-        // OPTIMIZATION - we only do this *after* creating the content as it's a less common scenario than just typing within limits
-        if (props.maxLength && content.length > props.maxLength) {
-            // recalculate content
-            content = '';
-            for (const node of nodes) {
-                const nodeContent = node.content.get();
-                // if adding this node would exceed the max length - add what we can and break.
-                if (content.length + nodeContent.length > props.maxLength) {
-                    const remainingLength = props.maxLength - content.length;
-                    const nodeRaw = node.get();
-                    const trimmed = getContentTrimmed(nodeRaw.type, nodeRaw.content, remainingLength);
-                    if (trimmed) {
-                        node.content.set(trimmed);
-                        content += trimmed;
-                    } else {
-                        node.content.set(''); // TODO remove node? example: empty image node does not make sense
-                    }
-                    break;
-                } else {
-                    content += node.content.get();
-                }
-            }
-        }
-        props.onChangeText(content);
+        props.onChange(nodes);
     }, [nodes]);
 
     function select(node?: State<EditorNodeDefinition> | null) {
-        props.onFocus && props.onFocus();
-        if (!node) {
-            if (nodes.length === 0) {
-                const newNode = createTextNode('');
-                newNode.isFocused = true;
-                nodes.set([newNode]);
+        console.log('trying to select', node ? node.isFocused.get() : null);
+        try {
+            props.onFocus && props.onFocus();
+            if (!node) {
+                if (nodes.length === 0) {
+                    const newNode = createTextNode('');
+                    newNode.isFocused = true;
+                    nodes.set([newNode]);
+                }
+                return;
             }
-            return;
+            node.isFocused.set(true);
+            node.lastFocusTime.set(Date.now());
+        } catch (e) {
+            console.error(e);
         }
-        node.isFocused.set(true);
-        if (lastSelectedNode !== null && lastSelectedNode.id.get() == node.id.get()) {
-            lastSelectedNode.isFocused.set(false);
-        }
-        setLastSelectedNode(node);
     }
 
     function deselect(node: State<EditorNodeDefinition>) {
+        console.log('deselecting', node.id.get());
         if (node.isFocused.get()) {
             node.isFocused.set(false);
             props.onBlur && props.onBlur();
         }
     }
 
-    // TODO create ids and use as key
-    return <Pressable
-        style={[styles.root, props.style]}
-        onPress={() => select(nodes[0])}
-    >
-        {props.placeholder}
-        {nodes.map((node) => {
-            return <EditorNode key={node.id.get()} node={node} onBlur={() => deselect(node)} onFocus={() => select(node)}/>
-        })}
+    function doDelete(node: State<EditorNodeDefinition>) {
+        console.log('deleting', node.id.get());
+        const prevId = node.prev.get()?.id;
+        deleteNode(nodes, node.id.get());
+        if (prevId !== undefined && prevId !== null) {
+            // TODO OPTIMIZE
+            nodes.find((searchingNode) => searchingNode.id.get() === prevId)?.isFocused.set(true);
+        }
+    }
+
+    return <View style={props.style}>
+        <Pressable onPress={() => select(nodes[nodes.length - 1])} style={styles.inputArea}>
+            {props.placeholder}
+            {nodes.map((node) => {
+                return <EditorNode key={node.id.get()} node={node} onBlur={() => deselect(node)} onFocus={() => select(node)} onDelete={() => doDelete(node)}/>
+            })}
+        </Pressable>
         {props.toolbar && props.toolbarConfig && props.toolbar(props.toolbarConfig)}
-    </Pressable>
+    </View>
 }
 
 const styles = StyleSheet.create({
-    root: {}
+    inputArea: {
+        flex: 1,
+        flexDirection: 'row',
+        padding: 5
+    }
 })

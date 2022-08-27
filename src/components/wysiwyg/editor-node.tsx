@@ -10,6 +10,7 @@ export enum EditorNodeType {
     NEWLINE,
     TEXT,
     TEXT_BOLD,
+    EMOTICON,
     IMAGE,
     TEXT_ITALIC,
     TEXT_STRIKETHROUGH,
@@ -17,40 +18,41 @@ export enum EditorNodeType {
 }
 
 export interface EditorNodeDefinition {
-    id: number,
-    previous: EditorNodeDefinition | null
-    next: EditorNodeDefinition | null
+    id: number
+    prev?: EditorNodeDefinition
+    next?: EditorNodeDefinition
     content: string
     type: EditorNodeType
-    isDeleted?: boolean // used for communication between elements
     isFocused: boolean
+    lastFocusTime?: number
 }
 
 export interface EditorNodeProps {
     node: State<EditorNodeDefinition>;
     onBlur?: () => void
     onFocus?: () => void
+    onDelete?: () => void
 }
 
-export function EditorNode({node, onBlur, onFocus}: EditorNodeProps) {
+export function EditorNode({node, onBlur, onFocus, onDelete}: EditorNodeProps) {
     // OPTIMIZATION: in order of popularity
     if (node.type.get() === EditorNodeType.TEXT) {
-        return <EditorNodeText node={node} onBlur={onBlur} onFocus={onFocus} />;
+        return <EditorNodeText node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} />;
     }
     if (node.type.get() === EditorNodeType.TEXT_BOLD) {
-        return <EditorNodeBold node={node} onBlur={onBlur} onFocus={onFocus} />;
+        return <EditorNodeBold node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} />;
     }
     if (node.type.get() === EditorNodeType.IMAGE) {
-        return <EditorNodeImage node={node} onBlur={onBlur} onFocus={onFocus} />;
+        return <EditorNodeImage node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} />;
     }
     if (node.type.get() === EditorNodeType.TEXT_ITALIC) {
-        return <EditorNodeItalic node={node} onBlur={onBlur} onFocus={onFocus} />;
+        return <EditorNodeItalic node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} />;
     }
     if (node.type.get() === EditorNodeType.TEXT_UNDERLINE) {
-        return <EditorNodeUnderline node={node} onBlur={onBlur} onFocus={onFocus} />;
+        return <EditorNodeUnderline node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} />;
     }
     if (node.type.get() === EditorNodeType.TEXT_STRIKETHROUGH) {
-        return <EditorNodeStrikethrough node={node} onBlur={onBlur} onFocus={onFocus} />;
+        return <EditorNodeStrikethrough node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} />;
     }
     return null;
 }
