@@ -23,9 +23,9 @@ export function EditorNodeText({node, onBlur, onFocus, onDelete, style}: EditorN
         end: number;
     }>();
 
-    useHookstateEffect(() => {
-        // TODO use onContentSizeChange
-    }, [node.content]);
+    // useHookstateEffect(() => {
+    //     // TODO use onContentSizeChange
+    // }, [node.content]);
 
     const ref = useRef<TextInput>();
     if (node.isFocused.get()) {
@@ -40,7 +40,6 @@ export function EditorNodeText({node, onBlur, onFocus, onDelete, style}: EditorN
     }, [node.isFocused.get()]);
 
     const handleKeyUp = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
-        console.log('???', e.nativeEvent.key);
         switch (e.nativeEvent.key) {
             case 'Enter': // TODO maybe onSubmitEditing?
                 // TODO add a newline node
@@ -58,15 +57,22 @@ export function EditorNodeText({node, onBlur, onFocus, onDelete, style}: EditorN
         setSelection(e.nativeEvent.selection);
     }
 
+    const [value, setValue] = useState(node.content.get());
+
     // TODO if not multiline, set returnKeyType to "go"
     return <TextInput
-        value={node.content.get()}
-        onChangeText={(newValue: string) => (node.content.set(newValue))}
+        value={value}
+        onChangeText={(newValue: string) => {
+            // update ui value right away (why is this faster than defaultValue???
+            setValue(newValue);
+            // timeout here helps fix UI reflow lag
+            setTimeout(() => node.content.set(newValue), 0)}
+        }
         onSelectionChange={onSelectionChange}
         onBlur={onBlur}
         onFocus={onFocus}
         onKeyPress={handleKeyUp}
         ref={ref as MutableRefObject<TextInput>}
-        style={[style, {padding: 0, borderWidth: 0}]}
+        style={[style, {padding: 0, borderWidth: 0, position: 'relative', left: 0}]}
     />;
 }

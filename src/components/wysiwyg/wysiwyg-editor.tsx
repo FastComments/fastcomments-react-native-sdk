@@ -203,8 +203,8 @@ export function Editor(props: EditorProps) {
 
 const styles = StyleSheet.create({
     inputArea: {
-        flex: 1,
         flexDirection: 'row',
+        alignItems: 'flex-start',
         padding: 5
     }
 })
