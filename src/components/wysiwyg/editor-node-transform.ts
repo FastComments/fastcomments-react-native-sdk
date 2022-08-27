@@ -117,6 +117,7 @@ export function nodesToString(nodes: State<EditorNodeDefinition[]>, formatConfig
 }
 
 export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTokenizerConfig) {
+    console.log('calling defaultTokenizer', input);
     const result: EditorNodeDefinition[] = [];
     let buffer = '';
 
@@ -140,9 +141,9 @@ export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTo
             }
         } else {
             for (const startToken in SupportedNodes) {
-                // @ts-ignore
-                const node = SupportedNodes[startToken];
                 if (buffer.endsWith(startToken)) {
+                    // @ts-ignore
+                    const node = SupportedNodes[startToken];
                     if (node.lookaheadIgnore && input[i + 1] && node.lookaheadIgnore.some((ignore) => ignore === input[i + 1])) {
                         continue;
                     }
