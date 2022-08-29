@@ -17,6 +17,7 @@ export interface CommentTextAreaProps {
 }
 
 export function CommentTextArea({state, value, onChangeText, onFocus: _onFocus}: CommentTextAreaProps) {
+    console.log('opening text area', value);
     // TODO toolbar supports inline reacts - support for extension customizing toolbar?
     // TODO gif selector
     const [isFocused, setFocused] = useState(false);
@@ -53,6 +54,7 @@ export function CommentTextArea({state, value, onChangeText, onFocus: _onFocus}:
     }
     const maxLength = state.config.maxCommentCharacterLength.get() || 2000;
     const [editorNodes, setEditorNodes] = useState(stringToNodes(EditorFormatConfigurationHTML, value || ''));
+    console.log('tokenized to', value, editorNodes);
     const [isEmpty, setIsEmpty] = useState(!!value);
     useEffect(() => {
         if (!value) { // normally, let the widget handle updating the nodes itself. However, if we clear the value, then we want to clear the nodes.

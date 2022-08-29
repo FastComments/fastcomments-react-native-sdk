@@ -18,7 +18,7 @@ async function saveCommentText({comment, state}: FastCommentsCommentWithState, n
     const response = await makeRequest<UpdateCommentTextResponse>({
         apiHost: state.apiHost.get(),
         method: 'POST',
-        url: '/comments/' + tenantId + '/' + comment._id + '/update-text/' + createURLQueryString({
+        url: '/comments/' + tenantId + '/' + comment._id.get() + '/update-text/' + createURLQueryString({
             urlId: state.config.urlId.get(),
             editKey: state.commentState[comment._id.get()]?.editKey?.get(),
             sso: state.ssoConfigString.get(),
@@ -59,6 +59,7 @@ export function CommentActionEdit({comment, state, close}: CommentActionEditProp
                         setLoading(false);
                         close();
                     } catch (e) {
+                        console.error(e);
                         setLoading(false);
                         // TODO show err message
                     }

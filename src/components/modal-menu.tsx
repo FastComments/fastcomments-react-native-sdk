@@ -20,11 +20,11 @@ export interface ModalMenuProps {
     openButton: ReactNode;
 }
 
-export function ModalMenu({state, items, openButton} : ModalMenuProps) {
+export function ModalMenu({state, items, openButton}: ModalMenuProps) {
     const [activeModalId, setModalIdVisible] = useState<string | null>(null);
     const [isLoading, setLoading] = useState(false);
     return <View style={styles.rootView}>
-            <View style={styles.centeredView}>
+        <View style={styles.centeredView}>
             <Modal
                 animationType="slide"
                 transparent={true}
@@ -65,11 +65,11 @@ export function ModalMenu({state, items, openButton} : ModalMenuProps) {
             <Modal
                 animationType="slide"
                 transparent={true}
-                visible={activeModalId === 'edit'}
+                visible={!!activeModalId && activeModalId !== 'menu'}
                 onRequestClose={() => {
                     setModalIdVisible(null);
                 }}>
-                {activeModalId !== 'edit' && items && items.find((item) => item.subModalContent && item.id === activeModalId)?.subModalContent!(() => setModalIdVisible(null))}
+                {!!activeModalId && activeModalId !== 'menu' && items && items.find((item) => item.subModalContent && item.id === activeModalId)?.subModalContent!(() => setModalIdVisible(null))}
             </Modal>
         </View>
         <Pressable onPress={() => setModalIdVisible('menu')}>
