@@ -5,7 +5,7 @@ import {FastCommentsState} from "../types/fastcomments-state";
 import {StyleSheet, Text, View} from "react-native";
 import {State} from "@hookstate/core";
 
-export function PaginationNext(state: State<FastCommentsState>) {
+export function PaginationNext({state}: { state: State<FastCommentsState> }) {
     const shouldShowPagination = state.page.get() !== -1 && state.commentCountOnClient.get() > state.PAGE_SIZE.get() && state.hasMore.get();
     if (shouldShowPagination) {
         // TODO: check if loading, set opacity: 0.5
