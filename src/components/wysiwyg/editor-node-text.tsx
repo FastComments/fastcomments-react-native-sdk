@@ -28,26 +28,34 @@ export function EditorNodeText({node, onBlur, onFocus, onDelete, style}: EditorN
     // }, [node.content]);
 
     const ref = useRef<TextInput>();
-    if (node.isFocused.get()) {
-        console.log('Focusing node', node.id.get(), !!ref.current)
+    if (node.isFocused.get()) { // OPTIMIZATION call to isFocused
+        console.log('Focusing node (A)', node.id.get(), !!ref.current)
         ref.current?.focus();
     }
     useHookstateEffect(() => {
-        if (node.isFocused.get()) {
-            console.log('Focusing node', node.id.get())
+        if (node.isFocused.get()) { // OPTIMIZATION call to isFocused
+            console.log('Focusing node (B)', node.id.get())
             ref.current?.focus();
         }
     }, [node.isFocused.get()]);
 
     const handleKeyUp = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
+        console.log('Got key up', e.nativeEvent.key)
         switch (e.nativeEvent.key) {
             case 'Enter': // TODO maybe onSubmitEditing?
                 // TODO add a newline node
                 break;
             case 'Backspace':
-                if (selection?.start === 0) {
-                    // delete this node
-                    onDelete && onDelete();
+                if (!selection?.start) {
+                    console.log('Calling onDelete, does react suck?')
+                    try {
+                        // delete this node
+                        onDelete && onDelete();
+                    } catch (e) {
+                        console.error('wtf', e); // TODO remove
+                    }
+                } else {
+                    console.log('selection was', selection.start);
                 }
                 break;
         }
@@ -66,13 +74,14 @@ export function EditorNodeText({node, onBlur, onFocus, onDelete, style}: EditorN
             // update ui value right away (why is this faster than defaultValue???
             setValue(newValue);
             // timeout here helps fix UI reflow lag
-            setTimeout(() => node.content.set(newValue), 0)}
+            setTimeout(() => node && node.content && node.content.set(newValue), 0)
+        }
         }
         onSelectionChange={onSelectionChange}
         onBlur={onBlur}
         onFocus={onFocus}
         onKeyPress={handleKeyUp}
         ref={ref as MutableRefObject<TextInput>}
-        style={[style, {padding: 0, borderWidth: 0, position: 'relative', left: 0}]}
+        style={[style, {padding: 0, borderWidth: 0, position: 'relative', left: 0, minWidth: 0}]}
     />;
 }

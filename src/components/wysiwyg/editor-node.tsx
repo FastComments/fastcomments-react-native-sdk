@@ -5,6 +5,7 @@ import {EditorNodeItalic} from "./editor-node-italic";
 import {EditorNodeStrikethrough} from "./editor-node-strikethrough";
 import {EditorNodeUnderline} from "./editor-node-underline";
 import {EditorNodeImage} from "./editor-node-image";
+import {EditorNodeEmoticon} from "./editor-node-emoticon";
 
 export enum EditorNodeType {
     NEWLINE,
@@ -19,8 +20,6 @@ export enum EditorNodeType {
 
 export interface EditorNodeDefinition {
     id: number
-    prev?: EditorNodeDefinition
-    next?: EditorNodeDefinition
     content: string
     type: EditorNodeType
     isFocused: boolean
@@ -34,25 +33,29 @@ export interface EditorNodeProps {
     onDelete?: () => void
 }
 
-export function EditorNode({node, onBlur, onFocus, onDelete}: EditorNodeProps) {
+export function EditorNode(props: EditorNodeProps) {
     // OPTIMIZATION: in order of popularity
-    if (node.type.get() === EditorNodeType.TEXT) {
-        return <EditorNodeText node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} />;
+    if (props.node.type.get() === EditorNodeType.TEXT) {
+        // Not using TSX here to try to reduce number of objects getting re-allocated, instead calling element function with same props object.
+        return EditorNodeText(props);
     }
-    if (node.type.get() === EditorNodeType.TEXT_BOLD) {
-        return <EditorNodeBold node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} />;
+    if (props.node.type.get() === EditorNodeType.EMOTICON) {
+        return EditorNodeEmoticon(props);
     }
-    if (node.type.get() === EditorNodeType.IMAGE) {
-        return <EditorNodeImage node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} />;
+    if (props.node.type.get() === EditorNodeType.TEXT_BOLD) {
+        return EditorNodeBold(props);
     }
-    if (node.type.get() === EditorNodeType.TEXT_ITALIC) {
-        return <EditorNodeItalic node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} />;
+    if (props.node.type.get() === EditorNodeType.IMAGE) {
+        return EditorNodeImage(props);
     }
-    if (node.type.get() === EditorNodeType.TEXT_UNDERLINE) {
-        return <EditorNodeUnderline node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} />;
+    if (props.node.type.get() === EditorNodeType.TEXT_ITALIC) {
+        return EditorNodeItalic(props);
     }
-    if (node.type.get() === EditorNodeType.TEXT_STRIKETHROUGH) {
-        return <EditorNodeStrikethrough node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} />;
+    if (props.node.type.get() === EditorNodeType.TEXT_UNDERLINE) {
+        return EditorNodeUnderline(props);
+    }
+    if (props.node.type.get() === EditorNodeType.TEXT_STRIKETHROUGH) {
+        return EditorNodeStrikethrough(props);
     }
     return null;
 }

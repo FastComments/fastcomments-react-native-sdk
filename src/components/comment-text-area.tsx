@@ -5,34 +5,55 @@ import {Editor} from "./wysiwyg/wysiwyg-editor";
 import {useEffect, useState} from "react";
 import {EditorToolbar, EditorToolbarConfig} from "./wysiwyg/editor-toolbar";
 import {FastCommentsImageAsset} from "../types/image-asset";
-import {nodesToString, stringToNodes} from "./wysiwyg/editor-node-transform";
+import {getLengthAndEnforceMaxLength, nodesToString, stringToNodes} from "./wysiwyg/editor-node-transform";
 import {EditorFormatConfigurationHTML} from "./wysiwyg/transformers";
 import {EditorNodeDefinition} from "./wysiwyg/editor-node";
+import {EmoticonBar, EmoticonBarConfig} from "./wysiwyg/emoticon-bar";
+
+export interface ValueObserver {
+    getValue?: () => string
+}
 
 export interface CommentTextAreaProps {
-    state: State<FastCommentsState>
+    state: FastCommentsState
     value?: string
-    onChangeText: (value: string) => void
+    output: ValueObserver
     onFocus?: () => void
 }
 
-export function CommentTextArea({state, value, onChangeText, onFocus: _onFocus}: CommentTextAreaProps) {
-    console.log('opening text area', value);
+export function CommentTextArea({state, value, output, onFocus: _onFocus}: CommentTextAreaProps) {
+    // console.log('opening text area', value);
     // TODO toolbar supports inline reacts - support for extension customizing toolbar?
     // TODO gif selector
+    const maxLength = state.config.maxCommentCharacterLength || 2000;
     const [isFocused, setFocused] = useState(false);
-    const placeholder = <Text style={styles.placeholder}>{state.translations.ENTER_COMMENT_HERE.get()}</Text>
+    const [isEmpty, setIsEmpty] = useState(!!value);
+    const [editorInputNodes, setEditorInputNodes] = useState<EditorNodeDefinition[]>([]);
+    const [nodeState, setNodeState] = useState<State<EditorNodeDefinition[]> | null>(null);
+    useEffect(() => {
+        setEditorInputNodes(stringToNodes(EditorFormatConfigurationHTML, value || ''));
+    }, [value]);
+
+    const placeholder = <Text style={styles.placeholder}>{state.translations.ENTER_COMMENT_HERE}</Text>
+    // TODO not enabled by default, move to extensions. This is just for testing.
+    const emoticonBarConfig: EmoticonBarConfig = {
+        emoticons: [
+            ['https://cdn.fastcomments.com/images/fireworks.png', <Image source={{uri: 'https://cdn.fastcomments.com/images/fireworks.png'}} style={styles.toolbarButton} />],
+            ['https://cdn.fastcomments.com/images/party-popper.png', <Image source={{uri: 'https://cdn.fastcomments.com/images/party-popper.png'}} style={styles.toolbarButton} />],
+            ['https://cdn.fastcomments.com/images/star-64-filled.png', <Image source={{uri: 'https://cdn.fastcomments.com/images/star-64-filled.png'}} style={styles.toolbarButton} />],
+        ]
+    }
     const toolbarConfig: EditorToolbarConfig = {
-        boldButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_BOLD].get()} style={styles.toolbarButton}/>,
-        italicButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_ITALIC].get()} style={styles.toolbarButton}/>,
-        underlineButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_UNDERLINE].get()} style={styles.toolbarButton}/>,
-        strikethroughButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_STRIKETHROUGH].get()} style={styles.toolbarButton}/>,
-        imageButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_IMAGE_UPLOAD].get()} style={styles.toolbarButton}/>,
+        boldButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_BOLD]} style={styles.toolbarButton}/>,
+        italicButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_ITALIC]} style={styles.toolbarButton}/>,
+        underlineButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_UNDERLINE]} style={styles.toolbarButton}/>,
+        strikethroughButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_STRIKETHROUGH]} style={styles.toolbarButton}/>,
+        imageButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_IMAGE_UPLOAD]} style={styles.toolbarButton}/>,
         uploadImage: async (_node, photoData) => {
             const formData = new FormData();
             formData.append('file', photoData);
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', state.apiHost.get() + '/upload-image/' + state.config.tenantId.get());
+            xhr.open('POST', state.apiHost + '/upload-image/' + state.config.tenantId);
             xhr.onprogress = function () {
                 // TODO show progress
                 console.log('uploading image', xhr.status);
@@ -52,24 +73,19 @@ export function CommentTextArea({state, value, onChangeText, onFocus: _onFocus}:
             });
         }
     }
-    const maxLength = state.config.maxCommentCharacterLength.get() || 2000;
-    const [editorNodes, setEditorNodes] = useState(stringToNodes(EditorFormatConfigurationHTML, value || ''));
-    console.log('tokenized to', value, editorNodes);
-    const [isEmpty, setIsEmpty] = useState(!!value);
-    useEffect(() => {
-        if (!value) { // normally, let the widget handle updating the nodes itself. However, if we clear the value, then we want to clear the nodes.
-            setEditorNodes(stringToNodes(EditorFormatConfigurationHTML, value || ''));
-        }
-    }, [value]);
 
     function onChange(nodes: State<EditorNodeDefinition[]>) {
-        const newText = nodesToString(nodes, EditorFormatConfigurationHTML, maxLength);
-        setIsEmpty(!newText);
-        onChangeText(newText);
+        const length = getLengthAndEnforceMaxLength(nodes, EditorFormatConfigurationHTML, maxLength);
+        setIsEmpty(length === 0);
+        setNodeState(nodes);
+    }
+
+    output.getValue = () => {
+        return nodesToString(nodeState, EditorFormatConfigurationHTML, maxLength);
     }
 
     return <Editor
-        nodes={editorNodes}
+        nodes={editorInputNodes}
         onChange={onChange}
         style={styles.textarea}
         placeholder={!isFocused && isEmpty && placeholder}
@@ -78,6 +94,8 @@ export function CommentTextArea({state, value, onChangeText, onFocus: _onFocus}:
         maxLength={maxLength}
         toolbar={(config) => <EditorToolbar config={config}/>}
         toolbarConfig={toolbarConfig}
+        emoticonBar={(config) => <EmoticonBar config={config}/>}
+        emoticonBarConfig={emoticonBarConfig}
     />
 }
 

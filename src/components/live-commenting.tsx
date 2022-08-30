@@ -23,7 +23,10 @@ export function FastCommentsLiveCommenting({config}: { config: FastCommentsComme
     useEffect(() => {
         (async () => {
             await service.fetchRemoteState(false);
+            setTimeout(function() {
+
             setLoading(false);
+            }, 3000)
         })();
     }, [config]);
 
@@ -32,7 +35,7 @@ export function FastCommentsLiveCommenting({config}: { config: FastCommentsComme
     }
 
     if (state.blockingErrorMessage.get()) {
-        return <View><CommentAreaMessage message={state.blockingErrorMessage.get()} />}</View>;
+        return <View><CommentAreaMessage message={state.blockingErrorMessage.get()} /></View>;
     } else if (!(state.commentsTree.length === 0 && state.config.readonly.get() && (state.config.hideCommentsUnderCountTextFormat.get() || state.config.useShowCommentsToggle.get()))) {
         const paginationBeforeComments = state.commentsVisible.get() && state.config.paginationBeforeComments.get()
             ? <PaginationNext state={state} />
@@ -66,14 +69,14 @@ const styles = StyleSheet.create({
         color: "red"
     },
     loading: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center"
+        // position: 'absolute',
+        // left: 0,
+        // right: 0,
+        // top: 0,
+        // bottom: 0,
+        // zIndex: 9001,
+        // justifyContent: "center",
+        // alignItems: "center"
     },
     comments: {}
 });

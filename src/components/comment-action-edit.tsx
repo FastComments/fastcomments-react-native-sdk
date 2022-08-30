@@ -6,7 +6,7 @@ import {createURLQueryString, makeRequest} from "../services/http";
 import {getActionTenantId} from "../services/tenants";
 import {UpdateCommentTextResponse} from "../types/dto/update-comment-text";
 import {newBroadcastId} from "../services/broadcast-id";
-import {CommentTextArea} from "./comment-text-area";
+import {CommentTextArea, ValueObserver} from "./comment-text-area";
 
 export interface CommentActionEditProps extends FastCommentsCommentWithState {
     close: () => void;
@@ -45,16 +45,20 @@ async function saveCommentText({comment, state}: FastCommentsCommentWithState, n
 
 export function CommentActionEdit({comment, state, close}: CommentActionEditProps) {
     const [isLoading, setLoading] = useState(false);
-    // TODO common comment writing component
+    const valueGetter: ValueObserver = {}
     // TODO ask before closing if content changed
     return <View style={styles.centeredView}>
         <View style={styles.modalView}>
-            <CommentTextArea state={state} value={comment.comment.get()} onChangeText={(newValue: string) => comment.comment.set(newValue)} />
+            <CommentTextArea
+                state={state.get()} value={comment.comment.get()}
+                output={valueGetter}
+            />
             <Pressable
                 style={styles.saveButton}
                 onPress={async () => {
                     setLoading(true);
                     try {
+                        valueGetter.getValue && comment.comment.set(valueGetter.getValue());
                         await saveCommentText({comment, state}, comment.comment.get()!);
                         setLoading(false);
                         close();

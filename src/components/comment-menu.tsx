@@ -101,7 +101,7 @@ async function setCommentFlaggedStatus({state, comment}: FastCommentsCommentWith
 export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
     const currentUser = state.currentUser.get();
     const isMyComment = currentUser && 'id' in currentUser && (comment.userId.get() === currentUser.id || comment.anonUserId.get() === currentUser.id);
-    console.log('isMyComment', isMyComment, currentUser, comment.userId.get(), comment.anonUserId.get(), state.isSiteAdmin.get()); // TODO REMOVE
+    // console.log('isMyComment', isMyComment, currentUser, comment.userId.get(), comment.anonUserId.get(), state.isSiteAdmin.get()); // TODO REMOVE
     const canEdit = !comment.isDeleted.get() && ((currentUser && 'authorized' in currentUser && currentUser.authorized && (state.isSiteAdmin.get() || isMyComment))); // can have edit key and be anon
     const canPin = state.isSiteAdmin.get() && !(comment.parentId?.get());
     const canBlockOrFlag = !comment.isDeleted?.get() && !comment.isByAdmin?.get() && !comment.isByModerator?.get() && !isMyComment && currentUser && 'authorized' in currentUser && currentUser.authorized;

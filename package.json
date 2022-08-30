@@ -59,6 +59,7 @@
   },
   "dependencies": {
     "@hookstate/core": "^4.0.0-rc21",
+    "@types/lodash": "^4.14.184",
     "lodash": "^4.17.21",
     "react-native-dropdown-picker": "^5.4.2",
     "react-native-image-picker": "^4.10.0",

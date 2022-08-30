@@ -3,16 +3,16 @@ import * as React from 'react';
 
 import {FastCommentsState} from "../types/fastcomments-state";
 import {View, Text, StyleSheet, Pressable, Image, Linking, ActivityIndicator, TextInput, useWindowDimensions} from "react-native";
-import {State} from "@hookstate/core";
+import {none, State, useHookstate} from "@hookstate/core";
 import {FastCommentsWidgetComment} from "fastcomments-typescript";
 import {FastCommentsImageAsset} from '../types/image-asset';
 import {getDefaultAvatarSrc} from "../services/default-avatar";
 import {ModalMenu} from "./modal-menu";
-import {Dispatch, SetStateAction, useState} from 'react';
+import {Dispatch, SetStateAction} from 'react';
 import {ThreeDot} from "./three-dot";
 import {NotificationBell} from "./notification-bell";
 import {CommentAreaMessage} from "./comment-area-message";
-import {CommentTextArea} from "./comment-text-area";
+import {CommentTextArea, ValueObserver} from "./comment-text-area";
 import {SaveCommentResponse} from "../types/dto/save-comment-response";
 import {getActionTenantId, getActionURLID} from "../services/tenants";
 import {newBroadcastId} from "../services/broadcast-id";
@@ -105,10 +105,10 @@ async function submit({
                           state,
                           parentComment
                       }: ReplyAreaState,
-                      commentReplyState: CommentReplyState
-): Promise<CommentReplyState> { // returns a new CommentReplyState
+                      commentReplyState: State<CommentReplyState>
+) {
     if (state.config.readonly.get()) {
-        return commentReplyState;
+        return;
     }
     const replyingToId = parentComment?._id.get();
 
@@ -130,7 +130,7 @@ async function submit({
                 )
             )
         )) {
-        return commentReplyState;
+        return;
     }
     // TODO validate email
     // if (!allowAnon && ... is email invalid ...) {
@@ -147,11 +147,11 @@ async function submit({
         urlId: urlIdToUse,
         url: state.config.url.get(),
         pageTitle: state.config.pageTitle.get(),
-        commenterName: currentUserBeforeSubmit ? currentUserBeforeSubmit.username : commentReplyState.username,
-        commenterEmail: currentUserBeforeSubmit && 'email' in currentUserBeforeSubmit ? currentUserBeforeSubmit.email : commentReplyState.email,
-        commenterLink: currentUserBeforeSubmit && 'websiteUrl' in currentUserBeforeSubmit ? currentUserBeforeSubmit.websiteUrl : commentReplyState.websiteUrl,
+        commenterName: currentUserBeforeSubmit ? currentUserBeforeSubmit.username : commentReplyState.username.get(),
+        commenterEmail: currentUserBeforeSubmit && 'email' in currentUserBeforeSubmit ? currentUserBeforeSubmit.email : commentReplyState.email.get(),
+        commenterLink: currentUserBeforeSubmit && 'websiteUrl' in currentUserBeforeSubmit ? currentUserBeforeSubmit.websiteUrl : commentReplyState.websiteUrl.get(),
         avatarSrc: currentUserBeforeSubmit && state.config.simpleSSO.get() ? currentUserBeforeSubmit.avatarSrc : undefined,
-        comment: commentReplyState.comment,
+        comment: commentReplyState.comment.get(),
         parentId: replyingToId,
         date: date.valueOf(),
         localDateString: date.toString(),
@@ -269,16 +269,11 @@ async function submit({
         if (response.maxCharacterLength && response.maxCharacterLength !== state.config.maxCommentCharacterLength.get()) {
             state.config.maxCommentCharacterLength.set(response.maxCharacterLength); // update UI
         }
-        return {
-            username: commentReplyState.username,
-            email: commentReplyState.email,
-            websiteUrl: commentReplyState.websiteUrl,
-            comment: commentReplyState.comment,
-            isReplySaving: false,
-            showAuthInputForm: false,
-            showSuccessMessage,
-            lastSaveResponse: response
-        };
+        commentReplyState.isReplySaving.set(false);
+        commentReplyState.showAuthInputForm.set(false);
+        commentReplyState.showSuccessMessage.set(showSuccessMessage);
+        commentReplyState.showSuccessMessage.set(showSuccessMessage);
+        commentReplyState.lastSaveResponse.set(response);
     } catch (response: any) {
         if ('customConfig' in response && response.customConfig) {
             handleNewCustomConfig(state, response.customConfig);
@@ -288,30 +283,32 @@ async function submit({
             // TODO
             // onAuthenticationChange(config.instanceId, 'authentication-failed', newComment);
         }
-        return {
-            username: commentReplyState.username,
-            email: commentReplyState.email,
-            websiteUrl: commentReplyState.websiteUrl,
-            comment: commentReplyState.comment,
-            isReplySaving: false,
-            showAuthInputForm: false,
-            showSuccessMessage: false,
-            lastSaveResponse: response
-        };
+        commentReplyState.isReplySaving.set(false);
+        commentReplyState.showAuthInputForm.set(false);
+        commentReplyState.showSuccessMessage.set(false);
+        commentReplyState.lastSaveResponse.set(response);
     }
 }
 
 export function ReplyArea({state, parentComment}: ReplyAreaState) {
     const currentUser = state.currentUser?.get();
     const needsAuth = !currentUser && !!parentComment;
-    const [commentReplyState, setNewCommentState] = useState<CommentReplyState>({
+    const valueGetter: ValueObserver = {};
+
+    const commentReplyState = useHookstate<CommentReplyState>({
         isReplySaving: false,
         showSuccessMessage: false,
         // for root comment area, we don't show the auth input form until they interact to save screen space.
         showAuthInputForm: needsAuth
     });
     const {width} = useWindowDimensions();
-    const lastSaveResponse = commentReplyState.lastSaveResponse;
+
+    const getLatestInputValue = () => {
+        console.log('getting latest value', typeof valueGetter.getValue);
+        const latestValue = valueGetter.getValue ? valueGetter.getValue() : '';
+        console.log('got latest value', latestValue, typeof latestValue);
+        commentReplyState.comment.set(latestValue);
+    }
 
     // parentId check is so that we don't allow new comments to root, but we do allow new comments **inline**
     if (state.config.readonly.get() || (!parentComment && state.config.noNewRootComments.get())) {
@@ -391,62 +388,39 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
         }
 
         let commentInputAreaContent;
-        if (commentReplyState.showSuccessMessage) {
-            commentInputAreaContent = CommentAreaMessage(state.translations.COMMENT_HAS_BEEN_SUBMITTED.get());
+        if (commentReplyState.showSuccessMessage.get()) {
+            commentInputAreaContent = CommentAreaMessage({message: state.translations.COMMENT_HAS_BEEN_SUBMITTED.get()});
         } else {
             commentInputAreaContent =
                 <CommentTextArea
-                    state={state}
-                    value={commentReplyState.comment}
-                    onChangeText={(newValue: string) => setNewCommentState({...commentReplyState, comment: newValue})}
-                    onFocus={() => needsAuth && !commentReplyState.showAuthInputForm && setNewCommentState({
-                        ...commentReplyState,
-                        showAuthInputForm: true
-                    })}
+                    state={state.get()}
+                    value={commentReplyState.comment.get()}
+                    output={valueGetter}
+                    onFocus={() => needsAuth && !commentReplyState.showAuthInputForm.get() && commentReplyState.showAuthInputForm.set(true)}
                 />;
         }
 
-        commentInputArea = <View style={[styles.commentInputArea, (commentReplyState.isReplySaving ? styles.commentInputAreaReplySaving : null)]}>
+        commentInputArea = <View style={[styles.commentInputArea, (commentReplyState.isReplySaving.get() ? styles.commentInputAreaReplySaving : null)]}>
             {commentInputAreaContent}
         </View>;
 
         const handleSubmit = async () => {
-            if (commentReplyState.showSuccessMessage && !parentComment) {
-                setNewCommentState((commentReplyState) => {
-                    return {
-                        ...commentReplyState,
-                        showSuccessMessage: false
-                    };
-                });
+            getLatestInputValue();
+            if (commentReplyState.showSuccessMessage.get() && !parentComment) {
+                commentReplyState.showSuccessMessage.set(true);
                 // TODO focus on text area
             } else {
-                setNewCommentState((commentReplyState) => {
-                    return {
-                        ...commentReplyState,
-                        isReplySaving: true
-                    };
-                });
+                commentReplyState.isReplySaving.set(true);
                 try {
-                    const submitResponse = await submit({state, parentComment}, commentReplyState);
-                    setNewCommentState({
-                        username: undefined,
-                        email: undefined,
-                        websiteUrl: undefined,
-                        comment: undefined,
-                        isReplySaving: false,
-                        showAuthInputForm: submitResponse.showAuthInputForm,
-                        showSuccessMessage: submitResponse.showSuccessMessage,
-                        lastSaveResponse: submitResponse.lastSaveResponse
-                    });
+                    await submit({state, parentComment}, commentReplyState);
+                    commentReplyState.username.set(none);
+                    commentReplyState.email.set(none);
+                    commentReplyState.websiteUrl.set(none);
+                    commentReplyState.comment.set('');
                 } catch (e) {
                     console.error('Failed to save a comment', e);
                 }
-                setNewCommentState((commentReplyState) => {
-                    return {
-                        ...commentReplyState,
-                        isReplySaving: false
-                    };
-                });
+                commentReplyState.isReplySaving.set(false);
                 if (parentComment?.get()) {
                     state.commentState[parentComment._id.get()].replyBoxOpen.set(false);
                 }
@@ -463,11 +437,11 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
         // result += '<div class="horizontal-border horizontal-border-bottom-right"></div>';
         // result += '</div>';
 
-        if (!commentReplyState.isReplySaving) {
+        if (!commentReplyState.isReplySaving.get()) {
             commentSubmitButton = <View style={styles.replyButtonWrapper}>
                 <Pressable style={styles.replyButton} onPress={handleSubmit}>
                     <Text
-                        style={styles.replyButtonText}>{commentReplyState.showSuccessMessage ? state.translations.WRITE_ANOTHER_COMMENT.get() : state.translations.SUBMIT_REPLY.get()}</Text>
+                        style={styles.replyButtonText}>{commentReplyState.showSuccessMessage.get() ? state.translations.WRITE_ANOTHER_COMMENT.get() : state.translations.SUBMIT_REPLY.get()}</Text>
                     <Image
                         source={parentComment ? state.imageAssets[FastCommentsImageAsset.ICON_RETURN].get() : state.imageAssets[FastCommentsImageAsset.ICON_BUBBLE].get()}
                         style={styles.replyButtonIcon}/>
@@ -475,8 +449,8 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
             </View>;
         }
 
-        if (commentReplyState.showAuthInputForm || (lastSaveResponse?.code && SignUpErrorsTranslationIds[lastSaveResponse.code])) { // checking for just true here causes the user to appear to logout on any failure, which is weird.
-            console.log('showing auth input area', commentReplyState.showAuthInputForm, lastSaveResponse?.code);
+        if (commentReplyState.showAuthInputForm.get() || (commentReplyState.lastSaveResponse.get()?.code && SignUpErrorsTranslationIds[commentReplyState.lastSaveResponse.get()!.code!])) { // checking for just true here causes the user to appear to logout on any failure, which is weird.
+            console.log('showing auth input area', commentReplyState.showAuthInputForm.get(), commentReplyState.lastSaveResponse.get()?.code);
             authFormArea = <View style={styles.userInfoInput}>
                 {!state.config.disableEmailInputs.get &&
                 <Text
@@ -490,26 +464,26 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
                     maxLength={70}
                     placeholder={state.translations.EMAIL_FOR_VERIFICATION.get()}
                     autoComplete='email'
-                    value={commentReplyState.email}
+                    value={commentReplyState.email.get()}
                     returnKeyType={state.config.enableCommenterLinks.get() ? 'next' : 'send'}
-                    onChangeText={(value) => setNewCommentState({...commentReplyState, email: value})}/>}
+                    onChangeText={(value) => commentReplyState.email.set(value)}/>}
                 <TextInput
                     style={styles.authInput}
                     multiline={false}
                     maxLength={70}
                     placeholder={state.translations.PUBLICLY_DISPLAYED_USERNAME.get()}
                     autoComplete={'username'}
-                    value={commentReplyState.username}
+                    value={commentReplyState.username.get()}
                     returnKeyType={state.config.enableCommenterLinks.get() ? 'next' : 'send'}
-                    onChangeText={(value) => setNewCommentState({...commentReplyState, username: value})}/>
+                    onChangeText={(value) => commentReplyState.username.set(value)}/>
                 {state.config.enableCommenterLinks.get() &&
                 <TextInput
                     maxLength={500}
                     placeholder={state.translations.ENTER_A_LINK.get()}
-                    onChangeText={(value) => setNewCommentState({...commentReplyState, websiteUrl: value})}/>
+                    onChangeText={(value) => commentReplyState.websiteUrl.set(value)}/>
                 }
-                {lastSaveResponse?.code && SignUpErrorsTranslationIds[lastSaveResponse.code] &&
-                <Text style={styles.error}>{state.translations[SignUpErrorsTranslationIds[lastSaveResponse.code]].get()}</Text>
+                {commentReplyState.lastSaveResponse.get()?.code && SignUpErrorsTranslationIds[commentReplyState.lastSaveResponse.get()!.code!] &&
+                <Text style={styles.error}>{state.translations[SignUpErrorsTranslationIds[commentReplyState.lastSaveResponse.get()!.code!]].get()}</Text>
                 }
                 {!state.config.disableEmailInputs &&
                 <Text style={styles.solicitationInfo}>{state.translations.NO_SOLICITATION_EMAILS.get()}</Text>
@@ -530,7 +504,9 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
 
     let displayError;
 
+    const lastSaveResponse = commentReplyState.lastSaveResponse.get();
     if (lastSaveResponse && lastSaveResponse.status !== 'success') {
+        console.log('lastSaveResponse', lastSaveResponse);
         if (lastSaveResponse.code === 'banned') {
             let bannedText = state.translations.BANNED_COMMENTING.get();
             if (lastSaveResponse.bannedUntil) {
@@ -557,7 +533,7 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
             displayError = <Text style={styles.error}>{translatedError}</Text>;
         } else {
             // generic error
-            displayError = <Text style={styles.error}>state.translations.ERROR_MESSAGE.get()</Text>;
+            displayError = <Text style={styles.error}>{state.translations.ERROR_MESSAGE.get()}</Text>;
         }
     }
 
@@ -570,7 +546,7 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
         {authFormArea}
         {commentSubmitButton}
         {replyCancelButton}
-        {commentReplyState.isReplySaving && <View style={styles.loadingView}>
+        {commentReplyState.isReplySaving.get() && <View style={styles.loadingView}>
             <ActivityIndicator size="large"/>
         </View>}
     </View>;

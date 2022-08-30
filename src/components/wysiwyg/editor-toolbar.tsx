@@ -5,20 +5,20 @@ import {State} from "@hookstate/core";
 import {Asset} from "react-native-image-picker";
 
 export interface EditorToolbarConfig {
-    selectImage?: (definition: State<EditorNodeDefinition> | null) => void
-    uploadImage?: (definition: State<EditorNodeDefinition> | null, asset: Asset) => Promise<string>
+    selectImage?: (currentNode: State<EditorNodeDefinition>) => void
+    uploadImage?: (currentNode: State<EditorNodeDefinition>, asset: Asset) => Promise<string>
     imageButton?: ReactNode
-    toggleBold?: (definition: State<EditorNodeDefinition> | null) => void
+    toggleBold?: (currentNode: State<EditorNodeDefinition>) => void
     boldButton?: ReactNode
-    toggleItalic?: (definition: State<EditorNodeDefinition> | null) => void
+    toggleItalic?: (currentNode: State<EditorNodeDefinition>) => void
     italicButton?: ReactNode
-    toggleUnderline?: (definition: State<EditorNodeDefinition> | null) => void
+    toggleUnderline?: (currentNode: State<EditorNodeDefinition>) => void
     underlineButton?: ReactNode
-    toggleStrikethrough?: (definition: State<EditorNodeDefinition> | null) => void
+    toggleStrikethrough?: (currentNode: State<EditorNodeDefinition>) => void
     strikethroughButton?: ReactNode
-    doNewline?: (definition: State<EditorNodeDefinition> | null) => void
+    doNewline?: (currentNode: State<EditorNodeDefinition>) => void
     newlineButton?: ReactNode
-    getCurrentNode?: () => State<EditorNodeDefinition> | null
+    getCurrentNode?: () => State<EditorNodeDefinition>
 }
 
 export interface EditorToolbarProps {

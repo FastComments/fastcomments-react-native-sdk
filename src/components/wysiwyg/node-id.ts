@@ -3,7 +3,8 @@ import {hookstate} from "@hookstate/core";
 const nodeCount = hookstate<number>(0);
 
 export function getNextNodeId() {
-    const newCount = nodeCount.get() + 1;
+    const lastValue = nodeCount.get();
+    const newCount = lastValue + 1;
     nodeCount.set(newCount);
-    return nodeCount.get();
+    return newCount; // OPTIMIZATIONS: only one get() and one set()
 }
