@@ -190,7 +190,7 @@ export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTo
         if (inNode) {
             if (inNode.end && buffer.endsWith(inNode.end)) {
                 result.push({
-                    id: getNextNodeId(),
+                    id: getNextNodeId(), // we do this so react knows to re-render via key, since we use id as key. If we just use an incrementing number here, react may not re-render for a whole new tree.
                     type: inNode.type,
                     content: buffer.substr(0, buffer.length - inNode.end.length),
                     isFocused: false
@@ -209,7 +209,7 @@ export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTo
                     inNode = node;
                     if (buffer.length - startToken.length > 0) {
                         result.push({
-                            id: getNextNodeId(),
+                            id: getNextNodeId(), // we do this so react knows to re-render via key, since we use id as key. If we just use an incrementing number here, react may not re-render for a whole new tree.
                             type: EditorNodeType.TEXT,
                             content: buffer.substr(0, buffer.length - startToken.length),
                             isFocused: false
@@ -217,7 +217,7 @@ export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTo
                     }
                     if (!node.end) { // some node types like newlines do not have ends
                         result.push({
-                            id: getNextNodeId(),
+                            id: getNextNodeId(), // we do this so react knows to re-render via key, since we use id as key. If we just use an incrementing number here, react may not re-render for a whole new tree.
                             type: node.type,
                             content: buffer.substr(0, buffer.length - startToken.length),
                             isFocused: false
@@ -231,7 +231,7 @@ export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTo
     }
     if (buffer.length > 0) {
         result.push({
-            id: getNextNodeId(),
+            id: getNextNodeId(), // we do this so react knows to re-render via key, since we use id as key. If we just use an incrementing number here, react may not re-render for a whole new tree.
             type: EditorNodeType.TEXT,
             content: buffer,
             isFocused: false
@@ -239,7 +239,7 @@ export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTo
     }
     if (result.length === 0) {
         result.push({
-            id: getNextNodeId(),
+            id: getNextNodeId(), // we do this so react knows to re-render via key, since we use id as key. If we just use an incrementing number here, react may not re-render for a whole new tree.
             type: EditorNodeType.TEXT,
             content: '',
             isFocused: false
