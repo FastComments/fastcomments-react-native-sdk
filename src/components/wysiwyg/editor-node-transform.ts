@@ -126,12 +126,16 @@ export function nodesToString(nodes: State<EditorNodeDefinition[]> | null, forma
  * This function is not purely functional for performance reasons. That's why it takes a State<T>.
  * Note: length is based on the content the user sees, not the resulting representation. You should handle this validation server-side.
  */
-export function getLengthAndEnforceMaxLength(nodes: State<EditorNodeDefinition[]>, formatConfig: Pick<EditorFormatConfiguration, 'formatters' | 'imageLength' | 'emoticonLength'>, maxLength?: number | null): number {
+export function enforceMaxLength(nodes: State<EditorNodeDefinition[]>, formatConfig: Pick<EditorFormatConfiguration, 'formatters' | 'imageLength' | 'emoticonLength'>, maxLength?: number | null): boolean {
     let length = 0;
+    let isEmpty = true;
     for (const node of nodes) {
         const rawNode = node.get();
         if (!rawNode || rawNode === none) {
             continue;
+        }
+        if (rawNode.content) {
+            isEmpty = false;
         }
         // It really sucks that we have to do so many hashmap lookups due to the performance overhead, but not sure how else to make the library
         // be flexible. If you aren't getting the performance needed, maybe we could maintain a fork that uses a switch() to try to get the JIT to
@@ -173,7 +177,7 @@ export function getLengthAndEnforceMaxLength(nodes: State<EditorNodeDefinition[]
             }
         }
     }
-    return length;
+    return isEmpty;
 }
 
 export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTokenizerConfig) {

@@ -5,7 +5,7 @@ import {Editor} from "./wysiwyg/wysiwyg-editor";
 import {useEffect, useState} from "react";
 import {EditorToolbar, EditorToolbarConfig} from "./wysiwyg/editor-toolbar";
 import {FastCommentsImageAsset} from "../types/image-asset";
-import {getLengthAndEnforceMaxLength, nodesToString, stringToNodes} from "./wysiwyg/editor-node-transform";
+import {enforceMaxLength, nodesToString, stringToNodes} from "./wysiwyg/editor-node-transform";
 import {EditorFormatConfigurationHTML} from "./wysiwyg/transformers";
 import {EditorNodeDefinition} from "./wysiwyg/editor-node";
 import {EmoticonBar, EmoticonBarConfig} from "./wysiwyg/emoticon-bar";
@@ -75,8 +75,8 @@ export function CommentTextArea({state, value, output, onFocus: _onFocus}: Comme
     }
 
     function onChange(nodes: State<EditorNodeDefinition[]>) {
-        const length = getLengthAndEnforceMaxLength(nodes, EditorFormatConfigurationHTML, maxLength);
-        setIsEmpty(length === 0);
+        const isEmpty = enforceMaxLength(nodes, EditorFormatConfigurationHTML, maxLength);
+        setIsEmpty(isEmpty);
         setNodeState(nodes);
     }
 

@@ -12,5 +12,5 @@ export function createEmoticonNode(startingValue: string): EditorNodeDefinition 
 }
 
 export function EditorNodeEmoticon({node}: EditorNodeProps) {
-    return <Image source={{uri: node.content.get()}} style={{width: 22, height: 22}}/>;
+    return <Image source={{uri: node.content.get()}} style={{width: 22, height: 22, marginLeft: 1, marginRight: 1}}/>;
 }
