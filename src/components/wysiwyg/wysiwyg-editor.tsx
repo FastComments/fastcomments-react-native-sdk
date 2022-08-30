@@ -206,7 +206,7 @@ export function Editor(props: EditorProps) {
                 // if we're selecting an image, is there a node in front of it? then select that
                 // otherwise, we should create a node in front of the image and select it.
                 const next = getStateNext(nodes, node.id.get());
-                if (next) {
+                if (next && next.get({stealth: true})) {
                     select(next);
                 } else {
                     const newTextNode = createTextNode('');
