@@ -48,7 +48,7 @@ export function CommentTextArea({state, value, output, onFocus: _onFocus}: Comme
         italicButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_ITALIC]} style={styles.toolbarButton}/>,
         underlineButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_UNDERLINE]} style={styles.toolbarButton}/>,
         strikethroughButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_STRIKETHROUGH]} style={styles.toolbarButton}/>,
-        imageButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_IMAGE_UPLOAD]} style={styles.toolbarButton}/>,
+        imageButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_IMAGE_UPLOAD]} style={[styles.toolbarButton, {height: 18}]}/>,
         uploadImage: async (_node, photoData) => {
             const formData = new FormData();
             formData.append('file', photoData);
@@ -112,8 +112,8 @@ const styles = StyleSheet.create({
         color: '#000' // TODO don't use #000
     },
     toolbarButton: {
-        height: '100%',
+        height: 15,
         aspectRatio: 1,
-        resizeMode: 'stretch'
+        resizeMode: 'contain'
     }
 })
