@@ -4,7 +4,7 @@ import * as React from 'react';
 import {FastCommentsCommentWithState} from "./comment";
 import {CommentUserActivityIcon} from "./comment-user-activity-icon";
 import {CommentUserBadge} from "./comment-user-badge";
-import {View, Text, StyleSheet, Pressable, Linking, Image} from "react-native";
+import {View, Text, StyleSheet, Linking, Image, TouchableOpacity} from "react-native";
 import {getDefaultAvatarSrc} from "../services/default-avatar";
 import { FastCommentsBadge } from 'fastcomments-typescript';
 import {State} from "@hookstate/core";
@@ -39,11 +39,11 @@ export function CommentUserInfo({comment, state}: FastCommentsCommentWithState) 
 
     const usernameElement = <View>
         {state.config.hideAvatars.get() && activityIcon}
-        {commenterLeftLink ? <Pressable onPress={() => Linking.openURL(comment.commenterLink.get()!)}>
-            {() =>
+        {commenterLeftLink ? <TouchableOpacity onPress={() => Linking.openURL(comment.commenterLink.get()!)}>
+            {
                 <Text style={styles.usernameWithLink}>{commenterName}</Text>
             }
-        </Pressable> : <Text style={styles.username}>{commenterName}</Text>}
+        </TouchableOpacity> : <Text style={styles.username}>{commenterName}</Text>}
     </View>;
 
     const avatar = state.config.hideAvatars.get() ? null :
@@ -54,18 +54,30 @@ export function CommentUserInfo({comment, state}: FastCommentsCommentWithState) 
         );
 
     // TODO best way to handle undefined comment.badges instead of cast? TS compilation error
-    return <View>
-        {(comment.badges as State<FastCommentsBadge[]>).map((badge) => CommentUserBadge(badge))}
-        {!comment.verified.get() && !(state.commentState[comment._id.get()]?.wasPostedCurrentSession?.get() && state.commentState[comment._id.get()]?.requiresVerification.get()) && !state.config.disableUnverifiedLabel.get() &&
-            <Text style={styles.label}>{state.translations.UNVERIFIED_COMMENT.get()}</Text>
-        }
-        {displayLabel}
-        {usernameElement}
-        {avatar}
+    return <View style={styles.root}>
+        {avatar ? <View style={styles.infoLeft}>
+            {avatar}
+        </View> : null}
+        <View style={styles.infoRight}>
+            {(comment.badges as State<FastCommentsBadge[]>).map((badge) => CommentUserBadge(badge))}
+            {!comment.verified.get() && !(state.commentState[comment._id.get()]?.wasPostedCurrentSession?.get() && state.commentState[comment._id.get()]?.requiresVerification.get()) && !state.config.disableUnverifiedLabel.get() &&
+                <Text style={styles.label}>{state.translations.UNVERIFIED_COMMENT.get()}</Text>
+            }
+            {displayLabel}
+            {usernameElement}
+        </View>
     </View>;
 }
 
 const styles = StyleSheet.create({
+    root: {
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
+    infoLeft: {
+        marginRight: 7
+    },
+    infoRight: {},
     label: {
         "fontSize": 10,
         "textTransform": "uppercase",
@@ -73,7 +85,8 @@ const styles = StyleSheet.create({
         "color": "#666666"
     },
     username: {
-        fontWeight: "bold"
+        "fontSize": 12,
+        fontWeight: "500",
     },
     usernameWithLink: {
         "color": "#000",
@@ -83,31 +96,43 @@ const styles = StyleSheet.create({
     },
     avatarWrapper: {
         "position": "relative",
-        "width": 56,
-        "height": 56,
+        "width": 36,
+        "height": 36,
         "overflow": "hidden",
-        "borderTopLeftRadius": 15,
-        "borderTopRightRadius": 0,
-        "borderBottomRightRadius": 15,
-        "borderBottomLeftRadius": 15,
-        "verticalAlign": "top"
+        borderRadius: 36,
+        "verticalAlign": "top",
+        //box-shadow: 3px 3px 5px 0 rgba(0, 0, 0, 0.10)
+        shadowRadius: 5,
+        shadowColor: '#000',
+        shadowOpacity: 1,
+        shadowOffset: {
+            width: 6,
+            height: 3
+        },
+        elevation: 2
     },
     avatarWrapperDefault: {
         "position": "relative",
-        "width": 56,
-        "height": 56,
+        "width": 36,
+        "height": 36,
         "overflow": "hidden",
-        "borderTopLeftRadius": 15,
-        "borderTopRightRadius": 0,
-        "borderBottomRightRadius": 15,
-        "borderBottomLeftRadius": 15,
+        borderRadius: 36,
         "verticalAlign": "top",
         "borderWidth": 1,
         "borderColor": "#3f3f3f",
-        "borderStyle": "solid"
+        "borderStyle": "solid",
+        //box-shadow: 3px 3px 5px 0 rgba(0, 0, 0, 0.10)
+        shadowRadius: 5,
+        shadowColor: '#000',
+        shadowOpacity: 1,
+        shadowOffset: {
+            width: 6,
+            height: 3
+        },
+        elevation: 2
     },
     avatarImage: {
-        width: 56,
-        height: 56,
+        width: 36,
+        height: 36,
     }
 })
