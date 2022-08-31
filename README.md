@@ -26,7 +26,7 @@ This is in heavy development! Examples will be posted here once the library is m
 - [x] BUG: New comments should go to top of or bottom of list based on configuration.
 - [x] Emoticon Support
 - [x] Voting
-- [ ] Ability to hide replies
+- [x] Ability to hide replies
 - [ ] Extension Support
 - [ ] Port iglike Extension
 - [x] Improved Comment Styling
