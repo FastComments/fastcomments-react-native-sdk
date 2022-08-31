@@ -5,7 +5,7 @@ import {useState} from 'react';
 import RenderHtml from 'react-native-render-html';
 
 import {FastCommentsState} from "../types/fastcomments-state";
-import {Image, Pressable, StyleSheet, Text, useWindowDimensions, View} from "react-native";
+import {Image, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from "react-native";
 import {CommentMenu} from "./comment-menu";
 import {CommentNotices} from "./comment-notices";
 import {CommentUserInfo} from "./comment-user-info";
@@ -14,6 +14,7 @@ import {FastCommentsWidgetComment} from 'fastcomments-typescript';
 import {getDisplayDate} from "../services/comment-date";
 import {State} from "@hookstate/core";
 import {FastCommentsImageAsset} from "../types/image-asset";
+import {CommentVote} from './comment-vote';
 
 export interface FastCommentsCommentWithState {
     comment: State<FastCommentsWidgetComment>;
@@ -63,27 +64,24 @@ export function FastCommentsCommentView(commentWithState: FastCommentsCommentWit
     const {width} = useWindowDimensions();
     const isReplyBoxOpen = state.commentState[comment._id.get()]?.replyBoxOpen?.get();
 
-    // @ts-ignore
-    return <View>
+    return <View style={styles.root}>
         <View style={styles.topRight}>
-            {comment.isPinned.get() && <Image source={state.imageAssets[FastCommentsImageAsset.ICON_PIN_RED].get()} style={{width: 24, height: 24}}/>}
+            <Text style={styles.displayDate}>{displayDate}</Text>
+            {comment.isPinned.get() && <Image source={state.imageAssets[FastCommentsImageAsset.ICON_PIN_RED].get()} style={styles.pin}/>}
             {!(state.config.readonly.get()) && CommentMenu(commentWithState)}
         </View>
         <CommentNotices comment={comment} state={state}/>
         <CommentUserInfo comment={comment} state={state}/>
-        <Text>{displayDate}</Text>
-        <RenderHtml source={{html}} contentWidth={width}/>
+        <RenderHtml source={{html}} contentWidth={width} baseStyle={styles.contentWrapper}/>
         <View style={styles.commentBottom}>
             <View style={styles.commentBottomToolbar}>
-                <View style={styles.commentBottomToolbarVote}>
-
-                </View>
-                <Pressable style={styles.commentBottomToolbarReply} onPress={() => setReplyBoxOpen(state, comment._id.get(), !isReplyBoxOpen)}>
+                <CommentVote comment={comment} state={state}/>
+                <TouchableOpacity style={styles.commentBottomToolbarReply} onPress={() => setReplyBoxOpen(state, comment._id.get(), !isReplyBoxOpen)}>
                     <Image
                         source={state.imageAssets[isReplyBoxOpen ? FastCommentsImageAsset.ICON_REPLY_ARROW_ACTIVE : FastCommentsImageAsset.ICON_REPLY_ARROW_INACTIVE].get()}
                         style={{width: 15, height: 15}}/>
                     <Text style={styles.commentBottomToolbarReplyText}>{state.translations.REPLY.get()}</Text>
-                </Pressable>
+                </TouchableOpacity>
             </View>
             {isReplyBoxOpen && <ReplyArea state={state} parentComment={comment}/>}
         </View>
@@ -97,26 +95,46 @@ export function FastCommentsCommentView(commentWithState: FastCommentsCommentWit
 }
 
 const styles = StyleSheet.create({
+    root: {},
     topRight: {
         position: "absolute",
+        flexDirection: 'row',
+        // alignItems: 'center',
+        justifyContent: 'flex-end',
         top: 0,
         right: 0,
         zIndex: 1
     },
-    pin: {},
+    displayDate: {
+        alignSelf: 'center',
+        fontSize: 12,
+        textAlignVertical: 'center',
+    },
+    pin: {
+        alignSelf: 'center',
+        width: 18,
+        height: 18,
+    },
     userInfo: {},
-    commentBottom: {},
+    contentWrapper: {
+        marginLeft: 5,
+        marginTop: 10,
+        fontSize: 13
+    },
+    commentBottom: {
+        marginTop: 10,
+        marginLeft: 5
+    },
     commentBottomToolbar: {
         flexDirection: 'row',
         justifyContent: 'space-between'
     },
-    commentBottomToolbarVote: {},
     commentBottomToolbarReply: {
         flexDirection: 'row',
         alignItems: 'center'
     },
     commentBottomToolbarReplyText: {
-        marginLeft: 3
+        marginLeft: 5
     },
     children: {
         "marginTop": 15,
