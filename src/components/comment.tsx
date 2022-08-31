@@ -12,7 +12,7 @@ import {CommentUserInfo} from "./comment-user-info";
 import {ReplyArea} from "./reply-area";
 import {FastCommentsWidgetComment} from 'fastcomments-typescript';
 import {getDisplayDate} from "../services/comment-date";
-import {State} from "@hookstate/core";
+import {State, useHookstate} from "@hookstate/core";
 import {FastCommentsImageAsset} from "../types/image-asset";
 import {CommentVote} from './comment-vote';
 import {CommentReplyToggle} from "./comment-reply-toggle";
@@ -42,7 +42,8 @@ function setReplyBoxOpen(state: State<FastCommentsState>, commentId: string, isO
 }
 
 export function FastCommentsCommentView(commentWithState: FastCommentsCommentWithState) {
-    const {comment, state} = commentWithState;
+    const comment = commentWithState.comment;
+    const state = useHookstate(commentWithState.state); // creating scoped state
     // const isMyComment = state.currentUser && 'id' in state.currentUser && (comment.userId === state.currentUser.id || comment.anonUserId === state.currentUser.id);
 
     const html = comment.isDeleted.get()

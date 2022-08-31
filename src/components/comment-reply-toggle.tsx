@@ -4,7 +4,7 @@ import {FastCommentsCommentWithState} from "./comment";
 import {Image, TouchableOpacity, Text, StyleSheet} from "react-native";
 import {FastCommentsImageAsset} from "../types/image-asset";
 import {FastCommentsState} from "../types/fastcomments-state";
-import {State} from "@hookstate/core";
+import {State, useHookstate} from "@hookstate/core";
 
 function toggle(state: State<FastCommentsState>, commentId: string) {
     state.commentState[commentId].set((commentState) => {
@@ -15,7 +15,9 @@ function toggle(state: State<FastCommentsState>, commentId: string) {
     })
 }
 
-export function CommentReplyToggle({state, comment}: FastCommentsCommentWithState) {
+export function CommentReplyToggle(props: FastCommentsCommentWithState) {
+    const comment = props.comment;
+    const state = useHookstate(props.state); // creating scoped state
     const nestedChildrenCount = comment.nestedChildrenCount.get();
     if (!nestedChildrenCount) {
         return null;

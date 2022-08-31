@@ -7,14 +7,15 @@ import {ReplyArea} from "./reply-area";
 import {ShowHideCommentsToggle} from "./show-hide-comments-toggle";
 import {SelectSortDirection} from "./select-sort-direction";
 import {ShowNewLiveCommentsButton} from "./show-new-live-comments-button";
-import {State} from "@hookstate/core";
+import {State, useHookstate} from "@hookstate/core";
 import { CommentCount } from './comment-count';
 
 export interface LiveCommentingTopAreaProps {
     state: State<FastCommentsState>;
 }
 
-export function LiveCommentingTopArea({state}: LiveCommentingTopAreaProps) {
+export function LiveCommentingTopArea(props: LiveCommentingTopAreaProps) {
+    const state = useHookstate(props.state); // OPTIMIZATION: creating scoped state
     const areCommentsVisible = state.commentsVisible.get();
     const serverCommentCount = state.commentCountOnServer.get();
     return <View>

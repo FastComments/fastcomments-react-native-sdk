@@ -2,7 +2,7 @@
 import * as React from 'react';
 
 import {FastCommentsSortDirection, FastCommentsState} from "../types/fastcomments-state";
-import {State} from "@hookstate/core";
+import {State, useHookstate} from "@hookstate/core";
 import {Image, StyleSheet, View, Text} from 'react-native';
 import {FastCommentsImageAsset} from "../types/image-asset";
 import {ModalMenu} from "./modal-menu";
@@ -13,7 +13,8 @@ const SortDirectionTranslationsById: Record<string, string> = {
     'MR': 'MOST_RELEVANT',
 };
 
-export function SelectSortDirection(state: State<FastCommentsState>) {
+export function SelectSortDirection(globalState: State<FastCommentsState>) {
+    const state = useHookstate(globalState); // OPTIMIZATION: local state
     const setValue = (newValue: any) => state.sortDirection.set(newValue as FastCommentsSortDirection);
     const menuItems = [
         {label: state.translations.OLDEST_FIRST.get(), id: 'OF', handler: () => { setValue('OF') } },

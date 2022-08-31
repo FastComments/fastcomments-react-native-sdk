@@ -13,6 +13,7 @@ import {repositionComment} from "../services/comment-positioning";
 import {PinCommentResponse} from "../types/dto/pin-comment";
 import {BlockCommentResponse} from "../types/dto/block-comment";
 import {ModalMenu, ModalMenuItem} from "./modal-menu";
+import {useHookstate} from "@hookstate/core";
 
 async function startEditingComment({state, comment}: FastCommentsCommentWithState, setModalId: Dispatch<SetStateAction<string | null>>) {
     const response = await makeRequest<GetCommentTextResponse>({
@@ -98,7 +99,9 @@ async function setCommentFlaggedStatus({state, comment}: FastCommentsCommentWith
     }
 }
 
-export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
+export function CommentMenu(props: FastCommentsCommentWithState) {
+    const comment = props.comment;
+    const state = useHookstate(props.state); // OPTIMIZATION: local state
     const currentUser = state.currentUser.get();
     const isMyComment = currentUser && 'id' in currentUser && (comment.userId.get() === currentUser.id || comment.anonUserId.get() === currentUser.id);
     // console.log('isMyComment', isMyComment, currentUser, comment.userId.get(), comment.anonUserId.get(), state.isSiteAdmin.get()); // TODO REMOVE

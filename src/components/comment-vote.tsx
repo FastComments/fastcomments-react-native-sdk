@@ -1,6 +1,6 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
-import {StyleSheet, View, Text, Image, TouchableOpacity, TextInput, ActivityIndicator, Button, Linking} from 'react-native';
+import {StyleSheet, View, Text, Image, TextInput, ActivityIndicator, Button, Linking} from 'react-native';
 import {FastCommentsCommentWithState} from "./comment";
 import {FastCommentsImageAsset} from "../types/image-asset";
 import {State, useHookstate} from "@hookstate/core";
@@ -9,6 +9,7 @@ import {getActionTenantId} from "../services/tenants";
 import {createURLQueryString, makeRequest} from "../services/http";
 import {newBroadcastId} from '../services/broadcast-id';
 import {CommentVoteDeleteResponse} from '../types/dto/comment-vote-delete';
+import { Pressable } from 'react-native';
 
 interface VoteState {
     voteDir?: 'up' | 'down'
@@ -167,7 +168,9 @@ async function doVote({state, comment}: FastCommentsCommentWithState, voteState:
     voteState.isLoading.set(false);
 }
 
-export function CommentVote({state, comment}: FastCommentsCommentWithState) {
+export function CommentVote(props: FastCommentsCommentWithState) {
+    const comment = props.comment;
+    const state = useHookstate(props.state); // OPTIMIZATION: creating scoped state
     const voteState = useHookstate<VoteState>({});
     if (state.config.disableVoting.get()) {
         return null;
@@ -178,9 +181,10 @@ export function CommentVote({state, comment}: FastCommentsCommentWithState) {
     let auth;
     let error;
 
+    // TODO TouchableOpacity throws weird callback exceeded errors
     voteOptions = <View style={styles.commentVoteOptions}>
         {comment.votesUp.get() ? <Text style={styles.votesUpText}>{Number(comment.votesUp.get()).toLocaleString()}</Text> : null}
-        <TouchableOpacity
+        <Pressable
             style={styles.voteButton}
             onPress={() => {
                 voteState.voteDir.set('up');
@@ -191,9 +195,9 @@ export function CommentVote({state, comment}: FastCommentsCommentWithState) {
             <Image
                 source={state.imageAssets[comment.isVotedUp.get() ? FastCommentsImageAsset.ICON_UP_ACTIVE : FastCommentsImageAsset.ICON_UP].get()}
                 style={styles.voteButtonIcon}/>
-        </TouchableOpacity>
+        </Pressable>
         <View style={styles.voteDivider}></View>
-        <TouchableOpacity
+        <Pressable
             style={styles.voteButton}
             onPress={() => {
                 voteState.voteDir.set('down');
@@ -204,7 +208,7 @@ export function CommentVote({state, comment}: FastCommentsCommentWithState) {
             <Image
                 source={state.imageAssets[comment.isVotedDown.get() ? FastCommentsImageAsset.ICON_DOWN_ACTIVE : FastCommentsImageAsset.ICON_DOWN].get()}
                 style={styles.voteButtonIcon}/>
-        </TouchableOpacity>
+        </Pressable>
         {comment.votesDown.get() ? <Text style={styles.votesDownText}>{Number(comment.votesDown.get()).toLocaleString()}</Text> : null}
     </View>
 

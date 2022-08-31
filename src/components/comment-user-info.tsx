@@ -7,9 +7,11 @@ import {CommentUserBadge} from "./comment-user-badge";
 import {View, Text, StyleSheet, Linking, Image, TouchableOpacity} from "react-native";
 import {getDefaultAvatarSrc} from "../services/default-avatar";
 import { FastCommentsBadge } from 'fastcomments-typescript';
-import {State} from "@hookstate/core";
+import {State, useHookstate} from "@hookstate/core";
 
-export function CommentUserInfo({comment, state}: FastCommentsCommentWithState) {
+export function CommentUserInfo(props: FastCommentsCommentWithState) {
+    const comment = props.comment;
+    const state = useHookstate(props.state); // OPTIMIZATION: local state
     const activityIcon = CommentUserActivityIcon({comment, state});
 
     /**

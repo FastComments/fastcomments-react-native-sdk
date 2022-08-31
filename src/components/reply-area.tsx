@@ -290,7 +290,9 @@ async function submit({
     }
 }
 
-export function ReplyArea({state, parentComment}: ReplyAreaState) {
+export function ReplyArea(props: ReplyAreaState) {
+    const state = useHookstate(props.state); // create scoped state
+    const parentComment = props.parentComment;
     const currentUser = state.currentUser?.get();
     const needsAuth = !currentUser && !!parentComment;
     const valueGetter: ValueObserver = {};
