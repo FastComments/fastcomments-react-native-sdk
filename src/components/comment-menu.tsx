@@ -4,7 +4,7 @@ import {Dispatch, SetStateAction} from 'react';
 
 import {FastCommentsCommentWithState} from "./comment";
 import {FastCommentsImageAsset} from "../types/image-asset";
-import {Image} from "react-native";
+import {Image, View} from "react-native";
 import {createURLQueryString, makeRequest} from "../services/http";
 import {GetCommentTextResponse} from "../types/dto/get-comment-text";
 import {CommentActionEdit} from './comment-action-edit';
@@ -201,7 +201,11 @@ export function CommentMenu({comment, state}: FastCommentsCommentWithState) {
         }
     }
 
-    const openButton = <Image source={state.imageAssets[FastCommentsImageAsset.ICON_EDIT_SMALL].get()} style={{width: 16, height: 16, margin: 10}}/>;
+    if (menuItems.length === 0) {
+        return null;
+    }
+
+    const openButton = <View style={{padding: 5}}><Image source={state.imageAssets[FastCommentsImageAsset.ICON_EDIT_SMALL].get()} style={{width: 16, height: 16}}/></View>;
 
     return <ModalMenu state={state} items={menuItems} openButton={openButton} />;
 }
