@@ -1,5 +1,5 @@
 import {FastCommentsCommentWithState} from "./comment";
-import {StyleSheet, View, Text, Pressable, ActivityIndicator, Image} from "react-native";
+import {StyleSheet, View, Text, ActivityIndicator, Image, TouchableOpacity} from "react-native";
 import {FastCommentsImageAsset} from "../types/image-asset";
 import {useState} from "react";
 import {createURLQueryString, makeRequest} from "../services/http";
@@ -53,7 +53,7 @@ export function CommentActionEdit({comment, state, close}: CommentActionEditProp
                 state={state.get()} value={comment.comment.get()}
                 output={valueGetter}
             />
-            <Pressable
+            <TouchableOpacity
                 style={styles.saveButton}
                 onPress={async () => {
                     setLoading(true);
@@ -70,13 +70,13 @@ export function CommentActionEdit({comment, state, close}: CommentActionEditProp
                 }}
             >
                 <Text>{state.translations.SAVE.get()}</Text>
-            </Pressable>
-            <Pressable
+            </TouchableOpacity>
+            <TouchableOpacity
                 style={styles.modalCancel}
                 onPress={close}
             >
                 {<Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_CROSS]} style={{width: 16, height: 16}} />}
-            </Pressable>
+            </TouchableOpacity>
             {
                 isLoading && <View style={styles.loadingView}>
                     <ActivityIndicator size="large"/>
