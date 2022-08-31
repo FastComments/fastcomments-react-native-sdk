@@ -8,33 +8,55 @@ import {ShowHideCommentsToggle} from "./show-hide-comments-toggle";
 import {SelectSortDirection} from "./select-sort-direction";
 import {ShowNewLiveCommentsButton} from "./show-new-live-comments-button";
 import {State} from "@hookstate/core";
+import { CommentCount } from './comment-count';
 
 export interface LiveCommentingTopAreaProps {
     state: State<FastCommentsState>;
 }
 
 export function LiveCommentingTopArea({state}: LiveCommentingTopAreaProps) {
+    const areCommentsVisible = state.commentsVisible.get();
+    const serverCommentCount = state.commentCountOnServer.get();
     return <View>
         <View>{
             state.config.inputAfterComments.get() !== true && <View style={styles.replyArea}><ReplyArea state={state}/></View>
         }</View>
         <View>{
-            state.config.useShowCommentsToggle.get() && state.commentCountOnServer.get() > 0 && ShowHideCommentsToggle(state)
+            state.config.useShowCommentsToggle.get() && serverCommentCount > 0 && ShowHideCommentsToggle(state)
         }</View>
+        {
+            areCommentsVisible && serverCommentCount > 0
+            && <View style={styles.separator}>
+                <CommentCount style={styles.commentCount} state={state} count={serverCommentCount}/>
+                {
+                    areCommentsVisible && serverCommentCount > 1 && <View>{SelectSortDirection(state)}</View>
+                }
+            </View>
+        }
         <View>{
-            state.commentsVisible.get() && state.commentCountOnServer.get() > 1 && SelectSortDirection(state)
-        }</View>
-        <View>{
-            state.commentsVisible.get() && state.newRootCommentCount.get() > 1 && ShowNewLiveCommentsButton(state)
+            areCommentsVisible && state.newRootCommentCount.get() > 1 && ShowNewLiveCommentsButton(state)
         }</View>
     </View>;
 }
 
 const styles = StyleSheet.create({
     replyArea: {
-        "marginTop": 25,
+        "marginTop": 15,
         "marginRight": 15,
-        "marginBottom": 30,
         "marginLeft": 15
+    },
+    separator: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingBottom: 5,
+        paddingLeft: 10,
+        paddingRight: 10,
+        borderBottomWidth: 1,
+        borderColor: '#afafaf'
+    },
+    commentCount: {
+        alignSelf: 'center',
+        fontWeight: '500',
+        fontSize: 12
     }
 });
