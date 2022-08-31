@@ -27,9 +27,10 @@ export function EmoticonBar({config}: EditorToolbarProps) {
 
 const styles = StyleSheet.create({
     root: {
+        flexDirection: 'row',
+        alignItems: 'center',
         height: 25,
         padding: 5,
-        flexDirection: 'row'
     },
     button: {
         marginRight: 10,
