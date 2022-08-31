@@ -7,7 +7,10 @@ import {SubscriberInstance} from "../services/subscribe-to-changes";
 export interface CommentState {
     replyBoxOpen?: boolean;
     repliesHidden?: boolean;
+    /** So we can change our comment in the current session w/o full authentication. **/
     editKey?: string;
+    /** So we can change our vote in the current session w/o full authentication. **/
+    voteEditKey?: string;
     wasPostedCurrentSession?: boolean;
     requiresVerification?: boolean;
 }
