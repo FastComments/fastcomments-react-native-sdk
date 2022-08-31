@@ -2,7 +2,7 @@
 import * as React from 'react';
 
 import {FastCommentsState} from "../types/fastcomments-state";
-import {View, Text, StyleSheet, Pressable, Image, Linking, ActivityIndicator, TextInput, useWindowDimensions} from "react-native";
+import {View, Text, StyleSheet, Image, Linking, ActivityIndicator, TextInput, useWindowDimensions, TouchableOpacity} from "react-native";
 import {none, State, useHookstate} from "@hookstate/core";
 import {FastCommentsWidgetComment} from "fastcomments-typescript";
 import {FastCommentsImageAsset} from '../types/image-asset';
@@ -304,9 +304,7 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
     const {width} = useWindowDimensions();
 
     const getLatestInputValue = () => {
-        console.log('getting latest value', typeof valueGetter.getValue);
         const latestValue = valueGetter.getValue ? valueGetter.getValue() : '';
-        console.log('got latest value', latestValue, typeof latestValue);
         commentReplyState.comment.set(latestValue);
     }
 
@@ -342,7 +340,7 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
     if (!currentUser && ssoConfig && !state.config.allowAnon.get()) {
         if (ssoConfig.loginURL || ssoConfig.loginCallback) { // if they don't define a URL, we just show a message.
             ssoLoginWrapper = <View style={styles.ssoLoginWrapper}>
-                <Pressable style={styles.ssoLoginButton} onPress={async () => {
+                <TouchableOpacity style={styles.ssoLoginButton} onPress={async () => {
                     if (ssoConfig.loginURL) {
                         await Linking.openURL(ssoConfig.loginURL);
                     } else if (ssoConfig?.loginCallback) {
@@ -352,7 +350,7 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
                 }>
                     <Image source={state.imageAssets[FastCommentsImageAsset.ICON_BUBBLE_WHITE].get()} style={{width: 22, height: 22}}/>
                     <Text>{state.translations.LOG_IN.get()}</Text>
-                </Pressable>
+                </TouchableOpacity>
             </View>;
         } else {
             ssoLoginWrapper = <View style={styles.ssoLoginWrapper}>
@@ -439,13 +437,13 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
 
         if (!commentReplyState.isReplySaving.get()) {
             commentSubmitButton = <View style={styles.replyButtonWrapper}>
-                <Pressable style={styles.replyButton} onPress={handleSubmit}>
+                <TouchableOpacity style={styles.replyButton} onPress={handleSubmit}>
                     <Text
                         style={styles.replyButtonText}>{commentReplyState.showSuccessMessage.get() ? state.translations.WRITE_ANOTHER_COMMENT.get() : state.translations.SUBMIT_REPLY.get()}</Text>
                     <Image
                         source={parentComment ? state.imageAssets[FastCommentsImageAsset.ICON_RETURN].get() : state.imageAssets[FastCommentsImageAsset.ICON_BUBBLE].get()}
                         style={styles.replyButtonIcon}/>
-                </Pressable>
+                </TouchableOpacity>
             </View>;
         }
 
@@ -494,10 +492,10 @@ export function ReplyArea({state, parentComment}: ReplyAreaState) {
         // We don't allow cancelling when replying to top-level comments.
         if (parentComment) {
             replyCancelButton = <View style={styles.replyCancelButtonWrapper}>
-                <Pressable style={styles.replyCancelButton} onPress={() => state.commentState[parentComment._id.get()].replyBoxOpen.set(false)}>
+                <TouchableOpacity style={styles.replyCancelButton} onPress={() => state.commentState[parentComment._id.get()].replyBoxOpen.set(false)}>
                     <Image source={state.imageAssets[FastCommentsImageAsset.ICON_CROSS].get()}
                            style={{width: 9, height: 9}}/>
-                </Pressable>
+                </TouchableOpacity>
             </View>
         }
     }
@@ -649,9 +647,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'flex-start',
         justifyContent: 'space-between',
-        marginTop: 10,
+        marginTop: 15,
         marginBottom: 10,
-        marginRight: 10,
+        marginRight: 0,
         "paddingTop": 10,
         "paddingRight": 20,
         "paddingBottom": 10,
