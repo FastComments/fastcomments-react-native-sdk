@@ -15,6 +15,7 @@ import {getDisplayDate} from "../services/comment-date";
 import {State} from "@hookstate/core";
 import {FastCommentsImageAsset} from "../types/image-asset";
 import {CommentVote} from './comment-vote';
+import {CommentReplyToggle} from "./comment-reply-toggle";
 
 export interface FastCommentsCommentWithState {
     comment: State<FastCommentsWidgetComment>;
@@ -62,7 +63,9 @@ export function FastCommentsCommentView(commentWithState: FastCommentsCommentWit
     }, 60_000);
 
     const {width} = useWindowDimensions();
-    const isReplyBoxOpen = state.commentState[comment._id.get()]?.replyBoxOpen?.get();
+    const commentState = state.commentState[comment._id.get()]?.get();
+    const isReplyBoxOpen = commentState?.replyBoxOpen;
+    const repliesHidden = commentState?.repliesHidden;
 
     return <View style={styles.root}>
         <View style={styles.topRight}>
@@ -84,13 +87,16 @@ export function FastCommentsCommentView(commentWithState: FastCommentsCommentWit
                 </TouchableOpacity>
             </View>
             {isReplyBoxOpen && <ReplyArea state={state} parentComment={comment}/>}
+            <CommentReplyToggle comment={comment} state={state} />
         </View>
-        <View style={styles.children}>
-            {/* TODO how to fix stupid cast here? */}
-            {comment.children?.get() && (comment.children as State<FastCommentsWidgetComment[]>).map((comment) =>
-                <FastCommentsCommentView comment={comment} state={state} key={comment._id.get()}/>
-            )}
-        </View>
+        {
+            !repliesHidden && <View style={styles.children}>
+                {/* TODO how to fix stupid cast here? */}
+                {comment.children?.get() && (comment.children as State<FastCommentsWidgetComment[]>).map((comment) =>
+                    <FastCommentsCommentView comment={comment} state={state} key={comment._id.get()}/>
+                )}
+            </View>
+        }
     </View>;
 }
 
