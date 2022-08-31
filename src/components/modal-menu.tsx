@@ -1,7 +1,7 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
 import {FastCommentsImageAsset} from "../types/image-asset";
-import {ActivityIndicator, Image, Modal, Pressable, StyleSheet, Text, View} from "react-native";
+import {ActivityIndicator, Image, Modal, StyleSheet, Text, TouchableOpacity, View} from "react-native";
 import {Dispatch, ReactNode, SetStateAction, useState} from "react";
 import {FastCommentsState} from "../types/fastcomments-state";
 import {State} from "@hookstate/core";
@@ -36,7 +36,7 @@ export function ModalMenu({state, items, openButton}: ModalMenuProps) {
                 <View style={styles.centeredView}>
                     <View style={styles.modalView}>
                         {items.map((item) =>
-                            <Pressable
+                            <TouchableOpacity
                                 key={item.label}
                                 style={styles.menuOptionButton} onPress={async () => {
                                 setLoading(true);
@@ -46,14 +46,14 @@ export function ModalMenu({state, items, openButton}: ModalMenuProps) {
                             >
                                 {item.icon}
                                 <Text style={styles.menuOptionText}>{item.label}</Text>
-                            </Pressable>
+                            </TouchableOpacity>
                         )}
-                        <Pressable
+                        <TouchableOpacity
                             style={styles.modalCancel}
                             onPress={() => setModalIdVisible(null)}
                         >
                             {<Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_CROSS]} style={{width: 16, height: 16}}/>}
-                        </Pressable>
+                        </TouchableOpacity>
                         {
                             isLoading && <View style={styles.loadingView}>
                                 <ActivityIndicator size="large"/>
@@ -72,9 +72,9 @@ export function ModalMenu({state, items, openButton}: ModalMenuProps) {
                 {!!activeModalId && activeModalId !== 'menu' && items && items.find((item) => item.subModalContent && item.id === activeModalId)?.subModalContent!(() => setModalIdVisible(null))}
             </Modal>
         </View>
-        <Pressable onPress={() => setModalIdVisible('menu')}>
+        <TouchableOpacity onPress={() => setModalIdVisible('menu')}>
             {openButton}
-        </Pressable>
+        </TouchableOpacity>
     </View>;
 }
 
