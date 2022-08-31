@@ -107,11 +107,12 @@ export function addCommentToTree(allComments: State<FastCommentsWidgetComment[]>
             return [...tree];
         });
     } else {
+        const stealth = {stealth: true}; // avoid extra object allocation
         // ensure pinned comments stay at the top
-        if (commentsTree.length > 0 && commentsTree[0].isPinned) {
+        if (commentsTree.length > 0 && commentsTree[0].isPinned.get(stealth)) {
             let found = false;
             for (let i = 0; i < commentsTree.length; i++) {
-                if (!commentsTree[i].isPinned) {
+                if (!commentsTree[i].isPinned.get(stealth)) {
                     commentsTree.set((commentsTree) => {
                         commentsTree.splice(i, 0, comment);
                         return commentsTree;
