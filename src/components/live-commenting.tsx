@@ -11,7 +11,7 @@ import {FastCommentsLiveCommentingService} from "../services/fastcomments-live-c
 import React, {useEffect, useState} from 'react';
 import RenderHtml from 'react-native-render-html';
 import {useWindowDimensions} from 'react-native';
-import {useHookstate} from "@hookstate/core";
+import {useHookstate, useHookstateEffect} from "@hookstate/core";
 import {LiveCommentingTopArea} from "./live-commenting-top-area";
 
 export function FastCommentsLiveCommenting({config}: { config: FastCommentsCommentWidgetConfig }) {
@@ -19,31 +19,37 @@ export function FastCommentsLiveCommenting({config}: { config: FastCommentsComme
     const state = useHookstate(serviceInitialState);
     const service = new FastCommentsLiveCommentingService(state);
     const [isLoading, setLoading] = useState(true);
+    const [isLoaded, setIsLoaded] = useState(false);
     const {width} = useWindowDimensions();
+    const loadAsync = async () => {
+        setLoading(true);
+        await service.fetchRemoteState(false);
+        setLoading(false);
+        setIsLoaded(true);
+    }
     useEffect(() => {
-        (async () => {
-            await service.fetchRemoteState(false);
-            setTimeout(function() {
-
-            setLoading(false);
-            }, 3000)
-        })();
+        loadAsync();
     }, [config]);
+    useHookstateEffect(() => {
+        if (isLoaded) {
+            loadAsync();
+        }
+    }, [state.sortDirection]);
 
     if (isLoading) {
-        return <View style={styles.loading}><ActivityIndicator size="large" /></View>
+        return <View style={styles.loading}><ActivityIndicator size="large"/></View>
     }
 
     if (state.blockingErrorMessage.get()) {
-        return <View><CommentAreaMessage message={state.blockingErrorMessage.get()} /></View>;
+        return <View><CommentAreaMessage message={state.blockingErrorMessage.get()}/></View>;
     } else if (!(state.commentsTree.length === 0 && state.config.readonly.get() && (state.config.hideCommentsUnderCountTextFormat.get() || state.config.useShowCommentsToggle.get()))) {
         const paginationBeforeComments = state.commentsVisible.get() && state.config.paginationBeforeComments.get()
-            ? <PaginationNext state={state} />
+            ? <PaginationNext state={state}/>
             : state.page.get() > 0 && !state.pagesLoaded.get().includes(state.page.get() - 1)
-                ? <PaginationPrev state={state} />
+                ? <PaginationPrev state={state}/>
                 : null;
         const paginationAfterComments = state.commentsVisible.get() && !state.config.paginationBeforeComments.get()
-            ? <PaginationNext state={state} />
+            ? <PaginationNext state={state}/>
             : null;
         return <View>{
             state.hasBillingIssue.get() && state.isSiteAdmin.get() && <Text style={styles.red}>{state.translations.BILLING_INFO_INV.get()}</Text>
@@ -78,5 +84,9 @@ const styles = StyleSheet.create({
         // justifyContent: "center",
         // alignItems: "center"
     },
-    comments: {}
+    comments: {
+        paddingTop: 15,
+        paddingLeft: 15,
+        paddingRight: 15,
+    }
 });
