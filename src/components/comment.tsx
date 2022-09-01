@@ -54,7 +54,7 @@ export function FastCommentsCommentView(props: CommentViewProps) {
             !comment.repliesHidden.get() && <View style={styles.comment.children}>
                 {/* TODO how to fix stupid cast here? */}
                 {comment.children?.get() && (comment.children as State<RNComment[]>).map((comment) =>
-                    <FastCommentsCommentView comment={comment} state={state} key={commentId} styles={styles}/>
+                    <FastCommentsCommentView comment={comment} state={state} key={comment._id.get()} styles={styles}/>
                 )}
             </View>
         }
