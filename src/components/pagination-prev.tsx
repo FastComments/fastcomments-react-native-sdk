@@ -2,19 +2,16 @@
 import * as React from 'react';
 
 import {FastCommentsState} from "../types/fastcomments-state";
-import {StyleSheet, Text, View} from "react-native";
+import {useWindowDimensions, View} from "react-native";
 import {State} from "@hookstate/core";
+import RenderHtml from 'react-native-render-html';
+import {IFastCommentsStyles} from "../types/fastcomments-styles";
 
-export function PaginationPrev({state}: {state: State<FastCommentsState>}) {
-    return <View style={styles.pagination}>
-        <Text>{state.translations.PREV_30.get()}</Text>
+export function PaginationPrev({state, styles}: {state: State<FastCommentsState>, styles: IFastCommentsStyles}) {
+    const {width} = useWindowDimensions();
+    return <View style={styles.paginationPrev.root}>
+            <RenderHtml source={{
+                html: state.translations.PREV_30.get()
+            }} contentWidth={width} baseStyle={styles.paginationPrev.text}/>
     </View>;
 }
-
-const styles = StyleSheet.create({
-    pagination: {
-        "marginTop": "50px",
-        "lineHeight": "19px",
-        "textAlign": "center"
-    },
-})

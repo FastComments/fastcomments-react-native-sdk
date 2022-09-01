@@ -27,13 +27,18 @@ This is in heavy development! Examples will be posted here once the library is m
 - [x] Emoticon Support
 - [x] Voting
 - [x] Ability to hide replies
-- [ ] Extension Support
+- [ ] Show/Hide Comments Toggle
+- [ ] Pagination (Buttons)
+- [ ] Pagination (Infinite Scroll)
+- [x] Custom Styles (as typed stylesheet)
+- [ ] Callbacks (similar to vanillajs widget)
 - [ ] Port iglike Extension
 - [x] Improved Comment Styling
 - [ ] Release to NPM
 - [x] Switch Pressable usage to Button or TouchableOpacity where possible
-- [ ] Callback support (same as vanillajs widget, extensions)
 - [ ] Notifications List (shows when clicking bell)
+- [ ] Support for showLiveRightAway = false 
+- [ ] User activity indicators 
 - [ ] Media Uploads (broken due to native exception?)
 - [ ] Gif Browser
 - [ ] WYSIWYG Editor Optimizations (ideally 60fps while typing)

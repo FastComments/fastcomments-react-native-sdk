@@ -2,9 +2,8 @@
 import * as React from 'react';
 
 import {FastCommentsState} from "../types/fastcomments-state";
-import {View, Text, StyleSheet, Image, Linking, ActivityIndicator, TextInput, useWindowDimensions, TouchableOpacity} from "react-native";
+import {View, Text, Image, Linking, ActivityIndicator, TextInput, useWindowDimensions, TouchableOpacity} from "react-native";
 import {none, State, useHookstate} from "@hookstate/core";
-import {FastCommentsWidgetComment} from "fastcomments-typescript";
 import {FastCommentsImageAsset} from '../types/image-asset';
 import {getDefaultAvatarSrc} from "../services/default-avatar";
 import {ModalMenu} from "./modal-menu";
@@ -23,6 +22,7 @@ import {addCommentToTree} from "../services/comment-trees";
 import {setupUserPresenceState} from "../services/user-presense";
 import {persistSubscriberState} from "../services/live";
 import RenderHtml from 'react-native-render-html';
+import {RNComment, IFastCommentsStyles, FastCommentsCallbacks} from "../types";
 
 // TODO replace with translatedError response which would reduce initial bundle size
 const SignUpErrorsTranslationIds: Record<string, string> = {
@@ -31,9 +31,10 @@ const SignUpErrorsTranslationIds: Record<string, string> = {
     'invalid-name-is-email': 'USERNAME_CANT_BE_EMAIL'
 };
 
-export interface ReplyAreaState {
+export interface ReplyAreaProps extends Pick<FastCommentsCallbacks, 'onReplySuccess' | 'onAuthenticationChange'> {
     state: State<FastCommentsState>
-    parentComment?: State<FastCommentsWidgetComment> | null
+    styles: IFastCommentsStyles
+    parentComment?: State<RNComment> | null
 }
 
 interface CommentReplyState {
@@ -47,7 +48,7 @@ interface CommentReplyState {
     lastSaveResponse?: SaveCommentResponse
 }
 
-async function logout(state: State<FastCommentsState>) {
+async function logout(state: State<FastCommentsState>, callbacks: Pick<FastCommentsCallbacks, 'onAuthenticationChange'>) {
     if (state.config.sso.get()) {
         if (state.config.sso.get()!.logoutURL) {
             await Linking.openURL(state.config.sso.get()!.logoutURL!);
@@ -80,8 +81,7 @@ async function logout(state: State<FastCommentsState>) {
     // reset the currently logged in user
     state.currentUser.set(null);
     persistSubscriberState(state, state.urlIdWS.get()!, state.tenantIdWS.get()!, null); // reconnect w/o a user
-    // TODO
-    //     onAuthenticationChange(config.instanceId, 'logout', currentUser);
+    callbacks?.onAuthenticationChange && callbacks.onAuthenticationChange('logout', currentUser, null);
     state.userNotificationState.set({ // TODO put default somewhere since also defined in fastcomments-state
         isOpen: false,
         isLoading: false,
@@ -103,8 +103,10 @@ async function logout(state: State<FastCommentsState>) {
 // TODO why is default webstorm formatting terrible? fix
 async function submit({
                           state,
-                          parentComment
-                      }: ReplyAreaState,
+                          parentComment,
+                          onReplySuccess,
+                          onAuthenticationChange,
+                      }: Pick<ReplyAreaProps, 'state' | 'parentComment' | 'onReplySuccess' | 'onAuthenticationChange'>,
                       commentReplyState: State<CommentReplyState>
 ) {
     if (state.config.readonly.get()) {
@@ -189,28 +191,19 @@ async function submit({
         if (response.customConfig) {
             handleNewCustomConfig(state, response.customConfig);
         }
-        if (response.status === 'success' && response.comment) {
-            // TODO
-            // onReplySuccess(config.instanceId, response.comment);
-            state.commentState[response.comment._id].set({
-                wasPostedCurrentSession: true
-            });
+        const comment = response.comment as RNComment;
+        if (response.status === 'success' && comment) {
+            comment.wasPostedCurrentSession = true;
             state.commentCountOnClient.set((commentCountOnClient) => {
                 commentCountOnClient++;
                 return commentCountOnClient
             });
-            state.commentsById[response.comment._id].set(response.comment);
+            state.commentsById[comment._id].set(comment);
             if (replyingToId) {
-                state.commentState[replyingToId].set((parentState) => {
-                    if (!parentState) {
-                        parentState = {};
-                    }
-                    parentState.repliesHidden = false;
-                    return parentState;
-                });
+                comment.repliesHidden = false;
             }
-            addCommentToTree(state.allComments, state.commentsTree, state.commentsById, response.comment, !!state.config.newCommentsToBottom.get());
-            incOverallCommentCount(state.config.countAll.get(), state, response.comment.parentId);
+            addCommentToTree(state.allComments, state.commentsTree, state.commentsById, comment, !!state.config.newCommentsToBottom.get());
+            incOverallCommentCount(state.config.countAll.get(), state, comment.parentId);
 
             if (response.user) {
                 if (state.config.simpleSSO.get()) { // for avatar, for example. TODO CLEANUP
@@ -218,54 +211,39 @@ async function submit({
                 } else {
                     state.currentUser.set(response.user);
                 }
-                // TODO
-                // onAuthenticationChange(config.instanceId, 'user-set', currentUserBeforeSubmit);
+                onAuthenticationChange && onAuthenticationChange('user-set', state.currentUser.get(), comment);
             }
 
             if (currentUserBeforeSubmit && response.user && 'sessionId' in response.user && response.user.sessionId) {
                 state.currentUser.merge({
                     sessionId: response.user.sessionId
                 });
-                // TODO
-                // onAuthenticationChange(config.instanceId, 'session-id-set', currentUserBeforeSubmit);
+                onAuthenticationChange && onAuthenticationChange('session-id-set', state.currentUser.get(), comment);
             }
             if (replyingToId === null && !state.config.disableSuccessMessage.get()) {
                 showSuccessMessage = true;
             }
+            incOverallCommentCount(state.config.countAll.get(), state, replyingToId);
+            const newCurrentUserId = currentUserBeforeSubmit && 'id' in currentUserBeforeSubmit ? currentUserBeforeSubmit.id : null;
+
+            // reconnect to new websocket channel if needed
+            if (newCurrentUserId !== lastCurrentUserId || response.userIdWS !== state.userIdWS.get()) {
+                // TODO
+                // persistSubscriberState(urlIdWS, tenantIdWS, response.userIdWS);
+            } else {
+                // noinspection ES6MissingAwait
+                setupUserPresenceState(state, response.userIdWS!);
+            }
+            onReplySuccess && onReplySuccess(comment);
         } else {
             if (isAuthenticating) {
                 state.currentUser.set(null); // saved to authenticate - can't say we are logged in.
-                // TODO
-                // onAuthenticationChange(config.instanceId, 'authentication-failed', newComment);
+                onAuthenticationChange && onAuthenticationChange('authentication-failed', null, comment);
             }
             if (response.translations) {
                 state.config.translations.merge(response.translations);
             }
         }
-        incOverallCommentCount(state.config.countAll.get(), state, replyingToId);
-        const newCurrentUserId = currentUserBeforeSubmit && 'id' in currentUserBeforeSubmit ? currentUserBeforeSubmit.id : null;
-
-        // reconnect to new websocket channel if needed
-        if (newCurrentUserId !== lastCurrentUserId || response.userIdWS !== state.userIdWS.get()) {
-            // TODO
-            // persistSubscriberState(urlIdWS, tenantIdWS, response.userIdWS);
-        } else {
-            // noinspection ES6MissingAwait
-            setupUserPresenceState(state, response.userIdWS!);
-        }
-
-        // TODO
-        // extensions.forEach((extension) => {
-        //     if (extension.newComment) {
-        //         extension.newComment(response.comment);
-        //     }
-        // });
-        //
-        // extensions.forEach((extension) => {
-        //     if (extension.onReplySuccess) {
-        //         extension.onReplySuccess(response.comment);
-        //     }
-        // });
         if (response.maxCharacterLength && response.maxCharacterLength !== state.config.maxCommentCharacterLength.get()) {
             state.config.maxCommentCharacterLength.set(response.maxCharacterLength); // update UI
         }
@@ -280,8 +258,7 @@ async function submit({
         }
         if (isAuthenticating) {
             state.currentUser.set(null); // saved to authenticate - can't say we are logged in.
-            // TODO
-            // onAuthenticationChange(config.instanceId, 'authentication-failed', newComment);
+            onAuthenticationChange && onAuthenticationChange('authentication-failed', null, newComment as unknown as RNComment);
         }
         commentReplyState.isReplySaving.set(false);
         commentReplyState.showAuthInputForm.set(false);
@@ -290,10 +267,12 @@ async function submit({
     }
 }
 
-export function ReplyArea(props: ReplyAreaState) {
+export function ReplyArea(props: ReplyAreaProps) {
+    const {parentComment, styles, onReplySuccess, onAuthenticationChange} = props;
     const state = useHookstate(props.state); // create scoped state
-    const parentComment = props.parentComment;
     const currentUser = state.currentUser?.get();
+    const translations = state.translations.get();
+
     const needsAuth = !currentUser && !!parentComment;
     const valueGetter: ValueObserver = {};
 
@@ -322,12 +301,10 @@ export function ReplyArea(props: ReplyAreaState) {
             currentUser
                 ? <RenderHtml source={{
                     html:
-                        state
-                            .translations.REPLYING_TO_AS.get().replace('[to]', parentComment.commenterName.get() as string).replace('[from]', currentUser.username)
+                        translations.REPLYING_TO_AS.replace('[to]', parentComment.commenterName.get() as string).replace('[from]', currentUser.username)
                 }} contentWidth={width}/>
                 : <RenderHtml source={{
-                    html:
-                        state.translations.REPLYING_TO.get().replace('[to]', parentComment.commenterName.get() as string)
+                    html: translations.REPLYING_TO.replace('[to]', parentComment.commenterName.get() as string)
                 }} contentWidth={width}/>
         ) : null;
 
@@ -341,8 +318,8 @@ export function ReplyArea(props: ReplyAreaState) {
 
     if (!currentUser && ssoConfig && !state.config.allowAnon.get()) {
         if (ssoConfig.loginURL || ssoConfig.loginCallback) { // if they don't define a URL, we just show a message.
-            ssoLoginWrapper = <View style={styles.ssoLoginWrapper}>
-                <TouchableOpacity style={styles.ssoLoginButton} onPress={async () => {
+            ssoLoginWrapper = <View style={styles.replyArea.ssoLoginWrapper}>
+                <TouchableOpacity style={styles.replyArea.ssoLoginButton} onPress={async () => {
                     if (ssoConfig.loginURL) {
                         await Linking.openURL(ssoConfig.loginURL);
                     } else if (ssoConfig?.loginCallback) {
@@ -351,48 +328,50 @@ export function ReplyArea(props: ReplyAreaState) {
                 }
                 }>
                     <Image source={state.imageAssets[FastCommentsImageAsset.ICON_BUBBLE_WHITE].get()} style={{width: 22, height: 22}}/>
-                    <Text>{state.translations.LOG_IN.get()}</Text>
+                    <Text style={styles.replyArea.ssoLoginButtonText}>{translations.LOG_IN}</Text>
                 </TouchableOpacity>
             </View>;
         } else {
-            ssoLoginWrapper = <View style={styles.ssoLoginWrapper}>
-                <View style={styles.ssoLoginButton}>
+            ssoLoginWrapper = <View style={styles.replyArea.ssoLoginWrapper}>
+                <View style={styles.replyArea.ssoLoginButton}>
                     <Image source={state.imageAssets[FastCommentsImageAsset.ICON_BUBBLE_WHITE].get()} style={{width: 22, height: 22}}/>
-                    <Text>{state.translations.LOG_IN_TO_COMMENT.get()}</Text>
+                    <Text style={styles.replyArea.ssoLoginButtonText}>{translations.LOG_IN_TO_COMMENT}</Text>
                 </View>
             </View>;
         }
     } else {
         if (!parentComment?.get() && currentUser) {
-            topBar = <View style={styles.topBar}>
-                <View style={styles.loggedInInfo}>
-                    <Image style={styles.topBarAvatar} source={currentUser.avatarSrc ? {uri: currentUser.avatarSrc} : getDefaultAvatarSrc(state)}/>
-                    <Text style={styles.topBarUsername}>{currentUser.username}</Text>
+            topBar = <View style={styles.replyArea.topBar}>
+                <View style={styles.replyArea.loggedInInfo}>
+                    <Image style={styles.replyArea.topBarAvatar}
+                           source={currentUser.avatarSrc ? {uri: currentUser.avatarSrc} : getDefaultAvatarSrc(state)}/>
+                    <Text style={styles.replyArea.topBarUsername}>{currentUser.username}</Text>
                 </View>
-                <View style={styles.topBarRight}>
+                <View style={styles.replyArea.topBarRight}>
                     {(!ssoConfig || (ssoConfig && (ssoConfig.logoutURL || ssoConfig.logoutCallback)))
-                    && <ModalMenu state={state} items={[
+                    && <ModalMenu state={state} styles={styles} items={[
                         {
                             id: 'logout',
-                            label: state.translations.LOG_OUT.get(),
+                            label: translations.LOG_OUT,
                             handler: async (setModalId: Dispatch<SetStateAction<string | null>>) => {
-                                await logout(state);
+                                await logout(state, {onAuthenticationChange});
                                 setModalId(null)
                             }
                         }
-                    ]} openButton={<ThreeDot style={{paddingTop: 5, paddingBottom: 5, marginRight: 5}}/>}/>
+                    ]} openButton={<ThreeDot styles={styles}/>}/>
                     }
-                    <NotificationBell state={state}/>
+                    <NotificationBell state={state} styles={styles}/>
                 </View>
             </View>;
         }
 
         let commentInputAreaContent;
         if (commentReplyState.showSuccessMessage.get()) {
-            commentInputAreaContent = CommentAreaMessage({message: state.translations.COMMENT_HAS_BEEN_SUBMITTED.get()});
+            commentInputAreaContent = CommentAreaMessage({message: translations.COMMENT_HAS_BEEN_SUBMITTED, styles});
         } else {
             commentInputAreaContent =
                 <CommentTextArea
+                    styles={styles}
                     state={state.get()}
                     value={commentReplyState.comment.get()}
                     output={valueGetter}
@@ -400,7 +379,8 @@ export function ReplyArea(props: ReplyAreaState) {
                 />;
         }
 
-        commentInputArea = <View style={[styles.commentInputArea, (commentReplyState.isReplySaving.get() ? styles.commentInputAreaReplySaving : null)]}>
+        commentInputArea = <View
+            style={[styles.replyArea.commentInputArea, (commentReplyState.isReplySaving.get() ? styles.replyArea.commentInputAreaReplySaving : null)]}>
             {commentInputAreaContent}
         </View>;
 
@@ -412,7 +392,7 @@ export function ReplyArea(props: ReplyAreaState) {
             } else {
                 commentReplyState.isReplySaving.set(true);
                 try {
-                    await submit({state, parentComment}, commentReplyState);
+                    await submit({state, parentComment, onReplySuccess}, commentReplyState);
                     commentReplyState.username.set(none);
                     commentReplyState.email.set(none);
                     commentReplyState.websiteUrl.set(none);
@@ -421,8 +401,8 @@ export function ReplyArea(props: ReplyAreaState) {
                     console.error('Failed to save a comment', e);
                 }
                 commentReplyState.isReplySaving.set(false);
-                if (parentComment?.get()) {
-                    state.commentState[parentComment._id.get()].replyBoxOpen.set(false);
+                if (parentComment && parentComment?.get()) {
+                    parentComment.replyBoxOpen.set(false);
                 }
             }
         }
@@ -438,68 +418,70 @@ export function ReplyArea(props: ReplyAreaState) {
         // result += '</div>';
 
         if (!commentReplyState.isReplySaving.get()) {
-            commentSubmitButton = <View style={styles.replyButtonWrapper}>
-                <TouchableOpacity style={styles.replyButton} onPress={handleSubmit}>
+            commentSubmitButton = <View style={styles.replyArea.replyButtonWrapper}>
+                <TouchableOpacity style={styles.replyArea.replyButton} onPress={handleSubmit}>
                     <Text
-                        style={styles.replyButtonText}>{commentReplyState.showSuccessMessage.get() ? state.translations.WRITE_ANOTHER_COMMENT.get() : state.translations.SUBMIT_REPLY.get()}</Text>
+                        style={styles.replyArea.replyButtonText}>{commentReplyState.showSuccessMessage.get() ? translations.WRITE_ANOTHER_COMMENT : translations.SUBMIT_REPLY}</Text>
                     <Image
                         source={parentComment ? state.imageAssets[FastCommentsImageAsset.ICON_RETURN].get() : state.imageAssets[FastCommentsImageAsset.ICON_BUBBLE].get()}
-                        style={styles.replyButtonIcon}/>
+                        style={styles.replyArea.replyButtonIcon}/>
                 </TouchableOpacity>
             </View>;
         }
 
         if (commentReplyState.showAuthInputForm.get() || (commentReplyState.lastSaveResponse.get()?.code && SignUpErrorsTranslationIds[commentReplyState.lastSaveResponse.get()!.code!])) { // checking for just true here causes the user to appear to logout on any failure, which is weird.
-            console.log('showing auth input area', commentReplyState.showAuthInputForm.get(), commentReplyState.lastSaveResponse.get()?.code);
-            authFormArea = <View style={styles.userInfoInput}>
+            authFormArea = <View style={styles.replyArea.userInfoInput}>
                 {!state.config.disableEmailInputs.get &&
                 <Text
-                    style={styles.emailReasoning}>
-                    {state.config.allowAnon.get() ? state.translations.ENTER_EMAIL_TO_KEEP_COMMENT.get() : state.translations.ENTER_EMAIL_TO_COMMENT.get()}
+                    style={styles.replyArea.emailReasoning}>
+                    {state.config.allowAnon.get() ? translations.ENTER_EMAIL_TO_KEEP_COMMENT : translations.ENTER_EMAIL_TO_COMMENT}
                 </Text>}
                 {!state.config.disableEmailInputs.get() &&
                 <TextInput
-                    style={styles.authInput}
+                    style={styles.replyArea.authInput}
                     multiline={false}
                     maxLength={70}
-                    placeholder={state.translations.EMAIL_FOR_VERIFICATION.get()}
+                    placeholder={translations.EMAIL_FOR_VERIFICATION}
                     autoComplete='email'
                     value={commentReplyState.email.get()}
                     returnKeyType={state.config.enableCommenterLinks.get() ? 'next' : 'send'}
                     onChangeText={(value) => commentReplyState.email.set(value)}/>}
                 <TextInput
-                    style={styles.authInput}
+                    style={styles.replyArea.authInput}
                     multiline={false}
                     maxLength={70}
-                    placeholder={state.translations.PUBLICLY_DISPLAYED_USERNAME.get()}
+                    placeholder={translations.PUBLICLY_DISPLAYED_USERNAME}
                     autoComplete={'username'}
                     value={commentReplyState.username.get()}
                     returnKeyType={state.config.enableCommenterLinks.get() ? 'next' : 'send'}
                     onChangeText={(value) => commentReplyState.username.set(value)}/>
                 {state.config.enableCommenterLinks.get() &&
                 <TextInput
+                    style={styles.replyArea.authInput}
                     maxLength={500}
-                    placeholder={state.translations.ENTER_A_LINK.get()}
+                    placeholder={translations.ENTER_A_LINK}
                     onChangeText={(value) => commentReplyState.websiteUrl.set(value)}/>
                 }
                 {commentReplyState.lastSaveResponse.get()?.code && SignUpErrorsTranslationIds[commentReplyState.lastSaveResponse.get()!.code!] &&
-                <Text style={styles.error}>{state.translations[SignUpErrorsTranslationIds[commentReplyState.lastSaveResponse.get()!.code!]].get()}</Text>
+                <Text
+                    style={styles.replyArea.error}>{translations[SignUpErrorsTranslationIds[commentReplyState.lastSaveResponse.get()!.code!]]}</Text>
                 }
                 {!state.config.disableEmailInputs &&
-                <Text style={styles.solicitationInfo}>{state.translations.NO_SOLICITATION_EMAILS.get()}</Text>
+                <Text style={styles.replyArea.solicitationInfo}>{translations.NO_SOLICITATION_EMAILS}</Text>
                 }
             </View>;
         }
 
         // We don't allow cancelling when replying to top-level comments.
-        if (parentComment) {
-            replyCancelButton = <View style={styles.replyCancelButtonWrapper}>
-                <TouchableOpacity style={styles.replyCancelButton} onPress={() => state.commentState[parentComment._id.get()].replyBoxOpen.set(false)}>
-                    <Image source={state.imageAssets[FastCommentsImageAsset.ICON_CROSS].get()}
-                           style={{width: 9, height: 9}}/>
-                </TouchableOpacity>
-            </View>
-        }
+        // This is currently disabled because the reply box open state is now completely manged in CommentBottom as an optimization.
+        // if (parentComment) {
+        //     replyCancelButton = <View style={styles.replyArea.replyCancelButtonWrapper}>
+        //         <TouchableOpacity style={styles.replyArea.replyCancelButton} onPress={() => parentComment.replyBoxOpen.set(false)}>
+        //             <Image source={state.imageAssets[FastCommentsImageAsset.ICON_CROSS].get()}
+        //                    style={{width: 9, height: 9}}/>
+        //         </TouchableOpacity>
+        //     </View>
+        // }
     }
 
     let displayError;
@@ -508,37 +490,37 @@ export function ReplyArea(props: ReplyAreaState) {
     if (lastSaveResponse && lastSaveResponse.status !== 'success') {
         console.log('lastSaveResponse', lastSaveResponse);
         if (lastSaveResponse.code === 'banned') {
-            let bannedText = state.translations.BANNED_COMMENTING.get();
+            let bannedText = translations.BANNED_COMMENTING;
             if (lastSaveResponse.bannedUntil) {
-                bannedText += ' ' + state.translations.BAN_ENDS.get().replace('[endsText]', new Date(lastSaveResponse.bannedUntil).toLocaleString());
+                bannedText += ' ' + translations.BAN_ENDS.replace('[endsText]', new Date(lastSaveResponse.bannedUntil).toLocaleString());
             }
-            displayError = <Text style={styles.error}>{bannedText}</Text>;
+            displayError = <Text style={styles.replyArea.error}>{bannedText}</Text>;
         } else if (lastSaveResponse.code === 'user-rate-limited') {
-            displayError = <Text style={styles.error}>state.translations.COMMENTING_TOO_QUICKLY.get()</Text>;
+            displayError = <Text style={styles.replyArea.error}>{translations.COMMENTING_TOO_QUICKLY}</Text>;
         } else if (lastSaveResponse.code === 'rate-limited') {
-            displayError = <Text style={styles.error}>state.translations.RATE_LIMITED.get()</Text>;
+            displayError = <Text style={styles.replyArea.error}>{translations.RATE_LIMITED}</Text>;
         } else if (lastSaveResponse.code === 'profile-comments-private') {
-            displayError = <Text style={styles.error}>state.translations.PROFILE_COMMENTS_PRIVATE.get()</Text>;
+            displayError = <Text style={styles.replyArea.error}>{translations.PROFILE_COMMENTS_PRIVATE}</Text>;
         } else if (lastSaveResponse.code === 'profile-dm-private') {
-            displayError = <Text style={styles.error}>state.translations.PROFILE_DM_PRIVATE.get()</Text>;
+            displayError = <Text style={styles.replyArea.error}>{translations.PROFILE_DM_PRIVATE}</Text>;
         } else if (lastSaveResponse.code === 'comment-too-big') {
             displayError =
-                <Text style={styles.error}>state.translations.COMMENT_TOO_BIG.get().replace('[count]', lastSaveResponse.maxCharacterLength +
-                    '')</Text>;
+                <Text
+                    style={styles.replyArea.error}>{translations.COMMENT_TOO_BIG.replace('[count]', lastSaveResponse.maxCharacterLength + '')}</Text>;
         } else if (lastSaveResponse.translatedError) {
-            displayError = <Text style={styles.error}>lastSaveResponse.translatedError</Text>;
+            displayError = <Text style={styles.replyArea.error}>lastSaveResponse.translatedError</Text>;
         } else if (lastSaveResponse.code) {
             // TODO this case should probably be deprecated and replaced by the server sending translatedError
-            const translatedError = state.translations[lastSaveResponse.code].get();
-            displayError = <Text style={styles.error}>{translatedError}</Text>;
+            const translatedError = translations[lastSaveResponse.code];
+            displayError = <Text style={styles.replyArea.error}>{translatedError}</Text>;
         } else {
             // generic error
-            displayError = <Text style={styles.error}>{state.translations.ERROR_MESSAGE.get()}</Text>;
+            displayError = <Text style={styles.replyArea.error}>{state.translations.ERROR_MESSAGE.get()}</Text>;
         }
     }
 
     return <View>
-        {replyToText && <View style={styles.replyingTo}>{replyToText}</View>}
+        {replyToText && <View style={styles.replyArea.replyingTo}>{replyToText}</View>}
         {ssoLoginWrapper}
         {topBar}
         {commentInputArea}
@@ -546,202 +528,8 @@ export function ReplyArea(props: ReplyAreaState) {
         {authFormArea}
         {commentSubmitButton}
         {replyCancelButton}
-        {commentReplyState.isReplySaving.get() && <View style={styles.loadingView}>
+        {commentReplyState.isReplySaving.get() && <View style={styles.replyArea.loadingView}>
             <ActivityIndicator size="large"/>
         </View>}
     </View>;
 }
-
-const styles = StyleSheet.create({
-    replyingTo: {
-        marginBottom: 5,
-    },
-    ssoLoginWrapper: {
-        flex: 1,
-        "minHeight": 140,
-        "paddingTop": 30,
-        "paddingRight": 0,
-        "paddingBottom": 30,
-        "paddingLeft": 0,
-        "boxSizing": "border-box",
-        "alignItems": "center",
-        "justifyContent": "center",
-        "borderWidth": 1,
-        "borderColor": "#bfbfbf",
-        "borderStyle": "solid",
-        "borderTopLeftRadius": 0,
-        "borderTopRightRadius": 11,
-        "borderBottomRightRadius": 11,
-        "borderBottomLeftRadius": 11
-    },
-    ssoLoginButton: {
-        fontSize: 16,
-        "animation": "pop-in 0.5s",
-        "animationTimingFunction": "ease",
-        "paddingTop": 10,
-        "paddingRight": 17,
-        "paddingBottom": 10,
-        "paddingLeft": 27,
-        "borderTopLeftRadius": 0,
-        "borderTopRightRadius": 7,
-        "borderBottomRightRadius": 7,
-        "borderBottomLeftRadius": 7,
-        "backgroundColor": "#333",
-        "color": "#fff",
-        "textDecorationLine": "none",
-        "textDecorationColor": "black",
-        "textDecorationStyle": "solid",
-        "fontWeight": "500"
-    },
-    topBar: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        "minHeight": 25,
-        "marginTop": 0,
-        "marginRight": 26,
-        "marginBottom": 15,
-        "marginLeft": 26,
-        "lineHeight": 25
-    },
-    loggedInInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        // "width": "calc(100% - 60px)", // TODO
-        "minWidth": 150
-    },
-    topBarAvatar: {
-        "height": 25,
-        "width": 25,
-        "verticalAlign": "middle",
-        "marginRight": 5,
-        "borderTopLeftRadius": 25,
-        "borderTopRightRadius": 25,
-        "borderBottomRightRadius": 25,
-        "borderBottomLeftRadius": 25,
-        "overflow": "hidden"
-        // TODO box shadow
-    },
-    topBarUsername: {
-        // "maxWidth": "calc(50% - 25px)", // TODO
-        "overflow": "hidden",
-        "verticalAlign": "middle",
-        "textOverflow": "ellipsis",
-        "fontWeight": "700",
-        "whiteSpace": "nowrap"
-    },
-    topBarRight: {
-        width: 100,
-        alignItems: 'center',
-        alignContent: 'center',
-        justifyContent: 'center',
-        justifyItems: 'center',
-        flexDirection: 'row',
-    },
-    commentInputArea: {},
-    commentInputAreaReplySaving: {
-        // animated-background
-    },
-    replyButtonWrapper: {
-        alignItems: 'flex-end',
-        justifyContent: 'space-between'
-    },
-    replyButton: { // TODO common button colors
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        marginTop: 15,
-        marginBottom: 10,
-        marginRight: 0,
-        "paddingTop": 10,
-        "paddingRight": 20,
-        "paddingBottom": 10,
-        "paddingLeft": 20,
-        borderWidth: 1,
-        borderRadius: 7,
-        borderColor: "#a2a2a2",
-        "backgroundColor": "#fbfbfb"
-    },
-    replyButtonText: {
-        "color": "#333"
-    },
-    replyButtonIcon: {
-        width: 22,
-        height: 22,
-        marginLeft: 10,
-        aspectRatio: 1,
-        resizeMode: 'stretch'
-    },
-    loadingView: {
-        // TODO common
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#ffffff80'
-    },
-    error: {
-        "margin": 5,
-        "color": "#ff0000"
-    },
-    userInfoInput: {
-        "marginTop": 10,
-        "marginRight": 0,
-        "marginBottom": 10,
-        "marginLeft": 0,
-        "fontSize": 13
-    },
-    emailReasoning: {
-        fontWeight: '600'
-    },
-    authInput: {
-        "marginTop": 10,
-        "paddingTop": 9,
-        "paddingRight": 12,
-        "paddingBottom": 9,
-        "paddingLeft": 12,
-        "borderTopLeftRadius": 0,
-        "borderTopRightRadius": 6,
-        "borderBottomRightRadius": 6,
-        "borderBottomLeftRadius": 6,
-        "fontSize": 14,
-        "borderWidth": 1,
-        "borderColor": "#a2a2a2",
-        "borderStyle": "solid"
-    },
-    solicitationInfo: {
-        "marginTop": 10
-    },
-    authInputSubmit: {
-        "paddingTop": 10,
-        "paddingRight": 27,
-        "paddingBottom": 10,
-        "paddingLeft": 27,
-        "borderTopLeftRadius": 0,
-        "borderTopRightRadius": 7,
-        "borderBottomRightRadius": 7,
-        "borderBottomLeftRadius": 7,
-        "backgroundColor": "#333"
-    },
-    replyCancelButtonWrapper: {
-        position: 'absolute',
-        top: 0,
-        right: 0
-    },
-    replyCancelButton: {
-        "paddingTop": 10,
-        "paddingRight": 10,
-        "paddingBottom": 10,
-        "paddingLeft": 10,
-        "borderWidth": 1,
-        "borderTopLeftRadius": 4,
-        "borderTopRightRadius": 4,
-        "borderBottomRightRadius": 4,
-        "borderBottomLeftRadius": 4,
-        "borderColor": "#a2a2a2",
-        "backgroundColor": "#fbfbfb"
-    }
-});

@@ -3,9 +3,10 @@ import * as React from 'react';
 
 import {FastCommentsSortDirection, FastCommentsState} from "../types/fastcomments-state";
 import {State, useHookstate} from "@hookstate/core";
-import {Image, StyleSheet, View, Text} from 'react-native';
+import {Image, View, Text} from 'react-native';
 import {FastCommentsImageAsset} from "../types/image-asset";
 import {ModalMenu} from "./modal-menu";
+import {IFastCommentsStyles} from "../types/fastcomments-styles";
 
 const SortDirectionTranslationsById: Record<string, string> = {
     'OF': 'OLDEST_FIRST',
@@ -13,8 +14,14 @@ const SortDirectionTranslationsById: Record<string, string> = {
     'MR': 'MOST_RELEVANT',
 };
 
-export function SelectSortDirection(globalState: State<FastCommentsState>) {
-    const state = useHookstate(globalState); // OPTIMIZATION: local state
+export interface SelectSortDirectionProps {
+    state: State<FastCommentsState>
+    styles: IFastCommentsStyles
+}
+
+export function SelectSortDirection(props: SelectSortDirectionProps) {
+    const {styles} = props;
+    const state = useHookstate(props.state); // OPTIMIZATION: local state
     const setValue = (newValue: any) => state.sortDirection.set(newValue as FastCommentsSortDirection);
     const menuItems = [
         {label: state.translations.OLDEST_FIRST.get(), id: 'OF', handler: () => { setValue('OF') } },
@@ -23,28 +30,10 @@ export function SelectSortDirection(globalState: State<FastCommentsState>) {
     ];
 
     // TODO dedicated down carrot icon
-    const openButton = <View style={styles.openButton}>
-        <Text style={styles.text}>{state.translations[SortDirectionTranslationsById[state.sortDirection.get()]].get()}</Text>
-        <Image source={state.imageAssets[FastCommentsImageAsset.ICON_DOWN_ACTIVE].get()} style={styles.downCarrot}/>
+    const openButton = <View style={styles.selectSortDirection.openButton}>
+        <Text style={styles.selectSortDirection.text}>{state.translations[SortDirectionTranslationsById[state.sortDirection.get()]].get()}</Text>
+        <Image source={state.imageAssets[FastCommentsImageAsset.ICON_DOWN_ACTIVE].get()} style={styles.selectSortDirection.downCarrot}/>
     </View>;
 
-    return <ModalMenu state={state} items={menuItems} openButton={openButton}/>;
+    return <ModalMenu state={state} items={menuItems} openButton={openButton} styles={styles}/>;
 }
-
-const styles = StyleSheet.create({
-    openButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 5,
-    },
-    text: {
-        marginRight: 5,
-        fontSize: 12,
-        fontWeight: '500'
-    },
-    downCarrot: {
-        width: 14,
-        aspectRatio: 1,
-        resizeMode: 'contain'
-    }
-})

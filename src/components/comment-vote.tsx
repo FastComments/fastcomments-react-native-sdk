@@ -1,15 +1,18 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
-import {StyleSheet, View, Text, Image, TextInput, ActivityIndicator, Button, Linking} from 'react-native';
+import {View, Text, Image, TextInput, ActivityIndicator, Button, Linking} from 'react-native';
 import {FastCommentsCommentWithState} from "./comment";
 import {FastCommentsImageAsset} from "../types/image-asset";
-import {State, useHookstate} from "@hookstate/core";
+import {none, State, useHookstate} from "@hookstate/core";
 import {CommentVoteResponse} from "../types/dto/comment-vote";
 import {getActionTenantId} from "../services/tenants";
 import {createURLQueryString, makeRequest} from "../services/http";
 import {newBroadcastId} from '../services/broadcast-id';
 import {CommentVoteDeleteResponse} from '../types/dto/comment-vote-delete';
 import { Pressable } from 'react-native';
+import type {FastCommentsCallbacks} from "../types";
+
+export interface CommentVoteProps extends FastCommentsCommentWithState, Pick<FastCommentsCallbacks, 'onVoteSuccess'> {}
 
 interface VoteState {
     voteDir?: 'up' | 'down'
@@ -28,7 +31,7 @@ const ErrorCodesToMessageIds: Record<string, string> = {
     'already-voted': 'ALREADY_VOTED',
 }
 
-async function doVote({state, comment}: FastCommentsCommentWithState, voteState: State<VoteState>) {
+async function doVote({state, comment, onVoteSuccess}: Pick<CommentVoteProps, 'state' | 'comment' | 'onVoteSuccess'>, voteState: State<VoteState>) {
     const currentUser = state.currentUser.get();
     if (!currentUser) {
         if (voteState.authUserName.get() && (state.config.allowAnon.get() || voteState.authEmail.get())) {
@@ -55,13 +58,12 @@ async function doVote({state, comment}: FastCommentsCommentWithState, voteState:
 
         if (comment.isVotedUp.get() || comment.isVotedDown.get()) {
             // delete vote
-            const commentState = state.commentState[comment._id.get()].get();
             const response = await makeRequest<CommentVoteDeleteResponse>({
                 apiHost: state.apiHost.get(),
                 method: 'DELETE',
                 url: `/comments/${tenantIdToUse}/${comment._id.get()}/vote/${comment.myVoteId.get()}${createURLQueryString({
                     voteId: comment.myVoteId.get(),
-                    editKey: commentState?.editKey,
+                    editKey: comment.editKey.get(),
                     commentId: comment._id.get(),
                     sso: state.ssoConfigString.get(),
                     broadcastId: newBroadcastId(),
@@ -70,8 +72,7 @@ async function doVote({state, comment}: FastCommentsCommentWithState, voteState:
             });
             voteState.voteResponse.set(response);
             if (response.status === 'success') {
-                // TODO
-                // onVoteSuccess(config.instanceId, comment, comment.myVoteId, 'deleted', response.status);
+                onVoteSuccess && onVoteSuccess(comment.get(), comment.myVoteId.get()!, 'deleted', response.status);
 
                 if (comment.isVotedUp.get()) {
                     comment.isVotedUp.set(false);
@@ -119,18 +120,11 @@ async function doVote({state, comment}: FastCommentsCommentWithState, voteState:
                     comment.votesDown.set((votesDown) => (votesDown || 0) + 1);
                 }
                 comment.myVoteId.set(response.voteId);
-                // TODO
-                // onVoteSuccess(config.instanceId, comment, response.voteId, voteDir, response.status);
+                onVoteSuccess && onVoteSuccess(comment.get(), response.voteId!, voteState.voteDir.get()!, response.status);
                 if (response.editKey) {
-                    state.commentState[comment._id.get()].set((commentState) => ({
-                        ...commentState,
-                        voteEditKey: response.editKey
-                    }));
+                    comment.voteEditKey.set(response.editKey);
                 } else {
-                    state.commentState[comment._id.get()].set((commentState) => {
-                        delete commentState?.editKey;
-                        return commentState;
-                    });
+                    comment.voteEditKey.set(none);
                 }
                 voteState.isAwaitingVerification.set(false);
             } else if (response.status === 'pending-verification') {
@@ -143,12 +137,8 @@ async function doVote({state, comment}: FastCommentsCommentWithState, voteState:
                     voteState.isAwaitingVerification.set(true);
                 }
                 comment.myVoteId.set(response.voteId);
-                // TODO
-                // onVoteSuccess(config.instanceId, comment, response.voteId, voteDir, response.status);
-                state.commentState[comment._id.get()].set((commentState) => ({
-                    ...commentState,
-                    voteEditKey: response.editKey
-                }));
+                onVoteSuccess && onVoteSuccess(comment.get(), response.voteId!, voteState.voteDir.get()!, response.status);
+                comment.voteEditKey.set(response.editKey);
                 voteState.isAwaitingVerification.set(false);
             } else {
                 if (response.code === 'already-voted') {
@@ -168,8 +158,8 @@ async function doVote({state, comment}: FastCommentsCommentWithState, voteState:
     voteState.isLoading.set(false);
 }
 
-export function CommentVote(props: FastCommentsCommentWithState) {
-    const comment = props.comment;
+export function CommentVote(props: CommentVoteProps) {
+    const {comment, styles} = props;
     const state = useHookstate(props.state); // OPTIMIZATION: creating scoped state
     const voteState = useHookstate<VoteState>({});
     if (state.config.disableVoting.get()) {
@@ -182,10 +172,10 @@ export function CommentVote(props: FastCommentsCommentWithState) {
     let error;
 
     // TODO TouchableOpacity throws weird callback exceeded errors
-    voteOptions = <View style={styles.commentVoteOptions}>
-        {comment.votesUp.get() ? <Text style={styles.votesUpText}>{Number(comment.votesUp.get()).toLocaleString()}</Text> : null}
+    voteOptions = <View style={styles.commentVote.commentVoteOptions}>
+        {comment.votesUp.get() ? <Text style={styles.commentVote.votesUpText}>{Number(comment.votesUp.get()).toLocaleString()}</Text> : null}
         <Pressable
-            style={styles.voteButton}
+            style={styles.commentVote.voteButton}
             onPress={() => {
                 voteState.voteDir.set('up');
                 // noinspection JSIgnoredPromiseFromCall
@@ -194,11 +184,11 @@ export function CommentVote(props: FastCommentsCommentWithState) {
         >
             <Image
                 source={state.imageAssets[comment.isVotedUp.get() ? FastCommentsImageAsset.ICON_UP_ACTIVE : FastCommentsImageAsset.ICON_UP].get()}
-                style={styles.voteButtonIcon}/>
+                style={styles.commentVote.voteButtonIcon}/>
         </Pressable>
-        <View style={styles.voteDivider}></View>
+        <View style={styles.commentVote.voteDivider}></View>
         <Pressable
-            style={styles.voteButton}
+            style={styles.commentVote.voteButton}
             onPress={() => {
                 voteState.voteDir.set('down');
                 // noinspection JSIgnoredPromiseFromCall
@@ -207,17 +197,17 @@ export function CommentVote(props: FastCommentsCommentWithState) {
         >
             <Image
                 source={state.imageAssets[comment.isVotedDown.get() ? FastCommentsImageAsset.ICON_DOWN_ACTIVE : FastCommentsImageAsset.ICON_DOWN].get()}
-                style={styles.voteButtonIcon}/>
+                style={styles.commentVote.voteButtonIcon}/>
         </Pressable>
-        {comment.votesDown.get() ? <Text style={styles.votesDownText}>{Number(comment.votesDown.get()).toLocaleString()}</Text> : null}
+        {comment.votesDown.get() ? <Text style={styles.commentVote.votesDownText}>{Number(comment.votesDown.get()).toLocaleString()}</Text> : null}
     </View>
 
     if (voteState.isAuthenticating.get()) {
-        auth = <View style={styles.commentVoteAuth}>
+        auth = <View style={styles.commentVote.commentVoteAuth}>
             {!state.config.disableEmailInputs.get() && <View>
                 <Text>{state.translations.ENTER_EMAIL_VOTE.get()}</Text>
                 <TextInput
-                    style={styles.authInput}
+                    style={styles.commentVote.authInput}
                     textContentType='emailAddress'
                     value={voteState.authEmail.get()}
                     placeholder={state.translations.ENTER_EMAIL_VERIFICATION.get()}
@@ -226,13 +216,13 @@ export function CommentVote(props: FastCommentsCommentWithState) {
             </View>
             }
             <TextInput
-                style={styles.authInput}
+                style={styles.commentVote.authInput}
                 textContentType='username'
                 value={voteState.authUserName.get()}
                 placeholder={state.translations.PUBLICLY_DISPLAYED_USERNAME.get()}
                 onChangeText={(newValue) => voteState.authUserName.set(newValue)}
             />
-            <View style={styles.voteAuthButtons}>
+            <View style={styles.commentVote.voteAuthButtons}>
                 <Button title={state.translations.CANCEL.get()} onPress={() => voteState.isAuthenticating.set(false)}/>
                 <Button title={state.translations.SAVE_N_VOTE.get()} onPress={() => doVote({state, comment}, voteState)}/>
             </View>
@@ -240,7 +230,7 @@ export function CommentVote(props: FastCommentsCommentWithState) {
     }
 
     if (voteState.isAwaitingVerification.get()) {
-        pendingVoteMessage = <Text style={styles.voteAwaitingVerificationMessage}>{state.translations.VOTE_APPLIES_AFTER_VERIFICATION.get()}</Text>;
+        pendingVoteMessage = <Text style={styles.commentVote.voteAwaitingVerificationMessage}>{state.translations.VOTE_APPLIES_AFTER_VERIFICATION.get()}</Text>;
     }
 
     // This is here instead of above so that when it gets added in and then removed we don't cause the user to accidentally vote down if they double click.
@@ -251,11 +241,11 @@ export function CommentVote(props: FastCommentsCommentWithState) {
             if (lastVoteResponse.bannedUntil) {
                 bannedText += ' ' + state.translations.BAN_ENDS.get().replace('[endsText]', new Date(lastVoteResponse.bannedUntil).toLocaleString());
             }
-            error = <Text style={styles.voteError}>{bannedText}</Text>
+            error = <Text style={styles.commentVote.voteError}>{bannedText}</Text>
         } else if (lastVoteResponse.code && lastVoteResponse.code in ErrorCodesToMessageIds) {
-            error = <Text style={styles.voteError}>{state.translations[ErrorCodesToMessageIds[lastVoteResponse.code]].get()}</Text>
+            error = <Text style={styles.commentVote.voteError}>{state.translations[ErrorCodesToMessageIds[lastVoteResponse.code]].get()}</Text>
         } else {
-            error = <Text style={styles.voteError}>{state.translations.ERROR_MESSAGE.get()}</Text>
+            error = <Text style={styles.commentVote.voteError}>{state.translations.ERROR_MESSAGE.get()}</Text>
         }
     }
 
@@ -264,87 +254,8 @@ export function CommentVote(props: FastCommentsCommentWithState) {
         {pendingVoteMessage}
         {auth}
         {error}
-        {voteState.isLoading.get() && <View style={styles.loadingView}>
+        {voteState.isLoading.get() && <View style={styles.commentVote.loadingView}>
             <ActivityIndicator size="small"/>
         </View>}
     </View>;
 }
-
-const styles = StyleSheet.create({
-    commentVoteOptions: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyItems: 'center',
-        justifyContent: 'space-between',
-        "marginTop": 0,
-        "marginRight": 7,
-        "marginBottom": 0,
-        "marginLeft": 2,
-    },
-    votesUpText: {
-        fontSize: 12,
-        marginRight: 5
-    },
-    votesDownText: {
-        fontSize: 12,
-        marginLeft: 5
-    },
-    voteButton: {
-        height: 22,
-        justifyContent: 'center'
-    },
-    voteButtonIcon: {
-        height: 12,
-        aspectRatio: 1,
-        resizeMode: 'center'
-    },
-    voteDivider: {
-        backgroundColor: '#c2c2c2',
-        width: 1,
-        height: 20,
-        marginRight: 10,
-        marginLeft: 10
-    },
-    commentVoteAuth: {
-        maxWidth: 400,
-        "marginTop": 10,
-        "paddingTop": 9,
-        "paddingRight": 12,
-        "paddingBottom": 9,
-        "paddingLeft": 12,
-        "borderTopLeftRadius": 0,
-        "borderTopRightRadius": 6,
-        "borderBottomRightRadius": 6,
-        "borderBottomLeftRadius": 6,
-        "fontSize": 14,
-        "borderWidth": 1,
-        "borderColor": "#a2a2a2",
-        "borderStyle": "solid"
-    },
-    authInput: {
-        "marginTop": 10,
-        "marginRight": 0,
-        "marginBottom": 10,
-        "marginLeft": 0,
-        "fontSize": 13
-    },
-    loadingView: {
-        // TODO common
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#ffffff80'
-    },
-    voteAuthButtons: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-    },
-    voteAwaitingVerificationMessage: {},
-    voteError: {},
-})

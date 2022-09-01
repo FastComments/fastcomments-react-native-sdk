@@ -10,7 +10,7 @@ export interface CommentActionDeleteProps extends FastCommentsCommentWithState {
     close: () => void;
 }
 
-async function deleteComment({comment, state}: FastCommentsCommentWithState) {
+async function deleteComment({comment, state}: Pick<FastCommentsCommentWithState, 'comment' | 'state'>) {
     const tenantId = getActionTenantId({state, tenantId: comment.tenantId.get()});
     const broadcastId = newBroadcastId();
     const response = await makeRequest<DeleteCommentResponse>({
@@ -18,7 +18,7 @@ async function deleteComment({comment, state}: FastCommentsCommentWithState) {
         method: 'DELETE',
         url: '/comments/' + tenantId + '/' + comment._id + '/' + createURLQueryString({
             urlId: state.config.urlId.get(),
-            editKey: state.commentState[comment._id.get()]?.editKey.get(),
+            editKey: comment.editKey.get(),
             sso: state.ssoConfigString.get(),
             broadcastId
         })

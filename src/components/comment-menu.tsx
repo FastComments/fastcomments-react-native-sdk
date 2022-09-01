@@ -15,13 +15,13 @@ import {BlockCommentResponse} from "../types/dto/block-comment";
 import {ModalMenu, ModalMenuItem} from "./modal-menu";
 import {useHookstate} from "@hookstate/core";
 
-async function startEditingComment({state, comment}: FastCommentsCommentWithState, setModalId: Dispatch<SetStateAction<string | null>>) {
+async function startEditingComment({state, comment}: Pick<FastCommentsCommentWithState, 'state' | 'comment'>, setModalId: Dispatch<SetStateAction<string | null>>) {
     const response = await makeRequest<GetCommentTextResponse>({
         apiHost: state.apiHost.get(),
         method: 'GET',
         url: `/comments/${state.config.tenantId.get()}/${comment._id.get()}/text${createURLQueryString({
             sso: state.ssoConfigString.get(),
-            editKey: state.commentState[comment._id.get()]?.editKey?.get()
+            editKey: comment.editKey.get()
         })}`
     });
     console.log('got response', response);
@@ -33,13 +33,13 @@ async function startEditingComment({state, comment}: FastCommentsCommentWithStat
     }
 }
 
-async function setCommentPinStatus({state, comment}: FastCommentsCommentWithState, doPin: boolean) {
+async function setCommentPinStatus({state, comment}: Pick<FastCommentsCommentWithState, 'state' | 'comment'>, doPin: boolean) {
     const response = await makeRequest<PinCommentResponse>({
         apiHost: state.apiHost.get(),
         method: 'POST',
         url: `/comments/${state.config.tenantId.get()}/${comment._id.get()}/${doPin ? 'pin' : 'unpin'}${createURLQueryString({
             sso: state.ssoConfigString.get(),
-            editKey: state.commentState[comment._id.get()]?.editKey?.get()
+            editKey: comment.editKey.get()
         })}`
     });
     if (response.status === 'success') {
@@ -50,7 +50,7 @@ async function setCommentPinStatus({state, comment}: FastCommentsCommentWithStat
     }
 }
 
-async function setCommentBlockedStatus({state, comment}: FastCommentsCommentWithState, doBlock: boolean) {
+async function setCommentBlockedStatus({state, comment}: Pick<FastCommentsCommentWithState, 'state' | 'comment'>, doBlock: boolean) {
     const response = await makeRequest<BlockCommentResponse>({
         apiHost: state.apiHost.get(),
         method: doBlock ? 'POST' : 'DELETE',
@@ -58,7 +58,7 @@ async function setCommentBlockedStatus({state, comment}: FastCommentsCommentWith
             tenantId: state.config.tenantId.get(),
             urlId: state.config.urlId.get(),
             sso: state.ssoConfigString.get(),
-            editKey: state.commentState[comment._id.get()]?.editKey?.get()
+            editKey: comment.editKey.get()
         })}`,
         body: {
             commentIds: Object.keys(state.commentsById.get())
@@ -80,7 +80,7 @@ async function setCommentBlockedStatus({state, comment}: FastCommentsCommentWith
     }
 }
 
-async function setCommentFlaggedStatus({state, comment}: FastCommentsCommentWithState, doFlag: boolean) {
+async function setCommentFlaggedStatus({state, comment}: Pick<FastCommentsCommentWithState, 'state' | 'comment'>, doFlag: boolean) {
     const response = await makeRequest<BlockCommentResponse>({
         apiHost: state.apiHost.get(),
         method: 'POST',
@@ -100,7 +100,7 @@ async function setCommentFlaggedStatus({state, comment}: FastCommentsCommentWith
 }
 
 export function CommentMenu(props: FastCommentsCommentWithState) {
-    const comment = props.comment;
+    const {comment, styles} = props;
     const state = useHookstate(props.state); // OPTIMIZATION: local state
     const currentUser = state.currentUser.get();
     const isMyComment = currentUser && 'id' in currentUser && (comment.userId.get() === currentUser.id || comment.anonUserId.get() === currentUser.id);
@@ -119,7 +119,7 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
             handler: async (setModalId: Dispatch<SetStateAction<string | null>>) => {
                 await startEditingComment({comment, state}, setModalId);
             },
-            subModalContent: (close: () => void) => <CommentActionEdit comment={comment} state={state} close={close}/>
+            subModalContent: (close: () => void) => <CommentActionEdit comment={comment} state={state} styles={styles} close={close}/>
         });
     }
 
@@ -154,6 +154,7 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
                 await CommentPromptDelete({
                     comment,
                     state,
+                    styles,
                     close: () => setModalId(null)
                 });
             }
@@ -210,5 +211,5 @@ export function CommentMenu(props: FastCommentsCommentWithState) {
 
     const openButton = <View style={{padding: 5}}><Image source={state.imageAssets[FastCommentsImageAsset.ICON_EDIT_SMALL].get()} style={{width: 16, height: 16}}/></View>;
 
-    return <ModalMenu state={state} items={menuItems} openButton={openButton} />;
+    return <ModalMenu state={state} styles={styles} items={menuItems} openButton={openButton} />;
 }

@@ -1,19 +1,9 @@
-import {FastCommentsCommentWidgetConfig, FastCommentsWidgetComment} from "fastcomments-typescript";
+import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
 import {FastCommentsSessionUser} from "./user";
 import {ImageAssetConfig} from "./image-asset";
 import {UserNotification} from "./user-notification";
 import {SubscriberInstance} from "../services/subscribe-to-changes";
-
-export interface CommentState {
-    replyBoxOpen?: boolean;
-    repliesHidden?: boolean;
-    /** So we can change our comment in the current session w/o full authentication. **/
-    editKey?: string;
-    /** So we can change our vote in the current session w/o full authentication. **/
-    voteEditKey?: string;
-    wasPostedCurrentSession?: boolean;
-    requiresVerification?: boolean;
-}
+import {RNComment} from "./react-native-comment";
 
 export enum UserPresencePollStateEnum {
     Disabled = 0,
@@ -35,23 +25,20 @@ export interface UserNotificationState {
     notifications: UserNotification[];
     isPaginationInProgress: boolean;
     isSubscribed: boolean;
-    reRenderCallback?: Function; // TODO used in sdk?
-    pageClickEventListener?: Function; // TODO used in sdk?
 }
 
 export type FastCommentsSortDirection = 'OF' | 'NF' | 'MR';
 
 export interface FastCommentsState {
     PAGE_SIZE: 30;
-    allComments: FastCommentsWidgetComment[];
+    allComments: RNComment[];
     apiHost: string;
     wsHost: string;
     blockingErrorMessage?: string; // TODO
     commentCountOnClient: number;
     commentCountOnServer: number;
-    commentState: Record<string, CommentState>;
-    commentsById: Record<string, FastCommentsWidgetComment>;
-    commentsTree: FastCommentsWidgetComment[];
+    commentsById: Record<string, RNComment>;
+    commentsTree: RNComment[];
     commentsVisible?: boolean;
     config: FastCommentsCommentWidgetConfig;
     currentUser: FastCommentsSessionUser;

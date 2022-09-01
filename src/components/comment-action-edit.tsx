@@ -1,5 +1,5 @@
 import {FastCommentsCommentWithState} from "./comment";
-import {StyleSheet, View, Text, ActivityIndicator, Image, TouchableOpacity} from "react-native";
+import {View, Text, ActivityIndicator, Image, TouchableOpacity} from "react-native";
 import {FastCommentsImageAsset} from "../types/image-asset";
 import {useState} from "react";
 import {createURLQueryString, makeRequest} from "../services/http";
@@ -12,7 +12,7 @@ export interface CommentActionEditProps extends FastCommentsCommentWithState {
     close: () => void;
 }
 
-async function saveCommentText({comment, state}: FastCommentsCommentWithState, newValue: string) {
+async function saveCommentText({comment, state}: Pick<FastCommentsCommentWithState, 'comment' | 'state'>, newValue: string) {
     const tenantId = getActionTenantId({state, tenantId: comment.tenantId.get()});
     const broadcastId = newBroadcastId();
     const response = await makeRequest<UpdateCommentTextResponse>({
@@ -20,7 +20,7 @@ async function saveCommentText({comment, state}: FastCommentsCommentWithState, n
         method: 'POST',
         url: '/comments/' + tenantId + '/' + comment._id.get() + '/update-text/' + createURLQueryString({
             urlId: state.config.urlId.get(),
-            editKey: state.commentState[comment._id.get()]?.editKey?.get(),
+            editKey: comment.editKey.get(),
             sso: state.ssoConfigString.get(),
             broadcastId
         }),
@@ -43,18 +43,19 @@ async function saveCommentText({comment, state}: FastCommentsCommentWithState, n
     }
 }
 
-export function CommentActionEdit({comment, state, close}: CommentActionEditProps) {
+export function CommentActionEdit({comment, state, styles, close}: CommentActionEditProps) {
     const [isLoading, setLoading] = useState(false);
     const valueGetter: ValueObserver = {}
     // TODO ask before closing if content changed
-    return <View style={styles.centeredView}>
-        <View style={styles.modalView}>
+    return <View style={styles.commentEditModal.centeredView}>
+        <View style={styles.commentEditModal.modalView}>
             <CommentTextArea
                 state={state.get()} value={comment.comment.get()}
+                styles={styles}
                 output={valueGetter}
             />
             <TouchableOpacity
-                style={styles.saveButton}
+                style={styles.commentEditModal.saveButton}
                 onPress={async () => {
                     setLoading(true);
                     try {
@@ -72,64 +73,16 @@ export function CommentActionEdit({comment, state, close}: CommentActionEditProp
                 <Text>{state.translations.SAVE.get()}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-                style={styles.modalCancel}
+                style={styles.commentEditModal.modalCancel}
                 onPress={close}
             >
                 {<Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_CROSS]} style={{width: 16, height: 16}} />}
             </TouchableOpacity>
             {
-                isLoading && <View style={styles.loadingView}>
+                isLoading && <View style={styles.commentEditModal.loadingView}>
                     <ActivityIndicator size="large"/>
                 </View>
             }
         </View>
     </View>;
 }
-
-const styles = StyleSheet.create({
-    centeredView: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        marginTop: 22
-    },
-    modalView: {
-        minWidth: 300,
-        margin: 20,
-        backgroundColor: "white",
-        borderRadius: 20,
-        paddingTop: 35,
-        paddingLeft: 10,
-        paddingRight: 10,
-        paddingBottom: 20,
-        alignItems: "center",
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 2
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 5
-    },
-    modalCancel: {
-        position: 'absolute',
-        top: 10,
-        right: 10
-    },
-    loadingView: {
-        // TODO common
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#ffffff80'
-    },
-    saveButton: {
-        marginTop: 10
-    }
-});

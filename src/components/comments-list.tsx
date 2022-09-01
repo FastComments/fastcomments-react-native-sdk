@@ -1,15 +1,29 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
 
-import {FastCommentsState} from "../types/fastcomments-state";
+import {FastCommentsState} from "../types";
 import {FastCommentsCommentView} from "./comment";
 import {State} from "@hookstate/core";
+import {IFastCommentsStyles} from "../types";
+import {FastCommentsCallbacks} from "../types";
 
-export function CommentsList(state: State<FastCommentsState>) {
+export interface CommentsListProps extends Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onReplySuccess' | 'onAuthenticationChange'> {
+    state: State<FastCommentsState>
+    styles: IFastCommentsStyles
+}
+
+export function CommentsList({state, styles, onVoteSuccess, onReplySuccess, onAuthenticationChange}: CommentsListProps) {
     // const state = useHookstate(globalState); // TODO creating scoped state
     console.log('comments list', state.commentsTree.length); // TODO remove
     // TODO have configuration option to wrap in ScrollView
     return state.commentsTree.map((comment) =>
-        <FastCommentsCommentView comment={comment} state={state} key={comment._id.get()}/>
+        <FastCommentsCommentView
+            comment={comment}
+            state={state}
+            styles={styles}
+            key={comment._id.get()}
+            onVoteSuccess={onVoteSuccess}
+            onReplySuccess={onReplySuccess}
+            onAuthenticationChange={onAuthenticationChange}/>
     )
 }

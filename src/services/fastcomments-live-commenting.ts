@@ -9,6 +9,7 @@ import {mergeSimpleSSO} from "./sso";
 import {State} from "@hookstate/core";
 import {handleNewCustomConfig} from "./custom-config";
 import {persistSubscriberState} from "./live";
+import {FastCommentsCallbacks} from "../types";
 
 interface FastCommentsInternalState {
     isFirstRequest: boolean;
@@ -20,9 +21,11 @@ interface FastCommentsInternalState {
 export class FastCommentsLiveCommentingService {
     private readonly state: State<FastCommentsState>;
     private readonly internalState: FastCommentsInternalState;
+    private readonly callbacks?: FastCommentsCallbacks;
 
-    constructor(state: State<FastCommentsState>) {
+    constructor(state: State<FastCommentsState>, callbacks?: FastCommentsCallbacks) {
         this.state = state;
+        this.callbacks = callbacks;
         this.internalState = {
             isFirstRequest: true,
             lastGenDate: undefined,
@@ -41,7 +44,6 @@ export class FastCommentsLiveCommentingService {
             blockingErrorMessage: undefined,
             commentCountOnClient: 0,
             commentCountOnServer: 0,
-            commentState: {},
             commentsById: {},
             commentsTree: [],
             allComments: [],
@@ -200,13 +202,9 @@ export class FastCommentsLiveCommentingService {
                 state.moderatingTenantIds.set(response.moderatingTenantIds);
             }
 
-            if (internalState.isFirstRequest && config.readonly && state.commentCountOnClient.get() === 0 && !state.translations.NO_COMMENTS.get()) {
-                config.onCommentsRendered && config.onCommentsRendered([]);
-            }
-
             if (response.user) {
                 state.currentUser.set(response.user);
-                config.onAuthenticationChange && config.onAuthenticationChange('user-set', state.currentUser.get()!);
+                this.callbacks?.onAuthenticationChange && this.callbacks.onAuthenticationChange('user-set', state.currentUser.get(), null);
             }
 
             if (state.commentsVisible.get() === undefined) {
@@ -216,14 +214,14 @@ export class FastCommentsLiveCommentingService {
             // TODO OPTIMIZE away JSON.parse(JSON.stringify()).
             //  We can do this by moving allComments outside of state and into internalState.
             //  Without the deref of the child objects in allComments, deleting comments live breaks.
-            const result = getCommentsTreeAndCommentsById(!!config.collapseReplies, state.commentState, JSON.parse(JSON.stringify(state.allComments.get())));
+            const result = getCommentsTreeAndCommentsById(!!config.collapseReplies, JSON.parse(JSON.stringify(state.allComments.get())));
             // Doing two sets() here is faster than doing a million of them in getCommentsTreeAndCommentsById.
             state.commentsById.set(result.commentsById);
             state.commentsTree.set(result.comments);
 
             if (config.jumpToId) {
                 // TODO OPTIMIZE - would passing State<state.commentsById> be faster here?
-                ensureRepliesOpenToComment(state.commentState, state.commentsById.get(), config.jumpToId);
+                ensureRepliesOpenToComment(state.commentsById.get(), config.jumpToId);
             }
 
             state.isSiteAdmin.set(!!response.isSiteAdmin);

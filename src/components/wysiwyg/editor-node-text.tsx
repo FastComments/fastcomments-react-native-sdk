@@ -18,6 +18,7 @@ export interface EditorNodeTextProps extends EditorNodeProps {
 }
 
 export function EditorNodeText({node, onBlur, onFocus, onDelete, style}: EditorNodeTextProps) {
+    const [value, setValue] = useState(node.content.get());
     const [selection, setSelection] = useState<{
         start: number;
         end: number;
@@ -37,7 +38,7 @@ export function EditorNodeText({node, onBlur, onFocus, onDelete, style}: EditorN
             console.log('Focusing node (B)', node.id.get())
             ref.current?.focus();
         }
-    }, [node.isFocused.get()]);
+    }, [node.isFocused]);
 
     const handleKeyUp = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
         console.log('Got key up', e.nativeEvent.key)
@@ -64,8 +65,6 @@ export function EditorNodeText({node, onBlur, onFocus, onDelete, style}: EditorN
     const onSelectionChange = (e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
         setSelection(e.nativeEvent.selection);
     }
-
-    const [value, setValue] = useState(node.content.get());
 
     // TODO if not multiline, set returnKeyType to "go"
     return <TextInput

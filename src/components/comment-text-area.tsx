@@ -1,6 +1,6 @@
 import {FastCommentsState} from "../types/fastcomments-state";
 import {State} from "@hookstate/core";
-import {Text, StyleSheet, Image} from "react-native";
+import {Text, Image} from "react-native";
 import {Editor} from "./wysiwyg/wysiwyg-editor";
 import {useEffect, useState} from "react";
 import {EditorToolbar, EditorToolbarConfig} from "./wysiwyg/editor-toolbar";
@@ -9,6 +9,7 @@ import {enforceMaxLength, nodesToString, stringToNodes} from "./wysiwyg/editor-n
 import {EditorFormatConfigurationHTML} from "./wysiwyg/transformers";
 import {EditorNodeDefinition} from "./wysiwyg/editor-node";
 import {EmoticonBar, EmoticonBarConfig} from "./wysiwyg/emoticon-bar";
+import {IFastCommentsStyles} from "../types/fastcomments-styles";
 
 export interface ValueObserver {
     getValue?: () => string
@@ -16,12 +17,13 @@ export interface ValueObserver {
 
 export interface CommentTextAreaProps {
     state: FastCommentsState
+    styles: IFastCommentsStyles
     value?: string
     output: ValueObserver
     onFocus?: () => void
 }
 
-export function CommentTextArea({state, value, output, onFocus: _onFocus}: CommentTextAreaProps) {
+export function CommentTextArea({state, styles, value, output, onFocus: _onFocus}: CommentTextAreaProps) {
     // console.log('opening text area', value);
     // TODO toolbar supports inline reacts - support for extension customizing toolbar?
     // TODO gif selector
@@ -34,21 +36,21 @@ export function CommentTextArea({state, value, output, onFocus: _onFocus}: Comme
         setEditorInputNodes(stringToNodes(EditorFormatConfigurationHTML, value || ''));
     }, [value]);
 
-    const placeholder = <Text style={styles.placeholder}>{state.translations.ENTER_COMMENT_HERE}</Text>
+    const placeholder = <Text style={styles.commentTextArea.placeholder}>{state.translations.ENTER_COMMENT_HERE}</Text>
     // TODO not enabled by default, move to extensions. This is just for testing.
     const emoticonBarConfig: EmoticonBarConfig = {
         emoticons: [
-            ['https://cdn.fastcomments.com/images/fireworks.png', <Image source={{uri: 'https://cdn.fastcomments.com/images/fireworks.png'}} style={styles.toolbarButton} />],
-            ['https://cdn.fastcomments.com/images/party-popper.png', <Image source={{uri: 'https://cdn.fastcomments.com/images/party-popper.png'}} style={styles.toolbarButton} />],
-            ['https://cdn.fastcomments.com/images/star-64-filled.png', <Image source={{uri: 'https://cdn.fastcomments.com/images/star-64-filled.png'}} style={styles.toolbarButton} />],
+            ['https://cdn.fastcomments.com/images/fireworks.png', <Image source={{uri: 'https://cdn.fastcomments.com/images/fireworks.png'}} style={styles.commentTextArea.toolbarButton} />],
+            ['https://cdn.fastcomments.com/images/party-popper.png', <Image source={{uri: 'https://cdn.fastcomments.com/images/party-popper.png'}} style={styles.commentTextArea.toolbarButton} />],
+            ['https://cdn.fastcomments.com/images/star-64-filled.png', <Image source={{uri: 'https://cdn.fastcomments.com/images/star-64-filled.png'}} style={styles.commentTextArea.toolbarButton} />],
         ]
     }
     const toolbarConfig: EditorToolbarConfig = {
-        boldButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_BOLD]} style={styles.toolbarButton}/>,
-        italicButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_ITALIC]} style={styles.toolbarButton}/>,
-        underlineButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_UNDERLINE]} style={styles.toolbarButton}/>,
-        strikethroughButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_STRIKETHROUGH]} style={styles.toolbarButton}/>,
-        imageButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_IMAGE_UPLOAD]} style={[styles.toolbarButton, {height: 18}]}/>,
+        boldButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_BOLD]} style={styles.commentTextArea.toolbarButton}/>,
+        italicButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_ITALIC]} style={styles.commentTextArea.toolbarButton}/>,
+        underlineButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_UNDERLINE]} style={styles.commentTextArea.toolbarButton}/>,
+        strikethroughButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_STRIKETHROUGH]} style={styles.commentTextArea.toolbarButton}/>,
+        imageButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_IMAGE_UPLOAD]} style={[styles.commentTextArea.toolbarButton, {height: 18}]}/>,
         uploadImage: async (_node, photoData) => {
             const formData = new FormData();
             formData.append('file', photoData);
@@ -87,7 +89,7 @@ export function CommentTextArea({state, value, output, onFocus: _onFocus}: Comme
     return <Editor
         nodes={editorInputNodes}
         onChange={onChange}
-        style={styles.textarea}
+        style={styles.commentTextArea.textarea}
         placeholder={!isFocused && isEmpty && placeholder}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
@@ -98,22 +100,3 @@ export function CommentTextArea({state, value, output, onFocus: _onFocus}: Comme
         emoticonBarConfig={emoticonBarConfig}
     />
 }
-
-const styles = StyleSheet.create({
-    textarea: {
-        alignSelf: 'stretch',
-        borderWidth: 1,
-        borderColor: 'black',
-        borderRadius: 11
-    },
-    placeholder: {
-        position: 'absolute',
-        padding: 8,
-        color: '#000' // TODO don't use #000
-    },
-    toolbarButton: {
-        height: 15,
-        aspectRatio: 1,
-        resizeMode: 'contain'
-    }
-})

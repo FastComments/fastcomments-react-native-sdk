@@ -2,32 +2,28 @@
 import * as React from 'react';
 
 import {FastCommentsState} from "../types/fastcomments-state";
-import {StyleSheet, Text, View} from "react-native";
+import {useWindowDimensions, View} from "react-native";
 import {State} from "@hookstate/core";
+import RenderHtml from 'react-native-render-html';
+import {IFastCommentsStyles} from "../types/fastcomments-styles";
 
-export function PaginationNext({state}: { state: State<FastCommentsState> }) {
+export function PaginationNext({state, styles}: { state: State<FastCommentsState>, styles: IFastCommentsStyles }) {
     const shouldShowPagination = state.page.get() !== -1 && state.commentCountOnClient.get() > state.PAGE_SIZE.get() && state.hasMore.get();
     if (shouldShowPagination) {
+        const {width} = useWindowDimensions();
         // TODO: check if loading, set opacity: 0.5
-        // TODO: these translations contain HTML, define new ones?
-        return <View style={styles.pagination}>
-            <Text style={styles.all}>{state.translations.NEXT_30.get()}</Text>
+        // These translations contain HTML.
+        return <View style={styles.paginationNext.root}>
+            <RenderHtml source={{
+                html: state.translations.NEXT_30.get()
+            }} contentWidth={width} baseStyle={styles.paginationNext.next}/>
             {
-                state.commentCountOnServer.get() < 2000 && <Text
-                    style={styles.all}>{(state.translations.LOAD_ALL.get() || '').replace('[count]', Number(state.commentCountOnServer.get()).toLocaleString())}</Text>
+                state.commentCountOnServer.get() < 2000 &&
+                <RenderHtml source={{
+                    html: state.translations.LOAD_ALL.get().replace('[count]', Number(state.commentCountOnServer.get()).toLocaleString())
+                }} contentWidth={width} baseStyle={styles.paginationNext.all}/>
             }
         </View>;
     }
     return null;
 }
-
-const styles = StyleSheet.create({
-    pagination: {
-        "marginTop": "50px",
-        "lineHeight": "19px",
-        "textAlign": "center"
-    },
-    next: {
-    },
-    all: {}
-});

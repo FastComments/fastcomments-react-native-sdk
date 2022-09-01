@@ -40,6 +40,10 @@ export function Editor(props: EditorProps) {
         nodes.set(props.nodes);
     }, [props.nodes]);
 
+    useHookstateEffect(() => {
+        props.onChange(nodes);
+    }, [nodes]);
+
     const getCurrentNode = () => {
         // TODO OPTIMIZE: we had a ton of problems with keeping track of the last selected node with storing references to a raw js object or State<>
         //  due to hookstatejs (or maybe not using it correctly). Maybe a React expert can help us :)
@@ -113,20 +117,16 @@ export function Editor(props: EditorProps) {
                     });
                 } else if (nodeType === type) {
                     const rawNode = node.get();
-                    if (!rawNode.content && getStatePrev(nodes, rawNode.id)) {
-                        console.log('node has no content, and has previous node, removing.', rawNode.id);
-                        // const toFocus = rawNode.prev;
-                        deleteNode(nodes, rawNode.id);
-                        // prev is now the current node.
-                        // toFocus.set((toFocus) => {
-                        //     if (toFocus) {
-                        //         toFocus.isFocused = true;
-                        //     }
-                        //     return toFocus;
-                        // });
-                        // console.log('no content, removed node. new focused node: ', toFocus);
+                    if (!rawNode.content) {
+                        const prev = getStatePrev(nodes, rawNode.id);
+                        if (prev.get()) {
+                            console.log('node has no content, and has previous node. (removing, focusing)', rawNode.id, prev.id.get());
+                            deleteNode(nodes, rawNode.id);
+                            // prev is now the current node.
+                            prev.isFocused.set(true);
+                        }
                     } else {
-                        // we COULD toggle bold here, but it might be weird.
+                        // we COULD toggle here, but it might be weird.
                     }
                 }
             } else {
@@ -185,10 +185,6 @@ export function Editor(props: EditorProps) {
             }
         }
     }
-
-    useHookstateEffect(() => {
-        props.onChange(nodes);
-    }, [nodes]);
 
     function select(node?: State<EditorNodeDefinition> | null) {
         try {

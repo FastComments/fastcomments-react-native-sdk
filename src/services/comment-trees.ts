@@ -1,8 +1,8 @@
 import {FastCommentsWidgetComment} from "fastcomments-typescript";
-import {CommentState} from "../types/fastcomments-state";
 import {none, State} from "@hookstate/core";
+import {RNComment} from "../types/react-native-comment";
 
-export function getCommentsTreeAndCommentsById(collapseRepliesByDefault: boolean, commentState: State<Record<string, CommentState>>, rawComments: FastCommentsWidgetComment[]) {
+export function getCommentsTreeAndCommentsById(collapseRepliesByDefault: boolean, rawComments: RNComment[]) {
     const commentsById: Record<string, FastCommentsWidgetComment> = {};
     const commentsLength = rawComments.length;
     const resultComments: FastCommentsWidgetComment[] = [];
@@ -17,14 +17,8 @@ export function getCommentsTreeAndCommentsById(collapseRepliesByDefault: boolean
         comment = rawComments[i];
         comment.nestedChildrenCount = 0
         //!commentsById[comment.parentId] check for user profile feed
-        if (collapseRepliesByDefault && (!(comment.parentId) || !commentsById[comment.parentId!]) && (commentState[comment._id]?.repliesHidden?.get() === undefined)) {
-            if (!commentState[comment._id]) {
-                commentState[comment._id].set({
-                    repliesHidden: true
-                });
-            } else {
-                commentState[comment._id].repliesHidden.set(true);
-            }
+        if (collapseRepliesByDefault && (!(comment.parentId) || !commentsById[comment.parentId!]) && (comment!.repliesHidden === undefined)) {
+            comment.repliesHidden = true;
         }
         const parentId = comment.parentId;
         if (parentId && commentsById[parentId]) {
@@ -58,30 +52,21 @@ export function getCommentsTreeAndCommentsById(collapseRepliesByDefault: boolean
     };
 }
 
-export function ensureRepliesOpenToComment(commentState: State<Record<string, CommentState>>, commentsById: Record<string, FastCommentsWidgetComment>, commentId: string) {
+export function ensureRepliesOpenToComment(commentsById: Record<string, RNComment>, commentId: string) {
     let parentId: string | null | undefined = commentId;
     let iterations = 0;
     while (parentId && iterations < 100) {
         iterations++;
-        if (commentState[parentId]) {
-            commentState[parentId].repliesHidden.set(none);
-        }
-        if (commentsById[parentId]) {
-            parentId = commentsById[parentId].parentId;
+        const parent: RNComment = commentsById[parentId];
+        if (parent) {
+            parent.repliesHidden = true;
+            parentId = parent.parentId;
         } else {
             break;
         }
     }
 }
 
-/**
- *
- * @param {Object} allComments
- * @param {Array.<Object>} commentsTree
- * @param {Object.<string, Object>} commentsById
- * @param {Object} comment
- * @param {boolean} newCommentsToBottom
- */
 export function addCommentToTree(allComments: State<FastCommentsWidgetComment[]>, commentsTree: State<FastCommentsWidgetComment[]>, commentsById: State<Record<string, FastCommentsWidgetComment>>, comment: FastCommentsWidgetComment, newCommentsToBottom: boolean) {
     if (comment.parentId && !(commentsById[comment.parentId]?.get())) { // don't use memory for this comment since its parent is not visible. they should be received in-order to the client.
         return;
@@ -139,13 +124,6 @@ export function addCommentToTree(allComments: State<FastCommentsWidgetComment[]>
     updateNestedChildrenCountInTree(commentsById, comment.parentId, 1);
 }
 
-/**
- *
- * @param {Object} allComments
- * @param {Array.<Object>} commentsTree
- * @param {Object.<string, Object>} commentsById
- * @param {Object} comment
- */
 export function removeCommentFromTree(allComments: State<FastCommentsWidgetComment[]>, commentsTree: State<FastCommentsWidgetComment[]>, commentsById: State<Record<string, FastCommentsWidgetComment>>, comment: FastCommentsWidgetComment) {
     const commentBeforeRemoval = JSON.parse(JSON.stringify(comment));
     const allCommentsIndex = allComments.get().findIndex((otherComment) => otherComment._id === commentBeforeRemoval._id);
