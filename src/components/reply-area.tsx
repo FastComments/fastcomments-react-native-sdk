@@ -267,6 +267,7 @@ async function submit({
     }
 }
 
+// TODO OPTIMIZE why does submitting a comment re-render all comments several times?
 export function ReplyArea(props: ReplyAreaProps) {
     const {parentComment, styles, onReplySuccess, onAuthenticationChange} = props;
     const state = useHookstate(props.state); // create scoped state

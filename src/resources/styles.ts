@@ -54,6 +54,22 @@ export const FastCommentsStyles: IFastCommentsStyles = {
             fontSize: 12
         }
     },
+    bottomArea: {
+        replyArea: {
+            "marginTop": 15,
+            "marginRight": 15,
+            "marginLeft": 15
+        },
+        separator: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            paddingBottom: 5,
+            paddingLeft: 10,
+            paddingRight: 10,
+            borderBottomWidth: 1,
+            borderColor: '#afafaf'
+        }
+    },
     commentsWrapper: {
         paddingTop: 15,
         paddingLeft: 15,

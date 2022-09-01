@@ -15,6 +15,7 @@ import {useHookstate, useHookstateEffect} from "@hookstate/core";
 import {LiveCommentingTopArea} from "./live-commenting-top-area";
 import {FastCommentsStyles} from "../resources";
 import {IFastCommentsStyles, FastCommentsCallbacks} from "../types";
+import {LiveCommentingBottomArea} from "./live-commenting-bottom-area";
 
 export interface FastCommentsLiveCommentingProps {
     config: FastCommentsCommentWidgetConfig
@@ -82,6 +83,7 @@ export function FastCommentsLiveCommenting({config, styles, callbacks}: FastComm
                 })}
                 {paginationAfterComments}
             </View>
+            <LiveCommentingBottomArea state={state} styles={styles} />
         </View>;
     } else {
         return <View><CommentAreaMessage styles={styles} message={'todo'}/></View>;

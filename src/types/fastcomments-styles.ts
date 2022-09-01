@@ -14,6 +14,10 @@ export interface IFastCommentsStyles {
         separator: ViewStyle,
         commentCount: TextStyle,
     },
+    bottomArea: {
+        replyArea: ViewStyle,
+        separator: ViewStyle,
+    },
     commentsWrapper?: ViewStyle
     comment: {
         root: ViewStyle

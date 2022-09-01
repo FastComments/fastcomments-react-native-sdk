@@ -29,7 +29,6 @@ export function FastCommentsCommentView(props: CommentViewProps) {
     const state = useHookstate(props.state); // OPTIMIZATION: creating scoped state
     // const isMyComment = state.currentUser && 'id' in state.currentUser && (comment.userId === state.currentUser.id || comment.anonUserId === state.currentUser.id);
     console.log('comment re-rendered', comment._id.get({stealth: true}));
-    const commentId = comment._id.get();
     const html = comment.isDeleted.get()
         ? state.translations.DELETED_PLACEHOLDER.get()
         : (
