@@ -2,7 +2,7 @@
 import * as React from 'react';
 
 import {FastCommentsCommentWithState} from "./comment";
-import {useHookstate} from "@hookstate/core";
+import {useHookstate, useHookstateEffect} from "@hookstate/core";
 import {Image, TouchableOpacity, View, Text} from "react-native";
 import {CommentVote} from "./comment-vote";
 import {FastCommentsImageAsset, FastCommentsCallbacks} from "../types";
@@ -18,6 +18,10 @@ export function CommentBottom(props: CommentBottomProps) {
     // OPTIMIZATION: we only use comment.replyBoxOpen for initial render.
     // TODO This is still not great, because now replyBoxOpen is out of date. Is there a way to use comment.replyBoxOpen.set() without re-rendering all comment objects?
     const [isReplyBoxOpen, setIsReplyBoxOpen] = useState(comment.replyBoxOpen.get());
+
+    useHookstateEffect(() => {
+        setIsReplyBoxOpen(comment.replyBoxOpen.get()); // for when replyarea changes value
+    }, [comment.replyBoxOpen]);
 
     return <View style={styles.commentBottom.root}>
         <View style={styles.commentBottom.commentBottomToolbar}>
