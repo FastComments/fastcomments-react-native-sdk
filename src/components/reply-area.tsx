@@ -521,6 +521,7 @@ export function ReplyArea(props: ReplyAreaProps) {
     }
 
     return <View>
+        {state.config.tenantId.get() === 'demo' && <Text style={styles.red}>{state.translations.DEMO_CREATE_ACCT.get()}</Text>}
         {replyToText && <View style={styles.replyArea.replyingTo}>{replyToText}</View>}
         {ssoLoginWrapper}
         {topBar}
