@@ -31,7 +31,7 @@ This is in heavy development! Examples will be posted here once the library is m
 - [ ] Pagination (Buttons)
 - [ ] Pagination (Infinite Scroll)
 - [x] Custom Styles (as typed stylesheet)
-- [ ] Callbacks (similar to vanillajs widget)
+- [x] Callbacks (similar to vanillajs widget)
 - [ ] Port iglike Extension
 - [x] Improved Comment Styling
 - [ ] Release to NPM
