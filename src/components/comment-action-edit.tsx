@@ -47,15 +47,15 @@ export function CommentActionEdit({comment, state, styles, close}: CommentAction
     const [isLoading, setLoading] = useState(false);
     const valueGetter: ValueObserver = {}
     // TODO ask before closing if content changed
-    return <View style={styles.commentEditModal.centeredView}>
-        <View style={styles.commentEditModal.modalView}>
+    return <View style={styles.commentEditModal?.centeredView}>
+        <View style={styles.commentEditModal?.modalView}>
             <CommentTextArea
                 state={state.get()} value={comment.comment.get()}
                 styles={styles}
                 output={valueGetter}
             />
             <TouchableOpacity
-                style={styles.commentEditModal.saveButton}
+                style={styles.commentEditModal?.saveButton}
                 onPress={async () => {
                     setLoading(true);
                     try {
@@ -70,16 +70,16 @@ export function CommentActionEdit({comment, state, styles, close}: CommentAction
                     }
                 }}
             >
-                <Text>{state.translations.SAVE.get()}</Text>
+                <Text style={styles.commentEditModal?.saveButtonText}>{state.translations.SAVE.get()}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-                style={styles.commentEditModal.modalCancel}
+                style={styles.commentEditModal?.modalCancel}
                 onPress={close}
             >
-                {<Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_CROSS]} style={{width: 16, height: 16}} />}
+                {<Image source={state.imageAssets.get()[state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]} style={{width: 16, height: 16}} />}
             </TouchableOpacity>
             {
-                isLoading && <View style={styles.commentEditModal.loadingView}>
+                isLoading && <View style={styles.commentEditModal?.loadingView}>
                     <ActivityIndicator size="large"/>
                 </View>
             }

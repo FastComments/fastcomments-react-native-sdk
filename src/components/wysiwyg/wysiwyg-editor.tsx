@@ -1,4 +1,4 @@
-import {Pressable, StyleSheet, View, ViewStyle} from "react-native";
+import {Pressable, StyleSheet, TextStyle, View, ViewStyle} from "react-native";
 import {EditorNode, EditorNodeDefinition, EditorNodeType} from "./editor-node";
 import {State, useHookstate, useHookstateEffect} from "@hookstate/core";
 import {ReactNode, useEffect} from "react";
@@ -20,6 +20,7 @@ export interface EditorProps {
     onBlur?: () => void
     onFocus?: () => void
     style?: ViewStyle
+    textStyle?: TextStyle
     maxLength?: number
     toolbarConfig?: EditorToolbarConfig
     // you can pass in the default toolbar or make your own, and call the config methods to add bold text etc.
@@ -275,7 +276,6 @@ export function Editor(props: EditorProps) {
         if (emoticonNodeBeforeText) {
             doDelete(emoticonNodeBeforeText, true);
         } else if (prevId !== undefined && prevId !== null) {
-            // TODO OPTIMIZE
             nodes.find((searchingNode) => searchingNode.id.get() === prevId)?.isFocused.set(true);
         }
     }
@@ -284,8 +284,14 @@ export function Editor(props: EditorProps) {
         <Pressable onPress={() => select(nodes[nodes.length - 1])} style={styles.inputArea}>
             {props.placeholder}
             {nodes.map((node) => {
-                return <EditorNode key={node.id.get()} node={node} onBlur={() => deselect(node)} onFocus={() => select(node)}
-                                   onDelete={() => doDelete(node)}/>
+                return <EditorNode
+                    key={node.id.get()}
+                    node={node}
+                    textStyle={props.textStyle}
+                    onBlur={() => deselect(node)}
+                    onFocus={() => select(node)}
+                    onDelete={() => doDelete(node)}
+                />
             })}
         </Pressable>
         {props.emoticonBar && props.emoticonBarConfig && props.emoticonBar(props.emoticonBarConfig)}

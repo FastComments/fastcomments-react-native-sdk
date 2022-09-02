@@ -18,12 +18,12 @@ export function NotificationBell({state, styles}: NotificationBellProps) {
         return null;
     }
     const notificationCount = state.notificationCount.get()!;
-    const bellIconType = notificationCount > 0 ? FastCommentsImageAsset.ICON_BELL_RED : FastCommentsImageAsset.ICON_BELL;
+    const bellIconType = notificationCount > 0 ? FastCommentsImageAsset.ICON_BELL_RED : (state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_BELL_WHITE : FastCommentsImageAsset.ICON_BELL);
 
     return <View>
-        <TouchableOpacity onPress={() => setNotificationsListOpen(!isOpen)} style={styles.notificationBell.bellContainer}>
+        <TouchableOpacity onPress={() => setNotificationsListOpen(!isOpen)} style={styles.notificationBell?.bellContainer}>
             <Image source={state.imageAssets[bellIconType].get()} style={{width: 22, height: 22}}/>
-            <Text style={styles.notificationBell.bellCount}>{(notificationCount < 100 ? Number(notificationCount).toLocaleString() : '99+')}</Text>
+            <Text style={styles.notificationBell?.bellCount}>{(notificationCount < 100 ? Number(notificationCount).toLocaleString() : '99+')}</Text>
         </TouchableOpacity>
         {isOpen && <Text>TODO: notifications list</Text>}
     </View>;

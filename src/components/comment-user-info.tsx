@@ -22,12 +22,12 @@ export function CommentUserInfo(props: FastCommentsCommentWithState) {
 
     let displayLabel = null;
     if (comment.displayLabel.get()) {
-        displayLabel = <Text style={styles.commentUserInfo.label}>{comment.displayLabel.get()}</Text>;
+        displayLabel = <Text style={styles.commentUserInfo?.label}>{comment.displayLabel.get()}</Text>;
     } else {
         if (comment.isByAdmin.get()) {
-            displayLabel = <Text style={styles.commentUserInfo.label}>{state.translations.ADMIN_LABEL.get()}</Text>;
+            displayLabel = <Text style={styles.commentUserInfo?.label}>{state.translations.ADMIN_LABEL.get()}</Text>;
         } else if (comment.isByModerator.get()) {
-            displayLabel = <Text style={styles.commentUserInfo.label}>{state.translations.MODERATOR_LABEL.get()}</Text>;
+            displayLabel = <Text style={styles.commentUserInfo?.label}>{state.translations.MODERATOR_LABEL.get()}</Text>;
         }
     }
 
@@ -43,27 +43,27 @@ export function CommentUserInfo(props: FastCommentsCommentWithState) {
         {state.config.hideAvatars.get() && activityIcon}
         {commenterLeftLink ? <TouchableOpacity onPress={() => Linking.openURL(comment.commenterLink.get()!)}>
             {
-                <Text style={styles.commentUserInfo.usernameWithLink}>{commenterName}</Text>
+                <Text style={styles.commentUserInfo?.usernameWithLink}>{commenterName}</Text>
             }
-        </TouchableOpacity> : <Text style={styles.commentUserInfo.username}>{commenterName}</Text>}
+        </TouchableOpacity> : <Text style={styles.commentUserInfo?.username}>{commenterName}</Text>}
     </View>;
 
     const avatar = state.config.hideAvatars.get() ? null :
         (
             comment.avatarSrc.get() && !comment.isBlocked.get()
-                ? <View style={styles.commentUserInfo.avatarWrapper}><Image style={styles.commentUserInfo.avatarImage} source={{uri: comment.avatarSrc.get()}}/>{activityIcon}</View>
-                : <View style={styles.commentUserInfo.avatarWrapperDefault}><Image style={styles.commentUserInfo.avatarImage} source={state.config.defaultAvatarSrc?.get() ? {uri: state.config.defaultAvatarSrc.get()} : getDefaultAvatarSrc(state)}/>{activityIcon}</View>
+                ? <View style={styles.commentUserInfo?.avatarWrapper}><Image style={styles.commentUserInfo?.avatarImage} source={{uri: comment.avatarSrc.get()}}/>{activityIcon}</View>
+                : <View style={styles.commentUserInfo?.avatarWrapperDefault}><Image style={styles.commentUserInfo?.avatarImage} source={state.config.defaultAvatarSrc?.get() ? {uri: state.config.defaultAvatarSrc.get()} : getDefaultAvatarSrc(state)}/>{activityIcon}</View>
         );
 
     // TODO best way to handle undefined comment.badges instead of cast? TS compilation error
-    return <View style={styles.commentUserInfo.root}>
-        {avatar ? <View style={styles.commentUserInfo.infoLeft}>
+    return <View style={styles.commentUserInfo?.root}>
+        {avatar ? <View style={styles.commentUserInfo?.infoLeft}>
             {avatar}
         </View> : null}
-        <View style={styles.commentUserInfo.infoRight}>
+        <View style={styles.commentUserInfo?.infoRight}>
             {(comment.badges as State<FastCommentsBadge[]>).map((badge) => <CommentUserBadge badge={badge} styles={styles} />)}
             {!comment.verified.get() && !(comment.wasPostedCurrentSession.get() && comment.requiresVerification.get()) && !state.config.disableUnverifiedLabel.get() &&
-                <Text style={styles.commentUserInfo.label}>{state.translations.UNVERIFIED_COMMENT.get()}</Text>
+                <Text style={styles.commentUserInfo?.label}>{state.translations.UNVERIFIED_COMMENT.get()}</Text>
             }
             {displayLabel}
             {usernameElement}

@@ -3,8 +3,7 @@ import * as React from 'react';
 
 import {FastCommentsSortDirection, FastCommentsState} from "../types/fastcomments-state";
 import {State, useHookstate} from "@hookstate/core";
-import {Image, View, Text} from 'react-native';
-import {FastCommentsImageAsset} from "../types/image-asset";
+import {View, Text} from 'react-native';
 import {ModalMenu} from "./modal-menu";
 import {IFastCommentsStyles} from "../types/fastcomments-styles";
 
@@ -29,10 +28,9 @@ export function SelectSortDirection(props: SelectSortDirectionProps) {
         {label: state.translations.MOST_RELEVANT.get(), id: 'MR', handler: () => { setValue('MR') } },
     ];
 
-    // TODO dedicated down carrot icon
-    const openButton = <View style={styles.selectSortDirection.openButton}>
-        <Text style={styles.selectSortDirection.text}>{state.translations[SortDirectionTranslationsById[state.sortDirection.get()]].get()}</Text>
-        <Image source={state.imageAssets[FastCommentsImageAsset.ICON_DOWN_ACTIVE].get()} style={styles.selectSortDirection.downCarrot}/>
+    const openButton = <View style={styles.selectSortDirection?.openButton}>
+        <Text style={styles.selectSortDirection?.text}>{state.translations[SortDirectionTranslationsById[state.sortDirection.get()]].get()}</Text>
+        <View style={styles.selectSortDirection?.downCarrot}/>
     </View>;
 
     return <ModalMenu state={state} items={menuItems} openButton={openButton} styles={styles}/>;

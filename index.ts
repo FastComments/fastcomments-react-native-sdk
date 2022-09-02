@@ -1,3 +1,4 @@
 export * from './src/components';
-// TODO add resources
-// TODO add services
+export * from './src/resources';
+export * from './src/skins';
+export * from './src/types';

@@ -23,15 +23,15 @@ export function LiveCommentingTopArea(props: LiveCommentingTopAreaProps) {
     const serverCommentCount = state.commentCountOnServer.get();
     return <View>
         <View>{
-            state.config.inputAfterComments.get() !== true && <View style={props.styles.topArea.replyArea}><ReplyArea state={state} styles={styles}/></View>
+            state.config.inputAfterComments.get() !== true && <View style={props.styles.topArea?.replyArea}><ReplyArea state={state} styles={styles}/></View>
         }</View>
         <View>{
             state.config.useShowCommentsToggle.get() && serverCommentCount > 0 && <ShowHideCommentsToggle state={state} styles={styles} />
         }</View>
         {
             areCommentsVisible && serverCommentCount > 0
-            && <View style={props.styles.topArea.separator}>
-                <CommentCount style={props.styles.topArea.commentCount} state={state} count={serverCommentCount}/>
+            && <View style={props.styles.topArea?.separator}>
+                <CommentCount style={props.styles.topArea?.commentCount} state={state} count={serverCommentCount}/>
                 {
                     areCommentsVisible && serverCommentCount > 1 && <SelectSortDirection state={state} styles={styles} />
                 }

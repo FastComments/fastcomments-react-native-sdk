@@ -36,21 +36,21 @@ export function CommentTextArea({state, styles, value, output, onFocus: _onFocus
         setEditorInputNodes(stringToNodes(EditorFormatConfigurationHTML, value || ''));
     }, [value]);
 
-    const placeholder = <Text style={styles.commentTextArea.placeholder}>{state.translations.ENTER_COMMENT_HERE}</Text>
+    const placeholder = <Text style={styles.commentTextArea?.placeholder}>{state.translations.ENTER_COMMENT_HERE}</Text>
     // TODO not enabled by default, move to extensions. This is just for testing.
     const emoticonBarConfig: EmoticonBarConfig = {
         emoticons: [
-            ['https://cdn.fastcomments.com/images/fireworks.png', <Image source={{uri: 'https://cdn.fastcomments.com/images/fireworks.png'}} style={styles.commentTextArea.toolbarButton} />],
-            ['https://cdn.fastcomments.com/images/party-popper.png', <Image source={{uri: 'https://cdn.fastcomments.com/images/party-popper.png'}} style={styles.commentTextArea.toolbarButton} />],
-            ['https://cdn.fastcomments.com/images/star-64-filled.png', <Image source={{uri: 'https://cdn.fastcomments.com/images/star-64-filled.png'}} style={styles.commentTextArea.toolbarButton} />],
+            ['https://cdn.fastcomments.com/images/fireworks.png', <Image source={{uri: 'https://cdn.fastcomments.com/images/fireworks.png'}} style={styles.commentTextArea?.toolbarButton} />],
+            ['https://cdn.fastcomments.com/images/party-popper.png', <Image source={{uri: 'https://cdn.fastcomments.com/images/party-popper.png'}} style={styles.commentTextArea?.toolbarButton} />],
+            ['https://cdn.fastcomments.com/images/star-64-filled.png', <Image source={{uri: 'https://cdn.fastcomments.com/images/star-64-filled.png'}} style={styles.commentTextArea?.toolbarButton} />],
         ]
     }
     const toolbarConfig: EditorToolbarConfig = {
-        boldButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_BOLD]} style={styles.commentTextArea.toolbarButton}/>,
-        italicButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_ITALIC]} style={styles.commentTextArea.toolbarButton}/>,
-        underlineButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_UNDERLINE]} style={styles.commentTextArea.toolbarButton}/>,
-        strikethroughButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_STRIKETHROUGH]} style={styles.commentTextArea.toolbarButton}/>,
-        imageButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_IMAGE_UPLOAD]} style={[styles.commentTextArea.toolbarButton, {height: 18}]}/>,
+        boldButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_BOLD]} style={styles.commentTextArea?.toolbarButton}/>,
+        italicButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_ITALIC]} style={styles.commentTextArea?.toolbarButton}/>,
+        underlineButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_UNDERLINE]} style={styles.commentTextArea?.toolbarButton}/>,
+        strikethroughButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_STRIKETHROUGH]} style={styles.commentTextArea?.toolbarButton}/>,
+        imageButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_IMAGE_UPLOAD]} style={[styles.commentTextArea?.toolbarButton, {height: 18}]}/>,
         uploadImage: async (_node, photoData) => {
             const formData = new FormData();
             formData.append('file', photoData);
@@ -89,7 +89,8 @@ export function CommentTextArea({state, styles, value, output, onFocus: _onFocus
     return <Editor
         nodes={editorInputNodes}
         onChange={onChange}
-        style={styles.commentTextArea.textarea}
+        style={styles.commentTextArea?.textarea}
+        textStyle={styles.commentTextArea?.text}
         placeholder={!isFocused && isEmpty && placeholder}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}

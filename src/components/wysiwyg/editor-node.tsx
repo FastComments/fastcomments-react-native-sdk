@@ -6,6 +6,7 @@ import {EditorNodeStrikethrough} from "./editor-node-strikethrough";
 import {EditorNodeUnderline} from "./editor-node-underline";
 import {EditorNodeImage} from "./editor-node-image";
 import {EditorNodeEmoticon} from "./editor-node-emoticon";
+import {TextStyle} from "react-native";
 
 export enum EditorNodeType {
     NEWLINE,
@@ -27,7 +28,8 @@ export interface EditorNodeDefinition {
 }
 
 export interface EditorNodeProps {
-    node: State<EditorNodeDefinition>;
+    node: State<EditorNodeDefinition>
+    textStyle?: TextStyle
     onBlur?: () => void
     onFocus?: () => void
     onDelete?: () => void

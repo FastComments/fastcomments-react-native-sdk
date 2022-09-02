@@ -17,7 +17,7 @@ export function LiveCommentingBottomArea(props: LiveCommentingTopAreaProps) {
     const state = useHookstate(props.state); // OPTIMIZATION: creating scoped state
     return <View>
         <View>{
-            state.config.inputAfterComments.get() && <View style={props.styles.bottomArea.replyArea}><ReplyArea state={state} styles={styles}/></View>
+            state.config.inputAfterComments.get() && <View style={props.styles.bottomArea?.replyArea}><ReplyArea state={state} styles={styles}/></View>
         }</View>
     </View>;
 }

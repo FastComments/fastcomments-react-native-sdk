@@ -9,9 +9,9 @@ import {IFastCommentsStyles} from "../types/fastcomments-styles";
 
 export function PaginationPrev({state, styles}: {state: State<FastCommentsState>, styles: IFastCommentsStyles}) {
     const {width} = useWindowDimensions();
-    return <View style={styles.paginationPrev.root}>
+    return <View style={styles.paginationPrev?.root}>
             <RenderHtml source={{
                 html: state.translations.PREV_30.get()
-            }} contentWidth={width} baseStyle={styles.paginationPrev.text}/>
+            }} contentWidth={width} baseStyle={styles.paginationPrev?.text}/>
     </View>;
 }

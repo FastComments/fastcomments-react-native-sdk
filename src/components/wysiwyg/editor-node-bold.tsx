@@ -11,6 +11,6 @@ export function createBoldNode(startingValue: string): EditorNodeDefinition {
     }
 }
 
-export function EditorNodeBold({node, onBlur, onFocus, onDelete}: EditorNodeProps) {
-    return <EditorNodeText node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} style={{fontWeight: 'bold'}} />
+export function EditorNodeBold({node, textStyle, onBlur, onFocus, onDelete}: EditorNodeProps) {
+    return <EditorNodeText node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} textStyle={{fontWeight: 'bold', ...textStyle}} />
 }

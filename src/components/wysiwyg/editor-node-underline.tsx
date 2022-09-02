@@ -11,6 +11,6 @@ export function createUnderlineNode(startingValue: string): EditorNodeDefinition
     }
 }
 
-export function EditorNodeUnderline({node, onBlur, onFocus, onDelete}: EditorNodeProps) {
-    return <EditorNodeText node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} style={{textDecorationLine: 'underline'}} />;
+export function EditorNodeUnderline({node, textStyle, onBlur, onFocus, onDelete}: EditorNodeProps) {
+    return <EditorNodeText node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} textStyle={{textDecorationLine: 'underline', ...textStyle}} />;
 }

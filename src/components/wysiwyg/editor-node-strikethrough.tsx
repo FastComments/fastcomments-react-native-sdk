@@ -11,6 +11,6 @@ export function createStrikethroughNode(startingValue: string): EditorNodeDefini
     }
 }
 
-export function EditorNodeStrikethrough({node, onBlur, onFocus, onDelete}: EditorNodeProps) {
-    return <EditorNodeText node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} style={{textDecorationLine: 'line-through'}} />
+export function EditorNodeStrikethrough({node, textStyle, onBlur, onFocus, onDelete}: EditorNodeProps) {
+    return <EditorNodeText node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} textStyle={{textDecorationLine: 'line-through', ...textStyle}} />
 }

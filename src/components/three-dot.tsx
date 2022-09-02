@@ -8,9 +8,9 @@ export interface ThreeDotProps {
 }
 
 export function ThreeDot({styles}: ThreeDotProps) {
-    return <View style={styles.threeDotMenu.dots}>
-        <View style={styles.threeDotMenu.dot}/>
-        <View style={styles.threeDotMenu.dot}/>
-        <View style={styles.threeDotMenu.dot}/>
+    return <View style={styles.threeDotMenu?.dots}>
+        <View style={styles.threeDotMenu?.dot}/>
+        <View style={styles.threeDotMenu?.dot}/>
+        <View style={styles.threeDotMenu?.dot}/>
     </View>
 }

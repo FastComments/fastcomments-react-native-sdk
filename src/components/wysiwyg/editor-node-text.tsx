@@ -14,10 +14,10 @@ export function createTextNode(startingValue: string): EditorNodeDefinition {
 }
 
 export interface EditorNodeTextProps extends EditorNodeProps {
-    style?: TextStyle
+    textStyle?: TextStyle
 }
 
-export function EditorNodeText({node, onBlur, onFocus, onDelete, style}: EditorNodeTextProps) {
+export function EditorNodeText({node, onBlur, onFocus, onDelete, textStyle}: EditorNodeTextProps) {
     const [value, setValue] = useState(node.content.get());
     const [selection, setSelection] = useState<{
         start: number;
@@ -81,6 +81,6 @@ export function EditorNodeText({node, onBlur, onFocus, onDelete, style}: EditorN
         onFocus={onFocus}
         onKeyPress={handleKeyUp}
         ref={ref as MutableRefObject<TextInput>}
-        style={[style, {padding: 0, borderWidth: 0, position: 'relative', left: 0, minWidth: 0}]}
+        style={[textStyle, {padding: 0, borderWidth: 0, position: 'relative', left: 0, minWidth: 0}]}
     />;
 }

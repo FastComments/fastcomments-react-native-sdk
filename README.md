@@ -32,7 +32,8 @@ This is in heavy development! Examples will be posted here once the library is m
 - [ ] Pagination (Infinite Scroll)
 - [x] Custom Styles (as typed stylesheet)
 - [x] Callbacks (similar to vanillajs widget)
-- [ ] Port iglike Extension
+- [x] Dark mode extension
+- [ ] Social-media like extension
 - [x] Improved Comment Styling
 - [ ] Notifications List (shows when clicking bell)
 - [ ] Support for showLiveRightAway = false 
@@ -44,4 +45,4 @@ This is in heavy development! Examples will be posted here once the library is m
 - [ ] WYSIWYG Editor Optimizations (ideally 60fps while typing)
 - [ ] Better WYSIWYG bar icons (web ones don't look good in native)
 - [ ] Complete all TODOs
-- [ ] Profile & ensure 40 FPS minimum during writing comments, submitting, voting, and opening reply menu. We re-render too much today.
+- [x] Profile & ensure 40 FPS minimum during writing comments, submitting, voting, and opening reply menu.

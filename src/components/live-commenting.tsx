@@ -50,11 +50,11 @@ export function FastCommentsLiveCommenting({config, styles, callbacks}: FastComm
     }, [state.sortDirection]);
 
     if (isLoading) {
-        return <View style={styles.loading}><ActivityIndicator size="large"/></View>
+        return <View style={[styles.root, styles.loading]}><ActivityIndicator size="large"/></View>
     }
 
     if (state.blockingErrorMessage.get()) {
-        return <View><CommentAreaMessage styles={styles} message={state.blockingErrorMessage.get()}/></View>;
+        return <View style={styles.root}><CommentAreaMessage styles={styles} message={state.blockingErrorMessage.get()}/></View>;
     } else if (!(state.commentsTree.length === 0 && state.config.readonly.get() && (state.config.hideCommentsUnderCountTextFormat.get() || state.config.useShowCommentsToggle.get()))) {
         const paginationBeforeComments = state.commentsVisible.get() && state.config.paginationBeforeComments.get()
             ? <PaginationNext state={state} styles={styles}/>
@@ -64,7 +64,7 @@ export function FastCommentsLiveCommenting({config, styles, callbacks}: FastComm
         const paginationAfterComments = state.commentsVisible.get() && !state.config.paginationBeforeComments.get()
             ? <PaginationNext state={state} styles={styles}/>
             : null;
-        return <View>{
+        return <View style={styles.root}>{
             state.hasBillingIssue.get() && state.isSiteAdmin.get() && <Text style={styles.red}>{state.translations.BILLING_INFO_INV.get()}</Text>
         }
             {
@@ -86,7 +86,7 @@ export function FastCommentsLiveCommenting({config, styles, callbacks}: FastComm
             <LiveCommentingBottomArea state={state} styles={styles} />
         </View>;
     } else {
-        return <View><CommentAreaMessage styles={styles} message={'todo'}/></View>;
+        return <View style={styles.root}><CommentAreaMessage styles={styles} message={'todo'}/></View>;
     }
 }
 

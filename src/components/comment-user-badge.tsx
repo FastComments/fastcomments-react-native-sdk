@@ -13,12 +13,12 @@ export interface CommentUserBadgeProps {
 
 export function CommentUserBadge({badge, styles}: CommentUserBadgeProps) {
     if (badge.displaySrc.get()) {
-        return <View style={styles.commentUserBadge.imageBadge}>
-            <Image style={styles.commentUserBadge.imageBadgeImage} source={{uri: badge.displaySrc.get()}}/>
+        return <View style={styles.commentUserBadge?.imageBadge}>
+            <Image style={styles.commentUserBadge?.imageBadgeImage} source={{uri: badge.displaySrc.get()}}/>
         </View>;
     } else {
-        const textBadgeStyles = {...styles.commentUserBadge.textBadge};
-        const textBadgeTextStyles = {...styles.commentUserBadge.textBadgeText};
+        const textBadgeStyles = {...styles.commentUserBadge?.textBadge};
+        const textBadgeTextStyles = {...styles.commentUserBadge?.textBadgeText};
         if (badge.backgroundColor.get()) {
             textBadgeStyles.backgroundColor = badge.backgroundColor.get();
         }

@@ -303,10 +303,10 @@ export function ReplyArea(props: ReplyAreaProps) {
                 ? <RenderHtml source={{
                     html:
                         translations.REPLYING_TO_AS.replace('[to]', parentComment.commenterName.get() as string).replace('[from]', currentUser.username)
-                }} contentWidth={width}/>
+                }} contentWidth={width} baseStyle={styles.replyArea?.replyingToText}/>
                 : <RenderHtml source={{
                     html: translations.REPLYING_TO.replace('[to]', parentComment.commenterName.get() as string)
-                }} contentWidth={width}/>
+                }} contentWidth={width} baseStyle={styles.replyArea?.replyingToText}/>
         ) : null;
 
     const ssoConfig = state.config.sso?.get() || state.config.simpleSSO?.get();
@@ -319,8 +319,8 @@ export function ReplyArea(props: ReplyAreaProps) {
 
     if (!currentUser && ssoConfig && !state.config.allowAnon.get()) {
         if (ssoConfig.loginURL || ssoConfig.loginCallback) { // if they don't define a URL, we just show a message.
-            ssoLoginWrapper = <View style={styles.replyArea.ssoLoginWrapper}>
-                <TouchableOpacity style={styles.replyArea.ssoLoginButton} onPress={async () => {
+            ssoLoginWrapper = <View style={styles.replyArea?.ssoLoginWrapper}>
+                <TouchableOpacity style={styles.replyArea?.ssoLoginButton} onPress={async () => {
                     if (ssoConfig.loginURL) {
                         await Linking.openURL(ssoConfig.loginURL);
                     } else if (ssoConfig?.loginCallback) {
@@ -329,26 +329,26 @@ export function ReplyArea(props: ReplyAreaProps) {
                 }
                 }>
                     <Image source={state.imageAssets[FastCommentsImageAsset.ICON_BUBBLE_WHITE].get()} style={{width: 22, height: 22}}/>
-                    <Text style={styles.replyArea.ssoLoginButtonText}>{translations.LOG_IN}</Text>
+                    <Text style={styles.replyArea?.ssoLoginButtonText}>{translations.LOG_IN}</Text>
                 </TouchableOpacity>
             </View>;
         } else {
-            ssoLoginWrapper = <View style={styles.replyArea.ssoLoginWrapper}>
-                <View style={styles.replyArea.ssoLoginButton}>
+            ssoLoginWrapper = <View style={styles.replyArea?.ssoLoginWrapper}>
+                <View style={styles.replyArea?.ssoLoginButton}>
                     <Image source={state.imageAssets[FastCommentsImageAsset.ICON_BUBBLE_WHITE].get()} style={{width: 22, height: 22}}/>
-                    <Text style={styles.replyArea.ssoLoginButtonText}>{translations.LOG_IN_TO_COMMENT}</Text>
+                    <Text style={styles.replyArea?.ssoLoginButtonText}>{translations.LOG_IN_TO_COMMENT}</Text>
                 </View>
             </View>;
         }
     } else {
         if (!parentComment?.get() && currentUser) {
-            topBar = <View style={styles.replyArea.topBar}>
-                <View style={styles.replyArea.loggedInInfo}>
-                    <Image style={styles.replyArea.topBarAvatar}
+            topBar = <View style={styles.replyArea?.topBar}>
+                <View style={styles.replyArea?.loggedInInfo}>
+                    <Image style={styles.replyArea?.topBarAvatar}
                            source={currentUser.avatarSrc ? {uri: currentUser.avatarSrc} : getDefaultAvatarSrc(state)}/>
-                    <Text style={styles.replyArea.topBarUsername}>{currentUser.username}</Text>
+                    <Text style={styles.replyArea?.topBarUsername}>{currentUser.username}</Text>
                 </View>
-                <View style={styles.replyArea.topBarRight}>
+                <View style={styles.replyArea?.topBarRight}>
                     {(!ssoConfig || (ssoConfig && (ssoConfig.logoutURL || ssoConfig.logoutCallback)))
                     && <ModalMenu state={state} styles={styles} items={[
                         {
@@ -381,7 +381,7 @@ export function ReplyArea(props: ReplyAreaProps) {
         }
 
         commentInputArea = <View
-            style={[styles.replyArea.commentInputArea, (commentReplyState.isReplySaving.get() ? styles.replyArea.commentInputAreaReplySaving : null)]}>
+            style={[styles.replyArea?.commentInputArea, (commentReplyState.isReplySaving.get() ? styles.replyArea?.commentInputAreaReplySaving : null)]}>
             {commentInputAreaContent}
         </View>;
 
@@ -419,27 +419,37 @@ export function ReplyArea(props: ReplyAreaProps) {
         // result += '</div>';
 
         if (!commentReplyState.isReplySaving.get()) {
-            commentSubmitButton = <View style={styles.replyArea.replyButtonWrapper}>
-                <TouchableOpacity style={styles.replyArea.replyButton} onPress={handleSubmit}>
+            commentSubmitButton = <View style={styles.replyArea?.replyButtonWrapper}>
+                <TouchableOpacity style={styles.replyArea?.replyButton} onPress={handleSubmit}>
                     <Text
-                        style={styles.replyArea.replyButtonText}>{commentReplyState.showSuccessMessage.get() ? translations.WRITE_ANOTHER_COMMENT : translations.SUBMIT_REPLY}</Text>
+                        style={styles.replyArea?.replyButtonText}>{
+                        commentReplyState.showSuccessMessage.get()
+                            ? translations.WRITE_ANOTHER_COMMENT
+                            : translations.SUBMIT_REPLY
+                    }</Text>
                     <Image
-                        source={parentComment ? state.imageAssets[FastCommentsImageAsset.ICON_RETURN].get() : state.imageAssets[FastCommentsImageAsset.ICON_BUBBLE].get()}
-                        style={styles.replyArea.replyButtonIcon}/>
+                        source={parentComment
+                            ? (state.config.hasDarkBackground.get()
+                                ? state.imageAssets[FastCommentsImageAsset.ICON_RETURN_WHITE].get()
+                                : state.imageAssets[FastCommentsImageAsset.ICON_RETURN].get())
+                            : (state.config.hasDarkBackground.get()
+                                ? state.imageAssets[FastCommentsImageAsset.ICON_BUBBLE_WHITE].get()
+                                : state.imageAssets[FastCommentsImageAsset.ICON_BUBBLE].get())}
+                        style={styles.replyArea?.replyButtonIcon}/>
                 </TouchableOpacity>
             </View>;
         }
 
         if (commentReplyState.showAuthInputForm.get() || (commentReplyState.lastSaveResponse.get()?.code && SignUpErrorsTranslationIds[commentReplyState.lastSaveResponse.get()!.code!])) { // checking for just true here causes the user to appear to logout on any failure, which is weird.
-            authFormArea = <View style={styles.replyArea.userInfoInput}>
+            authFormArea = <View style={styles.replyArea?.userInfoInput}>
                 {!state.config.disableEmailInputs.get &&
                 <Text
-                    style={styles.replyArea.emailReasoning}>
+                    style={styles.replyArea?.emailReasoning}>
                     {state.config.allowAnon.get() ? translations.ENTER_EMAIL_TO_KEEP_COMMENT : translations.ENTER_EMAIL_TO_COMMENT}
                 </Text>}
                 {!state.config.disableEmailInputs.get() &&
                 <TextInput
-                    style={styles.replyArea.authInput}
+                    style={styles.replyArea?.authInput}
                     multiline={false}
                     maxLength={70}
                     placeholder={translations.EMAIL_FOR_VERIFICATION}
@@ -448,7 +458,7 @@ export function ReplyArea(props: ReplyAreaProps) {
                     returnKeyType={state.config.enableCommenterLinks.get() ? 'next' : 'send'}
                     onChangeText={(value) => commentReplyState.email.set(value)}/>}
                 <TextInput
-                    style={styles.replyArea.authInput}
+                    style={styles.replyArea?.authInput}
                     multiline={false}
                     maxLength={70}
                     placeholder={translations.PUBLICLY_DISPLAYED_USERNAME}
@@ -458,17 +468,17 @@ export function ReplyArea(props: ReplyAreaProps) {
                     onChangeText={(value) => commentReplyState.username.set(value)}/>
                 {state.config.enableCommenterLinks.get() &&
                 <TextInput
-                    style={styles.replyArea.authInput}
+                    style={styles.replyArea?.authInput}
                     maxLength={500}
                     placeholder={translations.ENTER_A_LINK}
                     onChangeText={(value) => commentReplyState.websiteUrl.set(value)}/>
                 }
                 {commentReplyState.lastSaveResponse.get()?.code && SignUpErrorsTranslationIds[commentReplyState.lastSaveResponse.get()!.code!] &&
                 <Text
-                    style={styles.replyArea.error}>{translations[SignUpErrorsTranslationIds[commentReplyState.lastSaveResponse.get()!.code!]]}</Text>
+                    style={styles.replyArea?.error}>{translations[SignUpErrorsTranslationIds[commentReplyState.lastSaveResponse.get()!.code!]]}</Text>
                 }
                 {!state.config.disableEmailInputs &&
-                <Text style={styles.replyArea.solicitationInfo}>{translations.NO_SOLICITATION_EMAILS}</Text>
+                <Text style={styles.replyArea?.solicitationInfo}>{translations.NO_SOLICITATION_EMAILS}</Text>
                 }
             </View>;
         }
@@ -476,8 +486,8 @@ export function ReplyArea(props: ReplyAreaProps) {
         // We don't allow cancelling when replying to top-level comments.
         // This is currently disabled because the reply box open state is now completely manged in CommentBottom as an optimization.
         // if (parentComment) {
-        //     replyCancelButton = <View style={styles.replyArea.replyCancelButtonWrapper}>
-        //         <TouchableOpacity style={styles.replyArea.replyCancelButton} onPress={() => parentComment.replyBoxOpen.set(false)}>
+        //     replyCancelButton = <View style={styles.replyArea?.replyCancelButtonWrapper}>
+        //         <TouchableOpacity style={styles.replyArea?.replyCancelButton} onPress={() => parentComment.replyBoxOpen.set(false)}>
         //             <Image source={state.imageAssets[FastCommentsImageAsset.ICON_CROSS].get()}
         //                    style={{width: 9, height: 9}}/>
         //         </TouchableOpacity>
@@ -495,34 +505,36 @@ export function ReplyArea(props: ReplyAreaProps) {
             if (lastSaveResponse.bannedUntil) {
                 bannedText += ' ' + translations.BAN_ENDS.replace('[endsText]', new Date(lastSaveResponse.bannedUntil).toLocaleString());
             }
-            displayError = <Text style={styles.replyArea.error}>{bannedText}</Text>;
+            displayError = <Text style={styles.replyArea?.error}>{bannedText}</Text>;
         } else if (lastSaveResponse.code === 'user-rate-limited') {
-            displayError = <Text style={styles.replyArea.error}>{translations.COMMENTING_TOO_QUICKLY}</Text>;
+            displayError = <Text style={styles.replyArea?.error}>{translations.COMMENTING_TOO_QUICKLY}</Text>;
         } else if (lastSaveResponse.code === 'rate-limited') {
-            displayError = <Text style={styles.replyArea.error}>{translations.RATE_LIMITED}</Text>;
+            displayError = <Text style={styles.replyArea?.error}>{translations.RATE_LIMITED}</Text>;
         } else if (lastSaveResponse.code === 'profile-comments-private') {
-            displayError = <Text style={styles.replyArea.error}>{translations.PROFILE_COMMENTS_PRIVATE}</Text>;
+            displayError = <Text style={styles.replyArea?.error}>{translations.PROFILE_COMMENTS_PRIVATE}</Text>;
         } else if (lastSaveResponse.code === 'profile-dm-private') {
-            displayError = <Text style={styles.replyArea.error}>{translations.PROFILE_DM_PRIVATE}</Text>;
+            displayError = <Text style={styles.replyArea?.error}>{translations.PROFILE_DM_PRIVATE}</Text>;
         } else if (lastSaveResponse.code === 'comment-too-big') {
             displayError =
                 <Text
-                    style={styles.replyArea.error}>{translations.COMMENT_TOO_BIG.replace('[count]', lastSaveResponse.maxCharacterLength + '')}</Text>;
+                    style={styles.replyArea?.error}>{translations.COMMENT_TOO_BIG.replace('[count]', lastSaveResponse.maxCharacterLength + '')}</Text>;
         } else if (lastSaveResponse.translatedError) {
-            displayError = <Text style={styles.replyArea.error}>lastSaveResponse.translatedError</Text>;
+            displayError = <Text style={styles.replyArea?.error}>lastSaveResponse.translatedError</Text>;
         } else if (lastSaveResponse.code) {
             // TODO this case should probably be deprecated and replaced by the server sending translatedError
             const translatedError = translations[lastSaveResponse.code];
-            displayError = <Text style={styles.replyArea.error}>{translatedError}</Text>;
+            displayError = <Text style={styles.replyArea?.error}>{translatedError}</Text>;
         } else {
             // generic error
-            displayError = <Text style={styles.replyArea.error}>{state.translations.ERROR_MESSAGE.get()}</Text>;
+            displayError = <Text style={styles.replyArea?.error}>{state.translations.ERROR_MESSAGE.get()}</Text>;
         }
     }
 
     return <View>
-        {state.config.tenantId.get() === 'demo' && <Text style={styles.red}>{state.translations.DEMO_CREATE_ACCT.get()}</Text>}
-        {replyToText && <View style={styles.replyArea.replyingTo}>{replyToText}</View>}
+        {state.config.tenantId.get() === 'demo' && <RenderHtml source={{
+            html: state.translations.DEMO_CREATE_ACCT.get()
+        }} contentWidth={width}/>}
+        {replyToText && <View style={styles.replyArea?.replyingTo}>{replyToText}</View>}
         {ssoLoginWrapper}
         {topBar}
         {commentInputArea}
@@ -530,7 +542,7 @@ export function ReplyArea(props: ReplyAreaProps) {
         {authFormArea}
         {commentSubmitButton}
         {replyCancelButton}
-        {commentReplyState.isReplySaving.get() && <View style={styles.replyArea.loadingView}>
+        {commentReplyState.isReplySaving.get() && <View style={styles.replyArea?.loadingView}>
             <ActivityIndicator size="large"/>
         </View>}
     </View>;

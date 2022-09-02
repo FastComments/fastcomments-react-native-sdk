@@ -10,16 +10,16 @@ export function CommentNotices({comment, state, styles}: FastCommentsCommentWith
     if (comment.wasPostedCurrentSession?.get()) {
         if (comment.isSpam.get()) {
             notice = state.translations.COMMENT_FLAGGED_SPAM.get();
-            noticeStyles = styles.commentNotices.spamNotice;
+            noticeStyles = styles.commentNotices?.spamNotice;
         } else if (comment.requiresVerification.get()) {
             notice = state.translations.COMMENT_AWAITING_VERIFICATION.get();
-            noticeStyles = styles.commentNotices.requiresVerificationApprovalNotice;
+            noticeStyles = styles.commentNotices?.requiresVerificationApprovalNotice;
         }
     }
 
     if (!notice && comment.approved.get() === false) { // this is only false upon submission, normally it is undefined
         notice = state.translations.AWAITING_APPROVAL_COMMENT.get();
-        noticeStyles = styles.commentNotices.awaitingApprovalNotice;
+        noticeStyles = styles.commentNotices?.awaitingApprovalNotice;
     }
 
     if (notice) {

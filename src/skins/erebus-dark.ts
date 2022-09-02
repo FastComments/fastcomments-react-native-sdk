@@ -1,8 +1,10 @@
 import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
 import {FastCommentsCallbacks, IFastCommentsStyles} from "../types";
 import {defaultsDeep} from "lodash";
+import {setupDarkModeSkin} from "./darkmode";
 
-export function setupErebusDarkSkin(config: FastCommentsCommentWidgetConfig, styles: IFastCommentsStyles, callbacks: FastCommentsCallbacks) {
+export function setupErebusDarkSkin(config: FastCommentsCommentWidgetConfig, styles: IFastCommentsStyles, _callbacks: FastCommentsCallbacks) {
+    setupDarkModeSkin(config, styles);
     defaultsDeep(config, {
         translations: {
             DAYS_AGO: 'd',
@@ -20,5 +22,6 @@ export function setupErebusDarkSkin(config: FastCommentsCommentWidgetConfig, sty
         disableUnverifiedLabel: true,
         inputAfterComments: true,
         newCommentsToBottom: true,
+        collapseReplies: true,
     });
 }

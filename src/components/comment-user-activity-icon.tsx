@@ -11,8 +11,8 @@ export function CommentUserActivityIcon({comment, state, styles}: FastCommentsCo
     const userPresenceState = state.userPresenceState.get();
     const isUserOnline = (comment.userId && userPresenceState.usersOnlineMap[comment.userId.get()!]) || (comment.anonUserId && userPresenceState.usersOnlineMap[comment.anonUserId.get()!]);
     if (isUserOnline) {
-        return <View style={styles.commentUserActivityIcon.online}></View>;
+        return <View style={styles.commentUserActivityIcon?.online}></View>;
     } else {
-        return <View style={styles.commentUserActivityIcon.offline}></View>;
+        return <View style={styles.commentUserActivityIcon?.offline}></View>;
     }
 }

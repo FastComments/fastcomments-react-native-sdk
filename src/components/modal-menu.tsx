@@ -1,8 +1,8 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
+import {Dispatch, ReactNode, SetStateAction, useState} from 'react';
 import {FastCommentsImageAsset} from "../types/image-asset";
 import {ActivityIndicator, Image, Modal, Text, TouchableOpacity, View} from "react-native";
-import {Dispatch, ReactNode, SetStateAction, useState} from "react";
 import {FastCommentsState} from "../types/fastcomments-state";
 import {State} from "@hookstate/core";
 import {IFastCommentsStyles} from "../types/fastcomments-styles";
@@ -25,8 +25,8 @@ export interface ModalMenuProps {
 export function ModalMenu({state, styles, items, openButton}: ModalMenuProps) {
     const [activeModalId, setModalIdVisible] = useState<string | null>(null);
     const [isLoading, setLoading] = useState(false);
-    return <View style={styles.modalMenu.rootView}>
-        <View style={styles.modalMenu.centeredView}>
+    return <View style={styles.modalMenu?.rootView}>
+        <View style={styles.modalMenu?.centeredView}>
             <Modal
                 animationType="slide"
                 transparent={true}
@@ -35,29 +35,29 @@ export function ModalMenu({state, styles, items, openButton}: ModalMenuProps) {
                     setModalIdVisible(null);
                 }}
             >
-                <View style={styles.modalMenu.centeredView}>
-                    <View style={styles.modalMenu.modalView}>
+                <View style={styles.modalMenu?.centeredView}>
+                    <View style={styles.modalMenu?.modalView}>
                         {items.map((item) =>
                             <TouchableOpacity
                                 key={item.label}
-                                style={styles.modalMenu.menuOptionButton} onPress={async () => {
+                                style={styles.modalMenu?.menuOptionButton} onPress={async () => {
                                 setLoading(true);
                                 await item.handler(setModalIdVisible);
                                 setLoading(false);
                             }}
                             >
                                 {item.icon}
-                                <Text style={styles.modalMenu.menuOptionText}>{item.label}</Text>
+                                <Text style={styles.modalMenu?.menuOptionText}>{item.label}</Text>
                             </TouchableOpacity>
                         )}
                         <TouchableOpacity
-                            style={styles.modalMenu.modalCancel}
+                            style={styles.modalMenu?.modalCancel}
                             onPress={() => setModalIdVisible(null)}
                         >
-                            {<Image source={state.imageAssets.get()[FastCommentsImageAsset.ICON_CROSS]} style={{width: 16, height: 16}}/>}
+                            {<Image source={state.imageAssets.get()[state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]} style={styles.modalMenu?.menuCancelIcon}/>}
                         </TouchableOpacity>
                         {
-                            isLoading && <View style={styles.modalMenu.loadingView}>
+                            isLoading && <View style={styles.modalMenu?.loadingView}>
                                 <ActivityIndicator size="large"/>
                             </View>
                         }

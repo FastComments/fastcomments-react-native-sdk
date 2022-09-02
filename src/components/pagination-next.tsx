@@ -13,15 +13,15 @@ export function PaginationNext({state, styles}: { state: State<FastCommentsState
         const {width} = useWindowDimensions();
         // TODO: check if loading, set opacity: 0.5
         // These translations contain HTML.
-        return <View style={styles.paginationNext.root}>
+        return <View style={styles.paginationNext?.root}>
             <RenderHtml source={{
                 html: state.translations.NEXT_30.get()
-            }} contentWidth={width} baseStyle={styles.paginationNext.next}/>
+            }} contentWidth={width} baseStyle={styles.paginationNext?.next}/>
             {
                 state.commentCountOnServer.get() < 2000 &&
                 <RenderHtml source={{
                     html: state.translations.LOAD_ALL.get().replace('[count]', Number(state.commentCountOnServer.get()).toLocaleString())
-                }} contentWidth={width} baseStyle={styles.paginationNext.all}/>
+                }} contentWidth={width} baseStyle={styles.paginationNext?.all}/>
             }
         </View>;
     }

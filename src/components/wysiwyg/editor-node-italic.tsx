@@ -11,6 +11,6 @@ export function createItalicNode(startingValue: string): EditorNodeDefinition {
     }
 }
 
-export function EditorNodeItalic({node, onBlur, onFocus, onDelete}: EditorNodeProps) {
-    return <EditorNodeText node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} style={{fontStyle: 'italic'}} />
+export function EditorNodeItalic({node, textStyle, onBlur, onFocus, onDelete}: EditorNodeProps) {
+    return <EditorNodeText node={node} onBlur={onBlur} onFocus={onFocus} onDelete={onDelete} textStyle={{fontStyle: 'italic', ...textStyle}} />
 }
