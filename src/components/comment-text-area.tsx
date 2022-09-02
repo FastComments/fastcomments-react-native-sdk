@@ -28,6 +28,7 @@ export function CommentTextArea({state, styles, value, output, onFocus: _onFocus
     // TODO toolbar supports inline reacts - support for extension customizing toolbar?
     // TODO gif selector
     const maxLength = state.config.maxCommentCharacterLength || 2000;
+    const hasDarkBackground = state.config.hasDarkBackground;
     const [isFocused, setFocused] = useState(false);
     const [isEmpty, setIsEmpty] = useState(!!value);
     const [editorInputNodes, setEditorInputNodes] = useState<EditorNodeDefinition[]>([]);
@@ -45,12 +46,13 @@ export function CommentTextArea({state, styles, value, output, onFocus: _onFocus
             ['https://cdn.fastcomments.com/images/star-64-filled.png', <Image source={{uri: 'https://cdn.fastcomments.com/images/star-64-filled.png'}} style={styles.commentTextArea?.toolbarButton} />],
         ]
     }
+    // TODO not live responding to dark background config change
     const toolbarConfig: EditorToolbarConfig = {
-        boldButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_BOLD]} style={styles.commentTextArea?.toolbarButton}/>,
-        italicButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_ITALIC]} style={styles.commentTextArea?.toolbarButton}/>,
-        underlineButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_UNDERLINE]} style={styles.commentTextArea?.toolbarButton}/>,
-        strikethroughButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_STRIKETHROUGH]} style={styles.commentTextArea?.toolbarButton}/>,
-        imageButton: <Image source={state.imageAssets[FastCommentsImageAsset.ICON_IMAGE_UPLOAD]} style={[styles.commentTextArea?.toolbarButton, {height: 18}]}/>,
+        boldButton: <Image source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_BOLD_WHITE : FastCommentsImageAsset.ICON_BOLD]} style={styles.commentTextArea?.toolbarButton}/>,
+        italicButton: <Image source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_ITALIC_WHITE : FastCommentsImageAsset.ICON_ITALIC]} style={styles.commentTextArea?.toolbarButton}/>,
+        underlineButton: <Image source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_UNDERLINE_WHITE : FastCommentsImageAsset.ICON_UNDERLINE]} style={styles.commentTextArea?.toolbarButton}/>,
+        strikethroughButton: <Image source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_STRIKETHROUGH_WHITE : FastCommentsImageAsset.ICON_STRIKETHROUGH]} style={styles.commentTextArea?.toolbarButton}/>,
+        imageButton: <Image source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_IMAGE_UPLOAD_WHITE : FastCommentsImageAsset.ICON_IMAGE_UPLOAD]} style={[styles.commentTextArea?.toolbarButton]}/>,
         uploadImage: async (_node, photoData) => {
             const formData = new FormData();
             formData.append('file', photoData);

@@ -274,7 +274,7 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 color: '#000' // TODO don't use #000
             },
             toolbarButton: {
-                height: 15,
+                height: 18,
                 aspectRatio: 1,
                 resizeMode: 'contain'
             }
