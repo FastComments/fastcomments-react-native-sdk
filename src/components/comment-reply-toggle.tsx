@@ -20,10 +20,11 @@ export function CommentReplyToggle(props: CommentReplyToggleProps) {
     }
     const countText = <Text style={[styles.commentReplyToggle?.text, styles.commentReplyToggle?.count]}> ({Number(nestedChildrenCount).toLocaleString()})</Text>
     const repliesHidden = props.repliesHiddenState.get();
+    const hasDarkBackground = state.config.hasDarkBackground.get();
     if (repliesHidden) {
         return <TouchableOpacity onPress={() => props.repliesHiddenState.set(false)} style={styles.commentReplyToggle?.button}>
             <Image
-                source={state.imageAssets[FastCommentsImageAsset.ICON_EYE].get()}
+                source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_EYE_WHITE : FastCommentsImageAsset.ICON_EYE].get()}
                 style={styles.commentReplyToggle?.icon}/>
             <Text style={styles.commentReplyToggle?.text}>{state.translations.SHOW_REPLIES.get()}</Text>
             {countText}
@@ -31,7 +32,7 @@ export function CommentReplyToggle(props: CommentReplyToggleProps) {
     } else {
         return <TouchableOpacity onPress={() => props.repliesHiddenState.set(true)} style={styles.commentReplyToggle?.button}>
             <Image
-                source={state.imageAssets[FastCommentsImageAsset.ICON_EYE_SLASH].get()}
+                source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_EYE_SLASH_WHITE : FastCommentsImageAsset.ICON_EYE_SLASH].get()}
                 style={styles.commentReplyToggle?.icon}/>
             <Text style={styles.commentReplyToggle?.text}>{state.translations.HIDE_REPLIES.get()}</Text>
             {countText}
