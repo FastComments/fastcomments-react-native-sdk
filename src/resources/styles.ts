@@ -100,8 +100,7 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 width: 18,
                 height: 18,
             },
-            contentWrapper: {
-            },
+            contentWrapper: {},
             text: {
                 marginLeft: 5,
                 marginTop: 10,
@@ -221,6 +220,10 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             commentBottomToolbarReplyText: {
                 marginLeft: 5
             },
+            commentBottomToolbarReplyIcon: {
+                width: 15,
+                height: 15
+            }
         },
         commentNotices: {
             spamNotice: {

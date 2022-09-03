@@ -12,4 +12,6 @@ export interface FastCommentsRNConfig extends FastCommentsCommentWidgetConfig {
     renderCommentInline?: boolean
     /** Puts the like/voting area to the right side of the screen, instead of below comments. **/
     renderLikesToRight?: boolean
+    /** Puts the like/voting area to below each comment. **/
+    renderDateBelowComment?: boolean
 }

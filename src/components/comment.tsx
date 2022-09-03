@@ -51,7 +51,7 @@ export function FastCommentsCommentView(props: CommentViewProps) {
     const menuState = isReadonly ? null : getCommentMenuState(state, comment);
     const htmlWrapped = `<div style="${styles.comment?.textHTML || ''}">${html}</div>`; // goes away when fixed: https://github.com/meliorence/react-native-render-html/issues/582
     const content = <View style={styles.comment?.subRoot}><View style={styles.comment?.topRight}>
-        <CommentDisplayDate comment={comment} state={state} style={styles.comment?.displayDate} styles={styles}/>
+        {!state.config.renderDateBelowComment.get() && <CommentDisplayDate comment={comment} state={state} style={styles.comment?.displayDate} styles={styles}/>}
         {comment.isPinned.get() && <Image source={state.imageAssets[FastCommentsImageAsset.ICON_PIN_RED].get()} style={styles.comment?.pin}/>}
         {!usePressableEditTrigger && !isReadonly && <TouchableOpacity style={{padding: 5}} onPress={() => setIsMenuOpen(true)}><Image
             source={state.imageAssets[state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_EDIT_SMALL_WHITE : FastCommentsImageAsset.ICON_EDIT_SMALL].get()}

@@ -53,6 +53,7 @@ export interface IFastCommentsStyles {
         commentBottomToolbar?: ViewStyle
         commentBottomToolbarReply?: ViewStyle
         commentBottomToolbarReplyText?: TextStyle
+        commentBottomToolbarReplyIcon?: ImageStyle
         replyAreaRoot?: ViewStyle
     }
     commentNotices?: {

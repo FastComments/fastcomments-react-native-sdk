@@ -9,6 +9,7 @@ import {FastCommentsImageAsset, FastCommentsCallbacks} from "../types";
 import {CommentReplyToggle} from "./comment-reply-toggle";
 import {useState} from "react";
 import {ReplyArea} from "./reply-area";
+import {CommentDisplayDate} from "./comment-dispay-date";
 
 export interface CommentBottomProps extends FastCommentsCommentWithState, Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onReplySuccess' | 'onAuthenticationChange' | 'replyingTo'> {
     repliesHiddenState: State<boolean>
@@ -27,6 +28,7 @@ export function CommentBottom(props: CommentBottomProps) {
 
     return <View style={styles.commentBottom?.root}>
         <View style={styles.commentBottom?.commentBottomToolbar}>
+            {state.config.renderDateBelowComment.get() && <CommentDisplayDate comment={comment} state={state} style={styles.comment?.displayDate} styles={styles}/>}
             {!state.config.renderLikesToRight.get() && <CommentVote comment={comment} state={state} styles={styles} onVoteSuccess={onVoteSuccess}/>}
             <TouchableOpacity style={styles.commentBottom?.commentBottomToolbarReply} onPress={() => {
                 if (state.config.useSingleReplyField.get()) {
@@ -41,7 +43,7 @@ export function CommentBottom(props: CommentBottomProps) {
             }>
                 <Image
                     source={state.imageAssets[isReplyBoxOpen ? FastCommentsImageAsset.ICON_REPLY_ARROW_ACTIVE : FastCommentsImageAsset.ICON_REPLY_ARROW_INACTIVE].get()}
-                    style={{width: 15, height: 15}}/>
+                    style={styles.commentBottom?.commentBottomToolbarReplyIcon}/>
                 <Text style={styles.commentBottom?.commentBottomToolbarReplyText}>{state.translations.REPLY.get()}</Text>
             </TouchableOpacity>
         </View>

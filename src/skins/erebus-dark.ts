@@ -38,6 +38,7 @@ export function setupErebusDarkSkin(config: FastCommentsRNConfig, styles: IFastC
         scrollComments: true,
         disableDownVoting: true,
         renderLikesToRight: true,
+        renderDateBelowComment: true,
         // TODO doesn't work
         // renderCommentInline: true,
     });
@@ -56,10 +57,27 @@ export function setupErebusDarkSkin(config: FastCommentsRNConfig, styles: IFastC
                 maxWidth: '90%'
             },
             // textHTML: 'color: #fff;'
+            displayDate: {
+                marginRight: 10
+            }
         },
         commentUserInfo: {
             label: {
                 color: '#fff'
+            },
+            avatarWrapper: {
+                width: 25,
+                height: 25,
+                borderRadius: 25,
+            },
+            avatarWrapperDefault: {
+                width: 25,
+                height: 25,
+                borderRadius: 25,
+            },
+            avatarImage: {
+                width: 25,
+                height: 25,
             }
         },
         // commentUserInfoAsHTML: {
@@ -75,6 +93,24 @@ export function setupErebusDarkSkin(config: FastCommentsRNConfig, styles: IFastC
         commentBottom: {
             root: {
                 flex: 1
+            },
+            commentBottomToolbar: {
+                flexDirection: 'row',
+                justifyContent: 'flex-start'
+            },
+            commentBottomToolbarReplyText: {
+                fontWeight: 'normal',
+                fontSize: 12
+            },
+            commentBottomToolbarReplyIcon: {
+                display: 'none'
+            }
+        },
+        commentReplyToggle: {
+            icon: {
+            },
+            text: {
+                fontSize: 11
             }
         },
         commentVote: {
