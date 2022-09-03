@@ -73,12 +73,14 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             }
         },
         commentsWrapper: {
-            paddingTop: 15,
+            paddingTop: 5,
             paddingLeft: 15,
             paddingRight: 15,
         },
         comment: {
-            root: {},
+            root: {
+                marginTop: 10
+            },
             topRight: {
                 position: "absolute",
                 flexDirection: 'row',
@@ -99,6 +101,8 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 height: 18,
             },
             contentWrapper: {
+            },
+            text: {
                 marginLeft: 5,
                 marginTop: 10,
                 fontSize: 13,
@@ -248,7 +252,6 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 alignItems: "center",
                 justifyContent: 'flex-start',
                 marginTop: 10, // TODO move to consumer
-                marginBottom: 10,
             },
             text: {
                 fontSize: 12
@@ -351,26 +354,26 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             },
             infoRight: {},
             label: {
-                "fontSize": 10,
-                "textTransform": "uppercase",
-                "fontWeight": "500",
-                "color": "#666666"
+                fontSize: 10,
+                textTransform: "uppercase",
+                fontWeight: "500",
+                color: "#666666"
             },
             username: {
-                "fontSize": 12,
+                fontSize: 12,
                 fontWeight: "500",
             },
             usernameWithLink: {
-                "color": "#000",
-                "textDecorationLine": "underline",
-                "textDecorationColor": "black",
-                "textDecorationStyle": "solid"
+                color: "#000",
+                textDecorationLine: "underline",
+                textDecorationColor: "black",
+                textDecorationStyle: "solid"
             },
             avatarWrapper: {
-                "position": "relative",
-                "width": 36,
-                "height": 36,
-                "overflow": "hidden",
+                position: "relative",
+                width: 36,
+                height: 36,
+                overflow: "hidden",
                 borderRadius: 36,
                 shadowRadius: 5,
                 shadowColor: '#000',
@@ -382,14 +385,14 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 elevation: 2
             },
             avatarWrapperDefault: {
-                "position": "relative",
-                "width": 36,
-                "height": 36,
-                "overflow": "hidden",
+                position: "relative",
+                width: 36,
+                height: 36,
+                overflow: "hidden",
                 borderRadius: 36,
-                "borderWidth": 1,
-                "borderColor": "#3f3f3f",
-                "borderStyle": "solid",
+                borderWidth: 1,
+                borderColor: "#3f3f3f",
+                borderStyle: "solid",
                 shadowRadius: 5,
                 shadowColor: '#000',
                 shadowOpacity: 1,
@@ -404,6 +407,7 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 height: 36,
             }
         },
+        commentUserInfoAsHTML: {},
         commentVote: {
             commentVoteOptions: {
                 flexDirection: 'row',

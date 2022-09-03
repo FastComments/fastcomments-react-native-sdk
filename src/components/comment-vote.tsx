@@ -9,10 +9,11 @@ import {getActionTenantId} from "../services/tenants";
 import {createURLQueryString, makeRequest} from "../services/http";
 import {newBroadcastId} from '../services/broadcast-id';
 import {CommentVoteDeleteResponse} from '../types/dto/comment-vote-delete';
-import { Pressable } from 'react-native';
+import {Pressable} from 'react-native';
 import type {FastCommentsCallbacks} from "../types";
 
-export interface CommentVoteProps extends FastCommentsCommentWithState, Pick<FastCommentsCallbacks, 'onVoteSuccess'> {}
+export interface CommentVoteProps extends FastCommentsCommentWithState, Pick<FastCommentsCallbacks, 'onVoteSuccess'> {
+}
 
 interface VoteState {
     voteDir?: 'up' | 'down'
@@ -171,6 +172,23 @@ export function CommentVote(props: CommentVoteProps) {
     let auth;
     let error;
 
+    const dividerAndDownVoting = state.config.disableDownVoting.get() ? null : [
+        <View style={styles.commentVote?.voteDivider}></View>,
+        <Pressable
+            style={styles.commentVote?.voteButton}
+            onPress={() => {
+                voteState.voteDir.set('down');
+                // noinspection JSIgnoredPromiseFromCall
+                doVote({state, comment}, voteState);
+            }}
+        >
+            <Image
+                source={state.imageAssets[comment.isVotedDown.get() ? (state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_DOWN_ACTIVE_WHITE : FastCommentsImageAsset.ICON_DOWN_ACTIVE) : FastCommentsImageAsset.ICON_DOWN].get()}
+                style={styles.commentVote?.voteButtonIcon}/>
+        </Pressable>,
+        comment.votesDown.get() ? <Text style={styles.commentVote?.votesDownText}>{Number(comment.votesDown.get()).toLocaleString()}</Text> : null
+    ]
+
     // TODO TouchableOpacity throws weird callback exceeded errors
     voteOptions = <View style={styles.commentVote?.commentVoteOptions}>
         {comment.votesUp.get() ? <Text style={styles.commentVote?.votesUpText}>{Number(comment.votesUp.get()).toLocaleString()}</Text> : null}
@@ -186,20 +204,7 @@ export function CommentVote(props: CommentVoteProps) {
                 source={state.imageAssets[comment.isVotedUp.get() ? (state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_UP_ACTIVE_WHITE : FastCommentsImageAsset.ICON_UP_ACTIVE) : FastCommentsImageAsset.ICON_UP].get()}
                 style={styles.commentVote?.voteButtonIcon}/>
         </Pressable>
-        <View style={styles.commentVote?.voteDivider}></View>
-        <Pressable
-            style={styles.commentVote?.voteButton}
-            onPress={() => {
-                voteState.voteDir.set('down');
-                // noinspection JSIgnoredPromiseFromCall
-                doVote({state, comment}, voteState);
-            }}
-        >
-            <Image
-                source={state.imageAssets[comment.isVotedDown.get() ? (state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_DOWN_ACTIVE_WHITE : FastCommentsImageAsset.ICON_DOWN_ACTIVE) : FastCommentsImageAsset.ICON_DOWN].get()}
-                style={styles.commentVote?.voteButtonIcon}/>
-        </Pressable>
-        {comment.votesDown.get() ? <Text style={styles.commentVote?.votesDownText}>{Number(comment.votesDown.get()).toLocaleString()}</Text> : null}
+        {dividerAndDownVoting}
     </View>
 
     if (voteState.isAuthenticating.get()) {
@@ -230,7 +235,8 @@ export function CommentVote(props: CommentVoteProps) {
     }
 
     if (voteState.isAwaitingVerification.get()) {
-        pendingVoteMessage = <Text style={styles.commentVote?.voteAwaitingVerificationMessage}>{state.translations.VOTE_APPLIES_AFTER_VERIFICATION.get()}</Text>;
+        pendingVoteMessage =
+            <Text style={styles.commentVote?.voteAwaitingVerificationMessage}>{state.translations.VOTE_APPLIES_AFTER_VERIFICATION.get()}</Text>;
     }
 
     // This is here instead of above so that when it gets added in and then removed we don't cause the user to accidentally vote down if they double click.
@@ -249,7 +255,7 @@ export function CommentVote(props: CommentVoteProps) {
         }
     }
 
-    return <View>
+    return <View style={styles.commentVote?.root}>
         {voteOptions}
         {pendingVoteMessage}
         {auth}

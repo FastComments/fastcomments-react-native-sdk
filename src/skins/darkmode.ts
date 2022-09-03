@@ -1,8 +1,8 @@
 import {IFastCommentsStyles} from "../types";
 import {assign, defaultsDeep, merge} from "lodash";
-import { FastCommentsCommentWidgetConfig } from "fastcomments-typescript";
+import {FastCommentsRNConfig} from "../types/react-native-config";
 
-export function setupDarkModeSkin(config: FastCommentsCommentWidgetConfig, styles: IFastCommentsStyles) {
+export function setupDarkModeSkin(config: FastCommentsRNConfig, styles: IFastCommentsStyles) {
     defaultsDeep(config, {
         hasDarkBackground: true
     });
@@ -47,7 +47,7 @@ export function setupDarkModeSkin(config: FastCommentsCommentWidgetConfig, style
             pin: {
                 // TODO grayscale/different image?
             },
-            contentWrapper: {
+            text: {
                 color: '#fff',
             },
             children: {},

@@ -1,5 +1,12 @@
 import {EditorNodeDefinition, EditorNodeProps, EditorNodeType} from "./editor-node";
-import {NativeSyntheticEvent, TextInput, TextInputKeyPressEventData, TextInputSelectionChangeEventData, TextStyle} from "react-native";
+import {
+    NativeSyntheticEvent,
+    TextInput,
+    TextInputKeyPressEventData,
+    TextInputSelectionChangeEventData,
+    TextInputSubmitEditingEventData,
+    TextStyle
+} from "react-native";
 import {MutableRefObject, useRef, useState} from "react";
 import {useHookstateEffect} from "@hookstate/core";
 import {getNextNodeId} from "./node-id";
@@ -17,7 +24,7 @@ export interface EditorNodeTextProps extends EditorNodeProps {
     textStyle?: TextStyle
 }
 
-export function EditorNodeText({node, onBlur, onFocus, onDelete, textStyle}: EditorNodeTextProps) {
+export function EditorNodeText({node, onBlur, onFocus, onDelete, onTryNewline, textStyle}: EditorNodeTextProps) {
     const [value, setValue] = useState(node.content.get());
     const [selection, setSelection] = useState<{
         start: number;
@@ -41,10 +48,10 @@ export function EditorNodeText({node, onBlur, onFocus, onDelete, textStyle}: Edi
     }, [node.isFocused]);
 
     const handleKeyUp = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
-        console.log('Got key up', e.nativeEvent.key)
         switch (e.nativeEvent.key) {
-            case 'Enter': // TODO maybe onSubmitEditing?
-                // TODO add a newline node
+            case 'Enter':
+                // In practice have not seen this happen. Would be good to know the use case so we can document or remove.
+                onTryNewline && onTryNewline();
                 break;
             case 'Backspace':
                 if (!selection?.start) {
@@ -60,6 +67,10 @@ export function EditorNodeText({node, onBlur, onFocus, onDelete, textStyle}: Edi
                 }
                 break;
         }
+    }
+
+    const onSubmit = (_e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => {
+        onTryNewline && onTryNewline();
     }
 
     const onSelectionChange = (e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
@@ -80,6 +91,8 @@ export function EditorNodeText({node, onBlur, onFocus, onDelete, textStyle}: Edi
         onBlur={onBlur}
         onFocus={onFocus}
         onKeyPress={handleKeyUp}
+        blurOnSubmit={false}
+        onSubmitEditing={onSubmit}
         ref={ref as MutableRefObject<TextInput>}
         style={[textStyle, {padding: 0, borderWidth: 0, position: 'relative', left: 0, minWidth: 0}]}
     />;

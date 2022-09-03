@@ -5,7 +5,6 @@ import {ActivityIndicator, Text, View} from "react-native";
 import {PaginationNext} from "./pagination-next";
 import {PaginationPrev} from "./pagination-prev";
 import {CommentsList} from "./comments-list";
-import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
 import {FastCommentsLiveCommentingService} from "../services/fastcomments-live-commenting";
 // @ts-ignore
 import React, {useEffect, useState} from 'react';
@@ -13,21 +12,23 @@ import RenderHtml from 'react-native-render-html';
 import {useWindowDimensions} from 'react-native';
 import {useHookstate, useHookstateEffect} from "@hookstate/core";
 import {LiveCommentingTopArea} from "./live-commenting-top-area";
-import {FastCommentsStyles} from "../resources";
-import {IFastCommentsStyles, FastCommentsCallbacks} from "../types";
-import {LiveCommentingBottomArea} from "./live-commenting-bottom-area";
+import {IFastCommentsStyles, FastCommentsCallbacks, RNComment, ImageAssetConfig} from "../types";
+import {CallbackObserver, LiveCommentingBottomArea} from "./live-commenting-bottom-area";
+import {getDefaultFastCommentsStyles} from "../resources";
+import {FastCommentsRNConfig} from "../types/react-native-config";
 
 export interface FastCommentsLiveCommentingProps {
-    config: FastCommentsCommentWidgetConfig
+    config: FastCommentsRNConfig
     styles?: IFastCommentsStyles
     callbacks?: FastCommentsCallbacks
+    assets?: ImageAssetConfig
 }
 
-export function FastCommentsLiveCommenting({config, styles, callbacks}: FastCommentsLiveCommentingProps) {
+export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: FastCommentsLiveCommentingProps) {
     if (!styles) {
-        styles = FastCommentsStyles;
+        styles = getDefaultFastCommentsStyles();
     }
-    const serviceInitialState = FastCommentsLiveCommentingService.createFastCommentsStateFromConfig({...config}); // shallow clone is important to prevent extra re-renders
+    const serviceInitialState = FastCommentsLiveCommentingService.createFastCommentsStateFromConfig({...config}, assets); // shallow clone is important to prevent extra re-renders
     const state = useHookstate(serviceInitialState);
     const service = new FastCommentsLiveCommentingService(state, callbacks);
     const [isLoading, setLoading] = useState(true);
@@ -64,6 +65,14 @@ export function FastCommentsLiveCommenting({config, styles, callbacks}: FastComm
         const paginationAfterComments = state.commentsVisible.get() && !state.config.paginationBeforeComments.get()
             ? <PaginationNext state={state} styles={styles}/>
             : null;
+
+        const callbackObserver: CallbackObserver = {}
+
+        function handleReplyingTo(comment: RNComment | null) {
+            callbackObserver.replyingTo && callbackObserver.replyingTo(comment);
+            callbacks && callbacks.replyingTo && callbacks.replyingTo(comment);
+        }
+
         return <View style={styles.root}>{
             state.hasBillingIssue.get() && state.isSiteAdmin.get() && <Text style={styles.red}>{state.translations.BILLING_INFO_INV.get()}</Text>
         }
@@ -79,11 +88,12 @@ export function FastCommentsLiveCommenting({config, styles, callbacks}: FastComm
                     styles,
                     onVoteSuccess: callbacks?.onVoteSuccess,
                     onReplySuccess: callbacks?.onReplySuccess,
-                    onAuthenticationChange: callbacks?.onAuthenticationChange
+                    onAuthenticationChange: callbacks?.onAuthenticationChange,
+                    replyingTo: handleReplyingTo,
                 })}
                 {paginationAfterComments}
             </View>
-            <LiveCommentingBottomArea state={state} styles={styles} />
+            <LiveCommentingBottomArea state={state} styles={styles} callbackObserver={callbackObserver} />
         </View>;
     } else {
         return <View style={styles.root}><CommentAreaMessage styles={styles} message={'todo'}/></View>;

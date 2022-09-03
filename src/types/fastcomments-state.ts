@@ -1,9 +1,9 @@
-import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
 import {FastCommentsSessionUser} from "./user";
 import {ImageAssetConfig} from "./image-asset";
 import {UserNotification} from "./user-notification";
 import {SubscriberInstance} from "../services/subscribe-to-changes";
 import {RNComment} from "./react-native-comment";
+import {FastCommentsRNConfig} from "./react-native-config";
 
 export enum UserPresencePollStateEnum {
     Disabled = 0,
@@ -40,7 +40,7 @@ export interface FastCommentsState {
     commentsById: Record<string, RNComment>;
     commentsTree: RNComment[];
     commentsVisible?: boolean;
-    config: FastCommentsCommentWidgetConfig;
+    config: FastCommentsRNConfig;
     currentUser: FastCommentsSessionUser;
     hasBillingIssue: boolean;
     hasMore: boolean;

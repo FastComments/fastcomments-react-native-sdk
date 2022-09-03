@@ -19,11 +19,14 @@ export interface ModalMenuProps {
     state: State<FastCommentsState>,
     styles: IFastCommentsStyles,
     items: ModalMenuItem[];
-    openButton: ReactNode;
+    // define one of the following
+    openButton?: ReactNode;
+    isOpen?: boolean;
+    onClose?: () => void;
 }
 
-export function ModalMenu({state, styles, items, openButton}: ModalMenuProps) {
-    const [activeModalId, setModalIdVisible] = useState<string | null>(null);
+export function ModalMenu({state, styles, items, openButton, isOpen, onClose}: ModalMenuProps) {
+    const [activeModalId, setModalIdVisible] = useState<string | null>(isOpen ? 'menu' : null);
     const [isLoading, setLoading] = useState(false);
     return <View style={styles.modalMenu?.rootView}>
         <View style={styles.modalMenu?.centeredView}>
@@ -39,7 +42,7 @@ export function ModalMenu({state, styles, items, openButton}: ModalMenuProps) {
                     <View style={styles.modalMenu?.modalView}>
                         {items.map((item) =>
                             <TouchableOpacity
-                                key={item.label}
+                                key={item.id}
                                 style={styles.modalMenu?.menuOptionButton} onPress={async () => {
                                 setLoading(true);
                                 await item.handler(setModalIdVisible);
@@ -70,12 +73,13 @@ export function ModalMenu({state, styles, items, openButton}: ModalMenuProps) {
                 visible={!!activeModalId && activeModalId !== 'menu'}
                 onRequestClose={() => {
                     setModalIdVisible(null);
+                    onClose && onClose();
                 }}>
                 {!!activeModalId && activeModalId !== 'menu' && items && items.find((item) => item.subModalContent && item.id === activeModalId)?.subModalContent!(() => setModalIdVisible(null))}
             </Modal>
         </View>
-        <TouchableOpacity onPress={() => setModalIdVisible('menu')}>
+        {openButton && <TouchableOpacity onPress={() => setModalIdVisible('menu')}>
             {openButton}
-        </TouchableOpacity>
+        </TouchableOpacity>}
     </View>;
 }

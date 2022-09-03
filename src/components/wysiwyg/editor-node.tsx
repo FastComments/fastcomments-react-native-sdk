@@ -33,6 +33,7 @@ export interface EditorNodeProps {
     onBlur?: () => void
     onFocus?: () => void
     onDelete?: () => void
+    onTryNewline?: () => void
 }
 
 export function EditorNode(props: EditorNodeProps) {

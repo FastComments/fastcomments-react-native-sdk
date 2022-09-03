@@ -10,13 +10,13 @@ import {CommentReplyToggle} from "./comment-reply-toggle";
 import {useState} from "react";
 import {ReplyArea} from "./reply-area";
 
-export interface CommentBottomProps extends FastCommentsCommentWithState, Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onReplySuccess' | 'onAuthenticationChange'> {
+export interface CommentBottomProps extends FastCommentsCommentWithState, Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onReplySuccess' | 'onAuthenticationChange' | 'replyingTo'> {
     repliesHiddenState: State<boolean>
 }
 
 export function CommentBottom(props: CommentBottomProps) {
     const state = useHookstate(props.state); // OPTIMIZATION: creating scoped state
-    const {comment, styles, onVoteSuccess, onReplySuccess, onAuthenticationChange} = props;
+    const {comment, styles, onVoteSuccess, onReplySuccess, onAuthenticationChange, replyingTo} = props;
     // OPTIMIZATION: we only use comment.replyBoxOpen for initial render.
     // TODO This is still not great, because now replyBoxOpen is out of date. Is there a way to use comment.replyBoxOpen.set() without re-rendering all comment objects?
     const [isReplyBoxOpen, setIsReplyBoxOpen] = useState(comment.replyBoxOpen.get());
@@ -27,15 +27,25 @@ export function CommentBottom(props: CommentBottomProps) {
 
     return <View style={styles.commentBottom?.root}>
         <View style={styles.commentBottom?.commentBottomToolbar}>
-            <CommentVote comment={comment} state={state} styles={styles} onVoteSuccess={onVoteSuccess}/>
-            <TouchableOpacity style={styles.commentBottom?.commentBottomToolbarReply} onPress={() => setIsReplyBoxOpen(!isReplyBoxOpen)}>
+            {!state.config.renderLikesToRight.get() && <CommentVote comment={comment} state={state} styles={styles} onVoteSuccess={onVoteSuccess}/>}
+            <TouchableOpacity style={styles.commentBottom?.commentBottomToolbarReply} onPress={() => {
+                if (state.config.useSingleReplyField.get()) {
+                    // We always expect the callback to exist in this case. Otherwise is an error.
+                    replyingTo!(isReplyBoxOpen ? null : comment.get()); // if reply box already open, invoke with null to say we're not replying.
+                    setIsReplyBoxOpen(!isReplyBoxOpen);
+                } else {
+                    replyingTo && replyingTo(comment.get());
+                    setIsReplyBoxOpen(!isReplyBoxOpen);
+                }
+            }
+            }>
                 <Image
                     source={state.imageAssets[isReplyBoxOpen ? FastCommentsImageAsset.ICON_REPLY_ARROW_ACTIVE : FastCommentsImageAsset.ICON_REPLY_ARROW_INACTIVE].get()}
                     style={{width: 15, height: 15}}/>
                 <Text style={styles.commentBottom?.commentBottomToolbarReplyText}>{state.translations.REPLY.get()}</Text>
             </TouchableOpacity>
         </View>
-        {isReplyBoxOpen && <View style={styles.commentBottom?.replyAreaRoot}><ReplyArea state={state} parentComment={comment} styles={styles} onReplySuccess={onReplySuccess} onAuthenticationChange={onAuthenticationChange}/></View>}
+        {isReplyBoxOpen && !state.config.useSingleReplyField.get() && <View style={styles.commentBottom?.replyAreaRoot}><ReplyArea state={state} parentComment={comment} styles={styles} onReplySuccess={onReplySuccess} onAuthenticationChange={onAuthenticationChange}/></View>}
         <CommentReplyToggle comment={comment} state={state} styles={styles} repliesHiddenState={props.repliesHiddenState} />
     </View>;
 }

@@ -22,10 +22,14 @@ export interface IFastCommentsStyles {
     commentsWrapper?: ViewStyle
     comment?: {
         root?: ViewStyle
+        subRoot?: ViewStyle
         topRight?: ViewStyle
         displayDate?: TextStyle
         pin?: ImageStyle
-        contentWrapper?: MixedStyleDeclaration
+        contentWrapper?: ViewStyle
+        text?: MixedStyleDeclaration
+        /** Will be deprecated when this is fixed and can move to 6.x: https://github.com/meliorence/react-native-render-html/issues/582 **/
+        textHTML?: string
         children?: ViewStyle
     }
     commentMenu?: {
@@ -89,7 +93,19 @@ export interface IFastCommentsStyles {
         infoLeft?: ViewStyle
         infoRight?: ViewStyle
     }
+    commentUserInfoAsHTML?: {
+        label?: string
+        usernameWithLink?: string
+        username?: string
+        avatarWrapperDefault?: string
+        avatarWrapper?: string
+        avatarImage?: string
+        root?: string
+        infoLeft?: string
+        infoRight?: string
+    }
     commentVote?: {
+        root?: ViewStyle
         commentVoteOptions?: ViewStyle
         votesUpText?: TextStyle
         voteButton?: ViewStyle

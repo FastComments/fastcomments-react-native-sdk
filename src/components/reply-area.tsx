@@ -3,7 +3,7 @@ import * as React from 'react';
 
 import {FastCommentsState} from "../types/fastcomments-state";
 import {View, Text, Image, Linking, ActivityIndicator, TextInput, useWindowDimensions, TouchableOpacity} from "react-native";
-import {none, State, useHookstate} from "@hookstate/core";
+import {none, State, useHookstate, useHookstateEffect} from "@hookstate/core";
 import {FastCommentsImageAsset} from '../types/image-asset';
 import {getDefaultAvatarSrc} from "../services/default-avatar";
 import {ModalMenu} from "./modal-menu";
@@ -11,7 +11,7 @@ import {Dispatch, SetStateAction} from 'react';
 import {ThreeDot} from "./three-dot";
 import {NotificationBell} from "./notification-bell";
 import {CommentAreaMessage} from "./comment-area-message";
-import {CommentTextArea, ValueObserver} from "./comment-text-area";
+import {CommentTextArea, FocusObserver, ValueObserver} from "./comment-text-area";
 import {SaveCommentResponse} from "../types/dto/save-comment-response";
 import {getActionTenantId, getActionURLID} from "../services/tenants";
 import {newBroadcastId} from "../services/broadcast-id";
@@ -112,7 +112,7 @@ async function submit({
     if (state.config.readonly.get()) {
         return;
     }
-    const replyingToId = parentComment?._id.get();
+    const replyingToId = parentComment?.get()?._id;
 
     let isAuthenticating = false;
     const allowAnon = state.config.allowAnon.get();
@@ -139,8 +139,8 @@ async function submit({
     //     return;
     // }
 
-    const tenantIdToUse = getActionTenantId({state, tenantId: parentComment?.tenantId.get()});
-    const urlIdToUse = getActionURLID({state, urlId: parentComment?.urlId.get()});
+    const tenantIdToUse = getActionTenantId({state, tenantId: parentComment?.get()?.tenantId});
+    const urlIdToUse = getActionURLID({state, urlId: parentComment?.get()?.urlId});
 
     const date = new Date();
 
@@ -276,6 +276,14 @@ export function ReplyArea(props: ReplyAreaProps) {
 
     const needsAuth = !currentUser && !!parentComment;
     const valueGetter: ValueObserver = {};
+    const focusObserver: FocusObserver = {};
+
+    useHookstateEffect(() => {
+        if (parentComment) {
+            console.log('parentComment set - focusing');
+            focusObserver.setFocused && focusObserver.setFocused(true);
+        }
+    }, [parentComment])
 
     const commentReplyState = useHookstate<CommentReplyState>({
         isReplySaving: false,
@@ -297,15 +305,15 @@ export function ReplyArea(props: ReplyAreaProps) {
 
     // TODO OPTIMIZE BENCHMARK: faster solution than using RenderHtml. RenderHtml is easy because the translation is HTML, but it only has <b></b> elements.
     //  We can't hardcode the order of the bold elements due to localization, so rendering HTML is nice. But we can probably transform this into native elements faster than RenderHtml.
-    const replyToText = parentComment
+    const replyToText = parentComment?.get()
         ? (
             currentUser
                 ? <RenderHtml source={{
                     html:
-                        translations.REPLYING_TO_AS.replace('[to]', parentComment.commenterName.get() as string).replace('[from]', currentUser.username)
+                        translations.REPLYING_TO_AS.replace('[to]', parentComment?.get()?.commenterName as string).replace('[from]', currentUser.username)
                 }} contentWidth={width} baseStyle={styles.replyArea?.replyingToText}/>
                 : <RenderHtml source={{
-                    html: translations.REPLYING_TO.replace('[to]', parentComment.commenterName.get() as string)
+                    html: translations.REPLYING_TO.replace('[to]', parentComment?.get()?.commenterName as string)
                 }} contentWidth={width} baseStyle={styles.replyArea?.replyingToText}/>
         ) : null;
 
@@ -376,6 +384,7 @@ export function ReplyArea(props: ReplyAreaProps) {
                     state={state.get()}
                     value={commentReplyState.comment.get()}
                     output={valueGetter}
+                    focusObserver={focusObserver}
                     onFocus={() => needsAuth && !commentReplyState.showAuthInputForm.get() && commentReplyState.showAuthInputForm.set(true)}
                 />;
         }
@@ -403,7 +412,7 @@ export function ReplyArea(props: ReplyAreaProps) {
                 }
                 commentReplyState.isReplySaving.set(false);
                 if (parentComment && parentComment?.get()) {
-                    parentComment.replyBoxOpen.set(false);
+                    parentComment.replyBoxOpen!.set(false);
                 }
             }
         }
@@ -499,7 +508,6 @@ export function ReplyArea(props: ReplyAreaProps) {
 
     const lastSaveResponse = commentReplyState.lastSaveResponse.get();
     if (lastSaveResponse && lastSaveResponse.status !== 'success') {
-        console.log('lastSaveResponse', lastSaveResponse);
         if (lastSaveResponse.code === 'banned') {
             let bannedText = translations.BANNED_COMMENTING;
             if (lastSaveResponse.bannedUntil) {

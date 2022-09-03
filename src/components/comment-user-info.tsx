@@ -9,6 +9,43 @@ import {getDefaultAvatarSrc} from "../services/default-avatar";
 import { FastCommentsBadge } from 'fastcomments-typescript';
 import {State, useHookstate} from "@hookstate/core";
 
+export function getCommentUserInfoHTML({comment, state, styles}: FastCommentsCommentWithState): string {
+    // let displayLabel = null;
+    // if (comment.displayLabel.get()) {
+    //     displayLabel = `<div style="${styles.commentUserInfoAsHTML?.label}">${comment.displayLabel.get()}</div>`;
+    // } else {
+    //     if (comment.isByAdmin.get()) {
+    //         displayLabel = `<div style="${styles.commentUserInfoAsHTML?.label}">${state.translations.ADMIN_LABEL.get()}</div>`;
+    //     } else if (comment.isByModerator.get()) {
+    //         displayLabel = `<div style="${styles.commentUserInfoAsHTML?.label}">${state.translations.MODERATOR_LABEL.get()}</div>`;
+    //     }
+    // }
+
+    let commenterName = comment.commenterName.get();
+
+    if (comment.isDeleted.get()) {
+        commenterName = state.translations.DELETED_PLACEHOLDER.get();
+    } else if (comment.isBlocked.get()) {
+        commenterName = state.translations.BLOCKED_USER_PLACEHOLDER.get();
+    }
+
+    const usernameElement = `<div style="${styles.commentUserInfoAsHTML?.username}">${commenterName}</div>`;
+
+    const avatar = state.config.hideAvatars.get() ? null :
+        (
+            comment.avatarSrc.get() && !comment.isBlocked.get()
+                ? `<div style="${styles.commentUserInfoAsHTML?.avatarWrapper}"><img style="${styles.commentUserInfoAsHTML?.avatarImage}" src="${comment.avatarSrc.get()}"/></div>`
+                : `<div style="${styles.commentUserInfoAsHTML?.avatarWrapperDefault}"><img style="${styles.commentUserInfoAsHTML?.avatarImage}" src="${state.config.defaultAvatarSrc?.get() ? state.config.defaultAvatarSrc.get() : getDefaultAvatarSrc(state)}"/></div>`
+        );
+
+    return `<div style="${styles.commentUserInfoAsHTML?.root}">
+        <div style="${styles.commentUserInfoAsHTML?.infoLeft}">${avatar}</div>
+        <div style="${styles.commentUserInfoAsHTML?.infoRight}">
+            ${usernameElement}
+        </div>
+    </div>`;
+}
+
 export function CommentUserInfo(props: FastCommentsCommentWithState) {
     const {comment, styles} = props;
     const state = useHookstate(props.state); // OPTIMIZATION: local state

@@ -4,12 +4,12 @@ import {createURLQueryString, makeRequest} from "./http";
 import {GetCommentsResponse} from "../types/dto";
 import {ensureRepliesOpenToComment, getCommentsTreeAndCommentsById} from "./comment-trees";
 import {SubscriberInstance} from "./subscribe-to-changes";
-import {DefaultImageAssets} from "../resources/default-image-assets";
 import {mergeSimpleSSO} from "./sso";
 import {State} from "@hookstate/core";
 import {handleNewCustomConfig} from "./custom-config";
 import {persistSubscriberState} from "./live";
-import {FastCommentsCallbacks} from "../types";
+import {FastCommentsCallbacks, ImageAssetConfig} from "../types";
+import {getDefaultImageAssets} from "../resources";
 
 interface FastCommentsInternalState {
     isFirstRequest: boolean;
@@ -34,7 +34,7 @@ export class FastCommentsLiveCommentingService {
         };
     }
 
-    static createFastCommentsStateFromConfig(config: FastCommentsCommentWidgetConfig): FastCommentsState {
+    static createFastCommentsStateFromConfig(config: FastCommentsCommentWidgetConfig, assets?: ImageAssetConfig): FastCommentsState {
         mergeSimpleSSO(config);
         return {
             instanceId: Math.random() + '.' + Date.now(),
@@ -51,7 +51,7 @@ export class FastCommentsLiveCommentingService {
             currentUser: !config.sso && config.simpleSSO && config.simpleSSO.username ? config.simpleSSO : undefined,
             hasBillingIssue: false,
             hasMore: false,
-            imageAssets: DefaultImageAssets,
+            imageAssets: assets ? assets : getDefaultImageAssets(),
             isDemo: false,
             isSiteAdmin: false,
             newRootCommentCount: 0,

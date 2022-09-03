@@ -15,15 +15,20 @@ export interface ValueObserver {
     getValue?: () => string
 }
 
+export interface FocusObserver {
+    setFocused?: (focused: boolean) => void
+}
+
 export interface CommentTextAreaProps {
     state: FastCommentsState
     styles: IFastCommentsStyles
     value?: string
     output: ValueObserver
+    focusObserver?: FocusObserver
     onFocus?: () => void
 }
 
-export function CommentTextArea({state, styles, value, output, onFocus: _onFocus}: CommentTextAreaProps) {
+export function CommentTextArea({state, styles, value, output, focusObserver, onFocus: _onFocus}: CommentTextAreaProps) {
     // console.log('opening text area', value);
     // TODO toolbar supports inline reacts - support for extension customizing toolbar?
     // TODO gif selector
@@ -39,20 +44,29 @@ export function CommentTextArea({state, styles, value, output, onFocus: _onFocus
 
     const placeholder = <Text style={styles.commentTextArea?.placeholder}>{state.translations.ENTER_COMMENT_HERE}</Text>
     // TODO not enabled by default, move to extensions. This is just for testing.
-    const emoticonBarConfig: EmoticonBarConfig = {
-        emoticons: [
-            ['https://cdn.fastcomments.com/images/fireworks.png', <Image source={{uri: 'https://cdn.fastcomments.com/images/fireworks.png'}} style={styles.commentTextArea?.toolbarButton} />],
-            ['https://cdn.fastcomments.com/images/party-popper.png', <Image source={{uri: 'https://cdn.fastcomments.com/images/party-popper.png'}} style={styles.commentTextArea?.toolbarButton} />],
-            ['https://cdn.fastcomments.com/images/star-64-filled.png', <Image source={{uri: 'https://cdn.fastcomments.com/images/star-64-filled.png'}} style={styles.commentTextArea?.toolbarButton} />],
-        ]
-    }
+    const emoticonBarConfig: EmoticonBarConfig | undefined = state.config.inlineReactImages ? {
+        emoticons: state.config.inlineReactImages.map((imageSrc) => [
+            imageSrc,
+            <Image source={{uri: imageSrc}} style={styles.commentTextArea?.toolbarButton}/>
+        ])
+    } : undefined;
+
     // TODO not live responding to dark background config change
-    const toolbarConfig: EditorToolbarConfig = {
-        boldButton: <Image source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_BOLD_WHITE : FastCommentsImageAsset.ICON_BOLD]} style={styles.commentTextArea?.toolbarButton}/>,
-        italicButton: <Image source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_ITALIC_WHITE : FastCommentsImageAsset.ICON_ITALIC]} style={styles.commentTextArea?.toolbarButton}/>,
-        underlineButton: <Image source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_UNDERLINE_WHITE : FastCommentsImageAsset.ICON_UNDERLINE]} style={styles.commentTextArea?.toolbarButton}/>,
-        strikethroughButton: <Image source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_STRIKETHROUGH_WHITE : FastCommentsImageAsset.ICON_STRIKETHROUGH]} style={styles.commentTextArea?.toolbarButton}/>,
-        imageButton: <Image source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_IMAGE_UPLOAD_WHITE : FastCommentsImageAsset.ICON_IMAGE_UPLOAD]} style={[styles.commentTextArea?.toolbarButton]}/>,
+    const toolbarConfig: EditorToolbarConfig | undefined = state.config.disableToolbar ? undefined : {
+        boldButton: <Image source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_BOLD_WHITE : FastCommentsImageAsset.ICON_BOLD]}
+                           style={styles.commentTextArea?.toolbarButton}/>,
+        italicButton: <Image
+            source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_ITALIC_WHITE : FastCommentsImageAsset.ICON_ITALIC]}
+            style={styles.commentTextArea?.toolbarButton}/>,
+        underlineButton: <Image
+            source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_UNDERLINE_WHITE : FastCommentsImageAsset.ICON_UNDERLINE]}
+            style={styles.commentTextArea?.toolbarButton}/>,
+        strikethroughButton: <Image
+            source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_STRIKETHROUGH_WHITE : FastCommentsImageAsset.ICON_STRIKETHROUGH]}
+            style={styles.commentTextArea?.toolbarButton}/>,
+        imageButton: <Image
+            source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_IMAGE_UPLOAD_WHITE : FastCommentsImageAsset.ICON_IMAGE_UPLOAD]}
+            style={[styles.commentTextArea?.toolbarButton]}/>,
         uploadImage: async (_node, photoData) => {
             const formData = new FormData();
             formData.append('file', photoData);
@@ -88,8 +102,16 @@ export function CommentTextArea({state, styles, value, output, onFocus: _onFocus
         return nodesToString(nodeState, EditorFormatConfigurationHTML, maxLength);
     }
 
+    if (focusObserver) {
+        focusObserver.setFocused = (isFocused) => {
+            editorInputNodes[editorInputNodes.length - 1].isFocused = isFocused;
+            setEditorInputNodes([...editorInputNodes]);
+        }
+    }
+
     return <Editor
         nodes={editorInputNodes}
+        isMultiLine={!state.config.useSingleLineCommentInput}
         onChange={onChange}
         style={styles.commentTextArea?.textarea}
         textStyle={styles.commentTextArea?.text}

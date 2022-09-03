@@ -15,6 +15,7 @@ import {getNext, getStateNext, getStatePrev} from "./node-navigate";
 export interface EditorProps {
     /** This library takes an input of nodes, which can be generated from a string via editor-node-transformer. This is so the input format is flexible (markdown, html, etc). **/
     nodes: EditorNodeDefinition[]
+    isMultiLine?: boolean
     onChange: (nodes: State<EditorNodeDefinition[]>) => void
     placeholder?: ReactNode // so you can style it etc
     onBlur?: () => void
@@ -280,6 +281,13 @@ export function Editor(props: EditorProps) {
         }
     }
 
+    function onTryNewline(node: State<EditorNodeDefinition>) {
+        console.log('Trying to create a new line', node.id.get());
+        if (props.isMultiLine) {
+            // TODO DO THING
+        }
+    }
+
     return <View style={props.style}>
         <Pressable onPress={() => select(nodes[nodes.length - 1])} style={styles.inputArea}>
             {props.placeholder}
@@ -291,6 +299,7 @@ export function Editor(props: EditorProps) {
                     onBlur={() => deselect(node)}
                     onFocus={() => select(node)}
                     onDelete={() => doDelete(node)}
+                    onTryNewline={() => onTryNewline(node)}
                 />
             })}
         </Pressable>

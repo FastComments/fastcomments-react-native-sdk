@@ -6,18 +6,37 @@ import {View} from "react-native";
 import {ReplyArea} from "./reply-area";
 import {State, useHookstate} from "@hookstate/core";
 import {IFastCommentsStyles} from "../types/fastcomments-styles";
+import {RNComment} from "../types";
+import {useState} from "react";
 
 export interface LiveCommentingTopAreaProps {
     state: State<FastCommentsState>
     styles: IFastCommentsStyles
+    callbackObserver: CallbackObserver
+}
+
+export interface CallbackObserver {
+    replyingTo?: (comment: RNComment | null) => void
 }
 
 export function LiveCommentingBottomArea(props: LiveCommentingTopAreaProps) {
     const {styles} = props;
     const state = useHookstate(props.state); // OPTIMIZATION: creating scoped state
+    const [parentComment, setParentComment] = useState<State<RNComment> | null>();
+
+    props.callbackObserver.replyingTo = (comment) => {
+        if (comment) {
+            const commentState = state.commentsById[comment._id];
+            setParentComment(commentState);
+        } else {
+            setParentComment(null);
+        }
+    }
+
     return <View>
         <View>{
-            state.config.inputAfterComments.get() && <View style={props.styles.bottomArea?.replyArea}><ReplyArea state={state} styles={styles}/></View>
+            state.config.inputAfterComments.get() &&
+            <View style={props.styles.bottomArea?.replyArea}><ReplyArea state={state} styles={styles} parentComment={parentComment}/></View>
         }</View>
     </View>;
 }
