@@ -19,7 +19,6 @@ export function setupErebusDarkSkin(config: FastCommentsRNConfig, styles: IFastC
             'https://cdn.fastcomments.com/images/star-64-filled.png',
         ],
 
-        // TODO render dates under comment text
         // TODO textarea looks like vanillajs version
         // TODO textarea is fixed at bottom and comments list scrolls
         // TODO pagination
