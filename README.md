@@ -40,7 +40,7 @@ This is in heavy development! Examples will be posted here once the library is m
 - [ ] User activity indicators 
 - [ ] Media Uploads (broken due to native exception?)
 - [ ] Gif Browser
-- [ ] Release to NPM
+- [x] Release to NPM
 - [x] Switch Pressable usage to Button or TouchableOpacity where possible
 - [ ] WYSIWYG Editor Optimizations (ideally 60fps while typing)
 - [ ] Better WYSIWYG bar icons (web ones don't look good in native)
