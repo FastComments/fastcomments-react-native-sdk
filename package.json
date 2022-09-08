@@ -48,7 +48,7 @@
     "@types/react": "18.0.0",
     "@types/react-dom": "18.0.0",
     "@types/react-native": "^0.69.4",
-    "fastcomments-typescript": "^1.6.23",
+    "fastcomments-typescript": "^2.0.0",
     "pod-install": "^0.1.0",
     "prettier": "^2.0.5",
     "react": "18.0.0",
