@@ -30,6 +30,11 @@
     "bootstrap": "yarn example && yarn && yarn pods"
   },
   "keywords": [
+    "commenting",
+    "live commenting",
+    "live chat",
+    "chat",
+    "social network",
     "react-native",
     "ios",
     "android"
