@@ -1,7 +1,7 @@
 // use this if you want to use the default layout and layout mechanism
 
 import {CommentAreaMessage} from "./comment-area-message";
-import {ActivityIndicator, Text, View} from "react-native";
+import {ActivityIndicator, ScrollView, Text, View} from "react-native";
 import {PaginationNext} from "./pagination-next";
 import {PaginationPrev} from "./pagination-prev";
 import {CommentsList} from "./comments-list";
@@ -73,6 +73,25 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
             callbacks && callbacks.replyingTo && callbacks.replyingTo(comment);
         }
 
+        const scrollComments = state.config.scrollComments.get();
+
+        // Magic 15px here prevents content being trimmed in ScrollView for some reason. Don't think it needs to be configurable unless someone asks.
+        const commentsListContent = <View style={{marginBottom: 15}}>
+            {paginationBeforeComments}
+            {
+                state.commentsVisible.get() && CommentsList({
+                    state,
+                    styles,
+                    onVoteSuccess: callbacks?.onVoteSuccess,
+                    onReplySuccess: callbacks?.onReplySuccess,
+                    onAuthenticationChange: callbacks?.onAuthenticationChange,
+                    replyingTo: handleReplyingTo,
+                })
+            }
+            {paginationAfterComments}</View>;
+        const commentList = scrollComments ? <ScrollView style={styles.commentsWrapper}>{commentsListContent}</ScrollView> :
+            <View style={styles.commentsWrapper}>{commentsListContent}</View>;
+
         return <View style={styles.root}>{
             state.hasBillingIssue.get() && state.isSiteAdmin.get() && <Text style={styles.red}>{state.translations.BILLING_INFO_INV.get()}</Text>
         }
@@ -81,19 +100,8 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
                 <Text style={styles.red}><RenderHtml source={{html: state.translations.DEMO_CREATE_ACCT.get()}} contentWidth={width}/></Text>
             }
             <LiveCommentingTopArea state={state} styles={styles}/>
-            <View style={styles.commentsWrapper}>
-                {paginationBeforeComments}
-                {state.commentsVisible.get() && CommentsList({
-                    state,
-                    styles,
-                    onVoteSuccess: callbacks?.onVoteSuccess,
-                    onReplySuccess: callbacks?.onReplySuccess,
-                    onAuthenticationChange: callbacks?.onAuthenticationChange,
-                    replyingTo: handleReplyingTo,
-                })}
-                {paginationAfterComments}
-            </View>
-            <LiveCommentingBottomArea state={state} styles={styles} callbackObserver={callbackObserver} />
+            {commentList}
+            <LiveCommentingBottomArea state={state} styles={styles} callbackObserver={callbackObserver}/>
         </View>;
     } else {
         return <View style={styles.root}><CommentAreaMessage styles={styles} message={'todo'}/></View>;

@@ -1,15 +1,13 @@
-import {FastCommentsState} from "../types/fastcomments-state";
+import {FastCommentsState, FastCommentsImageAsset, IFastCommentsStyles} from "../types";
 import {State} from "@hookstate/core";
 import {Text, Image} from "react-native";
 import {Editor} from "./wysiwyg/wysiwyg-editor";
 import {useEffect, useState} from "react";
 import {EditorToolbar, EditorToolbarConfig} from "./wysiwyg/editor-toolbar";
-import {FastCommentsImageAsset} from "../types/image-asset";
 import {enforceMaxLength, nodesToString, stringToNodes} from "./wysiwyg/editor-node-transform";
 import {EditorFormatConfigurationHTML} from "./wysiwyg/transformers";
 import {EditorNodeDefinition} from "./wysiwyg/editor-node";
 import {EmoticonBar, EmoticonBarConfig} from "./wysiwyg/emoticon-bar";
-import {IFastCommentsStyles} from "../types/fastcomments-styles";
 
 export interface ValueObserver {
     getValue?: () => string
@@ -109,6 +107,7 @@ export function CommentTextArea({state, styles, value, output, focusObserver, on
         }
     }
 
+    // TODO emoticon bar above input area - in separate component - communicates
     return <Editor
         nodes={editorInputNodes}
         isMultiLine={!state.config.useSingleLineCommentInput}
@@ -121,7 +120,7 @@ export function CommentTextArea({state, styles, value, output, focusObserver, on
         maxLength={maxLength}
         toolbar={(config) => <EditorToolbar config={config}/>}
         toolbarConfig={toolbarConfig}
-        emoticonBar={(config) => <EmoticonBar config={config}/>}
+        // emoticonBar={(config) => <EmoticonBar config={config}/>}
         emoticonBarConfig={emoticonBarConfig}
     />
 }

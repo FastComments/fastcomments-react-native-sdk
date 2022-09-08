@@ -44,7 +44,8 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             separator: {
                 flexDirection: 'row',
                 justifyContent: 'space-between',
-                paddingBottom: 5,
+                paddingTop: 3,
+                paddingBottom: 3,
                 paddingLeft: 10,
                 paddingRight: 10,
                 borderBottomWidth: 1,
@@ -625,7 +626,6 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             loggedInInfo: {
                 flexDirection: 'row',
                 alignItems: 'center',
-                // "width": "calc(100% - 60px)", // TODO
                 "minWidth": 150
             },
             topBarAvatar: {
@@ -640,7 +640,6 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 // TODO box shadow
             },
             topBarUsername: {
-                // "maxWidth": "calc(50% - 25px)", // TODO
                 "overflow": "scroll",
                 "fontWeight": "700",
                 flexWrap: 'nowrap'

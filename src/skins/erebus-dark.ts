@@ -20,7 +20,6 @@ export function setupErebusDarkSkin(config: FastCommentsRNConfig, styles: IFastC
         ],
 
         // TODO textarea looks like vanillajs version
-        // TODO textarea is fixed at bottom and comments list scrolls
         // TODO pagination
         useSingleReplyField: true,
         disableToolbar: true,
@@ -38,10 +37,81 @@ export function setupErebusDarkSkin(config: FastCommentsRNConfig, styles: IFastC
         disableDownVoting: true,
         renderLikesToRight: true,
         renderDateBelowComment: true,
-        // TODO doesn't work
-        // renderCommentInline: true,
+        enableInfiniteScrolling: true,
     });
     const erebusStyles: IFastCommentsStyles = {
+        root: {
+            flex: 1
+        },
+        commentsWrapper: {
+            paddingBottom: 30
+        },
+        bottomArea: {
+            root: {
+                paddingBottom: 10
+            }
+        },
+        replyArea: {
+            loggedInInfo: {
+                minWidth: 'auto'
+            },
+            topBarUsername: {
+                display: 'none'
+            },
+            topBarRight: {
+                display: 'none'
+            },
+            topBarAndInputArea: {
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+            },
+            topBar: {
+                "minHeight": 'auto',
+                "marginTop": 0,
+                "marginRight": 0,
+                "marginBottom": 0,
+                "marginLeft": 0,
+                flexGrow: 0,
+            },
+            commentInputArea: {
+                "marginTop": 0,
+                "marginRight": 0,
+                "marginBottom": 0,
+                "marginLeft": 0,
+                flexGrow: 2,
+                flexShrink: 2, // keeps long text from pushing submit button away
+            },
+            replyButton: {
+                alignSelf: 'flex-start',
+                "marginTop": 0,
+                "marginRight": 0,
+                "marginBottom": 0,
+                "marginLeft": 0,
+                height: 40,
+                flexGrow: 0,
+                borderLeftWidth: 0,
+                borderTopLeftRadius: 0,
+                borderBottomLeftRadius: 0,
+            },
+            replyButtonText: {
+                fontSize: 13,
+                fontWeight: 'bold'
+            },
+            replyButtonIcon: {
+                display: 'none'
+            }
+        },
+        commentTextArea: {
+            textarea: {
+                height: 40,
+                paddingRight: 0,
+                borderRightWidth: 0,
+                borderTopRightRadius: 0,
+                borderBottomRightRadius: 0,
+                overflow: 'scroll'
+            }
+        },
         comment: {
             subRoot: {},
             contentWrapper: {
@@ -106,8 +176,7 @@ export function setupErebusDarkSkin(config: FastCommentsRNConfig, styles: IFastC
             }
         },
         commentReplyToggle: {
-            icon: {
-            },
+            icon: {},
             text: {
                 fontSize: 11
             }

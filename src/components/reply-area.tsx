@@ -538,17 +538,22 @@ export function ReplyArea(props: ReplyAreaProps) {
         }
     }
 
+    // Sometimes you want to put this all on one line, so having it in one container is helpful. erebus-dark theme uses this.
+    const topBarInputAreaAndSubmit = <View style={styles.replyArea?.topBarAndInputArea}>
+        {topBar}
+        {commentInputArea}
+        {authFormArea}
+        {commentSubmitButton}
+    </View>;
+
     return <View>
         {state.config.tenantId.get() === 'demo' && <RenderHtml source={{
             html: state.translations.DEMO_CREATE_ACCT.get()
         }} contentWidth={width}/>}
         {replyToText && <View style={styles.replyArea?.replyingTo}>{replyToText}</View>}
         {ssoLoginWrapper}
-        {topBar}
-        {commentInputArea}
         {displayError}
-        {authFormArea}
-        {commentSubmitButton}
+        {topBarInputAreaAndSubmit}
         {replyCancelButton}
         {commentReplyState.isReplySaving.get() && <View style={styles.replyArea?.loadingView}>
             <ActivityIndicator size="large"/>

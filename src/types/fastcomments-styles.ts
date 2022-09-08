@@ -16,6 +16,7 @@ export interface IFastCommentsStyles {
         commentCount?: TextStyle,
     },
     bottomArea?: {
+        root?: ViewStyle,
         replyArea?: ViewStyle,
         separator?: ViewStyle,
     },
@@ -150,6 +151,7 @@ export interface IFastCommentsStyles {
         ssoLoginButton?: ViewStyle
         ssoLoginButtonText?: TextStyle
         topBar?: ViewStyle
+        topBarAndInputArea?: ViewStyle
         loggedInInfo?: ViewStyle
         topBarAvatar?: ImageStyle
         topBarUsername?: TextStyle

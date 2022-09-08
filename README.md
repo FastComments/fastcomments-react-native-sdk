@@ -33,7 +33,7 @@ This is in heavy development! Examples will be posted here once the library is m
 - [x] Custom Styles (as typed stylesheet)
 - [x] Callbacks (similar to vanillajs widget)
 - [x] Dark mode skin
-- [ ] Social-media like skin
+- [x] Social-media like skin
 - [x] Improved Comment Styling
 - [ ] Notifications List (shows when clicking bell)
 - [ ] Support for showLiveRightAway = false 
