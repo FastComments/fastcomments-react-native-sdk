@@ -3,8 +3,17 @@ import {IFastCommentsStyles} from "../types";
 export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
     return {
         root: {},
-        loading: {
-            color: "red"
+        loadingOverlay: {
+            // TODO common
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#ffffff50'
         },
         red: {
             color: 'red'

@@ -3,7 +3,7 @@ import {MixedStyleDeclaration} from "react-native-render-html";
 
 export interface IFastCommentsStyles {
     root?: ViewStyle,
-    loading?: TextStyle
+    loadingOverlay?: TextStyle
     red?: TextStyle
     threeDotMenu?: {
         root?: ViewStyle
@@ -147,6 +147,7 @@ export interface IFastCommentsStyles {
     replyArea?: {
         replyingTo?: ViewStyle
         replyingToText?: MixedStyleDeclaration
+        replyingToCancelText?: TextStyle
         ssoLoginWrapper?: ViewStyle
         ssoLoginButton?: ViewStyle
         ssoLoginButtonText?: TextStyle

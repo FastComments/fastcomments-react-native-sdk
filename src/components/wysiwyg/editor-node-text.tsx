@@ -54,8 +54,7 @@ export function EditorNodeText({node, onBlur, onFocus, onDelete, onTryNewline, t
                 onTryNewline && onTryNewline();
                 break;
             case 'Backspace':
-                if (!selection?.start) {
-                    console.log('Calling onDelete, does react suck?')
+                if ((!selection?.start) || node.deleteOnBackspace.get()) {
                     try {
                         // delete this node
                         onDelete && onDelete();

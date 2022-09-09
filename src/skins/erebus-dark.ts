@@ -52,6 +52,14 @@ export function setupErebusDarkSkin(config: FastCommentsRNConfig, styles: IFastC
             }
         },
         replyArea: {
+            replyingTo: {
+                flexDirection: 'row',
+                justifyContent: 'space-between'
+            },
+            replyingToCancelText: {
+                color: '#fff',
+                fontWeight: 'bold'
+            },
             loggedInInfo: {
                 minWidth: 'auto'
             },

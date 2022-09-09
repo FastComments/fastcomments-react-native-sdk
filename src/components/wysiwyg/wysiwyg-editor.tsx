@@ -1,7 +1,7 @@
 import {Pressable, StyleSheet, TextStyle, View, ViewStyle} from "react-native";
 import {EditorNode, EditorNodeDefinition, EditorNodeType} from "./editor-node";
 import {State, useHookstate, useHookstateEffect} from "@hookstate/core";
-import {ReactNode, useEffect} from "react";
+import {ReactNode} from "react";
 import {createTextNode} from "./editor-node-text";
 import {EditorToolbarConfig} from "./editor-toolbar";
 import * as ImagePicker from 'react-native-image-picker';
@@ -12,9 +12,14 @@ import {createBoldNode, createEmoticonNode, createStrikethroughNode, createUnder
 import {EmoticonBarConfig} from "./emoticon-bar";
 import {getNext, getStateNext, getStatePrev} from "./node-navigate";
 
+export interface UpdateNodesObserver {
+    updateNodes?: (nodes: EditorNodeDefinition[]) => void
+}
+
 export interface EditorProps {
     /** This library takes an input of nodes, which can be generated from a string via editor-node-transformer. This is so the input format is flexible (markdown, html, etc). **/
     nodes: EditorNodeDefinition[]
+    updateNodesObserver?: UpdateNodesObserver
     isMultiLine?: boolean
     onChange: (nodes: State<EditorNodeDefinition[]>) => void
     placeholder?: ReactNode // so you can style it etc
@@ -37,10 +42,12 @@ export function Editor(props: EditorProps) {
     // TODO image uploads work (weird runtime issue in library?)
     const nodes = useHookstate<EditorNodeDefinition[]>(props.nodes);
 
-    useEffect(() => {
-        // for example, if the consumer wants to clear everything.
-        nodes.set(props.nodes);
-    }, [props.nodes]);
+    if (props.updateNodesObserver) {
+        props.updateNodesObserver.updateNodes = (newNodes) => {
+            console.log('setting new nodes to', newNodes);
+            nodes.set(newNodes)
+        };
+    }
 
     useHookstateEffect(() => {
         props.onChange(nodes);
@@ -121,7 +128,7 @@ export function Editor(props: EditorProps) {
                     const rawNode = node.get();
                     if (!rawNode.content) {
                         const prev = getStatePrev(nodes, rawNode.id);
-                        if (prev.get()) {
+                        if (prev?.get()) {
                             console.log('node has no content, and has previous node. (removing, focusing)', rawNode.id, prev.id.get());
                             deleteNode(nodes, rawNode.id);
                             // prev is now the current node.
@@ -232,7 +239,6 @@ export function Editor(props: EditorProps) {
 
     // taking a State<Node> here caused a ton of confusion, so now we just take a regular JS object.
     function doDelete(node: State<EditorNodeDefinition>, skipNextCheck?: boolean) {
-        console.log('DO DELETE', !!node)
         if (!node || typeof node !== 'object') {
             console.error('Tried to delete empty node!', typeof node);
             return;
@@ -248,15 +254,16 @@ export function Editor(props: EditorProps) {
         // } catch (e) {
         //     console.error(e);
         // }
-        console.log('??? a')
         console.log(`Deleting id=[${rawNode.id}] type=[${rawNode.type}] content=[${rawNode.content}]`);
-        console.log('??? b')
         if (nodes.length === 1) { // TODO does this work with set(none)?
-            // if this last node is an image, replace it with a text root node, otherwise skip.
-            if (ImageTypes.includes(nodes[0].type.get())) {
+            // if this last node is an image, or text like @person, replace it with a text root node, otherwise skip.
+            if (ImageTypes.includes(nodes[0].type.get()) || node.content) {
                 // replace the node in-place
                 console.log('Doing in-place replacement of node for delete.');
-                nodes[0].set(createTextNode(''));
+                const replacement = createTextNode('');
+                replacement.isFocused = true;
+                replacement.deleteOnBackspace = false; // TODO WHY IS .set() NOT REPLACING OBJECT????
+                nodes[0].set(replacement);
             } else {
                 console.log('Skipping delete - is last node.', rawNode.id);
             }
@@ -265,7 +272,7 @@ export function Editor(props: EditorProps) {
         // if this is not an image, and the node before this is an emoticon/image, and the current node is not an image node, delete the emoticon/image too.
         // maybe in an ideal object-oriented world you could broadcast "delete" to node.prev, but we can't serialize objects with methods with our state mechanism (yet).
         // It's also nice to encapsulate the delete logic in the "delete" code rather than in every object, so far.
-        const prev = getStatePrev(nodes, rawNode.id)
+        const prev = getStatePrev(nodes, rawNode.id);
         const emoticonNodeBeforeText = !skipNextCheck && prev && !ImageTypes.includes(rawNode.type) && ImageTypes.includes(prev.type.get()) ? prev : null;
         if (emoticonNodeBeforeText) {
             console.log(`Will delete next: id=[${emoticonNodeBeforeText.id}] type=[${emoticonNodeBeforeText.type}] content=[${emoticonNodeBeforeText.content}]`);

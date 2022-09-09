@@ -1,20 +1,22 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
 
-import RenderHtml from 'react-native-render-html';
+import {RenderHTMLSource} from 'react-native-render-html';
 
-import {FastCommentsState} from "../types/fastcomments-state";
 import {Image, Pressable, TouchableOpacity, useWindowDimensions, View} from "react-native";
 import {getCommentMenuItems, getCommentMenuState} from "./comment-menu";
 import {CommentNotices} from "./comment-notices";
 import {CommentUserInfo, getCommentUserInfoHTML} from "./comment-user-info";
 import {State, useHookstate} from "@hookstate/core";
-import {FastCommentsImageAsset} from "../types/image-asset";
 import {CommentDisplayDate} from "./comment-dispay-date";
 import {CommentBottom} from "./comment-bottom";
-import {RNComment} from "../types/react-native-comment";
-import {IFastCommentsStyles} from "../types/fastcomments-styles";
-import {FastCommentsCallbacks} from "../types";
+import {
+    FastCommentsState,
+    FastCommentsImageAsset,
+    RNComment,
+    IFastCommentsStyles,
+    FastCommentsCallbacks,
+} from "../types";
 import {useState} from "react";
 import {ModalMenu} from "./modal-menu";
 import {CommentVote} from "./comment-vote";
@@ -28,6 +30,7 @@ export interface FastCommentsCommentWithState {
 export interface CommentViewProps extends FastCommentsCommentWithState, Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onReplySuccess' | 'onAuthenticationChange' | 'replyingTo'> {
 }
 
+// TODO OPTIMIZE further. Seems like these are rendering way more than they need to.
 export function FastCommentsCommentView(props: CommentViewProps) {
     const {comment, styles, onVoteSuccess, onReplySuccess, onAuthenticationChange, replyingTo} = props;
     const state = useHookstate(props.state); // OPTIMIZATION: creating scoped state
@@ -60,7 +63,7 @@ export function FastCommentsCommentView(props: CommentViewProps) {
         <View style={styles.comment?.contentWrapper}>
             <CommentNotices comment={comment} state={state} styles={styles}/>
             {!renderCommentInline && <CommentUserInfo comment={comment} state={state} styles={styles}/>}
-            {<RenderHtml source={{html: renderCommentInline ? `<div style="flex-direction:row">${getCommentUserInfoHTML(props)}${htmlWrapped}</div>` : htmlWrapped}} contentWidth={width} baseStyle={styles.comment?.text}/>}
+            {<RenderHTMLSource source={{html: renderCommentInline ? `<div style="flex-direction:row">${getCommentUserInfoHTML(props)}${htmlWrapped}</div>` : htmlWrapped}} contentWidth={width} />}
             {state.config.renderLikesToRight.get() && <CommentVote comment={comment} state={state} styles={styles} onVoteSuccess={onVoteSuccess}/>}
         </View>
         <CommentBottom comment={comment}

@@ -29,7 +29,7 @@ This is in heavy development! Examples will be posted here once the library is m
 - [x] Ability to hide replies
 - [ ] Show/Hide Comments Toggle
 - [ ] Pagination (Buttons)
-- [ ] Pagination (Infinite Scroll)
+- [x] Pagination (Infinite Scroll)
 - [x] Custom Styles (as typed stylesheet)
 - [x] Callbacks (similar to vanillajs widget)
 - [x] Dark mode skin
@@ -46,3 +46,4 @@ This is in heavy development! Examples will be posted here once the library is m
 - [ ] Better WYSIWYG bar icons (web ones don't look good in native)
 - [ ] Complete all TODOs
 - [x] Profile & ensure 40 FPS minimum during writing comments, submitting, voting, and opening reply menu.
+- [x] Add @username to text box when replying and using useSingleReplyField = true

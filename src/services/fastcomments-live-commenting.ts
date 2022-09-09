@@ -1,14 +1,12 @@
 import {FastCommentsCommentWidgetConfig, FastCommentsWidgetComment} from "fastcomments-typescript";
-import {FastCommentsState} from "../types/fastcomments-state";
+import {FastCommentsState, GetCommentsResponse, FastCommentsCallbacks, ImageAssetConfig} from "../types";
 import {createURLQueryString, makeRequest} from "./http";
-import {GetCommentsResponse} from "../types/dto";
 import {ensureRepliesOpenToComment, getCommentsTreeAndCommentsById} from "./comment-trees";
 import {SubscriberInstance} from "./subscribe-to-changes";
 import {mergeSimpleSSO} from "./sso";
 import {State} from "@hookstate/core";
 import {handleNewCustomConfig} from "./custom-config";
 import {persistSubscriberState} from "./live";
-import {FastCommentsCallbacks, ImageAssetConfig} from "../types";
 import {getDefaultImageAssets} from "../resources";
 
 interface FastCommentsInternalState {

@@ -31,7 +31,7 @@ const SignUpErrorsTranslationIds: Record<string, string> = {
     'invalid-name-is-email': 'USERNAME_CANT_BE_EMAIL'
 };
 
-export interface ReplyAreaProps extends Pick<FastCommentsCallbacks, 'onReplySuccess' | 'onAuthenticationChange'> {
+export interface ReplyAreaProps extends Pick<FastCommentsCallbacks, 'onReplySuccess' | 'replyingTo' | 'onAuthenticationChange'> {
     state: State<FastCommentsState>
     styles: IFastCommentsStyles
     parentComment?: State<RNComment> | null
@@ -223,7 +223,6 @@ async function submit({
             if (replyingToId === null && !state.config.disableSuccessMessage.get()) {
                 showSuccessMessage = true;
             }
-            incOverallCommentCount(state.config.countAll.get(), state, replyingToId);
             const newCurrentUserId = currentUserBeforeSubmit && 'id' in currentUserBeforeSubmit ? currentUserBeforeSubmit.id : null;
 
             // reconnect to new websocket channel if needed
@@ -269,18 +268,17 @@ async function submit({
 
 // TODO OPTIMIZE why does submitting a comment re-render all comments several times?
 export function ReplyArea(props: ReplyAreaProps) {
-    const {parentComment, styles, onReplySuccess, onAuthenticationChange} = props;
+    const {parentComment, styles, onReplySuccess, replyingTo, onAuthenticationChange} = props;
     const state = useHookstate(props.state); // create scoped state
     const currentUser = state.currentUser?.get();
     const translations = state.translations.get();
 
-    const needsAuth = !currentUser && !!parentComment;
+    const needsAuth = !currentUser && !!parentComment && !!parentComment.get();
     const valueGetter: ValueObserver = {};
     const focusObserver: FocusObserver = {};
 
     useHookstateEffect(() => {
         if (parentComment) {
-            console.log('parentComment set - focusing');
             focusObserver.setFocused && focusObserver.setFocused(true);
         }
     }, [parentComment])
@@ -289,8 +287,11 @@ export function ReplyArea(props: ReplyAreaProps) {
         isReplySaving: false,
         showSuccessMessage: false,
         // for root comment area, we don't show the auth input form until they interact to save screen space.
-        showAuthInputForm: needsAuth
+        showAuthInputForm: needsAuth,
     });
+    if (!!parentComment?.get() && state.config.useSingleReplyField.get()) {
+        commentReplyState.comment.set(`**@${parentComment.commenterName.get()}** `);
+    }
     const {width} = useWindowDimensions();
 
     const getLatestInputValue = () => {
@@ -306,16 +307,10 @@ export function ReplyArea(props: ReplyAreaProps) {
     // TODO OPTIMIZE BENCHMARK: faster solution than using RenderHtml. RenderHtml is easy because the translation is HTML, but it only has <b></b> elements.
     //  We can't hardcode the order of the bold elements due to localization, so rendering HTML is nice. But we can probably transform this into native elements faster than RenderHtml.
     const replyToText = parentComment?.get()
-        ? (
-            currentUser
-                ? <RenderHtml source={{
-                    html:
-                        translations.REPLYING_TO_AS.replace('[to]', parentComment?.get()?.commenterName as string).replace('[from]', currentUser.username)
-                }} contentWidth={width} baseStyle={styles.replyArea?.replyingToText}/>
-                : <RenderHtml source={{
+        // we intentionally don't use the REPLYING_TO_AS translation like web to save horizontal space for the cancel button
+        ? <RenderHtml source={{
                     html: translations.REPLYING_TO.replace('[to]', parentComment?.get()?.commenterName as string)
-                }} contentWidth={width} baseStyle={styles.replyArea?.replyingToText}/>
-        ) : null;
+                }} contentWidth={width} baseStyle={styles.replyArea?.replyingToText}/> : null;
 
     const ssoConfig = state.config.sso?.get() || state.config.simpleSSO?.get();
     let ssoLoginWrapper;
@@ -323,7 +318,6 @@ export function ReplyArea(props: ReplyAreaProps) {
     let commentInputArea;
     let commentSubmitButton;
     let authFormArea;
-    let replyCancelButton;
 
     if (!currentUser && ssoConfig && !state.config.allowAnon.get()) {
         if (ssoConfig.loginURL || ssoConfig.loginCallback) { // if they don't define a URL, we just show a message.
@@ -550,11 +544,21 @@ export function ReplyArea(props: ReplyAreaProps) {
         {state.config.tenantId.get() === 'demo' && <RenderHtml source={{
             html: state.translations.DEMO_CREATE_ACCT.get()
         }} contentWidth={width}/>}
-        {replyToText && <View style={styles.replyArea?.replyingTo}>{replyToText}</View>}
+        {replyToText && <View style={styles.replyArea?.replyingTo}>
+            {replyToText}
+            {state.config.useSingleReplyField.get()
+            && <TouchableOpacity onPress={() => {
+                // TODO CONFIRM
+                replyingTo && replyingTo(null);
+                commentReplyState.comment.set('');
+            }}>
+                <Text style={styles.replyArea?.replyingToCancelText}>{state.translations.CANCEL.get()}</Text>
+            </TouchableOpacity>
+            }
+        </View>}
         {ssoLoginWrapper}
         {displayError}
         {topBarInputAreaAndSubmit}
-        {replyCancelButton}
         {commentReplyState.isReplySaving.get() && <View style={styles.replyArea?.loadingView}>
             <ActivityIndicator size="large"/>
         </View>}

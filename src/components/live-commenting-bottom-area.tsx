@@ -36,7 +36,9 @@ export function LiveCommentingBottomArea(props: LiveCommentingTopAreaProps) {
     return <View style={props.styles.bottomArea?.root}>
         <View>{
             state.config.inputAfterComments.get() &&
-            <View style={props.styles.bottomArea?.replyArea}><ReplyArea state={state} styles={styles} parentComment={parentComment}/></View>
+            <View style={props.styles.bottomArea?.replyArea}>
+                <ReplyArea state={state} styles={styles} parentComment={parentComment} replyingTo={props.callbackObserver.replyingTo}/>
+            </View>
         }</View>
     </View>;
 }

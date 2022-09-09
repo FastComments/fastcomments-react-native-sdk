@@ -180,6 +180,11 @@ export function enforceMaxLength(nodes: State<EditorNodeDefinition[]>, formatCon
     return isEmpty;
 }
 
+// TODO HACK
+function isMention(type: EditorNodeType, text: string) {
+    return type === EditorNodeType.TEXT_BOLD && text.startsWith('@') && text.length < 300;
+}
+
 export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTokenizerConfig) {
     console.log('calling defaultTokenizer', input);
     const result: EditorNodeDefinition[] = [];
@@ -193,11 +198,13 @@ export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTo
 
         if (inNode) {
             if (inNode.end && buffer.endsWith(inNode.end)) {
+                const content = buffer.substr(0, buffer.length - inNode.end.length);
                 result.push({
                     id: getNextNodeId(), // we do this so react knows to re-render via key, since we use id as key. If we just use an incrementing number here, react may not re-render for a whole new tree.
                     type: inNode.type,
-                    content: buffer.substr(0, buffer.length - inNode.end.length),
-                    isFocused: false
+                    content,
+                    isFocused: false,
+                    deleteOnBackspace: isMention(inNode.type, content)
                 });
                 inNode = null;
                 buffer = '';
@@ -212,19 +219,22 @@ export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTo
                     }
                     inNode = node;
                     if (buffer.length - startToken.length > 0) {
+                        const content = buffer.substr(0, buffer.length - startToken.length); // TODO replace substr with substring
                         result.push({
                             id: getNextNodeId(), // we do this so react knows to re-render via key, since we use id as key. If we just use an incrementing number here, react may not re-render for a whole new tree.
                             type: EditorNodeType.TEXT,
-                            content: buffer.substr(0, buffer.length - startToken.length),
+                            content,
                             isFocused: false
                         });
                     }
                     if (!node.end) { // some node types like newlines do not have ends
+                        const content = buffer.substr(0, buffer.length - startToken.length); // TODO replace substr with substring
                         result.push({
                             id: getNextNodeId(), // we do this so react knows to re-render via key, since we use id as key. If we just use an incrementing number here, react may not re-render for a whole new tree.
                             type: node.type,
-                            content: buffer.substr(0, buffer.length - startToken.length),
-                            isFocused: false
+                            content,
+                            isFocused: false,
+                            deleteOnBackspace: isMention(node.type, content)
                         });
                         inNode = null;
                     }
@@ -249,6 +259,7 @@ export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTo
             isFocused: false
         });
     }
+    console.log('Tokenizer', input, '->', result);
     return result;
 }
 

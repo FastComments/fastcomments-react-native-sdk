@@ -25,6 +25,8 @@ export interface EditorNodeDefinition {
     type: EditorNodeType
     isFocused: boolean
     lastFocusTime?: number
+    /** For some text nodes, like those that show @mentions, you want to delete in one backspace. **/
+    deleteOnBackspace?: boolean
 }
 
 export interface EditorNodeProps {

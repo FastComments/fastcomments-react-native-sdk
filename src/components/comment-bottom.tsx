@@ -47,7 +47,9 @@ export function CommentBottom(props: CommentBottomProps) {
                 <Text style={styles.commentBottom?.commentBottomToolbarReplyText}>{state.translations.REPLY.get()}</Text>
             </TouchableOpacity>
         </View>
-        {isReplyBoxOpen && !state.config.useSingleReplyField.get() && <View style={styles.commentBottom?.replyAreaRoot}><ReplyArea state={state} parentComment={comment} styles={styles} onReplySuccess={onReplySuccess} onAuthenticationChange={onAuthenticationChange}/></View>}
+        {isReplyBoxOpen && !state.config.useSingleReplyField.get() && <View style={styles.commentBottom?.replyAreaRoot}>
+            <ReplyArea state={state} parentComment={comment} styles={styles} onReplySuccess={onReplySuccess} onAuthenticationChange={onAuthenticationChange}/></View>
+        }
         <CommentReplyToggle comment={comment} state={state} styles={styles} repliesHiddenState={props.repliesHiddenState} />
     </View>;
 }

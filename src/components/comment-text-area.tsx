@@ -1,13 +1,13 @@
 import {FastCommentsState, FastCommentsImageAsset, IFastCommentsStyles} from "../types";
 import {State} from "@hookstate/core";
 import {Text, Image} from "react-native";
-import {Editor} from "./wysiwyg/wysiwyg-editor";
-import {useEffect, useState} from "react";
+import {Editor, UpdateNodesObserver} from "./wysiwyg/wysiwyg-editor";
+import {useEffect, useRef, useState} from "react";
 import {EditorToolbar, EditorToolbarConfig} from "./wysiwyg/editor-toolbar";
 import {enforceMaxLength, nodesToString, stringToNodes} from "./wysiwyg/editor-node-transform";
 import {EditorFormatConfigurationHTML} from "./wysiwyg/transformers";
 import {EditorNodeDefinition} from "./wysiwyg/editor-node";
-import {EmoticonBar, EmoticonBarConfig} from "./wysiwyg/emoticon-bar";
+import {EmoticonBarConfig} from "./wysiwyg/emoticon-bar";
 
 export interface ValueObserver {
     getValue?: () => string
@@ -34,10 +34,14 @@ export function CommentTextArea({state, styles, value, output, focusObserver, on
     const hasDarkBackground = state.config.hasDarkBackground;
     const [isFocused, setFocused] = useState(false);
     const [isEmpty, setIsEmpty] = useState(!!value);
-    const [editorInputNodes, setEditorInputNodes] = useState<EditorNodeDefinition[]>([]);
+    const editorInputNodesRef = useRef<EditorNodeDefinition[]>([]);
     const [nodeState, setNodeState] = useState<State<EditorNodeDefinition[]> | null>(null);
+    const updateNodesObserver: UpdateNodesObserver = {};
+
     useEffect(() => {
-        setEditorInputNodes(stringToNodes(EditorFormatConfigurationHTML, value || ''));
+        const newNodes = stringToNodes(EditorFormatConfigurationHTML, value || '');
+        editorInputNodesRef.current = newNodes;
+        updateNodesObserver.updateNodes!(newNodes);
     }, [value]);
 
     const placeholder = <Text style={styles.commentTextArea?.placeholder}>{state.translations.ENTER_COMMENT_HERE}</Text>
@@ -102,14 +106,15 @@ export function CommentTextArea({state, styles, value, output, focusObserver, on
 
     if (focusObserver) {
         focusObserver.setFocused = (isFocused) => {
-            editorInputNodes[editorInputNodes.length - 1].isFocused = isFocused;
-            setEditorInputNodes([...editorInputNodes]);
+            editorInputNodesRef.current[editorInputNodesRef.current.length - 1].isFocused = isFocused;
+            updateNodesObserver.updateNodes!(editorInputNodesRef.current);
         }
     }
 
     // TODO emoticon bar above input area - in separate component - communicates
     return <Editor
-        nodes={editorInputNodes}
+        nodes={editorInputNodesRef.current}
+        updateNodesObserver={updateNodesObserver}
         isMultiLine={!state.config.useSingleLineCommentInput}
         onChange={onChange}
         style={styles.commentTextArea?.textarea}
