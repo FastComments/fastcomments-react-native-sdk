@@ -10,9 +10,6 @@ export function setupDarkModeSkin(config: FastCommentsRNConfig, styles: IFastCom
         root: {
             backgroundColor: '#14181f'
         },
-        loading: {
-            color: "red"
-        },
         red: {
             color: 'red'
         },
