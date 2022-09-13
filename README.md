@@ -28,7 +28,7 @@ This is in heavy development! Examples will be posted here once the library is m
 - [x] Voting
 - [x] Ability to hide replies
 - [ ] Show/Hide Comments Toggle
-- [ ] Pagination (Buttons)
+- [x] Pagination (Buttons)
 - [x] Pagination (Infinite Scroll)
 - [x] Custom Styles (as typed stylesheet)
 - [x] Callbacks (similar to vanillajs widget)
