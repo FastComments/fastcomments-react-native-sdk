@@ -16,7 +16,7 @@ import {CallbackObserver, LiveCommentingBottomArea} from "./live-commenting-bott
 import {getDefaultFastCommentsStyles} from "../resources";
 import {FastCommentsRNConfig} from "../types/react-native-config";
 import {CommentViewProps, FastCommentsCommentView} from "./comment";
-import {canPaginateNext, paginateNext} from "../services/pagination";
+import {canPaginateNext, paginateNext, paginatePrev} from "../services/pagination";
 import {shouldCommentReRender} from "../services/comment-render-determination";
 
 export interface FastCommentsLiveCommentingProps {
@@ -85,13 +85,24 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
         return <View style={styles.root}><CommentAreaMessage styles={styles} message={state.blockingErrorMessage.get()}/></View>;
     } else if (!(state.commentsTree.length === 0 && state.config.readonly.get() && (state.config.hideCommentsUnderCountTextFormat.get() || state.config.useShowCommentsToggle.get()))) {
         const isInfiniteScroll = state.config.enableInfiniteScrolling.get();
+
+        const doPaginateNext = async (isAll: boolean) => {
+            setFetchingNextPage(true);
+            await paginateNext(state, service, isAll ? -1 : undefined);
+            setFetchingNextPage(false);
+        }
+
+        const doPaginatePrev = async () => {
+            setFetchingNextPage(true);
+            await paginatePrev(state, service);
+            setFetchingNextPage(false);
+        }
+
         const paginationBeforeComments = isInfiniteScroll ? null : (state.commentsVisible.get() && state.config.paginationBeforeComments.get()
-            ? <PaginationNext state={state} styles={styles}/>
-            : state.page.get() > 0 && !state.pagesLoaded.get().includes(state.page.get() - 1)
-                ? <PaginationPrev state={state} styles={styles}/>
-                : null);
+            ? <PaginationNext state={state} styles={styles} doPaginate={doPaginateNext}/>
+            : <PaginationPrev state={state} styles={styles} doPaginate={doPaginatePrev}/>);
         const paginationAfterComments = isInfiniteScroll ? null : (state.commentsVisible.get() && !state.config.paginationBeforeComments.get()
-            ? <PaginationNext state={state} styles={styles}/>
+            ? <PaginationNext state={state} styles={styles} doPaginate={doPaginateNext}/>
             : null);
 
         if (isLoading) {
@@ -100,9 +111,7 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
 
         const onEndReached = async () => {
             if (state.config.enableInfiniteScrolling.get() && canPaginateNext(state)) {
-                setFetchingNextPage(true);
-                await paginateNext(state, service);
-                setFetchingNextPage(false);
+                await doPaginateNext(false);
             }
         };
 
@@ -130,7 +139,6 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
                 <Text style={styles.red}><RenderHtml source={{html: state.translations.DEMO_CREATE_ACCT.get()}} contentWidth={width}/></Text>
             }
             <LiveCommentingTopArea state={state} styles={styles}/>
-            {paginationBeforeComments}
             {state.commentsVisible.get() &&
             <TRenderEngineProvider baseStyle={styles.comment?.text}>
                 <RenderHTMLConfigProvider><FlatList
@@ -141,14 +149,19 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
                     onEndReachedThreshold={0.3}
                     onEndReached={onEndReached}
                     renderItem={renderItem}
-                    ListFooterComponent={isFetchingNextPage
-                        ? <ActivityIndicator size="small"/>
-                        : null
+                    ListHeaderComponent={paginationBeforeComments}
+                    ListFooterComponent={
+                        <View>
+                            {
+                                isFetchingNextPage
+                                    ? <ActivityIndicator size="small"/>
+                                    : paginationAfterComments
+                            }
+                        </View>
                     }
                 /></RenderHTMLConfigProvider>
             </TRenderEngineProvider>
             }
-            {paginationAfterComments}
             <LiveCommentingBottomArea state={state} styles={styles} callbackObserver={callbackObserverRef.current}/>
         </View>;
     } else {

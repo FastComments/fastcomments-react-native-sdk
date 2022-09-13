@@ -1,5 +1,5 @@
 import {ImageStyle, TextStyle, ViewStyle} from "react-native";
-import {MixedStyleDeclaration} from "react-native-render-html";
+import {MixedStyleDeclaration, MixedStyleRecord} from "react-native-render-html";
 
 export interface IFastCommentsStyles {
     root?: ViewStyle,
@@ -138,10 +138,14 @@ export interface IFastCommentsStyles {
     paginationNext?: {
         root?: ViewStyle
         next?: MixedStyleDeclaration
+        nextHTMLStyles?: MixedStyleRecord
         all?: MixedStyleDeclaration
+        allHTMLStyles?: MixedStyleRecord
     },
     paginationPrev?: {
         root?: ViewStyle,
+        prev?: ViewStyle,
+        prevHTMLStyles?: MixedStyleRecord
         text?: MixedStyleDeclaration
     }
     replyArea?: {

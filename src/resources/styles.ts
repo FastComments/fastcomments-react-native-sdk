@@ -574,15 +574,44 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
         paginationNext: {
             root: {
                 flexDirection: 'row',
-                "marginTop": 50,
-                alignItems: 'center'
+                paddingTop: 50,
+                alignItems: 'center',
+                justifyContent: 'space-around'
             },
-            next: {},
-            all: {}
+            next: {
+                paddingTop: 10,
+                paddingRight: 20,
+                paddingBottom: 10,
+                paddingLeft: 20,
+                borderWidth: 1,
+                borderRadius: 7,
+                borderColor: "#a2a2a2",
+                backgroundColor: "#fbfbfb"
+            },
+            nextHTMLStyles: {
+                span: {
+                    fontSize: 0 // display: 'none' not working in 5.x of render html lib???
+                }
+            },
+            all: {
+                paddingTop: 10,
+                paddingRight: 20,
+                paddingBottom: 10,
+                paddingLeft: 20,
+                borderWidth: 1,
+                borderRadius: 7,
+                borderColor: "#a2a2a2",
+                backgroundColor: "#fbfbfb"
+            },
+            allHTMLStyles: {
+                span: {
+                    fontWeight: 'bold'
+                }
+            }
         },
         paginationPrev: {
             root: {
-                "marginTop": 50,
+                "paddingTop": 50,
             },
             text: {}
         },
