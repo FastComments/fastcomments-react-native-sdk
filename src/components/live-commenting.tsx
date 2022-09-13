@@ -33,7 +33,7 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
     const state = useHookstate(serviceInitialState);
     const service = new FastCommentsLiveCommentingService(state, callbacks);
     const [isLoading, setLoading] = useState(true);
-    const [isFetchingNextPage, setFetchingNextPage] = useState(true);
+    const [isFetchingNextPage, setFetchingNextPage] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
     const [isReplyingToParent, setIsReplyingToParent] = useState(false);
     const isReplyingToParentRef = useRef(isReplyingToParent);
