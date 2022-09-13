@@ -99,13 +99,14 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
         }
 
         const onEndReached = async () => {
-            if (canPaginateNext(state)) {
+            if (state.config.enableInfiniteScrolling.get() && canPaginateNext(state)) {
                 setFetchingNextPage(true);
                 await paginateNext(state, service);
                 setFetchingNextPage(false);
             }
         };
 
+        console.log('!!!! ************** root re-rendered ************** !!!!')
         const CommentViewMemo = React.memo<CommentViewProps>(props => {
             return <FastCommentsCommentView
                 comment={props.comment}
@@ -136,7 +137,7 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
                     style={styles.commentsWrapper}
                     data={state.commentsTree}
                     keyExtractor={item => item._id.get()}
-                    inverted={!state.config.newCommentsToBottom.get()}
+                    inverted={state.config.newCommentsToBottom.get()}
                     onEndReachedThreshold={0.3}
                     onEndReached={onEndReached}
                     renderItem={renderItem}
