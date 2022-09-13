@@ -541,9 +541,6 @@ export function ReplyArea(props: ReplyAreaProps) {
     </View>;
 
     return <View>
-        {state.config.tenantId.get() === 'demo' && <RenderHtml source={{
-            html: state.translations.DEMO_CREATE_ACCT.get()
-        }} contentWidth={width}/>}
         {replyToText && <View style={styles.replyArea?.replyingTo}>
             {replyToText}
             {state.config.useSingleReplyField.get()
