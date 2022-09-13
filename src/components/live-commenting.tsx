@@ -15,8 +15,9 @@ import {IFastCommentsStyles, FastCommentsCallbacks, RNComment, ImageAssetConfig}
 import {CallbackObserver, LiveCommentingBottomArea} from "./live-commenting-bottom-area";
 import {getDefaultFastCommentsStyles} from "../resources";
 import {FastCommentsRNConfig} from "../types/react-native-config";
-import {FastCommentsCommentView} from "./comment";
+import {CommentViewProps, FastCommentsCommentView} from "./comment";
 import {canPaginateNext, paginateNext} from "../services/pagination";
+import {shouldCommentReRender} from "../services/comment-render-determination";
 
 export interface FastCommentsLiveCommentingProps {
     config: FastCommentsRNConfig
@@ -105,15 +106,19 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
             }
         };
 
-        const renderItem = (info: ListRenderItemInfo<State<RNComment>>) => <FastCommentsCommentView
-            comment={info.item}
-            state={state}
-            styles={styles!}
-            onVoteSuccess={callbacks?.onVoteSuccess}
-            onReplySuccess={callbacks?.onReplySuccess}
-            onAuthenticationChange={callbacks?.onAuthenticationChange}
-            replyingTo={handleReplyingTo}
-        />;
+        const CommentViewMemo = React.memo<CommentViewProps>(props => {
+            return <FastCommentsCommentView
+                comment={props.comment}
+                state={props.state}
+                styles={props.styles}
+                onVoteSuccess={callbacks?.onVoteSuccess}
+                onReplySuccess={callbacks?.onReplySuccess}
+                onAuthenticationChange={callbacks?.onAuthenticationChange}
+                replyingTo={handleReplyingTo}
+            />
+        }, (prevProps, nextProps) => shouldCommentReRender(prevProps, nextProps));
+
+        const renderItem = (info: ListRenderItemInfo<State<RNComment>>) => <CommentViewMemo comment={info.item} state={state} styles={styles!}/>;
 
         return <View style={styles.root}>
             {
