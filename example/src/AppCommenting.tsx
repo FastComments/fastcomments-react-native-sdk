@@ -4,7 +4,6 @@ import * as React from 'react';
 import {FastCommentsLiveCommenting} from '../../index';
 import {useState} from "react";
 import { FastCommentsCommentWidgetConfig } from 'fastcomments-typescript';
-import {ScrollView} from "react-native";
 
 /**
  * @description More traditional commenting-style widget, with input area at top and comments at bottom.
@@ -31,6 +30,6 @@ export default function AppCommenting() {
   // }, []);
 
   return (
-      <ScrollView style={{margin: 5}}><FastCommentsLiveCommenting config={config}/></ScrollView>
+      <FastCommentsLiveCommenting config={config}/>
   );
 }
