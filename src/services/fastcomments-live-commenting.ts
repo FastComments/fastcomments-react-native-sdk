@@ -176,7 +176,7 @@ export class FastCommentsLiveCommentingService {
             if (isLiveChatStyle) {
                 responseComments.reverse();
             }
-            state.hasMore.set(responseComments.length >= state.PAGE_SIZE.get());
+            state.hasMore.set(state.page.get() !== -1 && responseComments.length >= state.PAGE_SIZE.get());
 
             if (!response.includesPastPages) {
                 if (isPrev) {

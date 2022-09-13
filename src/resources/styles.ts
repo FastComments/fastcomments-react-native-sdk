@@ -2,7 +2,9 @@ import {IFastCommentsStyles} from "../types";
 
 export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
     return {
-        root: {},
+        root: {
+            flex: 1
+        },
         loadingOverlay: {
             // TODO common
             position: 'absolute',
