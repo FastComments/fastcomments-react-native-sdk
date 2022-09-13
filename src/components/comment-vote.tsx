@@ -172,22 +172,7 @@ export function CommentVote(props: CommentVoteProps) {
     let auth;
     let error;
 
-    const dividerAndDownVoting = state.config.disableDownVoting.get() ? null : [
-        <View style={styles.commentVote?.voteDivider}></View>,
-        <Pressable
-            style={styles.commentVote?.voteButton}
-            onPress={() => {
-                voteState.voteDir.set('down');
-                // noinspection JSIgnoredPromiseFromCall
-                doVote({state, comment}, voteState);
-            }}
-        >
-            <Image
-                source={state.imageAssets[comment.isVotedDown.get() ? (state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_DOWN_ACTIVE_WHITE : FastCommentsImageAsset.ICON_DOWN_ACTIVE) : FastCommentsImageAsset.ICON_DOWN].get()}
-                style={styles.commentVote?.voteButtonIcon}/>
-        </Pressable>,
-        comment.votesDown.get() ? <Text style={styles.commentVote?.votesDownText}>{Number(comment.votesDown.get()).toLocaleString()}</Text> : null
-    ]
+    const showDownVoting = !state.config.disableDownVoting.get();
 
     // TODO TouchableOpacity throws weird callback exceeded errors
     voteOptions = <View style={styles.commentVote?.commentVoteOptions}>
@@ -204,7 +189,20 @@ export function CommentVote(props: CommentVoteProps) {
                 source={state.imageAssets[comment.isVotedUp.get() ? (state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_UP_ACTIVE_WHITE : FastCommentsImageAsset.ICON_UP_ACTIVE) : FastCommentsImageAsset.ICON_UP].get()}
                 style={styles.commentVote?.voteButtonIcon}/>
         </Pressable>
-        {dividerAndDownVoting}
+        {showDownVoting && <View style={styles.commentVote?.voteDivider}/>}
+        {showDownVoting && <Pressable
+            style={styles.commentVote?.voteButton}
+            onPress={() => {
+                voteState.voteDir.set('down');
+                // noinspection JSIgnoredPromiseFromCall
+                doVote({state, comment}, voteState);
+            }}
+        >
+            <Image
+                source={state.imageAssets[comment.isVotedDown.get() ? (state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_DOWN_ACTIVE_WHITE : FastCommentsImageAsset.ICON_DOWN_ACTIVE) : FastCommentsImageAsset.ICON_DOWN].get()}
+                style={styles.commentVote?.voteButtonIcon}/>
+        </Pressable>}
+        {showDownVoting && comment.votesDown.get() ? <Text style={styles.commentVote?.votesDownText}>{Number(comment.votesDown.get()).toLocaleString()}</Text> : null}
     </View>
 
     if (voteState.isAuthenticating.get()) {
