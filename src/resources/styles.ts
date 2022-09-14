@@ -825,7 +825,6 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
         },
         showHideCommentsToggle: {
             root: {
-                flex: 1,
                 backgroundColor: "#333",
                 margin: 20,
                 paddingTop: 10,
@@ -833,12 +832,15 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 paddingBottom: 10,
                 paddingLeft: 27,
                 borderRadius: 7,
-                elevation: 1
+                alignContent: 'center',
+                alignItems: 'center',
+                elevation: 1,
             },
             text: {
-                "margin": "20px auto",
+                marginTop: 10,
+                marginBottom: 10,
                 "color": "#fff",
-                "fontSize": 17,
+                "fontSize": 16,
                 "fontWeight": "500",
             }
         },

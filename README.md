@@ -27,7 +27,7 @@ This is in heavy development! Examples will be posted here once the library is m
 - [x] Emoticon Support
 - [x] Voting
 - [x] Ability to hide replies
-- [ ] Show/Hide Comments Toggle
+- [x] Show/Hide Comments Toggle
 - [x] Pagination (Buttons)
 - [x] Pagination (Infinite Scroll)
 - [x] Custom Styles (as typed stylesheet)

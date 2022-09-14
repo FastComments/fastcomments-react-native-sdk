@@ -13,8 +13,11 @@ export interface ShowHideCommentsToggleProps {
 
 export function ShowHideCommentsToggle({state, styles}: ShowHideCommentsToggleProps) {
     const commentsVisible = state.commentsVisible.get();
-    const translation = commentsVisible ? state.translations.HIDE_COMMENTS_BUTTON_TEXT.get() : state.translations.SHOW_COMMENTS_BUTTON_TEXT.get();
-    translation.replace('[count]', Number(state.commentCountOnServer.get()).toLocaleString());
+    let translation = commentsVisible ? state.translations.HIDE_COMMENTS_BUTTON_TEXT.get() : state.translations.SHOW_COMMENTS_BUTTON_TEXT.get();
+    if (!translation) {
+        translation = 'ERROR';
+    }
+    translation = translation.replace('[count]', Number(state.commentCountOnServer.get()).toLocaleString());
     return <TouchableOpacity style={styles.showHideCommentsToggle?.root} onPress={() => state.commentsVisible.set(!commentsVisible)}>
         <Text style={styles.showHideCommentsToggle?.text}>{translation}</Text>
     </TouchableOpacity>;

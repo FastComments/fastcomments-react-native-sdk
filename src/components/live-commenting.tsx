@@ -18,6 +18,7 @@ import {FastCommentsRNConfig} from "../types/react-native-config";
 import {CommentViewProps, FastCommentsCommentView} from "./comment";
 import {canPaginateNext, paginateNext, paginatePrev} from "../services/pagination";
 import {shouldCommentReRender} from "../services/comment-render-determination";
+import {ShowHideCommentsToggle} from "./show-hide-comments-toggle";
 
 export interface FastCommentsLiveCommentingProps {
     config: FastCommentsRNConfig
@@ -83,7 +84,7 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
 
     if (state.blockingErrorMessage.get()) {
         return <View style={styles.root}><CommentAreaMessage styles={styles} message={state.blockingErrorMessage.get()}/></View>;
-    } else if (!(state.commentsTree.length === 0 && state.config.readonly.get() && (state.config.hideCommentsUnderCountTextFormat.get() || state.config.useShowCommentsToggle.get()))) {
+    } else if (!((state.commentsTree.length === 0 && state.config.readonly.get()) || ((state.config.hideCommentsUnderCountTextFormat.get() || state.config.useShowCommentsToggle.get()) && !state.commentsVisible.get()))) {
         const isInfiniteScroll = state.config.enableInfiniteScrolling.get();
 
         const doPaginateNext = async (isAll: boolean) => {
@@ -164,8 +165,12 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
             }
             <LiveCommentingBottomArea state={state} styles={styles} callbackObserver={callbackObserverRef.current}/>
         </View>;
+    } else if (!state.commentsVisible.get() && state.translations.get()) {
+        return <View style={styles.root}>
+            <ShowHideCommentsToggle state={state} styles={styles} />
+        </View>;
     } else {
-        return <View style={styles.root}><CommentAreaMessage styles={styles} message={'todo'}/></View>;
+        return <View style={styles.root}></View>;
     }
 }
 
