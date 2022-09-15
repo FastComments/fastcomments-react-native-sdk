@@ -3,33 +3,32 @@ import * as React from 'react';
 
 import { FastCommentsBadge } from "fastcomments-typescript";
 import {Image, Text, View} from "react-native";
-import {State} from "@hookstate/core";
-import {IFastCommentsStyles} from "../types/fastcomments-styles";
+import {IFastCommentsStyles} from "../types";
 
 export interface CommentUserBadgeProps {
-    badge: State<FastCommentsBadge>
+    badge: FastCommentsBadge
     styles: IFastCommentsStyles
 }
 
 export function CommentUserBadge({badge, styles}: CommentUserBadgeProps) {
-    if (badge.displaySrc.get()) {
+    if (badge.displaySrc) {
         return <View style={styles.commentUserBadge?.imageBadge}>
-            <Image style={styles.commentUserBadge?.imageBadgeImage} source={{uri: badge.displaySrc.get()}}/>
+            <Image style={styles.commentUserBadge?.imageBadgeImage} source={{uri: badge.displaySrc}}/>
         </View>;
     } else {
         const textBadgeStyles = {...styles.commentUserBadge?.textBadge};
         const textBadgeTextStyles = {...styles.commentUserBadge?.textBadgeText};
-        if (badge.backgroundColor.get()) {
-            textBadgeStyles.backgroundColor = badge.backgroundColor.get();
+        if (badge.backgroundColor) {
+            textBadgeStyles.backgroundColor = badge.backgroundColor;
         }
         if (badge.borderColor) {
-            textBadgeStyles.borderColor = badge.borderColor.get();
+            textBadgeStyles.borderColor = badge.borderColor;
         }
         if (badge.textColor) {
-            textBadgeTextStyles.color = badge.textColor.get();
+            textBadgeTextStyles.color = badge.textColor;
         }
         return <View style={textBadgeStyles}>
-            <Text numberOfLines={1} style={textBadgeTextStyles}>{badge.displayLabel.get()}</Text>
+            <Text numberOfLines={1} style={textBadgeTextStyles}>{badge.displayLabel}</Text>
         </View>;
     }
 }

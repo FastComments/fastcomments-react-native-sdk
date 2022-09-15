@@ -1,10 +1,10 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
 
-import {FastCommentsState} from "../types/fastcomments-state";
+import {FastCommentsState} from "../types";
 import {View, Text, Image, Linking, ActivityIndicator, TextInput, useWindowDimensions, TouchableOpacity} from "react-native";
 import {none, State, useHookstate, useHookstateEffect} from "@hookstate/core";
-import {FastCommentsImageAsset} from '../types/image-asset';
+import {FastCommentsImageAsset, ImageAssetConfig} from '../types';
 import {getDefaultAvatarSrc} from "../services/default-avatar";
 import {ModalMenu} from "./modal-menu";
 import {Dispatch, SetStateAction} from 'react';
@@ -12,7 +12,7 @@ import {ThreeDot} from "./three-dot";
 import {NotificationBell} from "./notification-bell";
 import {CommentAreaMessage} from "./comment-area-message";
 import {CommentTextArea, FocusObserver, ValueObserver} from "./comment-text-area";
-import {SaveCommentResponse} from "../types/dto/save-comment-response";
+import {SaveCommentResponse} from "../types";
 import {getActionTenantId, getActionURLID} from "../services/tenants";
 import {newBroadcastId} from "../services/broadcast-id";
 import {createURLQueryString, makeRequest} from "../services/http";
@@ -32,9 +32,11 @@ const SignUpErrorsTranslationIds: Record<string, string> = {
 };
 
 export interface ReplyAreaProps extends Pick<FastCommentsCallbacks, 'onReplySuccess' | 'replyingTo' | 'onAuthenticationChange'> {
+    imageAssets: ImageAssetConfig
+    parentComment?: State<RNComment> | null
     state: State<FastCommentsState>
     styles: IFastCommentsStyles
-    parentComment?: State<RNComment> | null
+    translations: Record<string, string>
 }
 
 interface CommentReplyState {
@@ -266,12 +268,10 @@ async function submit({
     }
 }
 
-// TODO OPTIMIZE why does submitting a comment re-render all comments several times?
 export function ReplyArea(props: ReplyAreaProps) {
-    const {parentComment, styles, onReplySuccess, replyingTo, onAuthenticationChange} = props;
+    const {imageAssets, parentComment, styles, translations, onReplySuccess, replyingTo, onAuthenticationChange} = props;
     const state = useHookstate(props.state); // create scoped state
     const currentUser = state.currentUser?.get();
-    const translations = state.translations.get();
 
     const needsAuth = !currentUser && !!parentComment && !!parentComment.get();
     const valueGetter: ValueObserver = {};
@@ -330,14 +330,14 @@ export function ReplyArea(props: ReplyAreaProps) {
                     }
                 }
                 }>
-                    <Image source={state.imageAssets[FastCommentsImageAsset.ICON_BUBBLE_WHITE].get()} style={{width: 22, height: 22}}/>
+                    <Image source={imageAssets[FastCommentsImageAsset.ICON_BUBBLE_WHITE]} style={{width: 22, height: 22}}/>
                     <Text style={styles.replyArea?.ssoLoginButtonText}>{translations.LOG_IN}</Text>
                 </TouchableOpacity>
             </View>;
         } else {
             ssoLoginWrapper = <View style={styles.replyArea?.ssoLoginWrapper}>
                 <View style={styles.replyArea?.ssoLoginButton}>
-                    <Image source={state.imageAssets[FastCommentsImageAsset.ICON_BUBBLE_WHITE].get()} style={{width: 22, height: 22}}/>
+                    <Image source={imageAssets[FastCommentsImageAsset.ICON_BUBBLE_WHITE]} style={{width: 22, height: 22}}/>
                     <Text style={styles.replyArea?.ssoLoginButtonText}>{translations.LOG_IN_TO_COMMENT}</Text>
                 </View>
             </View>;
@@ -347,7 +347,7 @@ export function ReplyArea(props: ReplyAreaProps) {
             topBar = <View style={styles.replyArea?.topBar}>
                 <View style={styles.replyArea?.loggedInInfo}>
                     <Image style={styles.replyArea?.topBarAvatar}
-                           source={currentUser.avatarSrc ? {uri: currentUser.avatarSrc} : getDefaultAvatarSrc(state)}/>
+                           source={currentUser.avatarSrc ? {uri: currentUser.avatarSrc} : getDefaultAvatarSrc(imageAssets)}/>
                     <Text style={styles.replyArea?.topBarUsername}>{currentUser.username}</Text>
                 </View>
                 <View style={styles.replyArea?.topBarRight}>
@@ -433,11 +433,11 @@ export function ReplyArea(props: ReplyAreaProps) {
                     <Image
                         source={parentComment
                             ? (state.config.hasDarkBackground.get()
-                                ? state.imageAssets[FastCommentsImageAsset.ICON_RETURN_WHITE].get()
-                                : state.imageAssets[FastCommentsImageAsset.ICON_RETURN].get())
+                                ? imageAssets[FastCommentsImageAsset.ICON_RETURN_WHITE]
+                                : imageAssets[FastCommentsImageAsset.ICON_RETURN])
                             : (state.config.hasDarkBackground.get()
-                                ? state.imageAssets[FastCommentsImageAsset.ICON_BUBBLE_WHITE].get()
-                                : state.imageAssets[FastCommentsImageAsset.ICON_BUBBLE].get())}
+                                ? imageAssets[FastCommentsImageAsset.ICON_BUBBLE_WHITE]
+                                : imageAssets[FastCommentsImageAsset.ICON_BUBBLE])}
                         style={styles.replyArea?.replyButtonIcon}/>
                 </TouchableOpacity>
             </View>;
@@ -491,7 +491,7 @@ export function ReplyArea(props: ReplyAreaProps) {
         // if (parentComment) {
         //     replyCancelButton = <View style={styles.replyArea?.replyCancelButtonWrapper}>
         //         <TouchableOpacity style={styles.replyArea?.replyCancelButton} onPress={() => parentComment.replyBoxOpen.set(false)}>
-        //             <Image source={state.imageAssets[FastCommentsImageAsset.ICON_CROSS].get()}
+        //             <Image source={imageAssets[FastCommentsImageAsset.ICON_CROSS]}
         //                    style={{width: 9, height: 9}}/>
         //         </TouchableOpacity>
         //     </View>

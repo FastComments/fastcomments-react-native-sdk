@@ -1,41 +1,50 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
 
-import {FastCommentsCommentWithState} from "./comment";
 import {CommentUserActivityIcon} from "./comment-user-activity-icon";
 import {CommentUserBadge} from "./comment-user-badge";
 import {View, Text, Linking, Image, TouchableOpacity} from "react-native";
 import {getDefaultAvatarSrc} from "../services/default-avatar";
-import { FastCommentsBadge } from 'fastcomments-typescript';
-import {State, useHookstate} from "@hookstate/core";
+import {State} from "@hookstate/core";
+import {IFastCommentsStyles, ImageAssetConfig, RNComment, UserPresenceState} from "../types";
+import {FastCommentsRNConfig} from "../types/react-native-config";
 
-export function getCommentUserInfoHTML({comment, state, styles}: FastCommentsCommentWithState): string {
+export interface CommentUserInfoProps {
+    comment: RNComment // things here don't change much, so just take the raw comment object
+    config: FastCommentsRNConfig
+    imageAssets: ImageAssetConfig
+    styles: IFastCommentsStyles
+    translations: Record<string, string>
+    userPresenceState: State<UserPresenceState>
+}
+
+export function getCommentUserInfoHTML({comment, config, imageAssets, translations, styles}: Omit<CommentUserInfoProps, 'userPresenceState'>): string {
     // let displayLabel = null;
-    // if (comment.displayLabel.get()) {
-    //     displayLabel = `<div style="${styles.commentUserInfoAsHTML?.label}">${comment.displayLabel.get()}</div>`;
+    // if (comment.displayLabel) {
+    //     displayLabel = `<div style="${styles.commentUserInfoAsHTML?.label}">${comment.displayLabel}</div>`;
     // } else {
-    //     if (comment.isByAdmin.get()) {
-    //         displayLabel = `<div style="${styles.commentUserInfoAsHTML?.label}">${state.translations.ADMIN_LABEL.get()}</div>`;
-    //     } else if (comment.isByModerator.get()) {
-    //         displayLabel = `<div style="${styles.commentUserInfoAsHTML?.label}">${state.translations.MODERATOR_LABEL.get()}</div>`;
+    //     if (comment.isByAdmin) {
+    //         displayLabel = `<div style="${styles.commentUserInfoAsHTML?.label}">${translations.ADMIN_LABEL}</div>`;
+    //     } else if (comment.isByModerator) {
+    //         displayLabel = `<div style="${styles.commentUserInfoAsHTML?.label}">${translations.MODERATOR_LABEL}</div>`;
     //     }
     // }
 
-    let commenterName = comment.commenterName.get();
+    let commenterName = comment.commenterName;
 
-    if (comment.isDeleted.get()) {
-        commenterName = state.translations.DELETED_PLACEHOLDER.get();
-    } else if (comment.isBlocked.get()) {
-        commenterName = state.translations.BLOCKED_USER_PLACEHOLDER.get();
+    if (comment.isDeleted) {
+        commenterName = translations.DELETED_PLACEHOLDER;
+    } else if (comment.isBlocked) {
+        commenterName = translations.BLOCKED_USER_PLACEHOLDER;
     }
 
     const usernameElement = `<div style="${styles.commentUserInfoAsHTML?.username}">${commenterName}</div>`;
 
-    const avatar = state.config.hideAvatars.get() ? null :
+    const avatar = config.hideAvatars ? null :
         (
-            comment.avatarSrc.get() && !comment.isBlocked.get()
-                ? `<div style="${styles.commentUserInfoAsHTML?.avatarWrapper}"><img style="${styles.commentUserInfoAsHTML?.avatarImage}" src="${comment.avatarSrc.get()}"/></div>`
-                : `<div style="${styles.commentUserInfoAsHTML?.avatarWrapperDefault}"><img style="${styles.commentUserInfoAsHTML?.avatarImage}" src="${state.config.defaultAvatarSrc?.get() ? state.config.defaultAvatarSrc.get() : getDefaultAvatarSrc(state)}"/></div>`
+            comment.avatarSrc && !comment.isBlocked
+                ? `<div style="${styles.commentUserInfoAsHTML?.avatarWrapper}"><img style="${styles.commentUserInfoAsHTML?.avatarImage}" src="${comment.avatarSrc}"/></div>`
+                : `<div style="${styles.commentUserInfoAsHTML?.avatarWrapperDefault}"><img style="${styles.commentUserInfoAsHTML?.avatarImage}" src="${config.defaultAvatarSrc ? config.defaultAvatarSrc : getDefaultAvatarSrc(imageAssets)}"/></div>`
         );
 
     return `<div style="${styles.commentUserInfoAsHTML?.root}">
@@ -46,50 +55,61 @@ export function getCommentUserInfoHTML({comment, state, styles}: FastCommentsCom
     </div>`;
 }
 
-export function CommentUserInfo(props: FastCommentsCommentWithState) {
-    const {comment, styles} = props;
-    const state = useHookstate(props.state); // OPTIMIZATION: local state
-    const activityIcon = CommentUserActivityIcon({comment, state, styles});
+export function CommentUserInfo(props: CommentUserInfoProps) {
+    const {
+        comment,
+        config,
+        imageAssets,
+        styles,
+        translations,
+        userPresenceState
+    } = props;
+    const activityIcon = CommentUserActivityIcon({
+        disableLiveCommenting: config.disableLiveCommenting,
+        userId: comment.userId,
+        anonUserId: comment.anonUserId,
+        userPresenceState,
+        styles
+    });
 
-    /**
-     commenterInfoHTML += '<b class="username">' + (config.hideAvatars ? activityIconHTML : '') + (commenterLeftLink ? '<a href="' + comment.commenterLink + '" class="website-url" rel="noreferrer noopener nofollow" target="_blank">' : '') + commenterName + (commenterLeftLink ? '</a>' : '') + '</b>';
-
-     */
-    const commenterLeftLink = !comment.isBlocked.get() && comment.commenterLink.get();
+    const commenterLeftLink = !comment.isBlocked && comment.commenterLink;
 
     let displayLabel = null;
-    if (comment.displayLabel.get()) {
-        displayLabel = <Text style={styles.commentUserInfo?.label}>{comment.displayLabel.get()}</Text>;
+    if (comment.displayLabel) {
+        displayLabel = <Text style={styles.commentUserInfo?.label}>{comment.displayLabel}</Text>;
     } else {
-        if (comment.isByAdmin.get()) {
-            displayLabel = <Text style={styles.commentUserInfo?.label}>{state.translations.ADMIN_LABEL.get()}</Text>;
-        } else if (comment.isByModerator.get()) {
-            displayLabel = <Text style={styles.commentUserInfo?.label}>{state.translations.MODERATOR_LABEL.get()}</Text>;
+        if (comment.isByAdmin) {
+            displayLabel = <Text style={styles.commentUserInfo?.label}>{translations.ADMIN_LABEL}</Text>;
+        } else if (comment.isByModerator) {
+            displayLabel = <Text style={styles.commentUserInfo?.label}>{translations.MODERATOR_LABEL}</Text>;
         }
     }
 
-    let commenterName = comment.commenterName.get();
+    let commenterName = comment.commenterName;
 
-    if (comment.isDeleted.get()) {
-        commenterName = state.translations.DELETED_PLACEHOLDER.get();
-    } else if (comment.isBlocked.get()) {
-        commenterName = state.translations.BLOCKED_USER_PLACEHOLDER.get();
+    if (comment.isDeleted) {
+        commenterName = translations.DELETED_PLACEHOLDER;
+    } else if (comment.isBlocked) {
+        commenterName = translations.BLOCKED_USER_PLACEHOLDER;
     }
 
     const usernameElement = <View>
-        {state.config.hideAvatars.get() && activityIcon}
-        {commenterLeftLink ? <TouchableOpacity onPress={() => Linking.openURL(comment.commenterLink.get()!)}>
+        {config.hideAvatars && activityIcon}
+        {commenterLeftLink ? <TouchableOpacity onPress={() => Linking.openURL(comment.commenterLink!)}>
             {
                 <Text style={styles.commentUserInfo?.usernameWithLink}>{commenterName}</Text>
             }
         </TouchableOpacity> : <Text style={styles.commentUserInfo?.username}>{commenterName}</Text>}
     </View>;
 
-    const avatar = state.config.hideAvatars.get() ? null :
+    const avatar = config.hideAvatars ? null :
         (
-            comment.avatarSrc.get() && !comment.isBlocked.get()
-                ? <View style={styles.commentUserInfo?.avatarWrapper}><Image style={styles.commentUserInfo?.avatarImage} source={{uri: comment.avatarSrc.get()}}/>{activityIcon}</View>
-                : <View style={styles.commentUserInfo?.avatarWrapperDefault}><Image style={styles.commentUserInfo?.avatarImage} source={state.config.defaultAvatarSrc?.get() ? {uri: state.config.defaultAvatarSrc.get()} : getDefaultAvatarSrc(state)}/>{activityIcon}</View>
+            comment.avatarSrc && !comment.isBlocked
+                ? <View style={styles.commentUserInfo?.avatarWrapper}><Image style={styles.commentUserInfo?.avatarImage}
+                                                                             source={{uri: comment.avatarSrc}}/>{activityIcon}</View>
+                : <View style={styles.commentUserInfo?.avatarWrapperDefault}><Image style={styles.commentUserInfo?.avatarImage}
+                                                                                    source={config.defaultAvatarSrc ? {uri: config.defaultAvatarSrc} : getDefaultAvatarSrc(imageAssets)}/>{activityIcon}
+                </View>
         );
 
     // TODO best way to handle undefined comment.badges instead of cast? TS compilation error
@@ -98,9 +118,9 @@ export function CommentUserInfo(props: FastCommentsCommentWithState) {
             {avatar}
         </View> : null}
         <View style={styles.commentUserInfo?.infoRight}>
-            {(comment.badges as State<FastCommentsBadge[]>).map((badge) => <CommentUserBadge badge={badge} styles={styles} />)}
-            {!comment.verified.get() && !(comment.wasPostedCurrentSession.get() && comment.requiresVerification.get()) && !state.config.disableUnverifiedLabel.get() &&
-                <Text style={styles.commentUserInfo?.label}>{state.translations.UNVERIFIED_COMMENT.get()}</Text>
+            {comment.badges && comment.badges.map((badge) => <CommentUserBadge badge={badge} styles={styles}/>)}
+            {!comment.verified && !(comment.wasPostedCurrentSession && comment.requiresVerification) && !config.disableUnverifiedLabel &&
+            <Text style={styles.commentUserInfo?.label}>{translations.UNVERIFIED_COMMENT}</Text>
             }
             {displayLabel}
             {usernameElement}

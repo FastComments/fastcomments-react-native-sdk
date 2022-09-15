@@ -1,18 +1,26 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
 
-import {FastCommentsCommentWithState} from "./comment";
 import {View} from "react-native";
+import {IFastCommentsStyles, UserPresenceState} from "../types";
+import {State} from "@hookstate/core";
 
-export function CommentUserActivityIcon({comment, state, styles}: FastCommentsCommentWithState) {
-    if (state.config.disableLiveCommenting.get()) {
+export interface CommentUserActivityIconProps {
+    disableLiveCommenting?: boolean
+    userId?: string
+    anonUserId?: string
+    userPresenceState: State<UserPresenceState>
+    styles: IFastCommentsStyles
+}
+
+export function CommentUserActivityIcon({disableLiveCommenting, userId, anonUserId, userPresenceState, styles}: CommentUserActivityIconProps) {
+    if (disableLiveCommenting) {
         return null;
     }
-    const userPresenceState = state.userPresenceState.get();
-    const isUserOnline = (comment.userId && userPresenceState.usersOnlineMap[comment.userId.get()!]) || (comment.anonUserId && userPresenceState.usersOnlineMap[comment.anonUserId.get()!]);
+    const isUserOnline = (userId && userPresenceState.usersOnlineMap[userId!]) || (anonUserId && userPresenceState.usersOnlineMap[anonUserId!]);
     if (isUserOnline) {
-        return <View style={styles.commentUserActivityIcon?.online}></View>;
+        return <View style={styles.commentUserActivityIcon?.online}/>;
     } else {
-        return <View style={styles.commentUserActivityIcon?.offline}></View>;
+        return <View style={styles.commentUserActivityIcon?.offline}/>;
     }
 }

@@ -110,11 +110,11 @@ interface CommentMenuState {
 }
 
 export function getCommentMenuState(state: State<FastCommentsState>, comment: State<RNComment>): CommentMenuState {
-    const currentUser = state.currentUser.get();
-    const isMyComment = !!currentUser && 'id' in currentUser && (comment.userId.get() === currentUser.id || comment.anonUserId.get() === currentUser.id);
-    const canEdit: boolean = !comment.isDeleted.get() && !!((currentUser && 'authorized' in currentUser && !!currentUser.authorized && (state.isSiteAdmin.get() || isMyComment))); // can have edit key and be anon
-    const canPin: boolean = state.isSiteAdmin.get() && !(comment.parentId?.get());
-    const canBlockOrFlag: boolean = !comment.isDeleted?.get() && !comment.isByAdmin?.get() && !comment.isByModerator?.get() && !isMyComment && !!currentUser && 'authorized' in currentUser && !!currentUser.authorized;
+    const currentUser = state.currentUser.get({stealth: true});
+    const isMyComment = !!currentUser && 'id' in currentUser && (comment.userId.get({stealth: true}) === currentUser.id || comment.anonUserId.get({stealth: true}) === currentUser.id);
+    const canEdit: boolean = !comment.isDeleted.get({stealth: true}) && !!((currentUser && 'authorized' in currentUser && !!currentUser.authorized && (state.isSiteAdmin.get({stealth: true}) || isMyComment))); // can have edit key and be anon
+    const canPin: boolean = state.isSiteAdmin.get({stealth: true}) && !(comment.parentId?.get({stealth: true}));
+    const canBlockOrFlag: boolean = !comment.isDeleted?.get({stealth: true}) && !comment.isByAdmin?.get({stealth: true}) && !comment.isByModerator?.get({stealth: true}) && !isMyComment && !!currentUser && 'authorized' in currentUser && !!currentUser.authorized;
     return {
         canEdit,
         canPin,

@@ -1,17 +1,20 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
 
-import {FastCommentsState} from "../types/fastcomments-state";
+import {FastCommentsState} from "../types";
 import {View} from "react-native";
 import {ReplyArea} from "./reply-area";
 import {State, useHookstate} from "@hookstate/core";
-import {IFastCommentsStyles} from "../types/fastcomments-styles";
-import {RNComment} from "../types";
+import {IFastCommentsStyles} from "../types";
+import {ImageAssetConfig, RNComment} from "../types";
 import {useState} from "react";
 
 export interface LiveCommentingTopAreaProps {
+    imageAssets: ImageAssetConfig
     state: State<FastCommentsState>
     styles: IFastCommentsStyles
+    translations: Record<string, string>
+    onReplySuccess?: (comment: RNComment) => void
     callbackObserver: CallbackObserver
 }
 
@@ -20,7 +23,7 @@ export interface CallbackObserver {
 }
 
 export function LiveCommentingBottomArea(props: LiveCommentingTopAreaProps) {
-    const {styles} = props;
+    const {imageAssets, onReplySuccess, styles, translations} = props;
     const state = useHookstate(props.state); // OPTIMIZATION: creating scoped state
     const [parentComment, setParentComment] = useState<State<RNComment> | null>();
 
@@ -35,9 +38,9 @@ export function LiveCommentingBottomArea(props: LiveCommentingTopAreaProps) {
 
     return <View style={props.styles.bottomArea?.root}>
         <View>{
-            state.config.inputAfterComments.get() &&
+            state.config.inputAfterComments.get({stealth: true}) &&
             <View style={props.styles.bottomArea?.replyArea}>
-                <ReplyArea state={state} styles={styles} parentComment={parentComment} replyingTo={props.callbackObserver.replyingTo}/>
+                <ReplyArea imageAssets={imageAssets} state={state} parentComment={parentComment} styles={styles} translations={translations} onReplySuccess={onReplySuccess} replyingTo={props.callbackObserver.replyingTo}/>
             </View>
         }</View>
     </View>;

@@ -15,68 +15,115 @@ import {
     FastCommentsImageAsset,
     RNComment,
     IFastCommentsStyles,
-    FastCommentsCallbacks,
+    FastCommentsCallbacks, ImageAssetConfig,
 } from "../types";
 import {useState} from "react";
 import {ModalMenu} from "./modal-menu";
 import {CommentVote} from "./comment-vote";
+import {FastCommentsRNConfig} from "../types/react-native-config";
 
 export interface FastCommentsCommentWithState {
-    comment: State<RNComment>;
-    state: State<FastCommentsState>;
+    comment: State<RNComment>
+    config: FastCommentsRNConfig
+    imageAssets: ImageAssetConfig
+    translations: Record<string, string>
+    state: State<FastCommentsState>
     styles: IFastCommentsStyles
 }
 
 export interface CommentViewProps extends FastCommentsCommentWithState, Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onReplySuccess' | 'onAuthenticationChange' | 'replyingTo'> {
 }
 
-// TODO OPTIMIZE further. Seems like these are rendering way more than they need to.
+const STEALTH = { stealth: true, noproxy: true };
+const RenderCount: Record<string, number> = {};
+
 export function FastCommentsCommentView(props: CommentViewProps) {
-    const {comment, styles, onVoteSuccess, onReplySuccess, onAuthenticationChange, replyingTo} = props;
+    const {
+        styles,
+        config,
+        onVoteSuccess,
+        onReplySuccess,
+        onAuthenticationChange,
+        replyingTo,
+        translations,
+        imageAssets,
+    } = props;
+
+    const commentState = props.comment;
+    const comment = props.comment.get(STEALTH);
+    const id = comment._id;
+    if (RenderCount[id] === undefined) {
+        RenderCount[id] = 1;
+    } else {
+        RenderCount[id]++;
+    }
+    console.log('comment render count', RenderCount[id]);
+
     const state = useHookstate(props.state); // OPTIMIZATION: creating scoped state
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const repliesHiddenState = useHookstate(!!comment.repliesHidden.get());
-    console.log('comment re-rendered', comment._id.get({stealth: true}));
-    const html = comment.isDeleted.get()
-        ? state.translations.DELETED_PLACEHOLDER.get()
+    const repliesHiddenState = useHookstate(!!comment.repliesHidden);
+    const html = comment.isDeleted
+        ? translations.DELETED_PLACEHOLDER
         : (
-            comment.isBlocked.get()
-                ? state.translations.YOU_BLOCKED_THIS_USER.get()
-                : comment.commentHTML.get()
+            comment.isBlocked
+                ? translations.YOU_BLOCKED_THIS_USER
+                : comment.commentHTML
         );
 
     const {width} = useWindowDimensions();
     // there is no way to do this outside of HTML rendering today, so if we have this flag set to true, we render user info completely differently.
-    const renderCommentInline = state.config.renderCommentInline.get();
-    const usePressableEditTrigger = state.config.usePressToEdit.get();
-    const isReadonly = state.config.readonly.get();
-    const menuState = isReadonly ? null : getCommentMenuState(state, comment);
+    const renderCommentInline = config.renderCommentInline;
+    const usePressableEditTrigger = config.usePressToEdit;
+    const isReadonly = config.readonly;
+    const menuState = isReadonly ? null : getCommentMenuState(state, commentState);
     const htmlWrapped = `<div style="${styles.comment?.textHTML || ''}">${html}</div>`; // goes away when fixed: https://github.com/meliorence/react-native-render-html/issues/582
     const content = <View style={styles.comment?.subRoot}><View style={styles.comment?.topRight}>
-        {!state.config.renderDateBelowComment.get() && <CommentDisplayDate comment={comment} state={state} style={styles.comment?.displayDate} styles={styles}/>}
-        {comment.isPinned.get() && <Image source={state.imageAssets[FastCommentsImageAsset.ICON_PIN_RED].get()} style={styles.comment?.pin}/>}
+        {
+            !config.renderDateBelowComment
+            && <CommentDisplayDate
+                date={comment.date}
+                translations={translations}
+                absoluteDates={config.absoluteDates}
+                absoluteAndRelativeDates={config.absoluteAndRelativeDates}
+                style={styles.comment?.displayDate}/>
+        }
+        {comment.isPinned && <Image source={imageAssets[FastCommentsImageAsset.ICON_PIN_RED]} style={styles.comment?.pin}/>}
         {!usePressableEditTrigger && !isReadonly && <TouchableOpacity style={{padding: 5}} onPress={() => setIsMenuOpen(true)}><Image
-            source={state.imageAssets[state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_EDIT_SMALL_WHITE : FastCommentsImageAsset.ICON_EDIT_SMALL].get()}
+            source={imageAssets[config.hasDarkBackground ? FastCommentsImageAsset.ICON_EDIT_SMALL_WHITE : FastCommentsImageAsset.ICON_EDIT_SMALL]}
             style={{width: 16, height: 16}}/></TouchableOpacity>}
     </View>
         <View style={styles.comment?.contentWrapper}>
-            <CommentNotices comment={comment} state={state} styles={styles}/>
-            {!renderCommentInline && <CommentUserInfo comment={comment} state={state} styles={styles}/>}
-            {<RenderHTMLSource source={{html: renderCommentInline ? `<div style="flex-direction:row">${getCommentUserInfoHTML(props)}${htmlWrapped}</div>` : htmlWrapped}} contentWidth={width} />}
-            {state.config.renderLikesToRight.get() && <CommentVote comment={comment} state={state} styles={styles} onVoteSuccess={onVoteSuccess}/>}
+            <CommentNotices comment={commentState} styles={styles} translations={translations}/>
+            {!renderCommentInline && <CommentUserInfo comment={comment} config={config} imageAssets={imageAssets} styles={styles} translations={translations} userPresenceState={state.userPresenceState}/>}
+            {<RenderHTMLSource source={{html: renderCommentInline ? `<div style="flex-direction:row">${getCommentUserInfoHTML({comment, config, imageAssets, translations, styles})}${htmlWrapped}</div>` : htmlWrapped}} contentWidth={width} />}
+            {config.renderLikesToRight && <CommentVote comment={commentState} config={config} imageAssets={imageAssets} state={state} styles={styles} translations={translations} onVoteSuccess={onVoteSuccess}/>}
         </View>
-        <CommentBottom comment={comment}
+        <CommentBottom comment={commentState}
                        state={state}
+                       config={config}
+                       translations={translations}
+                       imageAssets={imageAssets}
                        styles={styles}
                        onVoteSuccess={onVoteSuccess}
                        onReplySuccess={onReplySuccess}
                        onAuthenticationChange={onAuthenticationChange}
                        replyingTo={replyingTo}
                        repliesHiddenState={repliesHiddenState}/>
-        {!repliesHiddenState.get() && <View style={styles.comment?.children}>
+        {!repliesHiddenState.get(STEALTH) && <View style={styles.comment?.children}>
             {/* TODO how to fix stupid cast here? */}
-            {comment.children?.get()! && (comment.children as State<RNComment[]>).map((comment) =>
-                <FastCommentsCommentView comment={comment} state={state} key={comment._id.get()} styles={styles}/>
+            {commentState.children?.get(STEALTH)! && (commentState.children as State<RNComment[]>).map((comment) =>
+                <FastCommentsCommentView
+                    key={comment._id.get()}
+                    comment={comment}
+                    config={config}
+                    onVoteSuccess={onVoteSuccess}
+                    onReplySuccess={onReplySuccess}
+                    onAuthenticationChange={onAuthenticationChange}
+                    replyingTo={replyingTo}
+                    translations={translations}
+                    imageAssets={imageAssets}
+                    state={state}
+                    styles={styles}/>
             )}
         </View>}
     </View>

@@ -1,11 +1,11 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
 import {Dispatch, ReactNode, SetStateAction, useState} from 'react';
-import {FastCommentsImageAsset} from "../types/image-asset";
+import {FastCommentsImageAsset} from "../types";
 import {ActivityIndicator, Image, Modal, Text, TouchableOpacity, View} from "react-native";
-import {FastCommentsState} from "../types/fastcomments-state";
+import {FastCommentsState} from "../types";
 import {State} from "@hookstate/core";
-import {IFastCommentsStyles} from "../types/fastcomments-styles";
+import {IFastCommentsStyles} from "../types";
 
 export interface ModalMenuItem {
     id: string;

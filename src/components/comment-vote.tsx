@@ -1,18 +1,29 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
 import {View, Text, Image, TextInput, ActivityIndicator, Button, Linking} from 'react-native';
-import {FastCommentsCommentWithState} from "./comment";
-import {FastCommentsImageAsset} from "../types/image-asset";
+import type {
+    CommentVoteResponse,
+    CommentVoteDeleteResponse,
+    FastCommentsCallbacks,
+    RNComment,
+    FastCommentsState,
+    IFastCommentsStyles, ImageAssetConfig
+} from "../types";
+import {FastCommentsImageAsset} from "../types";
 import {none, State, useHookstate} from "@hookstate/core";
-import {CommentVoteResponse} from "../types/dto/comment-vote";
 import {getActionTenantId} from "../services/tenants";
 import {createURLQueryString, makeRequest} from "../services/http";
 import {newBroadcastId} from '../services/broadcast-id';
-import {CommentVoteDeleteResponse} from '../types/dto/comment-vote-delete';
 import {Pressable} from 'react-native';
-import type {FastCommentsCallbacks} from "../types";
+import {FastCommentsRNConfig} from "../types/react-native-config";
 
-export interface CommentVoteProps extends FastCommentsCommentWithState, Pick<FastCommentsCallbacks, 'onVoteSuccess'> {
+export interface CommentVoteProps extends Pick<FastCommentsCallbacks, 'onVoteSuccess'> {
+    state: State<FastCommentsState>
+    comment: State<RNComment>
+    config: FastCommentsRNConfig
+    imageAssets: ImageAssetConfig
+    styles: IFastCommentsStyles
+    translations: Record<string, string>
 }
 
 interface VoteState {
@@ -160,10 +171,10 @@ async function doVote({state, comment, onVoteSuccess}: Pick<CommentVoteProps, 's
 }
 
 export function CommentVote(props: CommentVoteProps) {
-    const {comment, styles} = props;
+    const {comment, config, styles, translations, imageAssets} = props;
     const state = useHookstate(props.state); // OPTIMIZATION: creating scoped state
     const voteState = useHookstate<VoteState>({});
-    if (state.config.disableVoting.get()) {
+    if (config.disableVoting) {
         return null;
     }
 
@@ -172,7 +183,7 @@ export function CommentVote(props: CommentVoteProps) {
     let auth;
     let error;
 
-    const showDownVoting = !state.config.disableDownVoting.get();
+    const showDownVoting = !config.disableDownVoting;
 
     // TODO TouchableOpacity throws weird callback exceeded errors
     voteOptions = <View style={styles.commentVote?.commentVoteOptions}>
@@ -186,7 +197,7 @@ export function CommentVote(props: CommentVoteProps) {
             }}
         >
             <Image
-                source={state.imageAssets[comment.isVotedUp.get() ? (state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_UP_ACTIVE_WHITE : FastCommentsImageAsset.ICON_UP_ACTIVE) : FastCommentsImageAsset.ICON_UP].get()}
+                source={imageAssets[comment.isVotedUp.get() ? (config.hasDarkBackground ? FastCommentsImageAsset.ICON_UP_ACTIVE_WHITE : FastCommentsImageAsset.ICON_UP_ACTIVE) : FastCommentsImageAsset.ICON_UP]}
                 style={styles.commentVote?.voteButtonIcon}/>
         </Pressable>
         {showDownVoting && <View style={styles.commentVote?.voteDivider}/>}
@@ -199,7 +210,7 @@ export function CommentVote(props: CommentVoteProps) {
             }}
         >
             <Image
-                source={state.imageAssets[comment.isVotedDown.get() ? (state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_DOWN_ACTIVE_WHITE : FastCommentsImageAsset.ICON_DOWN_ACTIVE) : FastCommentsImageAsset.ICON_DOWN].get()}
+                source={imageAssets[comment.isVotedDown.get() ? (config.hasDarkBackground ? FastCommentsImageAsset.ICON_DOWN_ACTIVE_WHITE : FastCommentsImageAsset.ICON_DOWN_ACTIVE) : FastCommentsImageAsset.ICON_DOWN]}
                 style={styles.commentVote?.voteButtonIcon}/>
         </Pressable>}
         {showDownVoting && comment.votesDown.get() ? <Text style={styles.commentVote?.votesDownText}>{Number(comment.votesDown.get()).toLocaleString()}</Text> : null}
@@ -207,13 +218,13 @@ export function CommentVote(props: CommentVoteProps) {
 
     if (voteState.isAuthenticating.get()) {
         auth = <View style={styles.commentVote?.commentVoteAuth}>
-            {!state.config.disableEmailInputs.get() && <View>
-                <Text>{state.translations.ENTER_EMAIL_VOTE.get()}</Text>
+            {!config.disableEmailInputs && <View>
+                <Text>{translations.ENTER_EMAIL_VOTE}</Text>
                 <TextInput
                     style={styles.commentVote?.authInput}
                     textContentType='emailAddress'
                     value={voteState.authEmail.get()}
-                    placeholder={state.translations.ENTER_EMAIL_VERIFICATION.get()}
+                    placeholder={translations.ENTER_EMAIL_VERIFICATION}
                     onChangeText={(newValue) => voteState.authEmail.set(newValue)}
                 />
             </View>
@@ -222,34 +233,34 @@ export function CommentVote(props: CommentVoteProps) {
                 style={styles.commentVote?.authInput}
                 textContentType='username'
                 value={voteState.authUserName.get()}
-                placeholder={state.translations.PUBLICLY_DISPLAYED_USERNAME.get()}
+                placeholder={translations.PUBLICLY_DISPLAYED_USERNAME}
                 onChangeText={(newValue) => voteState.authUserName.set(newValue)}
             />
             <View style={styles.commentVote?.voteAuthButtons}>
-                <Button title={state.translations.CANCEL.get()} onPress={() => voteState.isAuthenticating.set(false)}/>
-                <Button title={state.translations.SAVE_N_VOTE.get()} onPress={() => doVote({state, comment}, voteState)}/>
+                <Button title={translations.CANCEL} onPress={() => voteState.isAuthenticating.set(false)}/>
+                <Button title={translations.SAVE_N_VOTE} onPress={() => doVote({state, comment}, voteState)}/>
             </View>
         </View>;
     }
 
     if (voteState.isAwaitingVerification.get()) {
         pendingVoteMessage =
-            <Text style={styles.commentVote?.voteAwaitingVerificationMessage}>{state.translations.VOTE_APPLIES_AFTER_VERIFICATION.get()}</Text>;
+            <Text style={styles.commentVote?.voteAwaitingVerificationMessage}>{translations.VOTE_APPLIES_AFTER_VERIFICATION}</Text>;
     }
 
     // This is here instead of above so that when it gets added in and then removed we don't cause the user to accidentally vote down if they double click.
     const lastVoteResponse = voteState.voteResponse.get();
     if (lastVoteResponse && lastVoteResponse.status === 'failed') {
         if (lastVoteResponse.code === 'banned') {
-            let bannedText = state.translations.BANNED_VOTING.get();
+            let bannedText = translations.BANNED_VOTING;
             if (lastVoteResponse.bannedUntil) {
-                bannedText += ' ' + state.translations.BAN_ENDS.get().replace('[endsText]', new Date(lastVoteResponse.bannedUntil).toLocaleString());
+                bannedText += ' ' + translations.BAN_ENDS.replace('[endsText]', new Date(lastVoteResponse.bannedUntil).toLocaleString());
             }
             error = <Text style={styles.commentVote?.voteError}>{bannedText}</Text>
         } else if (lastVoteResponse.code && lastVoteResponse.code in ErrorCodesToMessageIds) {
-            error = <Text style={styles.commentVote?.voteError}>{state.translations[ErrorCodesToMessageIds[lastVoteResponse.code]].get()}</Text>
+            error = <Text style={styles.commentVote?.voteError}>{translations[ErrorCodesToMessageIds[lastVoteResponse.code]]}</Text>
         } else {
-            error = <Text style={styles.commentVote?.voteError}>{state.translations.ERROR_MESSAGE.get()}</Text>
+            error = <Text style={styles.commentVote?.voteError}>{translations.ERROR_MESSAGE}</Text>
         }
     }
 

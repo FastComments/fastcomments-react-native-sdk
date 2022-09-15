@@ -17,7 +17,7 @@ import {getDefaultFastCommentsStyles} from "../resources";
 import {FastCommentsRNConfig} from "../types/react-native-config";
 import {CommentViewProps, FastCommentsCommentView} from "./comment";
 import {canPaginateNext, paginateNext, paginatePrev} from "../services/pagination";
-import {shouldCommentReRender} from "../services/comment-render-determination";
+import {arePropsEqual} from "../services/comment-render-determination";
 import {ShowHideCommentsToggle} from "./show-hide-comments-toggle";
 
 export interface FastCommentsLiveCommentingProps {
@@ -27,11 +27,17 @@ export interface FastCommentsLiveCommentingProps {
     assets?: ImageAssetConfig
 }
 
+const CommentViewMemo = React.memo<CommentViewProps>(
+    props => FastCommentsCommentView(props),
+    (prevProps, nextProps) => arePropsEqual(prevProps, nextProps)
+);
+
 export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: FastCommentsLiveCommentingProps) {
     if (!styles) {
         styles = getDefaultFastCommentsStyles();
     }
     const serviceInitialState = FastCommentsLiveCommentingService.createFastCommentsStateFromConfig({...config}, assets); // shallow clone is important to prevent extra re-renders
+    const imageAssets = serviceInitialState.imageAssets;
     const state = useHookstate(serviceInitialState);
     const service = new FastCommentsLiveCommentingService(state, callbacks);
     const [isLoading, setLoading] = useState(true);
@@ -117,19 +123,22 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
         };
 
         console.log('!!!! ************** root re-rendered ************** !!!!')
-        const CommentViewMemo = React.memo<CommentViewProps>(props => {
-            return <FastCommentsCommentView
-                comment={props.comment}
-                state={props.state}
-                styles={props.styles}
+
+        // TODO pass callbacks
+        // Note: we do not support changing image assets or translations without a complete reload, as a (reasonable) optimization.
+        const renderItem = (info: ListRenderItemInfo<State<RNComment>>) =>
+            <CommentViewMemo
+                comment={info.item}
+                config={config}
+                imageAssets={imageAssets}
+                translations={state.translations.get({stealth: true})}
+                state={state}
+                styles={styles!}
                 onVoteSuccess={callbacks?.onVoteSuccess}
                 onReplySuccess={callbacks?.onReplySuccess}
                 onAuthenticationChange={callbacks?.onAuthenticationChange}
                 replyingTo={handleReplyingTo}
-            />
-        }, (prevProps, nextProps) => shouldCommentReRender(prevProps, nextProps));
-
-        const renderItem = (info: ListRenderItemInfo<State<RNComment>>) => <CommentViewMemo comment={info.item} state={state} styles={styles!}/>;
+            />;
 
         return <View style={styles.root}>
             {
@@ -139,14 +148,23 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
                 state.isDemo.get() &&
                 <Text style={styles.red}><RenderHtml source={{html: state.translations.DEMO_CREATE_ACCT.get()}} contentWidth={width}/></Text>
             }
-            <LiveCommentingTopArea state={state} styles={styles}/>
+            <LiveCommentingTopArea
+                imageAssets={imageAssets}
+                config={config}
+                state={state}
+                styles={styles}
+                translations={state.translations.get()}
+                callbackObserver={callbackObserverRef.current}
+                onReplySuccess={callbacks?.onReplySuccess}
+            />
             {state.commentsVisible.get() &&
             <TRenderEngineProvider baseStyle={styles.comment?.text}>
                 <RenderHTMLConfigProvider><FlatList
                     style={styles.commentsWrapper}
                     data={state.commentsTree}
-                    keyExtractor={item => item._id.get()}
+                    keyExtractor={item => item._id.get({stealth: true})}
                     inverted={state.config.newCommentsToBottom.get()}
+                    maxToRenderPerBatch={state.PAGE_SIZE.get()}
                     onEndReachedThreshold={0.3}
                     onEndReached={onEndReached}
                     renderItem={renderItem}
@@ -163,11 +181,18 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
                 /></RenderHTMLConfigProvider>
             </TRenderEngineProvider>
             }
-            <LiveCommentingBottomArea state={state} styles={styles} callbackObserver={callbackObserverRef.current}/>
+            <LiveCommentingBottomArea
+                imageAssets={imageAssets}
+                state={state}
+                styles={styles}
+                translations={state.translations.get()}
+                callbackObserver={callbackObserverRef.current}
+                onReplySuccess={callbacks?.onReplySuccess}
+            />
         </View>;
     } else if (!state.commentsVisible.get() && state.translations.get()) {
         return <View style={styles.root}>
-            <ShowHideCommentsToggle state={state} styles={styles} />
+            <ShowHideCommentsToggle state={state} styles={styles}/>
         </View>;
     } else {
         return <View style={styles.root}></View>;

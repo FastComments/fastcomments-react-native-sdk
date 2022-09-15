@@ -10,23 +10,34 @@ import {ShowNewLiveCommentsButton} from "./show-new-live-comments-button";
 import {State, useHookstate} from "@hookstate/core";
 import { CommentCount } from './comment-count';
 import {IFastCommentsStyles} from "../types/fastcomments-styles";
+import {ImageAssetConfig, RNComment} from "../types";
+import {CallbackObserver} from "./live-commenting-bottom-area";
+import {FastCommentsRNConfig} from "../types/react-native-config";
 
 export interface LiveCommentingTopAreaProps {
+    imageAssets: ImageAssetConfig
+    config: FastCommentsRNConfig
     state: State<FastCommentsState>
     styles: IFastCommentsStyles
+    translations: Record<string, string>
+    onReplySuccess?: (comment: RNComment) => void
+    callbackObserver: CallbackObserver
 }
 
 export function LiveCommentingTopArea(props: LiveCommentingTopAreaProps) {
-    const {styles} = props;
+    const {config, imageAssets, styles, translations, onReplySuccess, callbackObserver} = props;
     const state = useHookstate(props.state); // OPTIMIZATION: creating scoped state
     const areCommentsVisible = state.commentsVisible.get();
     const serverCommentCount = state.commentCountOnServer.get();
     return <View>
         <View>{
-            state.config.inputAfterComments.get() !== true && <View style={props.styles.topArea?.replyArea}><ReplyArea state={state} styles={styles}/></View>
+            config.inputAfterComments !== true &&
+                <View style={props.styles.topArea?.replyArea}>
+                    <ReplyArea imageAssets={imageAssets} state={state} styles={styles} translations={translations} onReplySuccess={onReplySuccess} replyingTo={callbackObserver.replyingTo}/>
+                </View>
         }</View>
         <View>{
-            state.config.useShowCommentsToggle.get() && serverCommentCount > 0 && <ShowHideCommentsToggle state={state} styles={styles} />
+            config.useShowCommentsToggle && serverCommentCount > 0 && <ShowHideCommentsToggle state={state} styles={styles} />
         }</View>
         {
             areCommentsVisible && serverCommentCount > 0

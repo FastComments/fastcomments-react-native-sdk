@@ -13,7 +13,7 @@ export interface CommonHTTPResponse {
 }
 
 export async function makeRequest<T>({apiHost, method, url, body, attemptsRemaining}: HTTPRequest): Promise<T> {
-    console.log('FastComments request', url); // TODO remove
+    console.log('FastComments request', method, url); // TODO remove
     if (attemptsRemaining === undefined) {
         attemptsRemaining = 2;
     }

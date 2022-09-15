@@ -4,20 +4,12 @@ import {RNComment} from "../types";
 // Note - functions in this file contain unrolled loops and similar optimizations. Do not try to simplify without benchmarking.
 function areCommentsDifferent(prevComment: RNComment, nextComment: RNComment) {
     // OPTIMIZATION: frequently changed things first
-    // Showing/hiding replies happens often.
-    if (prevComment.repliesHidden !== nextComment.repliesHidden) {
-        return true;
-    }
-    if (prevComment.replyBoxOpen !== nextComment.replyBoxOpen) {
-        return true;
-    }
-    // We don't need to also check votesUp and votesDown since we always change votes
-    // Voting up happens often.
-    if (prevComment.votes !== nextComment.votes) {
-        return true;
-    }
+    // OPTIMIZATION: repliesHidden is handled inside the widget itself, so opening replies feels better.
+    // OPTIMIZATION: replyBoxOpen is handled inside the widget itself, so opening reply box feels better.
+    // OPTIMIZATION: votes is handled inside the widget itself, so voting feels better.
+
     // Adding/removing replies happens often. Have to re-render parents.
-    if (prevComment.children?.length !== nextComment.children?.length) {
+    if (prevComment.children?.length !== nextComment.children?.length) { // TODO submitting child replies is not updating the UI!
         return true;
     }
     if (prevComment.isPinned !== nextComment.isPinned) {
@@ -99,17 +91,17 @@ function areCommentsDifferent(prevComment: RNComment, nextComment: RNComment) {
     return false;
 }
 
-export function shouldCommentReRender(prevProps: CommentViewProps, nextProps: CommentViewProps, checkConfig = true) {
+export function arePropsEqual(prevProps: CommentViewProps, nextProps: CommentViewProps, checkConfig = true) {
     const prevComment = prevProps.comment.get({stealth: true, noproxy: true});
     const nextComment = nextProps.comment.get({stealth: true, noproxy: true});
 
     if (areCommentsDifferent(prevComment, nextComment)) {
-        return true;
+        return false;
     }
     if (nextComment.children) {
         for (let i = 0; i < nextComment.children.length; i++) {
             if (areCommentsDifferent(prevComment.children![i], nextComment.children[i])) {
-                return true;
+                return false;
             }
         }
     }
@@ -117,24 +109,24 @@ export function shouldCommentReRender(prevProps: CommentViewProps, nextProps: Co
         const prevConfig = prevProps.state.config.get({stealth: true, noproxy: true});
         const nextConfig = nextProps.state.config.get({stealth: true, noproxy: true});
         if (prevConfig.renderCommentInline !== nextConfig.renderCommentInline) {
-            return true;
+            return false;
         }
         if (prevConfig.usePressToEdit !== nextConfig.usePressToEdit) {
-            return true;
+            return false;
         }
         if (prevConfig.readonly !== nextConfig.readonly) {
-            return true;
+            return false;
         }
         if (prevConfig.renderDateBelowComment !== nextConfig.renderDateBelowComment) {
-            return true;
+            return false;
         }
         if (prevConfig.hasDarkBackground !== nextConfig.hasDarkBackground) {
-            return true;
+            return false;
         }
         if (prevConfig.renderLikesToRight !== nextConfig.renderLikesToRight) {
-            return true;
+            return false;
         }
     }
 
-    return false;
+    return true;
 }
