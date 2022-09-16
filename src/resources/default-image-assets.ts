@@ -52,7 +52,7 @@ export function getDefaultImageAssets(): ImageAssetConfig {
         [FastCommentsImageAsset.ICON_GIF]: require('./icons/bell.png'),
         [FastCommentsImageAsset.ICON_IP]: require('./icons/ip.png'),
         [FastCommentsImageAsset.ICON_BELL]: require('./icons/bell.png'),
-        [FastCommentsImageAsset.ICON_BELL_RED]: require('./icons/bell.png'),
+        [FastCommentsImageAsset.ICON_BELL_RED]: require('./icons/bell-red.png'),
         [FastCommentsImageAsset.ICON_BELL_WHITE]: require('./icons/bell_white.png'),
         [FastCommentsImageAsset.ICON_BLOCK]: require('./icons/ban.png'),
         [FastCommentsImageAsset.ICON_BLOCK_WHITE]: require('./icons/ban_white.png'),
