@@ -29,7 +29,7 @@ export function ModalMenu({state, styles, items, openButton, isOpen, onClose}: M
     const [activeModalId, setModalIdVisible] = useState<string | null>(isOpen ? 'menu' : null);
     const [isLoading, setLoading] = useState(false);
     return <View style={styles.modalMenu?.rootView}>
-        <View style={styles.modalMenu?.centeredView}>
+        {activeModalId && <View>
             <Modal
                 animationType="slide"
                 transparent={true}
@@ -77,7 +77,7 @@ export function ModalMenu({state, styles, items, openButton, isOpen, onClose}: M
                 }}>
                 {!!activeModalId && activeModalId !== 'menu' && items && items.find((item) => item.subModalContent && item.id === activeModalId)?.subModalContent!(() => setModalIdVisible(null))}
             </Modal>
-        </View>
+        </View>}
         {openButton && <TouchableOpacity onPress={() => setModalIdVisible('menu')}>
             {openButton}
         </TouchableOpacity>}
