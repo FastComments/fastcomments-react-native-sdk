@@ -1,14 +1,19 @@
 import {FastCommentsCommentWithState} from "./comment";
 import {View, Text, ActivityIndicator, Image, TouchableOpacity} from "react-native";
-import {FastCommentsImageAsset} from "../types/image-asset";
+import {FastCommentsImageAsset} from "../types";
 import {useState} from "react";
 import {createURLQueryString, makeRequest} from "../services/http";
 import {getActionTenantId} from "../services/tenants";
-import {UpdateCommentTextResponse} from "../types/dto/update-comment-text";
+import {UpdateCommentTextResponse} from "../types";
 import {newBroadcastId} from "../services/broadcast-id";
 import {CommentTextArea, ValueObserver} from "./comment-text-area";
+import {FastCommentsState, IFastCommentsStyles, RNComment} from "../types";
+import {State} from "@hookstate/core";
 
-export interface CommentActionEditProps extends FastCommentsCommentWithState {
+export interface CommentActionEditProps {
+    comment: State<RNComment>
+    state: State<FastCommentsState>
+    styles: IFastCommentsStyles
     close: () => void;
 }
 

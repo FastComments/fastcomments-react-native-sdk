@@ -1,4 +1,4 @@
-import {FastCommentsImageAsset, ImageAssetConfig} from "../types/image-asset";
+import {FastCommentsImageAsset, ImageAssetConfig} from "../types";
 
 export function getDefaultImageAssets(): ImageAssetConfig {
     return {
@@ -8,6 +8,8 @@ export function getDefaultImageAssets(): ImageAssetConfig {
         [FastCommentsImageAsset.ICON_BAN_WHITE]: require('./icons/ban_white.png'),
         [FastCommentsImageAsset.ICON_BUBBLE]: require('./icons/text_bubble_dark.png'),
         [FastCommentsImageAsset.ICON_BUBBLE_WHITE]: require('./icons/text_bubble_white.png'),
+        [FastCommentsImageAsset.ICON_CHECKBOX_CHECKED]: require('./icons/checkbox_checked.png'),
+        [FastCommentsImageAsset.ICON_CHECKBOX_UNCHECKED]: require('./icons/checkbox_unchecked.png'),
         [FastCommentsImageAsset.ICON_CROSS]: require('./icons/close.png'),
         [FastCommentsImageAsset.ICON_CROSS_WHITE]: require('./icons/close_white.png'),
         [FastCommentsImageAsset.ICON_REPLY_ARROW_INACTIVE]: require('./icons/reply_inactive.png'),

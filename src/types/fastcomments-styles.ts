@@ -134,6 +134,25 @@ export interface IFastCommentsStyles {
     notificationBell?: {
         bellContainer?: ViewStyle
         bellCount?: TextStyle
+        bellCountNonZero?: TextStyle
+    }
+    notificationList?: {
+        centeredView: ViewStyle
+        root?: ViewStyle
+        subscriptionHeader?: ViewStyle
+        subscriptionHeaderCheckBox?: ViewStyle
+        subscriptionHeaderCheckBoxImage?: ImageStyle
+        subscriptionHeaderCheckBoxText?: ViewStyle
+        subscriptionHeaderText?: TextStyle
+        notification?: ViewStyle
+        notificationAvatarWrapper?: ViewStyle
+        notificationAvatar?: ImageStyle
+        notificationTop?: ViewStyle
+        notificationBottom?: ViewStyle
+        notificationText?: MixedStyleRecord
+        notificationDate?: TextStyle
+        notificationPageTitle?: TextStyle
+        notificationMenuButton?: ViewStyle
     }
     paginationNext?: {
         root?: ViewStyle

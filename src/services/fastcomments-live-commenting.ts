@@ -53,7 +53,6 @@ export class FastCommentsLiveCommentingService {
             isDemo: false,
             isSiteAdmin: false,
             newRootCommentCount: 0,
-            notificationCount: 0,
             page: typeof config.startingPage === 'number' ? config.startingPage : 0,
             pagesLoaded: [],
             sortDirection: config.defaultSortDirection || 'MR',

@@ -50,7 +50,6 @@ export interface FastCommentsState {
     isSiteAdmin: boolean;
     moderatingTenantIds?: string[];
     newRootCommentCount: number;
-    notificationCount?: number;
     page: number;
     pagesLoaded: number[];
     sortDirection: FastCommentsSortDirection;

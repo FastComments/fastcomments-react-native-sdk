@@ -31,7 +31,7 @@ const SignUpErrorsTranslationIds: Record<string, string> = {
     'invalid-name-is-email': 'USERNAME_CANT_BE_EMAIL'
 };
 
-export interface ReplyAreaProps extends Pick<FastCommentsCallbacks, 'onReplySuccess' | 'replyingTo' | 'onAuthenticationChange'> {
+export interface ReplyAreaProps extends Pick<FastCommentsCallbacks, 'onNotificationSelected' | 'onReplySuccess' | 'replyingTo' | 'onAuthenticationChange'> {
     imageAssets: ImageAssetConfig
     parentComment?: State<RNComment> | null
     state: State<FastCommentsState>
@@ -102,14 +102,13 @@ async function logout(state: State<FastCommentsState>, callbacks: Pick<FastComme
     await setupUserPresenceState(state, state.urlIdWS.get()!);
 }
 
-// TODO why is default webstorm formatting terrible? fix
 async function submit({
-                          state,
-                          parentComment,
-                          onReplySuccess,
-                          onAuthenticationChange,
-                      }: Pick<ReplyAreaProps, 'state' | 'parentComment' | 'onReplySuccess' | 'onAuthenticationChange'>,
-                      commentReplyState: State<CommentReplyState>
+        state,
+        parentComment,
+        onReplySuccess,
+        onAuthenticationChange,
+    }: Pick<ReplyAreaProps, 'state' | 'parentComment' | 'onReplySuccess' | 'onAuthenticationChange'>,
+    commentReplyState: State<CommentReplyState>
 ) {
     if (state.config.readonly.get()) {
         return;
@@ -269,7 +268,16 @@ async function submit({
 }
 
 export function ReplyArea(props: ReplyAreaProps) {
-    const {imageAssets, parentComment, styles, translations, onReplySuccess, replyingTo, onAuthenticationChange} = props;
+    const {
+        imageAssets,
+        onNotificationSelected,
+        onAuthenticationChange,
+        onReplySuccess,
+        parentComment,
+        replyingTo,
+        styles,
+        translations,
+    } = props;
     const state = useHookstate(props.state); // create scoped state
     const currentUser = state.currentUser?.get();
 
@@ -309,8 +317,8 @@ export function ReplyArea(props: ReplyAreaProps) {
     const replyToText = parentComment?.get()
         // we intentionally don't use the REPLYING_TO_AS translation like web to save horizontal space for the cancel button
         ? <RenderHtml source={{
-                    html: translations.REPLYING_TO.replace('[to]', parentComment?.get()?.commenterName as string)
-                }} contentWidth={width} baseStyle={styles.replyArea?.replyingToText}/> : null;
+            html: translations.REPLYING_TO.replace('[to]', parentComment?.get()?.commenterName as string)
+        }} contentWidth={width} baseStyle={styles.replyArea?.replyingToText}/> : null;
 
     const ssoConfig = state.config.sso?.get() || state.config.simpleSSO?.get();
     let ssoLoginWrapper;
@@ -363,7 +371,13 @@ export function ReplyArea(props: ReplyAreaProps) {
                         }
                     ]} openButton={<ThreeDot styles={styles}/>}/>
                     }
-                    <NotificationBell state={state} styles={styles}/>
+                    <NotificationBell
+                        imageAssets={imageAssets}
+                        onNotificationSelected={onNotificationSelected}
+                        state={state}
+                        styles={styles}
+                        translations={translations}
+                    />
                 </View>
             </View>;
         }

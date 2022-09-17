@@ -568,9 +568,76 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             },
             bellCount: {
                 position: "absolute",
-                top: 0,
-                right: 0,
+                top: -3,
+                left: 26,
                 fontSize: 11
+            },
+            bellCountNonZero: {
+                position: "absolute",
+                top: -3,
+                left: 26,
+                fontSize: 11,
+                color: 'red'
+            }
+        },
+        notificationList: {
+            centeredView: {
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+            },
+            root: {
+                minWidth: 300,
+                margin: 20,
+                backgroundColor: "white",
+                borderRadius: 20,
+                padding: 10,
+                alignItems: "flex-start",
+                shadowColor: "#000",
+                shadowOffset: {
+                    width: 0,
+                    height: 2
+                },
+                shadowOpacity: 0.25,
+                shadowRadius: 4,
+                elevation: 5
+            },
+            subscriptionHeader: {
+                marginBottom: 10
+            },
+            subscriptionHeaderCheckBox: {
+                flexDirection: 'row',
+                alignItems: 'center'
+            },
+            subscriptionHeaderCheckBoxImage: {
+                width: 22,
+                height: 22,
+                marginRight: 5
+            },
+            subscriptionHeaderCheckBoxText: {
+
+            },
+            subscriptionHeaderText: {
+                fontSize: 12
+            },
+            notification: {
+            },
+            notificationTop: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center'
+            },
+            notificationAvatar: {
+                width: 32,
+                height: 32,
+                marginRight: 10,
+                borderTopLeftRadius: 25,
+                borderTopRightRadius: 25,
+                borderBottomRightRadius: 25,
+                borderBottomLeftRadius: 25,
+            },
+            notificationDate: {
+                fontSize: 12
             }
         },
         paginationNext: {
@@ -676,7 +743,6 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 "borderTopRightRadius": 25,
                 "borderBottomRightRadius": 25,
                 "borderBottomLeftRadius": 25,
-                "overflow": "hidden"
                 // TODO box shadow
             },
             topBarUsername: {
@@ -685,11 +751,11 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 flexWrap: 'nowrap'
             },
             topBarRight: {
-                width: 100,
                 alignItems: 'center',
                 alignContent: 'center',
                 justifyContent: 'center',
                 flexDirection: 'row',
+                alignSelf: 'flex-end',
             },
             commentInputArea: {},
             commentInputAreaReplySaving: {

@@ -182,7 +182,6 @@ export function getCommentMenuItems({comment, styles, state}: FastCommentsCommen
                 await CommentPromptDelete({
                     comment,
                     state,
-                    styles,
                     close: () => setModalId(null)
                 });
             }

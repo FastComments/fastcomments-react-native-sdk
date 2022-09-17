@@ -1,5 +1,6 @@
 import {RNComment} from "./react-native-comment";
 import {FastCommentsSessionUser} from "./user";
+import {UserNotification} from "./user-notification";
 
 export interface FastCommentsCallbacks {
     /** Invoked when voting is successful. **/
@@ -12,6 +13,8 @@ export interface FastCommentsCallbacks {
     onAuthenticationChange?: (status: 'user-set' | 'session-id-set' | 'authentication-failed' | 'logout', currentUser: FastCommentsSessionUser, comment: RNComment | null) => void
     /** Invoked when library renders comments. **/
     onCommentsRendered?: (comment: RNComment[]) => void,
+    /** Invoked when the user selects a notification. **/
+    onNotificationSelected?: (notification: UserNotification) => void,
     /** Invoked when the comment count changes. **/
     // commentCountUpdated?: (newCount: number) => void TODO
     /** Invoked when clicking an image inside a comment. **/

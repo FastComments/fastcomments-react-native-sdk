@@ -1,4 +1,5 @@
 export interface UserNotification {
+    _id: string,
     urlId: string,
     url?: string,
     pageTitle?: string,

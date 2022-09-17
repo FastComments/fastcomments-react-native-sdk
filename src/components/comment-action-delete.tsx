@@ -5,9 +5,13 @@ import {newBroadcastId} from "../services/broadcast-id";
 import {createURLQueryString, makeRequest} from "../services/http";
 import {DeleteCommentResponse} from "../types/dto/delete-comment";
 import {removeCommentOnClient} from "../services/remove-comment-on-client";
+import {FastCommentsState, RNComment} from "../types";
+import {State} from "@hookstate/core";
 
-export interface CommentActionDeleteProps extends FastCommentsCommentWithState {
+export interface CommentActionDeleteProps {
     close: () => void;
+    comment: State<RNComment>
+    state: State<FastCommentsState>
 }
 
 async function deleteComment({comment, state}: Pick<FastCommentsCommentWithState, 'comment' | 'state'>) {

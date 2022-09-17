@@ -124,7 +124,6 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
 
         console.log('!!!! ************** root re-rendered ************** !!!!')
 
-        // TODO pass callbacks
         // Note: we do not support changing image assets or translations without a complete reload, as a (reasonable) optimization.
         const renderItem = (info: ListRenderItemInfo<State<RNComment>>) =>
             <CommentViewMemo
@@ -138,6 +137,7 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
                 onReplySuccess={callbacks?.onReplySuccess}
                 onAuthenticationChange={callbacks?.onAuthenticationChange}
                 replyingTo={handleReplyingTo}
+                width={width}
             />;
 
         return <View style={styles.root}>
@@ -149,13 +149,15 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
                 <Text style={styles.red}><RenderHtml source={{html: state.translations.DEMO_CREATE_ACCT.get()}} contentWidth={width}/></Text>
             }
             <LiveCommentingTopArea
-                imageAssets={imageAssets}
+                callbackObserver={callbackObserverRef.current}
                 config={config}
+                imageAssets={imageAssets}
+                onAuthenticationChange={callbacks?.onAuthenticationChange}
+                onNotificationSelected={callbacks?.onNotificationSelected}
+                onReplySuccess={callbacks?.onReplySuccess}
                 state={state}
                 styles={styles}
                 translations={state.translations.get()}
-                callbackObserver={callbackObserverRef.current}
-                onReplySuccess={callbacks?.onReplySuccess}
             />
             {state.commentsVisible.get() &&
             <TRenderEngineProvider baseStyle={styles.comment?.text}>
@@ -182,12 +184,14 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
             </TRenderEngineProvider>
             }
             <LiveCommentingBottomArea
+                callbackObserver={callbackObserverRef.current}
                 imageAssets={imageAssets}
+                onAuthenticationChange={callbacks?.onAuthenticationChange}
+                onNotificationSelected={callbacks?.onNotificationSelected}
+                onReplySuccess={callbacks?.onReplySuccess}
                 state={state}
                 styles={styles}
                 translations={state.translations.get()}
-                callbackObserver={callbackObserverRef.current}
-                onReplySuccess={callbacks?.onReplySuccess}
             />
         </View>;
     } else if (!state.commentsVisible.get() && state.translations.get()) {

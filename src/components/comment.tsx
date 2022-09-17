@@ -3,7 +3,7 @@ import * as React from 'react';
 
 import {RenderHTMLSource} from 'react-native-render-html';
 
-import {Image, Pressable, TouchableOpacity, useWindowDimensions, View} from "react-native";
+import {Image, Pressable, TouchableOpacity, View} from "react-native";
 import {getCommentMenuItems, getCommentMenuState} from "./comment-menu";
 import {CommentNotices} from "./comment-notices";
 import {CommentUserInfo, getCommentUserInfoHTML} from "./comment-user-info";
@@ -28,7 +28,8 @@ export interface FastCommentsCommentWithState {
     imageAssets: ImageAssetConfig
     translations: Record<string, string>
     state: State<FastCommentsState>
-    styles: IFastCommentsStyles
+    styles: IFastCommentsStyles,
+    width: number
 }
 
 export interface CommentViewProps extends FastCommentsCommentWithState, Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onReplySuccess' | 'onAuthenticationChange' | 'replyingTo'> {
@@ -47,6 +48,7 @@ export function FastCommentsCommentView(props: CommentViewProps) {
         replyingTo,
         translations,
         imageAssets,
+        width,
     } = props;
 
     const commentState = props.comment;
@@ -70,7 +72,6 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                 : comment.commentHTML
         );
 
-    const {width} = useWindowDimensions();
     // there is no way to do this outside of HTML rendering today, so if we have this flag set to true, we render user info completely differently.
     const renderCommentInline = config.renderCommentInline;
     const usePressableEditTrigger = config.usePressToEdit;
@@ -123,7 +124,8 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                     translations={translations}
                     imageAssets={imageAssets}
                     state={state}
-                    styles={styles}/>
+                    styles={styles}
+                    width={width}/>
             )}
         </View>}
     </View>

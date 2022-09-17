@@ -11,14 +11,14 @@ import {ReplyArea} from "./reply-area";
 import {CommentDisplayDate} from "./comment-dispay-date";
 import {FastCommentsRNConfig} from "../types/react-native-config";
 
-export interface CommentBottomProps extends Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onReplySuccess' | 'onAuthenticationChange' | 'replyingTo'> {
+export interface CommentBottomProps extends Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onReplySuccess' | 'onAuthenticationChange' | 'replyingTo' | 'onNotificationSelected'> {
     state: State<FastCommentsState> // we take hookstate here but we try to only use it for the things that change.
     comment: State<RNComment>
     config: FastCommentsRNConfig
-    translations: Record<string, string>
     imageAssets: ImageAssetConfig
-    styles: IFastCommentsStyles
     repliesHiddenState: State<boolean>
+    styles: IFastCommentsStyles
+    translations: Record<string, string>
 }
 
 const STEALTH = { stealth: true };
@@ -27,13 +27,14 @@ export function CommentBottom(props: CommentBottomProps) {
     const {
         comment,
         config,
-        translations,
         imageAssets,
-        styles,
-        onVoteSuccess,
-        onReplySuccess,
         onAuthenticationChange,
+        onNotificationSelected,
+        onReplySuccess,
+        onVoteSuccess,
         replyingTo,
+        styles,
+        translations,
     } = props;
 
     // OPTIMIZATION: we only use comment.replyBoxOpen for initial render.
@@ -75,7 +76,16 @@ export function CommentBottom(props: CommentBottomProps) {
             </TouchableOpacity>
         </View>
         {isReplyBoxOpen && !config.useSingleReplyField && <View style={styles.commentBottom?.replyAreaRoot}>
-            <ReplyArea imageAssets={imageAssets} state={state} parentComment={comment} styles={styles} translations={translations} onReplySuccess={onReplySuccess} onAuthenticationChange={onAuthenticationChange}/>
+            <ReplyArea
+                imageAssets={imageAssets}
+                onAuthenticationChange={onAuthenticationChange}
+                onNotificationSelected={onNotificationSelected}
+                onReplySuccess={onReplySuccess}
+                parentComment={comment}
+                state={state}
+                styles={styles}
+                translations={translations}
+            />
         </View>
         }
         <CommentReplyToggle
