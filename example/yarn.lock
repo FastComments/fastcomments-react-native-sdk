@@ -1061,6 +1061,11 @@
   dependencies:
     "@hapi/hoek" "^9.0.0"
 
+"@hookstate/core@^4.0.0-rc21":
+  "integrity" "sha512-aAiF537i9a54OlWzA/EtOa1l4bJMmpmJ4Fb/ZV8R30xD6jGMCGbCxHcb6SWIqO92T/w8dFXyl5XQbQ8reFpQrA=="
+  "resolved" "https://registry.npmjs.org/@hookstate/core/-/core-4.0.0-rc21.tgz"
+  "version" "4.0.0-rc21"
+
 "@jest/create-cache-key-function@^27.0.1":
   "integrity" "sha512-dmH1yW+makpTSURTy8VzdUwFnfQh1G8R+DxO2Ho2FFmBbKFEVm+3jWdvFhE2VqB/LATCTokkP0dotjyQyw5/AQ=="
   "resolved" "https://registry.npmjs.org/@jest/create-cache-key-function/-/create-cache-key-function-27.5.1.tgz"
@@ -4212,7 +4217,7 @@
     "object-assign" "^4.1.1"
     "react-is" "^16.12.0 || ^17.0.0 || ^18.0.0"
 
-"react@^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0", "react@18.0.0":
+"react@^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0", "react@^16.8.6 || ^17.0.0 || ^18.0.0", "react@18.0.0":
   "integrity" "sha512-x+VL6wbT4JRVPm7EGxXhZ8w8LTROaxPXOqhlGyVSrv0sB1jkyFGgXxJ8LVoPRLvPR6/CIZGFmfzqUa2NYeMr2A=="
   "resolved" "https://registry.npmjs.org/react/-/react-18.0.0.tgz"
   "version" "18.0.0"

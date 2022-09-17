@@ -70,7 +70,6 @@
     "react-native-render-html": "^6.3.4"
   },
   "peerDependencies": {
-    "fastcomments-typescript": "*",
     "react": "*",
     "react-native": "*"
   }
