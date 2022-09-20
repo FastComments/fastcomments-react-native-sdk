@@ -139,6 +139,8 @@ export interface IFastCommentsStyles {
     notificationList?: {
         centeredView: ViewStyle
         root?: ViewStyle
+        closeButton?: ViewStyle
+        closeButtonImage?: ImageStyle
         subscriptionHeader?: ViewStyle
         subscriptionHeaderCheckBox?: ViewStyle
         subscriptionHeaderCheckBoxImage?: ImageStyle
@@ -148,11 +150,16 @@ export interface IFastCommentsStyles {
         notificationAvatarWrapper?: ViewStyle
         notificationAvatar?: ImageStyle
         notificationTop?: ViewStyle
+        notificationTopTouchable?: ViewStyle
+        notificationMenu?: ViewStyle
+        notificationMenuButton?: ViewStyle
         notificationBottom?: ViewStyle
+        notificationIsReadCircle?: ViewStyle
+        notificationIsUnreadCircle?: ViewStyle
+        notificationTextWrapper?: ViewStyle
         notificationText?: MixedStyleRecord
         notificationDate?: TextStyle
         notificationPageTitle?: TextStyle
-        notificationMenuButton?: ViewStyle
     }
     paginationNext?: {
         root?: ViewStyle

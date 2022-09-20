@@ -50,7 +50,11 @@ export function NotificationBell({
                 state={state.get()}
                 styles={styles}
                 translations={translations}
-            /></Modal>
+            />
+                <TouchableOpacity style={styles.notificationList?.closeButton} onPress={() => setNotificationsListOpen(false)}>
+                    <Image source={imageAssets[FastCommentsImageAsset.ICON_CROSS]} style={styles.notificationList?.closeButtonImage}/>
+                </TouchableOpacity>
+            </Modal>
         </View>
         }
     </View>;

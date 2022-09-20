@@ -25,7 +25,16 @@ export interface NotificationListProps extends Pick<FastCommentsCallbacks, 'onNo
 }
 
 const NotificationListItemMemo = React.memo<NotificationListItemProps>(
-    props => NotificationListItem(props)
+    props => NotificationListItem(props),
+    (prevProps, nextProps) => {
+        if (prevProps.notification.viewed !== nextProps.notification.viewed) {
+            return false;
+        }
+        if (prevProps.notification.optedOut !== nextProps.notification.optedOut) {
+            return false;
+        }
+        return true;
+    }
 );
 
 async function getNotificationTranslations(apiHost: string, locale?: string) {
@@ -66,7 +75,7 @@ async function changeSubscriptionState(
     ssoConfigString: string | null | undefined,
     isSubscribed: boolean
 ) {
-    const response = await makeRequest<CommonHTTPResponse>({
+    await makeRequest<CommonHTTPResponse>({
         apiHost,
         method: 'POST',
         url: '/user-notifications/set-subscription-state/' + (isSubscribed ? 'subscribe' : 'unsubscribe') + '/' + createURLQueryString({
@@ -78,20 +87,15 @@ async function changeSubscriptionState(
         })
     });
     // TODO check response and update checkbox if failed
-    console.log('???', JSON.stringify(response));
 }
 
 export function NotificationList({imageAssets, onNotificationSelected, state, styles, translations}: NotificationListProps) {
     const [isLoading, setLoading] = useState(true);
-    const [isFetchingNextPage, _setIsFetchingNextPage] = useState(false);
+    const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
     const [notificationTranslations, setNotificationTranslations] = useState<Record<string, string>>({});
     const [notifications, setNotifications] = useState<UserNotification[]>([]);
     const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
     const {width} = useWindowDimensions();
-
-    // TODO can close the list via a visible X button
-    // TODO can mark individual notifications read/unread
-    // TODO can select "ignore notifications for this comment"
 
     const loadAsync = async () => {
         setLoading(true);
@@ -101,7 +105,6 @@ export function NotificationList({imageAssets, onNotificationSelected, state, st
         ]);
         setNotificationTranslations(notificationTranslations);
         setNotifications(notificationsState.notifications);
-        console.log('IS SUBSCRIBED?', notificationsState.isSubscribed);
         setIsSubscribed(notificationsState.isSubscribed);
         setLoading(false);
     }
@@ -146,18 +149,32 @@ export function NotificationList({imageAssets, onNotificationSelected, state, st
         }
     </View>;
 
-    const onEndReached = () => {
-
+    const onEndReached = async ({distanceFromEnd}: { distanceFromEnd: number }) => {
+        if (distanceFromEnd < 0 || notifications.length < 20) {
+            return;
+        }
+        setIsFetchingNextPage(true);
+        const notificationsState = await getNextNotificationsState(state.apiHost, state.config.tenantId, state.config.urlId!, state.ssoConfigString, notifications[notifications.length - 1]?._id);
+        setNotifications([
+            ...notifications,
+            ...notificationsState.notifications
+        ]);
+        setIsSubscribed(notificationsState.isSubscribed);
+        setIsFetchingNextPage(false);
     }
 
     const renderItem = (info: ListRenderItemInfo<UserNotification>) =>
         <NotificationListItemMemo
+            apiHost={state.apiHost}
+            config={state.config}
             defaultAvatar={getDefaultAvatarSrc(imageAssets)}
+            imageAssets={imageAssets}
             notification={info.item}
-            translations={translations}
             notificationTranslations={notificationTranslations}
-            styles={styles}
             onNotificationSelected={onNotificationSelected}
+            ssoConfigString={state.ssoConfigString}
+            styles={styles}
+            translations={translations}
             width={width}
         />;
 

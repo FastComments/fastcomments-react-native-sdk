@@ -360,7 +360,7 @@ export function ReplyArea(props: ReplyAreaProps) {
                 </View>
                 <View style={styles.replyArea?.topBarRight}>
                     {(!ssoConfig || (ssoConfig && (ssoConfig.logoutURL || ssoConfig.logoutCallback)))
-                    && <ModalMenu state={state} styles={styles} items={[
+                    && <ModalMenu closeIcon={imageAssets[state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]} styles={styles} items={[
                         {
                             id: 'logout',
                             label: translations.LOG_OUT,

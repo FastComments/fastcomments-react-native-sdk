@@ -1,31 +1,34 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
 import {Dispatch, ReactNode, SetStateAction, useState} from 'react';
-import {FastCommentsImageAsset} from "../types";
-import {ActivityIndicator, Image, Modal, Text, TouchableOpacity, View} from "react-native";
-import {FastCommentsState} from "../types";
-import {State} from "@hookstate/core";
+import {ActivityIndicator, Image, ImageURISource, Modal, Text, TouchableOpacity, View} from "react-native";
 import {IFastCommentsStyles} from "../types";
 
 export interface ModalMenuItem {
-    id: string;
-    label: string;
-    handler: (setModalId: Dispatch<SetStateAction<string | null>>) => void;
-    icon?: ReactNode;
-    subModalContent?: (close: () => void) => ReactNode;
+    id: string
+    label: string
+    handler: (setModalId: Dispatch<SetStateAction<string | null>>) => void
+    icon?: ReactNode
+    subModalContent?: (close: () => void) => ReactNode
 }
 
 export interface ModalMenuProps {
-    state: State<FastCommentsState>,
-    styles: IFastCommentsStyles,
-    items: ModalMenuItem[];
-    // define one of the following
-    openButton?: ReactNode;
-    isOpen?: boolean;
-    onClose?: () => void;
+    closeIcon: ImageURISource
+    isOpen?: boolean
+    items: ModalMenuItem[]
+    onClose?: () => void
+    openButton?: ReactNode
+    styles: IFastCommentsStyles
 }
 
-export function ModalMenu({state, styles, items, openButton, isOpen, onClose}: ModalMenuProps) {
+export function ModalMenu({
+    closeIcon,
+    isOpen,
+    items,
+    openButton,
+    onClose,
+    styles,
+}: ModalMenuProps) {
     const [activeModalId, setModalIdVisible] = useState<string | null>(isOpen ? 'menu' : null);
     const [isLoading, setLoading] = useState(false);
     return <View style={styles.modalMenu?.rootView}>
@@ -57,7 +60,7 @@ export function ModalMenu({state, styles, items, openButton, isOpen, onClose}: M
                             style={styles.modalMenu?.modalCancel}
                             onPress={() => setModalIdVisible(null)}
                         >
-                            {<Image source={state.imageAssets.get()[state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]} style={styles.modalMenu?.menuCancelIcon}/>}
+                            {<Image source={closeIcon} style={styles.modalMenu?.menuCancelIcon}/>}
                         </TouchableOpacity>
                         {
                             isLoading && <View style={styles.modalMenu?.loadingView}>

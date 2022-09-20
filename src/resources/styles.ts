@@ -587,12 +587,10 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 alignItems: "center",
             },
             root: {
-                minWidth: 300,
                 margin: 20,
                 backgroundColor: "white",
                 borderRadius: 20,
                 padding: 10,
-                alignItems: "flex-start",
                 shadowColor: "#000",
                 shadowOffset: {
                     width: 0,
@@ -602,8 +600,16 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 shadowRadius: 4,
                 elevation: 5
             },
+            closeButton: {
+                position: 'absolute',
+                top: 30,
+                right: 30
+            },
+            closeButtonImage: {
+                width: 16,
+                height: 16,
+            },
             subscriptionHeader: {
-                marginBottom: 10
             },
             subscriptionHeaderCheckBox: {
                 flexDirection: 'row',
@@ -621,11 +627,21 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 fontSize: 12
             },
             notification: {
+                marginTop: 10,
+                flexDirection: 'column',
+                alignItems: 'flex-start'
             },
             notificationTop: {
                 flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'center'
+            },
+            notificationTopTouchable: {
+                flex: 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+            },
+            notificationTextWrapper: {
+                alignItems: 'flex-start',
             },
             notificationAvatar: {
                 width: 32,
@@ -638,7 +654,31 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             },
             notificationDate: {
                 fontSize: 12
-            }
+            },
+            notificationMenu: {
+            },
+            notificationMenuButton: {
+                paddingTop: 5,
+                paddingBottom: 5,
+            },
+            notificationBottom: {
+                flexDirection: 'row',
+                alignItems: 'center'
+            },
+            notificationIsReadCircle: {
+                width: 10,
+                height: 10,
+                borderRadius: 10,
+                marginRight: 5,
+                backgroundColor: "lightgrey",
+            },
+            notificationIsUnreadCircle: {
+                width: 10,
+                height: 10,
+                borderRadius: 10,
+                marginRight: 5,
+                backgroundColor: "#2fccff",
+            },
         },
         paginationNext: {
             root: {

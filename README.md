@@ -35,7 +35,7 @@ This is in heavy development! Examples will be posted here once the library is m
 - [x] Dark mode skin
 - [x] Social-media like skin
 - [x] Improved Comment Styling
-- [ ] Notifications List (shows when clicking bell). Supports subscriptions.
+- [x] Notifications List (shows when clicking bell). Supports subscriptions.
 - [ ] Support for showLiveRightAway = false 
 - [ ] User activity indicators
 - [ ] Media Uploads (broken due to native exception?)

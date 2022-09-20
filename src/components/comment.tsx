@@ -140,7 +140,7 @@ export function FastCommentsCommentView(props: CommentViewProps) {
 
     return <View style={styles.comment?.root}>
         {contentWrapped}
-        {isMenuOpen && menuState ? <ModalMenu state={state} styles={styles} items={getCommentMenuItems(props, menuState)} isOpen={true}
+        {isMenuOpen && menuState ? <ModalMenu closeIcon={imageAssets[config.hasDarkBackground ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]} styles={styles} items={getCommentMenuItems(props, menuState)} isOpen={true}
                                               onClose={() => setIsMenuOpen(false)}/> : null}
     </View>;
 }
