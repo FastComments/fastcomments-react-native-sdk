@@ -120,6 +120,11 @@ export function setupErebusDarkSkin(config: FastCommentsRNConfig, styles: IFastC
                 overflow: 'scroll'
             }
         },
+        commentTextAreaEmoticonBar: {
+            root: {
+
+            }
+        },
         comment: {
             subRoot: {},
             contentWrapper: {

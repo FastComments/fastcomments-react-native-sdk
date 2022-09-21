@@ -1,5 +1,6 @@
 import {EditorNodeDefinition, EditorNodeProps, EditorNodeType} from "./editor-node";
 import {
+    InteractionManager,
     NativeSyntheticEvent,
     TextInput,
     TextInputKeyPressEventData,
@@ -7,8 +8,7 @@ import {
     TextInputSubmitEditingEventData,
     TextStyle
 } from "react-native";
-import {MutableRefObject, useRef, useState} from "react";
-import {useHookstateEffect} from "@hookstate/core";
+import {MutableRefObject, useEffect, useRef, useState} from "react";
 import {getNextNodeId} from "./node-id";
 
 export function createTextNode(startingValue: string): EditorNodeDefinition {
@@ -24,7 +24,8 @@ export interface EditorNodeTextProps extends EditorNodeProps {
     textStyle?: TextStyle
 }
 
-export function EditorNodeText({node, onBlur, onFocus, onDelete, onTryNewline, textStyle}: EditorNodeTextProps) {
+export function EditorNodeText(props: EditorNodeTextProps) {
+    const {node, onBlur, onFocus, onDelete, onTryNewline, textStyle} = props;
     const [value, setValue] = useState(node.content.get());
     const [selection, setSelection] = useState<{
         start: number;
@@ -35,17 +36,45 @@ export function EditorNodeText({node, onBlur, onFocus, onDelete, onTryNewline, t
     //     // TODO use onContentSizeChange
     // }, [node.content]);
 
-    const ref = useRef<TextInput>();
-    if (node.isFocused.get()) { // OPTIMIZATION call to isFocused
-        console.log('Focusing node (A)', node.id.get(), !!ref.current)
-        ref.current?.focus();
-    }
-    useHookstateEffect(() => {
-        if (node.isFocused.get()) { // OPTIMIZATION call to isFocused
-            console.log('Focusing node (B)', node.id.get())
-            ref.current?.focus();
+    const [ignoreNextBlur, setIgnoreNextBlur] = useState(false);
+
+    function handleOnBlur() {
+        if (ignoreNextBlur) {
+            return;
         }
-    }, [node.isFocused]);
+        onBlur && onBlur();
+    }
+
+    const ref = useRef<TextInput>();
+    useEffect(() => {
+        let timeout: number;
+        if (node.isFocused.get()) {
+            console.log('Focusing node (A)', node.id.get());
+            setIgnoreNextBlur(true);
+            timeout = setTimeout(() => {
+                function doFocus() {
+                    timeout = setTimeout(function () {
+                        InteractionManager.runAfterInteractions(() => {
+                            ref.current?.focus();
+                            timeout = setTimeout(function () {
+                                setIgnoreNextBlur(false);
+                            }, 0);
+                        });
+                    }, 0);
+                }
+
+                if (ref.current?.isFocused()) {
+                    ref.current?.blur();
+                    doFocus();
+                } else {
+                    doFocus();
+                }
+            }, 0);
+        }
+        return () => {
+            timeout && clearTimeout(timeout)
+        };
+    }, [node.lastFocusTime.get()]);
 
     const handleKeyUp = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
         switch (e.nativeEvent.key) {
@@ -87,8 +116,7 @@ export function EditorNodeText({node, onBlur, onFocus, onDelete, onTryNewline, t
         }
         }
         onSelectionChange={onSelectionChange}
-        onBlur={onBlur}
-        onFocus={onFocus}
+        onBlur={handleOnBlur}
         onKeyPress={handleKeyUp}
         blurOnSubmit={false}
         onSubmitEditing={onSubmit}

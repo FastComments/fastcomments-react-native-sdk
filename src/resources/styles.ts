@@ -297,6 +297,22 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 resizeMode: 'contain'
             }
         },
+        commentTextAreaEmoticonBar: {
+            root: {
+                alignSelf: 'stretch',
+                flexDirection: 'row',
+                justifyContent: 'center',
+                padding: 10,
+            },
+            button: {
+                marginRight: 20,
+            },
+            icon: {
+                height: 20,
+                aspectRatio: 1,
+                resizeMode: 'contain'
+            }
+        },
         commentUserActivityIcon: {
             online: {
                 "position": "absolute",
@@ -609,8 +625,7 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 width: 16,
                 height: 16,
             },
-            subscriptionHeader: {
-            },
+            subscriptionHeader: {},
             subscriptionHeaderCheckBox: {
                 flexDirection: 'row',
                 alignItems: 'center'
@@ -620,9 +635,7 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 height: 22,
                 marginRight: 5
             },
-            subscriptionHeaderCheckBoxText: {
-
-            },
+            subscriptionHeaderCheckBoxText: {},
             subscriptionHeaderText: {
                 fontSize: 12
             },
@@ -655,8 +668,7 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             notificationDate: {
                 fontSize: 12
             },
-            notificationMenu: {
-            },
+            notificationMenu: {},
             notificationMenuButton: {
                 paddingTop: 5,
                 paddingBottom: 5,

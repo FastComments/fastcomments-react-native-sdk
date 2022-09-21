@@ -23,6 +23,7 @@ import {setupUserPresenceState} from "../services/user-presense";
 import {persistSubscriberState} from "../services/live";
 import RenderHtml from 'react-native-render-html';
 import {RNComment, IFastCommentsStyles, FastCommentsCallbacks} from "../types";
+import {EmoticonBar, EmoticonBarConfig} from './wysiwyg/emoticon-bar';
 
 // TODO replace with translatedError response which would reduce initial bundle size
 const SignUpErrorsTranslationIds: Record<string, string> = {
@@ -322,6 +323,7 @@ export function ReplyArea(props: ReplyAreaProps) {
 
     const ssoConfig = state.config.sso?.get() || state.config.simpleSSO?.get();
     let ssoLoginWrapper;
+    let reactsBar;
     let topBar;
     let commentInputArea;
     let commentSubmitButton;
@@ -360,7 +362,9 @@ export function ReplyArea(props: ReplyAreaProps) {
                 </View>
                 <View style={styles.replyArea?.topBarRight}>
                     {(!ssoConfig || (ssoConfig && (ssoConfig.logoutURL || ssoConfig.logoutCallback)))
-                    && <ModalMenu closeIcon={imageAssets[state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]} styles={styles} items={[
+                    && <ModalMenu
+                        closeIcon={imageAssets[state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]}
+                        styles={styles} items={[
                         {
                             id: 'logout',
                             label: translations.LOG_OUT,
@@ -386,6 +390,14 @@ export function ReplyArea(props: ReplyAreaProps) {
         if (commentReplyState.showSuccessMessage.get()) {
             commentInputAreaContent = CommentAreaMessage({message: translations.COMMENT_HAS_BEEN_SUBMITTED, styles});
         } else {
+            const inlineReactImages = state.config.inlineReactImages.get();
+            let emoticonBarConfig: EmoticonBarConfig = {};
+            if (inlineReactImages) {
+                emoticonBarConfig.emoticons = inlineReactImages.map(function (src) {
+                    return [src, <Image source={{uri: src}} style={styles.commentTextAreaEmoticonBar?.icon}/>]
+                })
+                reactsBar = <EmoticonBar config={emoticonBarConfig} styles={styles.commentTextAreaEmoticonBar}/>
+            }
             commentInputAreaContent =
                 <CommentTextArea
                     styles={styles}
@@ -394,6 +406,7 @@ export function ReplyArea(props: ReplyAreaProps) {
                     output={valueGetter}
                     focusObserver={focusObserver}
                     onFocus={() => needsAuth && !commentReplyState.showAuthInputForm.get() && commentReplyState.showAuthInputForm.set(true)}
+                    emoticonBarConfig={emoticonBarConfig}
                 />;
         }
 
@@ -569,6 +582,7 @@ export function ReplyArea(props: ReplyAreaProps) {
         </View>}
         {ssoLoginWrapper}
         {displayError}
+        {reactsBar}
         {topBarInputAreaAndSubmit}
         {commentReplyState.isReplySaving.get() && <View style={styles.replyArea?.loadingView}>
             <ActivityIndicator size="large"/>

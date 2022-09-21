@@ -74,6 +74,11 @@ export interface IFastCommentsStyles {
         text?: TextStyle
         toolbarButton?: ImageStyle
     }
+    commentTextAreaEmoticonBar?: {
+        root?: ViewStyle
+        button?: ViewStyle
+        icon?: ImageStyle
+    }
     commentUserActivityIcon?: {
         online?: ViewStyle
         offline?: ViewStyle

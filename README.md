@@ -36,6 +36,7 @@ This is in heavy development! Examples will be posted here once the library is m
 - [x] Social-media like skin
 - [x] Improved Comment Styling
 - [x] Notifications List (shows when clicking bell). Supports subscriptions.
+- [x] Chat Reactions
 - [ ] Support for showLiveRightAway = false 
 - [ ] User activity indicators
 - [ ] Media Uploads (broken due to native exception?)

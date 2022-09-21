@@ -18,15 +18,24 @@ export interface FocusObserver {
 }
 
 export interface CommentTextAreaProps {
+    emoticonBarConfig?: EmoticonBarConfig
+    focusObserver?: FocusObserver
     state: FastCommentsState
     styles: IFastCommentsStyles
-    value?: string
     output: ValueObserver
-    focusObserver?: FocusObserver
     onFocus?: () => void
+    value?: string
 }
 
-export function CommentTextArea({state, styles, value, output, focusObserver, onFocus: _onFocus}: CommentTextAreaProps) {
+export function CommentTextArea({
+    emoticonBarConfig,
+    focusObserver,
+    state,
+    styles,
+    output,
+    onFocus: _onFocus,
+    value,
+}: CommentTextAreaProps) {
     // console.log('opening text area', value);
     // TODO toolbar supports inline reacts - support for extension customizing toolbar?
     // TODO gif selector
@@ -45,13 +54,6 @@ export function CommentTextArea({state, styles, value, output, focusObserver, on
     }, [value]);
 
     const placeholder = <Text style={styles.commentTextArea?.placeholder}>{state.translations.ENTER_COMMENT_HERE}</Text>
-    // TODO not enabled by default, move to extensions. This is just for testing.
-    const emoticonBarConfig: EmoticonBarConfig | undefined = state.config.inlineReactImages ? {
-        emoticons: state.config.inlineReactImages.map((imageSrc) => [
-            imageSrc,
-            <Image source={{uri: imageSrc}} style={styles.commentTextArea?.toolbarButton}/>
-        ])
-    } : undefined;
 
     // TODO not live responding to dark background config change
     const toolbarConfig: EditorToolbarConfig | undefined = state.config.disableToolbar ? undefined : {

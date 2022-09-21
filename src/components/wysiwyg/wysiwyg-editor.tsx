@@ -76,10 +76,11 @@ export function Editor(props: EditorProps) {
             // @ts-ignore - TODO better way to do this or useHookstate<EditorNodeDefinition | null>(null); ?
             props.emoticonBarConfig.addEmoticon = (currentNode, src) => {
                 // if current node is an empty node, just replace it.
-                if (!currentNode.content) {
+                if (!currentNode.content.get()) {
                     currentNode.set(createEmoticonNode(src));
                     // now add in a text node after the emoticon so we can keep typing (also so we can backspace the emoticon)
                     const newNode = createTextNode('');
+                    newNode.isFocused = true;
                     nodes.merge([newNode]);
                 } else {
                     nodes.set((nodes) => {
@@ -91,6 +92,7 @@ export function Editor(props: EditorProps) {
                         nodes.splice(currentIndex + 1, 0, newImageNode);
                         if (!getNext(nodes, newImageNode.id)) {
                             const newTextNode = createTextNode('');
+                            newTextNode.isFocused = true;
                             // now add in a text node after the emoticon so we can keep typing (also so we can backspace the emoticon)
                             const currentIndex = nodes.findIndex((searchingNode) => searchingNode.id === newImageNode.id);
                             nodes.splice(currentIndex + 1, 0, newTextNode);
@@ -132,7 +134,7 @@ export function Editor(props: EditorProps) {
                             console.log('node has no content, and has previous node. (removing, focusing)', rawNode.id, prev.id.get());
                             deleteNode(nodes, rawNode.id);
                             // prev is now the current node.
-                            prev.isFocused.set(true);
+                            select(prev);
                         }
                     } else {
                         // we COULD toggle here, but it might be weird.
@@ -208,6 +210,7 @@ export function Editor(props: EditorProps) {
                 }
                 return;
             } else if (ImageTypes.includes(node.type.get())) {
+                console.log('FOCUSING IMAGE');
                 // if we're selecting an image, is there a node in front of it? then select that
                 // otherwise, we should create a node in front of the image and select it.
                 const next = getStateNext(nodes, node.id.get());
@@ -219,6 +222,7 @@ export function Editor(props: EditorProps) {
                     select(nodes[nodes.length - 1]);
                 }
             } else {
+                console.log('FOCUSING OTHER', node.isFocused.get());
                 node.isFocused.set(true);
                 node.lastFocusTime.set(Date.now());
             }
@@ -238,7 +242,7 @@ export function Editor(props: EditorProps) {
     const ImageTypes = [EditorNodeType.EMOTICON, EditorNodeType.IMAGE];
 
     // taking a State<Node> here caused a ton of confusion, so now we just take a regular JS object.
-    function doDelete(node: State<EditorNodeDefinition>, skipNextCheck?: boolean) {
+    function doDelete(node: State<EditorNodeDefinition>, skipNextCheck?: boolean, skipFocus?: boolean) {
         if (!node || typeof node !== 'object') {
             console.error('Tried to delete empty node!', typeof node);
             return;
@@ -279,12 +283,17 @@ export function Editor(props: EditorProps) {
         } else {
             console.log('Nothing to delete next.');
         }
-        const prevId = prev?.id.get();
-        deleteNode(nodes, rawNode.id);
+        // if we're backspacing on an emoticon, leave the current text field intact and delete the image node before this one
+        // this way the keyboard does not lose focus resulting in flashing. The keyboard never loses focus on the element we said to delete, but
+        // we actually delete the content the user sees (the image before).
         if (emoticonNodeBeforeText) {
-            doDelete(emoticonNodeBeforeText, true);
-        } else if (prevId !== undefined && prevId !== null) {
-            nodes.find((searchingNode) => searchingNode.id.get() === prevId)?.isFocused.set(true);
+            doDelete(emoticonNodeBeforeText, true, true);
+        } else {
+            const prevId = prev?.id.get();
+            deleteNode(nodes, rawNode.id);
+            if (prevId !== undefined && prevId !== null && !skipFocus) {
+                select(nodes.find((searchingNode) => searchingNode.id.get() === prevId));
+            }
         }
     }
 
