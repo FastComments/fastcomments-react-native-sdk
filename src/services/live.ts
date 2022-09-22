@@ -1,8 +1,8 @@
-import {FastCommentsState} from "../types/fastcomments-state";
+import {FastCommentsState} from "../types";
 import {SubscriberInstance, subscribeToChanges} from "./subscribe-to-changes";
 import {checkBlockedComments} from "./blocking";
 import {addCommentToUserPresenceState, handleNewRemoteUser, setupUserPresenceState} from "./user-presense";
-import {WebsocketLiveEvent} from "../types/dto/websocket-live-event";
+import {WebsocketLiveEvent} from "../types";
 import {none, State} from "@hookstate/core";
 import {broadcastIdsSent} from "./broadcast-id";
 import {removeCommentOnClient} from "./remove-comment-on-client";
@@ -154,7 +154,7 @@ export function handleLiveEvent(state: State<FastCommentsState>, dataJSON: Webso
         case 'updated-comment':
             const dataJSONComment = dataJSON.comment;
             const dataJSONExtraInfo = dataJSON.extraInfo;
-            const showLiveRightAway = state.config.showLiveRightAway;
+            const showLiveRightAway = state.config.showLiveRightAway.get();
             const commentsById = state.commentsById;
             // the hidden check here is for approving, un-approving, and then re-approving a comment
             if (dataJSON.type === 'new-comment' && commentsById[dataJSONComment._id].get()) {
@@ -192,7 +192,7 @@ export function handleLiveEvent(state: State<FastCommentsState>, dataJSON: Webso
             } else {
                 commentsById[dataJSONComment._id].merge(dataJSONComment);
             }
-            console.log('isNew?', isNew);
+            console.log('????? isNew', isNew);
 
             if (!isNew) {
                 if (dataJSONExtraInfo) {
@@ -205,7 +205,7 @@ export function handleLiveEvent(state: State<FastCommentsState>, dataJSON: Webso
                 addCommentToUserPresenceState(state.userPresenceState, dataJSONComment, presenceChanges);
                 dataJSONComment.isLive = true; // so we can animate the background color
                 // commentsVisible check is here because if comments are hidden, we want this comment to show as soon as comments are un-hidden.
-                const newCommentHidden = state.commentsVisible && !showLiveRightAway;
+                const newCommentHidden = state.commentsVisible.get({stealth: true}) && !showLiveRightAway;
                 dataJSONComment.hidden = newCommentHidden; // don't irritate the user with content popping in and out.
 
                 let updateRoot = false, currentParent = null;
@@ -231,24 +231,12 @@ export function handleLiveEvent(state: State<FastCommentsState>, dataJSON: Webso
                 addCommentToTree(state.allComments, state.commentsTree, commentsById, dataJSONComment, !!state.config.newCommentsToBottom.get());
                 incOverallCommentCount(state.config.countAll.get(), state, dataJSONComment.parentId);
 
-                // TODO update the "Show X Comments" button text live like vanilla js widget
-                // const showCommentsMessageButton = document.querySelector('.comments-toggle');
-                // if (showCommentsMessageButton) {
-                //     showCommentsMessageButton.innerHTML = getShowHideCommentsCountText(translations, commentsVisible, commentCountOnServer);
-                // }
-
                 if (updateRoot) {
                     if (newCommentHidden) {
                         state.newRootCommentCount.set((newRootCommentCount) => {
                             newRootCommentCount++;
                             return newRootCommentCount;
                         });
-                        // TODO update the "Show New X Comments" button text live.
-                        // const messageRootTarget = getElementById('new-comments-message-root');
-                        // if (messageRootTarget) { // element may not be in DOM - like if comments hidden.
-                        //     messageRootTarget.classList.remove('hidden');
-                        //     messageRootTarget.innerHTML = getNewCommentCountText(translations, newRootCommentCount);
-                        // }
                     }
                 } else if (currentParent && currentParent?.get()) {
                     if (newCommentHidden) {

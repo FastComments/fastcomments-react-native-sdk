@@ -67,7 +67,7 @@ export function LiveCommentingTopArea(props: LiveCommentingTopAreaProps) {
             </View>
         }
         <View>{
-            areCommentsVisible && state.newRootCommentCount.get() > 1 && <ShowNewLiveCommentsButton state={state} styles={styles}/>
+            areCommentsVisible && state.newRootCommentCount.get() > 0 && <ShowNewLiveCommentsButton state={state} styles={styles}/>
         }</View>
     </View>;
 }

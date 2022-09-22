@@ -39,7 +39,10 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
     const serviceInitialState = FastCommentsLiveCommentingService.createFastCommentsStateFromConfig({...config}, assets); // shallow clone is important to prevent extra re-renders
     const imageAssets = serviceInitialState.imageAssets;
     const state = useHookstate(serviceInitialState);
-    const service = new FastCommentsLiveCommentingService(state, callbacks);
+    const service = useRef<FastCommentsLiveCommentingService>();
+    useEffect(() => {
+        service.current = new FastCommentsLiveCommentingService(state, callbacks);
+    }, []);
     const [isLoading, setLoading] = useState(true);
     const [isFetchingNextPage, setFetchingNextPage] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
@@ -47,11 +50,13 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
     const isReplyingToParentRef = useRef(isReplyingToParent);
     const {width} = useWindowDimensions();
     const loadAsync = async () => {
-        setLoading(true);
-        await service.fetchRemoteState(false);
-        setLoading(false);
-        setIsLoaded(true);
-        callbacks?.onCommentsRendered && callbacks?.onCommentsRendered(state.commentsTree.get());
+        if (service.current) {
+            setLoading(true);
+            await service.current.fetchRemoteState(false);
+            setLoading(false);
+            setIsLoaded(true);
+            callbacks?.onCommentsRendered && callbacks?.onCommentsRendered(state.commentsTree.get());
+        }
     }
     useEffect(() => {
         loadAsync();
@@ -95,13 +100,13 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
 
         const doPaginateNext = async (isAll: boolean) => {
             setFetchingNextPage(true);
-            await paginateNext(state, service, isAll ? -1 : undefined);
+            await paginateNext(state, service.current!, isAll ? -1 : undefined);
             setFetchingNextPage(false);
         }
 
         const doPaginatePrev = async () => {
             setFetchingNextPage(true);
-            await paginatePrev(state, service);
+            await paginatePrev(state, service.current!);
             setFetchingNextPage(false);
         }
 

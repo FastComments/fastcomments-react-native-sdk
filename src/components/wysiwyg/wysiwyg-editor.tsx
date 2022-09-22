@@ -1,7 +1,7 @@
 import {Pressable, StyleSheet, TextStyle, View, ViewStyle} from "react-native";
 import {EditorNode, EditorNodeDefinition, EditorNodeType} from "./editor-node";
-import {State, useHookstate, useHookstateEffect} from "@hookstate/core";
-import {ReactNode} from "react";
+import {none, State, useHookstate, useHookstateEffect} from "@hookstate/core";
+import {ReactNode, useRef} from "react";
 import {createTextNode} from "./editor-node-text";
 import {EditorToolbarConfig} from "./editor-toolbar";
 import * as ImagePicker from 'react-native-image-picker';
@@ -11,6 +11,7 @@ import {deleteNode} from "./editor-node-transform";
 import {createBoldNode, createEmoticonNode, createStrikethroughNode, createUnderlineNode} from "./editor-nodes";
 import {EmoticonBarConfig} from "./emoticon-bar";
 import {getNext, getStateNext, getStatePrev} from "./node-navigate";
+import {createNewlineNode} from "./editor-node-newline";
 
 export interface UpdateNodesObserver {
     updateNodes?: (nodes: EditorNodeDefinition[]) => void
@@ -35,12 +36,17 @@ export interface EditorProps {
     emoticonBarConfig?: EmoticonBarConfig
 }
 
+interface EditorRow {
+    key: string
+    items: State<EditorNodeDefinition>[]
+}
+
 export function Editor(props: EditorProps) {
-    // TODO multiline (newline element)
     // TODO wysiwyg link button
     // TODO wysiwyg gif button
     // TODO image uploads work (weird runtime issue in library?)
     const nodes = useHookstate<EditorNodeDefinition[]>(props.nodes);
+    const editorRowsRef = useRef<EditorRow[]>([]);
 
     if (props.updateNodesObserver) {
         props.updateNodesObserver.updateNodes = (newNodes) => {
@@ -51,6 +57,34 @@ export function Editor(props: EditorProps) {
 
     useHookstateEffect(() => {
         props.onChange(nodes);
+        let row: EditorRow = {key: '', items: []};
+        let editorRows: EditorRow[] = [];
+        for (const node of nodes) {
+            if (!node || node === none || node.get() === none) { // WHICH ONE IS IT GOD
+                continue;
+            }
+            if (node.type.get() === EditorNodeType.NEWLINE) {
+                if (row.items.length > 0) {
+                    editorRows.push(row);
+                }
+                row = {
+                    key: node.id.get() + '',
+                    items: [] // OPTIMIZATION: we don't want to actually render the newline node. We'll do this implicitly by creating a new row container.
+                };
+                editorRows.push(row);
+                row = {
+                    key: '',
+                    items: []
+                };
+            } else {
+                row.key += node.id.get();
+                row.items.push(node);
+            }
+        }
+        if (row.items.length > 0) {
+            editorRows.push(row);
+        }
+        editorRowsRef.current = editorRows;
     }, [nodes]);
 
     const getCurrentNode = () => {
@@ -277,17 +311,23 @@ export function Editor(props: EditorProps) {
         // maybe in an ideal object-oriented world you could broadcast "delete" to node.prev, but we can't serialize objects with methods with our state mechanism (yet).
         // It's also nice to encapsulate the delete logic in the "delete" code rather than in every object, so far.
         const prev = getStatePrev(nodes, rawNode.id);
-        const emoticonNodeBeforeText = !skipNextCheck && prev && !ImageTypes.includes(rawNode.type) && ImageTypes.includes(prev.type.get()) ? prev : null;
-        if (emoticonNodeBeforeText) {
-            console.log(`Will delete next: id=[${emoticonNodeBeforeText.id}] type=[${emoticonNodeBeforeText.type}] content=[${emoticonNodeBeforeText.content}]`);
+        const emoticonOrNewLineNodeBeforeText = !skipNextCheck
+        && prev
+        && !ImageTypes.includes(rawNode.type)
+        && (prev.type.get() === EditorNodeType.NEWLINE || ImageTypes.includes(prev.type.get()))
+            ? prev
+            : null;
+
+        if (emoticonOrNewLineNodeBeforeText) {
+            console.log(`Will delete next: id=[${emoticonOrNewLineNodeBeforeText.id}] type=[${emoticonOrNewLineNodeBeforeText.type}] content=[${emoticonOrNewLineNodeBeforeText.content}]`);
         } else {
             console.log('Nothing to delete next.');
         }
         // if we're backspacing on an emoticon, leave the current text field intact and delete the image node before this one
         // this way the keyboard does not lose focus resulting in flashing. The keyboard never loses focus on the element we said to delete, but
         // we actually delete the content the user sees (the image before).
-        if (emoticonNodeBeforeText) {
-            doDelete(emoticonNodeBeforeText, true, true);
+        if (emoticonOrNewLineNodeBeforeText) {
+            doDelete(emoticonOrNewLineNodeBeforeText, true, true);
         } else {
             const prevId = prev?.id.get();
             deleteNode(nodes, rawNode.id);
@@ -298,25 +338,48 @@ export function Editor(props: EditorProps) {
     }
 
     function onTryNewline(node: State<EditorNodeDefinition>) {
-        console.log('Trying to create a new line', node.id.get());
         if (props.isMultiLine) {
-            // TODO DO THING
+            console.log('Trying to create a new line.', node.id.get());
+            // add a newline node
+            // add a text node
+            // focus new text node
+
+            // TODO add newline after current node
+            nodes.set((nodes) => {
+                // add a node after this one that is bold, and focus it.
+                const newNewLineNode = createNewlineNode()
+                node.isFocused.set(false);
+                const currentId = node.id.get();
+                let currentIndex = nodes.findIndex((searchingNode) => searchingNode.id === currentId);
+                nodes.splice(currentIndex + 1, 0, newNewLineNode);
+                const newTextNode = createTextNode('');
+                newTextNode.isFocused = true;
+                currentIndex = nodes.findIndex((searchingNode) => searchingNode.id === newNewLineNode.id);
+                nodes.splice(currentIndex + 1, 0, newTextNode);
+                return nodes;
+            });
+        } else {
+            console.log('Ignoring new line request.', node.id.get());
         }
     }
 
     return <View style={props.style}>
         <Pressable onPress={() => select(nodes[nodes.length - 1])} style={styles.inputArea}>
             {props.placeholder}
-            {nodes.map((node) => {
-                return <EditorNode
-                    key={node.id.get()}
-                    node={node}
-                    textStyle={props.textStyle}
-                    onBlur={() => deselect(node)}
-                    onFocus={() => select(node)}
-                    onDelete={() => doDelete(node)}
-                    onTryNewline={() => onTryNewline(node)}
-                />
+            {editorRowsRef.current.map((row) => {
+                return <View style={styles.editorRow} key={row.key}>
+                    {/* Node can get set to "none" before the list is re-generated, so the id check is a fast way to eliminate those. */}
+                    {row.items.map((node) => node && node.id !== undefined && <EditorNode
+                        key={node.id.get()}
+                        node={node}
+                        textStyle={props.textStyle}
+                        onBlur={() => deselect(node)}
+                        onFocus={() => select(node)}
+                        onDelete={() => doDelete(node)}
+                        onTryNewline={() => onTryNewline(node)}
+                        isMultiLine={props.isMultiLine}
+                    />)}
+                </View>
             })}
         </Pressable>
         {props.emoticonBar && props.emoticonBarConfig && props.emoticonBar(props.emoticonBarConfig)}
@@ -326,8 +389,12 @@ export function Editor(props: EditorProps) {
 
 const styles = StyleSheet.create({
     inputArea: {
+        flexDirection: 'column',
+        padding: 5
+    },
+    editorRow: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        padding: 5
+        flexWrap: 'wrap'
     }
 })

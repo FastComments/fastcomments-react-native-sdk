@@ -37,8 +37,9 @@ This is in heavy development! Examples will be posted here once the library is m
 - [x] Improved Comment Styling
 - [x] Notifications List (shows when clicking bell). Supports subscriptions.
 - [x] Chat Reactions
-- [ ] Support for showLiveRightAway = false 
-- [ ] User activity indicators
+- [x] Support for showLiveRightAway = false
+- [x] User activity indicators
+- [x] Native WYSIWYG Multiline Support
 - [ ] Media Uploads (broken due to native exception?)
 - [ ] Gif Browser
 - [x] Release to NPM

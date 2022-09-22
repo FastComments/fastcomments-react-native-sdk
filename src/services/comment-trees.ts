@@ -221,7 +221,7 @@ export function iterateCommentsTree(nodes: FastCommentsWidgetComment[], cb: (com
     }
 }
 
-export function iterateCommentsTreeState(nodes: State<FastCommentsWidgetComment[]>, cb: (comment: State<FastCommentsWidgetComment>) => false | 'delete' | undefined | void) {
+export function iterateCommentsTreeState(nodes: State<RNComment[]> | State<RNComment>[], cb: (comment: State<RNComment>) => false | 'delete' | undefined | void) {
     let i = nodes.length;
     while (i--) {
         const comment = nodes[i];

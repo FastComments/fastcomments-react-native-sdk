@@ -21,6 +21,7 @@ import {useState} from "react";
 import {ModalMenu} from "./modal-menu";
 import {CommentVote} from "./comment-vote";
 import {FastCommentsRNConfig} from "../types/react-native-config";
+import {ShowNewChildLiveCommentsButton} from "./show-new-child-live-comments-button";
 
 export interface FastCommentsCommentWithState {
     comment: State<RNComment>
@@ -35,7 +36,7 @@ export interface FastCommentsCommentWithState {
 export interface CommentViewProps extends FastCommentsCommentWithState, Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onReplySuccess' | 'onAuthenticationChange' | 'replyingTo'> {
 }
 
-const STEALTH = { stealth: true, noproxy: true };
+const STEALTH = {stealth: true, noproxy: true};
 const RenderCount: Record<string, number> = {};
 
 export function FastCommentsCommentView(props: CommentViewProps) {
@@ -61,6 +62,10 @@ export function FastCommentsCommentView(props: CommentViewProps) {
     }
     console.log('comment render count', RenderCount[id]);
 
+    if (comment.hidden) {
+        return null;
+    }
+
     const state = useHookstate(props.state); // OPTIMIZATION: creating scoped state
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const repliesHiddenState = useHookstate(!!comment.repliesHidden);
@@ -77,6 +82,10 @@ export function FastCommentsCommentView(props: CommentViewProps) {
     const usePressableEditTrigger = config.usePressToEdit;
     const isReadonly = config.readonly;
     const menuState = isReadonly ? null : getCommentMenuState(state, commentState);
+    const shouldShowMenu = menuState
+        && (menuState.canEdit
+            || menuState.canPin
+            || menuState.canBlockOrFlag);
     const htmlWrapped = `<div style="${styles.comment?.textHTML || ''}">${html}</div>`; // goes away when fixed: https://github.com/meliorence/react-native-render-html/issues/582
     const content = <View style={styles.comment?.subRoot}><View style={styles.comment?.topRight}>
         {
@@ -89,15 +98,27 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                 style={styles.comment?.displayDate}/>
         }
         {comment.isPinned && <Image source={imageAssets[FastCommentsImageAsset.ICON_PIN_RED]} style={styles.comment?.pin}/>}
-        {!usePressableEditTrigger && !isReadonly && <TouchableOpacity style={{padding: 5}} onPress={() => setIsMenuOpen(true)}><Image
+        {!usePressableEditTrigger && shouldShowMenu && <TouchableOpacity style={{padding: 5}} onPress={() => setIsMenuOpen(true)}><Image
             source={imageAssets[config.hasDarkBackground ? FastCommentsImageAsset.ICON_EDIT_SMALL_WHITE : FastCommentsImageAsset.ICON_EDIT_SMALL]}
             style={{width: 16, height: 16}}/></TouchableOpacity>}
     </View>
         <View style={styles.comment?.contentWrapper}>
             <CommentNotices comment={commentState} styles={styles} translations={translations}/>
-            {!renderCommentInline && <CommentUserInfo comment={comment} config={config} imageAssets={imageAssets} styles={styles} translations={translations} userPresenceState={state.userPresenceState}/>}
-            {<RenderHTMLSource source={{html: renderCommentInline ? `<div style="flex-direction:row">${getCommentUserInfoHTML({comment, config, imageAssets, translations, styles})}${htmlWrapped}</div>` : htmlWrapped}} contentWidth={width} />}
-            {config.renderLikesToRight && <CommentVote comment={commentState} config={config} imageAssets={imageAssets} state={state} styles={styles} translations={translations} onVoteSuccess={onVoteSuccess}/>}
+            {!renderCommentInline &&
+            <CommentUserInfo comment={comment} config={config} imageAssets={imageAssets} styles={styles} translations={translations}
+                             userPresenceState={state.userPresenceState}/>}
+            {<RenderHTMLSource source={{
+                html: renderCommentInline ? `<div style="flex-direction:row">${getCommentUserInfoHTML({
+                    comment,
+                    config,
+                    imageAssets,
+                    translations,
+                    styles
+                })}${htmlWrapped}</div>` : htmlWrapped
+            }} contentWidth={width}/>}
+            {config.renderLikesToRight &&
+            <CommentVote comment={commentState} config={config} imageAssets={imageAssets} state={state} styles={styles} translations={translations}
+                         onVoteSuccess={onVoteSuccess}/>}
         </View>
         <CommentBottom comment={commentState}
                        state={state}
@@ -111,6 +132,7 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                        replyingTo={replyingTo}
                        repliesHiddenState={repliesHiddenState}/>
         {!repliesHiddenState.get(STEALTH) && <View style={styles.comment?.children}>
+            {comment.hiddenChildrenCount && <ShowNewChildLiveCommentsButton commentTreeNode={commentState} translations={translations} styles={styles}/>}
             {/* TODO how to fix stupid cast here? */}
             {commentState.children?.get(STEALTH)! && (commentState.children as State<RNComment[]>).map((comment) =>
                 <FastCommentsCommentView
@@ -130,17 +152,16 @@ export function FastCommentsCommentView(props: CommentViewProps) {
         </View>}
     </View>
 
-    const contentWrapped = usePressableEditTrigger
-    && (menuState && (menuState.canEdit
-        || menuState.canPin
-        || menuState.canBlockOrFlag))
+    const contentWrapped = usePressableEditTrigger && shouldShowMenu
         ? <Pressable onLongPress={() => setIsMenuOpen(true)}>
             {content}
         </Pressable> : content;
 
     return <View style={styles.comment?.root}>
         {contentWrapped}
-        {isMenuOpen && menuState ? <ModalMenu closeIcon={imageAssets[config.hasDarkBackground ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]} styles={styles} items={getCommentMenuItems(props, menuState)} isOpen={true}
-                                              onClose={() => setIsMenuOpen(false)}/> : null}
+        {isMenuOpen && menuState ?
+            <ModalMenu closeIcon={imageAssets[config.hasDarkBackground ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]}
+                       styles={styles} items={getCommentMenuItems(props, menuState)} isOpen={true}
+                       onClose={() => setIsMenuOpen(false)}/> : null}
     </View>;
 }

@@ -9,7 +9,20 @@ function areCommentsDifferent(prevComment: RNComment, nextComment: RNComment) {
     // OPTIMIZATION: votes is handled inside the widget itself, so voting feels better.
 
     // Adding/removing replies happens often. Have to re-render parents.
+    if(prevComment._id === 'wIGW2BpsSHs') {
+        console.log('??????????????? **************************', prevComment.children?.length, nextComment.children?.length)
+    }
     if (prevComment.children?.length !== nextComment.children?.length) { // TODO submitting child replies is not updating the UI!
+        if(prevComment._id === 'wIGW2BpsSHs') {
+            console.log('**************************', prevComment.children?.length, nextComment.children?.length)
+        }
+        return true;
+    }
+    // comparing memory reference
+    if (prevComment.children != nextComment.children) {
+        if(prevComment._id === 'wIGW2BpsSHs') {
+            console.log('**************************', prevComment.children?.length, nextComment.children?.length)
+        }
         return true;
     }
     if (prevComment.isPinned !== nextComment.isPinned) {
@@ -19,6 +32,12 @@ function areCommentsDifferent(prevComment: RNComment, nextComment: RNComment) {
         return true;
     }
     if (prevComment.isFlagged !== nextComment.isFlagged) {
+        return true;
+    }
+    if (prevComment.hidden !== nextComment.hidden) {
+        return true;
+    }
+    if (prevComment.hiddenChildrenCount !== nextComment.hiddenChildrenCount) {
         return true;
     }
 
@@ -92,6 +111,7 @@ function areCommentsDifferent(prevComment: RNComment, nextComment: RNComment) {
 }
 
 export function arePropsEqual(prevProps: CommentViewProps, nextProps: CommentViewProps, checkConfig = true) {
+    // console.log('HELP', prevProps.comment.children.get()?.length, nextProps.comment.children.get()?.length)
     const prevComment = prevProps.comment.get({stealth: true, noproxy: true});
     const nextComment = nextProps.comment.get({stealth: true, noproxy: true});
 

@@ -125,6 +125,16 @@ export function setupErebusDarkSkin(config: FastCommentsRNConfig, styles: IFastC
 
             }
         },
+        commentUserActivityIcon: {
+            online: {
+                top: 4,
+                right: 4,
+            },
+            offline: {
+                top: 4,
+                right: 4,
+            }
+        },
         comment: {
             subRoot: {},
             contentWrapper: {

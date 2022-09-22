@@ -22,10 +22,11 @@ export function createTextNode(startingValue: string): EditorNodeDefinition {
 
 export interface EditorNodeTextProps extends EditorNodeProps {
     textStyle?: TextStyle
+    isMultiLine?: boolean
 }
 
 export function EditorNodeText(props: EditorNodeTextProps) {
-    const {node, onBlur, onFocus, onDelete, onTryNewline, textStyle} = props;
+    const {node, onBlur, onDelete, onTryNewline, textStyle, isMultiLine} = props;
     const [value, setValue] = useState(node.content.get());
     const [selection, setSelection] = useState<{
         start: number;
@@ -79,12 +80,22 @@ export function EditorNodeText(props: EditorNodeTextProps) {
     const handleKeyUp = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
         switch (e.nativeEvent.key) {
             case 'Enter':
-                // In practice have not seen this happen. Would be good to know the use case so we can document or remove.
-                onTryNewline && onTryNewline();
+                if (isMultiLine) {
+                    onTryNewline && onTryNewline();
+                }
                 break;
             case 'Backspace':
                 if ((!selection?.start) || node.deleteOnBackspace.get()) {
                     try {
+                        /*
+                            TODO why is delete before newline triggering delete when only one char left but not other scenarios? Example
+                                abc
+                                <newline>
+                                x|
+                                ---trigger backspace - ends up with:---
+                                abcx|
+                         */
+                        // console.log('TRIGGERING DELETE', selection?.start, node.content.get());
                         // delete this node
                         onDelete && onDelete();
                     } catch (e) {
@@ -105,7 +116,6 @@ export function EditorNodeText(props: EditorNodeTextProps) {
         setSelection(e.nativeEvent.selection);
     }
 
-    // TODO if not multiline, set returnKeyType to "go"
     return <TextInput
         value={value}
         onChangeText={(newValue: string) => {
@@ -121,6 +131,7 @@ export function EditorNodeText(props: EditorNodeTextProps) {
         blurOnSubmit={false}
         onSubmitEditing={onSubmit}
         ref={ref as MutableRefObject<TextInput>}
+        returnKeyType={isMultiLine ? 'default' : 'send'}
         style={[textStyle, {padding: 0, borderWidth: 0, position: 'relative', left: 0, minWidth: 0}]}
     />;
 }

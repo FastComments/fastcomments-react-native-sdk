@@ -17,7 +17,7 @@ export function CommentUserActivityIcon({disableLiveCommenting, userId, anonUser
     if (disableLiveCommenting) {
         return null;
     }
-    const isUserOnline = (userId && userPresenceState.usersOnlineMap[userId!]) || (anonUserId && userPresenceState.usersOnlineMap[anonUserId!]);
+    const isUserOnline = (userId && userPresenceState.usersOnlineMap[userId!].get()) || (anonUserId && userPresenceState.usersOnlineMap[anonUserId!].get());
     if (isUserOnline) {
         return <View style={styles.commentUserActivityIcon?.online}/>;
     } else {

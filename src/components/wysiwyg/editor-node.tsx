@@ -36,17 +36,22 @@ export interface EditorNodeProps {
     onFocus?: () => void
     onDelete?: () => void
     onTryNewline?: () => void
+    isMultiLine?: boolean
 }
 
 export function EditorNode(props: EditorNodeProps) {
     // OPTIMIZATION: in order of popularity
+    // OPTIMIZATION: Not using TSX here to try to reduce number of objects getting re-allocated, instead calling element function with same props object.
     if (props.node.type.get() === EditorNodeType.TEXT) {
-        // Not using TSX here to try to reduce number of objects getting re-allocated, instead calling element function with same props object.
         return EditorNodeText(props);
     }
     if (props.node.type.get() === EditorNodeType.EMOTICON) {
         return EditorNodeEmoticon(props);
     }
+    // OPTIMIZATION: We don't actually have to render newline nodes.
+    // if (props.node.type.get() === EditorNodeType.NEWLINE) {
+    //     return EditorNodeNewline(props);
+    // }
     if (props.node.type.get() === EditorNodeType.TEXT_BOLD) {
         return EditorNodeBold(props);
     }
