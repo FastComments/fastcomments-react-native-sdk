@@ -40,7 +40,7 @@ This is in heavy development! Examples will be posted here once the library is m
 - [x] Support for showLiveRightAway = false
 - [x] User activity indicators
 - [x] Native WYSIWYG Multiline Support
-- [ ] Media Uploads (broken due to native exception?)
+- [x] Media Selection & Uploads
 - [ ] Gif Browser
 - [x] Release to NPM
 - [x] Switch Pressable usage to Button or TouchableOpacity where possible
