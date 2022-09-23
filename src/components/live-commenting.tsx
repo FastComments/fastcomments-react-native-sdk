@@ -141,11 +141,12 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
                 onVoteSuccess={callbacks?.onVoteSuccess}
                 onReplySuccess={callbacks?.onReplySuccess}
                 onAuthenticationChange={callbacks?.onAuthenticationChange}
+                pickImage={callbacks?.pickImage}
                 replyingTo={handleReplyingTo}
                 width={width}
             />;
 
-        return <View style={styles.root}>
+        const header = <View>
             {
                 state.hasBillingIssue.get() && state.isSiteAdmin.get() && <Text style={styles.red}>{state.translations.BILLING_INFO_INV.get()}</Text>
             }
@@ -160,10 +161,16 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
                 onAuthenticationChange={callbacks?.onAuthenticationChange}
                 onNotificationSelected={callbacks?.onNotificationSelected}
                 onReplySuccess={callbacks?.onReplySuccess}
+                pickImage={callbacks?.pickImage}
                 state={state}
                 styles={styles}
                 translations={state.translations.get()}
             />
+            {paginationBeforeComments}
+        </View>;
+
+        return <View style={styles.root}>
+
             {state.commentsVisible.get() &&
             <TRenderEngineProvider baseStyle={styles.comment?.text}>
                 <RenderHTMLConfigProvider><FlatList
@@ -175,7 +182,7 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
                     onEndReachedThreshold={0.3}
                     onEndReached={onEndReached}
                     renderItem={renderItem}
-                    ListHeaderComponent={paginationBeforeComments}
+                    ListHeaderComponent={header}
                     ListFooterComponent={
                         <View>
                             {
@@ -194,6 +201,7 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
                 onAuthenticationChange={callbacks?.onAuthenticationChange}
                 onNotificationSelected={callbacks?.onNotificationSelected}
                 onReplySuccess={callbacks?.onReplySuccess}
+                pickImage={callbacks?.pickImage}
                 state={state}
                 styles={styles}
                 translations={state.translations.get()}

@@ -2,11 +2,12 @@ import {StyleSheet, TouchableOpacity, View} from "react-native";
 import {ReactNode} from "react";
 import {EditorNodeDefinition} from "./editor-node";
 import {State} from "@hookstate/core";
-import {Asset} from "react-native-image-picker";
+import {FastCommentsFromDiskAsset} from "../../types";
 
 export interface EditorToolbarConfig {
     selectImage?: (currentNode: State<EditorNodeDefinition>) => void
-    uploadImage?: (currentNode: State<EditorNodeDefinition>, asset: Asset) => Promise<string>
+    pickImage?: () => Promise<FastCommentsFromDiskAsset | string>
+    uploadImage?: (currentNode: State<EditorNodeDefinition>, asset: FastCommentsFromDiskAsset) => Promise<string>
     imageButton?: ReactNode
     toggleBold?: (currentNode: State<EditorNodeDefinition>) => void
     boldButton?: ReactNode

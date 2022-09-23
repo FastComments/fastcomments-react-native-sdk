@@ -12,5 +12,11 @@ export function createImageNode(startingValue: string): EditorNodeDefinition {
 }
 
 export function EditorNodeImage({node}: EditorNodeProps) {
-    return <Image source={{uri: node.content.get()}} style={{ marginTop: 10, marginBottom: 10 }}/>;
+    return <Image source={{uri: node.content.get()}} style={{
+        flexGrow: 1,
+        aspectRatio: 1,
+        resizeMode: 'contain',
+        marginTop: 10,
+        marginBottom: 10
+    }}/>;
 }

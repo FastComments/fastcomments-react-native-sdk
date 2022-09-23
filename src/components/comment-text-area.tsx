@@ -1,4 +1,4 @@
-import {FastCommentsState, FastCommentsImageAsset, IFastCommentsStyles} from "../types";
+import {FastCommentsState, FastCommentsImageAsset, IFastCommentsStyles, FastCommentsCallbacks} from "../types";
 import {State} from "@hookstate/core";
 import {Text, Image} from "react-native";
 import {Editor, UpdateNodesObserver} from "./wysiwyg/wysiwyg-editor";
@@ -17,7 +17,7 @@ export interface FocusObserver {
     setFocused?: (focused: boolean) => void
 }
 
-export interface CommentTextAreaProps {
+export interface CommentTextAreaProps extends Pick<FastCommentsCallbacks, 'pickImage'> {
     emoticonBarConfig?: EmoticonBarConfig
     focusObserver?: FocusObserver
     state: FastCommentsState
@@ -34,6 +34,7 @@ export function CommentTextArea({
     styles,
     output,
     onFocus: _onFocus,
+    pickImage,
     value,
 }: CommentTextAreaProps) {
     // console.log('opening text area', value);
@@ -68,9 +69,10 @@ export function CommentTextArea({
         strikethroughButton: <Image
             source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_STRIKETHROUGH_WHITE : FastCommentsImageAsset.ICON_STRIKETHROUGH]}
             style={styles.commentTextArea?.toolbarButton}/>,
-        imageButton: <Image
+        imageButton: pickImage ? <Image
             source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_IMAGE_UPLOAD_WHITE : FastCommentsImageAsset.ICON_IMAGE_UPLOAD]}
-            style={[styles.commentTextArea?.toolbarButton]}/>,
+            style={[styles.commentTextArea?.toolbarButton]}/> : null,
+        pickImage,
         uploadImage: async (_node, photoData) => {
             const formData = new FormData();
             formData.append('file', photoData);

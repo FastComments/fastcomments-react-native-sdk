@@ -14,7 +14,7 @@ import {FastCommentsCallbacks, ImageAssetConfig, RNComment} from "../types";
 import {CallbackObserver} from "./live-commenting-bottom-area";
 import {FastCommentsRNConfig} from "../types/react-native-config";
 
-export interface LiveCommentingTopAreaProps extends Pick<FastCommentsCallbacks, 'onAuthenticationChange' | 'onNotificationSelected' | 'onReplySuccess'> {
+export interface LiveCommentingTopAreaProps extends Pick<FastCommentsCallbacks, 'onAuthenticationChange' | 'onNotificationSelected' | 'onReplySuccess' | 'pickImage'> {
     callbackObserver: CallbackObserver
     config: FastCommentsRNConfig
     imageAssets: ImageAssetConfig
@@ -32,6 +32,7 @@ export function LiveCommentingTopArea(props: LiveCommentingTopAreaProps) {
         onAuthenticationChange,
         onNotificationSelected,
         onReplySuccess,
+        pickImage,
         styles,
         translations,
     } = props;
@@ -47,6 +48,7 @@ export function LiveCommentingTopArea(props: LiveCommentingTopAreaProps) {
                     onAuthenticationChange={onAuthenticationChange}
                     onNotificationSelected={onNotificationSelected}
                     onReplySuccess={onReplySuccess}
+                    pickImage={pickImage}
                     replyingTo={callbackObserver.replyingTo}
                     state={state}
                     styles={styles}

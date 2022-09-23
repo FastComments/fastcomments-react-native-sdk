@@ -4,14 +4,13 @@ import {none, State, useHookstate, useHookstateEffect} from "@hookstate/core";
 import {ReactNode, useRef} from "react";
 import {createTextNode} from "./editor-node-text";
 import {EditorToolbarConfig} from "./editor-toolbar";
-import * as ImagePicker from 'react-native-image-picker';
-import {Asset} from 'react-native-image-picker';
 import {createImageNode} from "./editor-node-image";
 import {deleteNode} from "./editor-node-transform";
 import {createBoldNode, createEmoticonNode, createStrikethroughNode, createUnderlineNode} from "./editor-nodes";
 import {EmoticonBarConfig} from "./emoticon-bar";
 import {getNext, getStateNext, getStatePrev} from "./node-navigate";
 import {createNewlineNode} from "./editor-node-newline";
+import {insertAfter, insertChainAfter} from "./node-manipulate";
 
 export interface UpdateNodesObserver {
     updateNodes?: (nodes: EditorNodeDefinition[]) => void
@@ -121,15 +120,12 @@ export function Editor(props: EditorProps) {
                         // add a node after the current one
                         const newImageNode = createEmoticonNode(src);
                         currentNode.isFocused.set(false);
-                        const currentId = currentNode.id.get();
-                        const currentIndex = nodes.findIndex((searchingNode) => searchingNode.id === currentId);
-                        nodes.splice(currentIndex + 1, 0, newImageNode);
+                        insertAfter(nodes, currentNode.id.get(), newImageNode);
                         if (!getNext(nodes, newImageNode.id)) {
                             const newTextNode = createTextNode('');
                             newTextNode.isFocused = true;
                             // now add in a text node after the emoticon so we can keep typing (also so we can backspace the emoticon)
-                            const currentIndex = nodes.findIndex((searchingNode) => searchingNode.id === newImageNode.id);
-                            nodes.splice(currentIndex + 1, 0, newTextNode);
+                            insertAfter(nodes, newImageNode.id, newTextNode);
                         }
 
                         return nodes;
@@ -155,9 +151,7 @@ export function Editor(props: EditorProps) {
                         const newNode = createFn('');
                         newNode.isFocused = true; // TODO it'd be cool if we could get the keyboard to not go away
                         node.isFocused.set(false);
-                        const currentId = node.id.get();
-                        const currentIndex = nodes.findIndex((searchingNode) => searchingNode.id === currentId);
-                        nodes.splice(currentIndex + 1, 0, newNode);
+                        insertAfter(nodes, node.id.get(), newNode);
                         return nodes;
                     });
                 } else if (nodeType === type) {
@@ -200,26 +194,38 @@ export function Editor(props: EditorProps) {
             }
             if (!props.toolbarConfig.selectImage) {
                 props.toolbarConfig.selectImage = async (node: State<EditorNodeDefinition>) => {
-                    const res = await new Promise<Asset>((resolve, reject) => {
-                        ImagePicker.launchImageLibrary({
-                            mediaType: 'photo'
-                        }, (response) => {
-                            if (response.errorCode || response.didCancel) {
-                                reject(response);
-                            } else {
-                                resolve(response.assets![0]);
-                            }
-                        });
-                    });
-                    const uploadedHTTPPath = await props.toolbarConfig!.uploadImage!(node, res);
-                    const newImageNode = createImageNode(uploadedHTTPPath);
+                    const pickedPath = await props.toolbarConfig!.pickImage!();
+                    let finalPath;
+                    if (!pickedPath) {
+                        return;
+                    }
+                    if (typeof pickedPath === 'string' && pickedPath.startsWith('http')) {
+                        finalPath = pickedPath;
+                    } else if (typeof pickedPath === 'object') {
+                        finalPath = await props.toolbarConfig!.uploadImage!(node, pickedPath);
+                    }
+                    if (!finalPath) {
+                        return;
+                    }
+                    const newImageNode = createImageNode(finalPath);
                     if (node && node.get()) {
-                        // before: current node <-> next
-                        // after: current node <-> new image <-> next
-                        // TODO insert after current node
-                        // newImageNode.prev = node.get();
-                        // newImageNode.next = node.next.get();
-                        // node.next.set(newImageNode);
+                        // before: root -> text node A (selected)
+                        // after: root -> text node A (not selected) -> newline node -> image -> newline node -> text node B (now selected)
+                        nodes.set((nodes) => {
+                            const newSelectedTextNode = createTextNode('');
+                            newSelectedTextNode.isFocused = true;
+                            newSelectedTextNode.lastFocusTime = Date.now();
+
+                            insertChainAfter(nodes, node.id.get(), [
+                                createNewlineNode(),
+                                newImageNode,
+                                createNewlineNode(),
+                                newSelectedTextNode
+                            ]);
+
+                            return nodes;
+                        });
+                        select(nodes[nodes.length - 1]);
                     } else {
                         nodes.set((nodes) => {
                             nodes.push(newImageNode);
@@ -344,18 +350,18 @@ export function Editor(props: EditorProps) {
             // add a text node
             // focus new text node
 
-            // TODO add newline after current node
             nodes.set((nodes) => {
+                node.isFocused.set(false); // we don't focus this node anymore
+
                 // add a node after this one that is bold, and focus it.
-                const newNewLineNode = createNewlineNode()
-                node.isFocused.set(false);
-                const currentId = node.id.get();
-                let currentIndex = nodes.findIndex((searchingNode) => searchingNode.id === currentId);
-                nodes.splice(currentIndex + 1, 0, newNewLineNode);
+                const newNewlineNode = createNewlineNode();
                 const newTextNode = createTextNode('');
                 newTextNode.isFocused = true;
-                currentIndex = nodes.findIndex((searchingNode) => searchingNode.id === newNewLineNode.id);
-                nodes.splice(currentIndex + 1, 0, newTextNode);
+                insertChainAfter(nodes, node.id.get(), [
+                    newNewlineNode,
+                    newTextNode,
+                ]);
+
                 return nodes;
             });
         } else {
