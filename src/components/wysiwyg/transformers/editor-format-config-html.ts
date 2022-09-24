@@ -1,5 +1,5 @@
 import {defaultTokenizer, EditorFormatConfiguration, SupportedNodesTokenizerConfig, toTextTrimmed} from "../editor-node-transform";
-import {EditorNodeDefinition, EditorNodeType} from "../editor-node";
+import {EditorNodeDefinition, EditorNodeType} from "../node-types";
 
 const SupportedNodes: SupportedNodesTokenizerConfig = {
     // text is implicit

@@ -1,4 +1,4 @@
-import {EditorNodeDefinition} from "./editor-node";
+import {EditorNodeDefinition} from "./node-types";
 
 export function insertAfter(nodes: EditorNodeDefinition[], afterId: number, node: EditorNodeDefinition) {
     let currentIndex = nodes.findIndex((searchingNode) => searchingNode.id === afterId);

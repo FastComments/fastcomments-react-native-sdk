@@ -1,16 +1,17 @@
 import {Pressable, StyleSheet, TextStyle, View, ViewStyle} from "react-native";
-import {EditorNode, EditorNodeDefinition, EditorNodeType} from "./editor-node";
+import {EditorNode} from "./editor-node";
 import {none, State, useHookstate, useHookstateEffect} from "@hookstate/core";
 import {ReactNode, useRef} from "react";
-import {createTextNode} from "./editor-node-text";
 import {EditorToolbarConfig} from "./editor-toolbar";
-import {createImageNode} from "./editor-node-image";
-import {deleteNode} from "./editor-node-transform";
+import {deleteNodeState} from "./editor-node-transform";
 import {createBoldNode, createEmoticonNode, createStrikethroughNode, createUnderlineNode} from "./editor-nodes";
 import {EmoticonBarConfig} from "./emoticon-bar";
 import {getNext, getStateNext, getStatePrev} from "./node-navigate";
-import {createNewlineNode} from "./editor-node-newline";
-import {insertAfter, insertChainAfter} from "./node-manipulate";
+import {insertAfter, insertChainAfter} from "./node-insert";
+import {deleteNodeRetainFocus} from "./node-delete";
+import {focusNode, focusNodeState} from "./node-focus";
+import {createImageNode, createNewlineNode, createTextNode} from "./node-create";
+import {EditorNodeDefinition, EditorNodeImageTypes, EditorNodeNames, EditorNodeType} from "./node-types";
 
 export interface UpdateNodesObserver {
     updateNodes?: (nodes: EditorNodeDefinition[]) => void
@@ -41,9 +42,7 @@ interface EditorRow {
 }
 
 export function Editor(props: EditorProps) {
-    // TODO wysiwyg link button
     // TODO wysiwyg gif button
-    // TODO image uploads work (weird runtime issue in library?)
     const nodes = useHookstate<EditorNodeDefinition[]>(props.nodes);
     const editorRowsRef = useRef<EditorRow[]>([]);
 
@@ -56,6 +55,12 @@ export function Editor(props: EditorProps) {
 
     useHookstateEffect(() => {
         props.onChange(nodes);
+        // TODO uncomment in production
+        console.log('===== BEGIN EDITOR NODE STRUCTURE =====');
+        for (const node of nodes) {
+            console.log(EditorNodeNames[node.type.get()], `(${node.id.get()})`);
+        }
+        console.log('===== END EDITOR NODE STRUCTURE =====');
         let row: EditorRow = {key: '', items: []};
         let editorRows: EditorRow[] = [];
         for (const node of nodes) {
@@ -113,7 +118,7 @@ export function Editor(props: EditorProps) {
                     currentNode.set(createEmoticonNode(src));
                     // now add in a text node after the emoticon so we can keep typing (also so we can backspace the emoticon)
                     const newNode = createTextNode('');
-                    newNode.isFocused = true;
+                    focusNode(newNode);
                     nodes.merge([newNode]);
                 } else {
                     nodes.set((nodes) => {
@@ -123,7 +128,7 @@ export function Editor(props: EditorProps) {
                         insertAfter(nodes, currentNode.id.get(), newImageNode);
                         if (!getNext(nodes, newImageNode.id)) {
                             const newTextNode = createTextNode('');
-                            newTextNode.isFocused = true;
+                            focusNode(newTextNode);
                             // now add in a text node after the emoticon so we can keep typing (also so we can backspace the emoticon)
                             insertAfter(nodes, newImageNode.id, newTextNode);
                         }
@@ -149,7 +154,7 @@ export function Editor(props: EditorProps) {
                     nodes.set((nodes) => {
                         // add a node after this one that is bold, and focus it.
                         const newNode = createFn('');
-                        newNode.isFocused = true; // TODO it'd be cool if we could get the keyboard to not go away
+                        focusNode(newNode);
                         node.isFocused.set(false);
                         insertAfter(nodes, node.id.get(), newNode);
                         return nodes;
@@ -160,7 +165,7 @@ export function Editor(props: EditorProps) {
                         const prev = getStatePrev(nodes, rawNode.id);
                         if (prev?.get()) {
                             console.log('node has no content, and has previous node. (removing, focusing)', rawNode.id, prev.id.get());
-                            deleteNode(nodes, rawNode.id);
+                            deleteNodeState(nodes, rawNode.id);
                             // prev is now the current node.
                             select(prev);
                         }
@@ -213,8 +218,7 @@ export function Editor(props: EditorProps) {
                         // after: root -> text node A (not selected) -> newline node -> image -> newline node -> text node B (now selected)
                         nodes.set((nodes) => {
                             const newSelectedTextNode = createTextNode('');
-                            newSelectedTextNode.isFocused = true;
-                            newSelectedTextNode.lastFocusTime = Date.now();
+                            focusNode(newSelectedTextNode);
 
                             insertChainAfter(nodes, node.id.get(), [
                                 createNewlineNode(),
@@ -243,13 +247,13 @@ export function Editor(props: EditorProps) {
             if (!node || !node.get({stealth: true})) {
                 if (nodes.length === 0) {
                     const newNode = createTextNode('');
-                    newNode.isFocused = true;
+                    focusNode(newNode);
                     nodes.set([newNode]);
                 } else {
                     select(nodes[nodes.length - 1]);
                 }
                 return;
-            } else if (ImageTypes.includes(node.type.get())) {
+            } else if (EditorNodeImageTypes.includes(node.type.get())) {
                 console.log('FOCUSING IMAGE');
                 // if we're selecting an image, is there a node in front of it? then select that
                 // otherwise, we should create a node in front of the image and select it.
@@ -263,8 +267,7 @@ export function Editor(props: EditorProps) {
                 }
             } else {
                 console.log('FOCUSING OTHER', node.isFocused.get());
-                node.isFocused.set(true);
-                node.lastFocusTime.set(Date.now());
+                focusNodeState(node);
             }
         } catch (e) {
             console.error(e);
@@ -279,10 +282,8 @@ export function Editor(props: EditorProps) {
         }
     }
 
-    const ImageTypes = [EditorNodeType.EMOTICON, EditorNodeType.IMAGE];
-
     // taking a State<Node> here caused a ton of confusion, so now we just take a regular JS object.
-    function doDelete(node: State<EditorNodeDefinition>, skipNextCheck?: boolean, skipFocus?: boolean) {
+    function doDelete(node: State<EditorNodeDefinition>) {
         if (!node || typeof node !== 'object') {
             console.error('Tried to delete empty node!', typeof node);
             return;
@@ -292,55 +293,11 @@ export function Editor(props: EditorProps) {
             console.error('Tried to delete empty node!', typeof node);
             return;
         }
-        // try {
-        //     node = JSON.parse(JSON.stringify(node));
-        //     console.log(node);
-        // } catch (e) {
-        //     console.error(e);
-        // }
-        console.log(`Deleting id=[${rawNode.id}] type=[${rawNode.type}] content=[${rawNode.content}]`);
-        if (nodes.length === 1) { // TODO does this work with set(none)?
-            // if this last node is an image, or text like @person, replace it with a text root node, otherwise skip.
-            if (ImageTypes.includes(nodes[0].type.get()) || node.content) {
-                // replace the node in-place
-                console.log('Doing in-place replacement of node for delete.');
-                const replacement = createTextNode('');
-                replacement.isFocused = true;
-                replacement.deleteOnBackspace = false; // TODO WHY IS .set() NOT REPLACING OBJECT????
-                nodes[0].set(replacement);
-            } else {
-                console.log('Skipping delete - is last node.', rawNode.id);
-            }
-            return; // don't delete the last node. kind of surprising API, but simple.
-        }
-        // if this is not an image, and the node before this is an emoticon/image, and the current node is not an image node, delete the emoticon/image too.
-        // maybe in an ideal object-oriented world you could broadcast "delete" to node.prev, but we can't serialize objects with methods with our state mechanism (yet).
-        // It's also nice to encapsulate the delete logic in the "delete" code rather than in every object, so far.
-        const prev = getStatePrev(nodes, rawNode.id);
-        const emoticonOrNewLineNodeBeforeText = !skipNextCheck
-        && prev
-        && !ImageTypes.includes(rawNode.type)
-        && (prev.type.get() === EditorNodeType.NEWLINE || ImageTypes.includes(prev.type.get()))
-            ? prev
-            : null;
 
-        if (emoticonOrNewLineNodeBeforeText) {
-            console.log(`Will delete next: id=[${emoticonOrNewLineNodeBeforeText.id}] type=[${emoticonOrNewLineNodeBeforeText.type}] content=[${emoticonOrNewLineNodeBeforeText.content}]`);
-        } else {
-            console.log('Nothing to delete next.');
-        }
-        // if we're backspacing on an emoticon, leave the current text field intact and delete the image node before this one
-        // this way the keyboard does not lose focus resulting in flashing. The keyboard never loses focus on the element we said to delete, but
-        // we actually delete the content the user sees (the image before).
-        if (emoticonOrNewLineNodeBeforeText) {
-            doDelete(emoticonOrNewLineNodeBeforeText, true, true);
-        } else {
-            const prevId = prev?.id.get();
-            deleteNode(nodes, rawNode.id);
-            if (prevId !== undefined && prevId !== null && !skipFocus) {
-                select(nodes.find((searchingNode) => searchingNode.id.get() === prevId));
-            }
-        }
+        nodes.set((nodes) => {
+            deleteNodeRetainFocus(nodes, node.get({noproxy: true, stealth: true}));
+            return nodes;
+        });
     }
 
     function onTryNewline(node: State<EditorNodeDefinition>) {
@@ -356,7 +313,7 @@ export function Editor(props: EditorProps) {
                 // add a node after this one that is bold, and focus it.
                 const newNewlineNode = createNewlineNode();
                 const newTextNode = createTextNode('');
-                newTextNode.isFocused = true;
+                focusNode(newTextNode);
                 insertChainAfter(nodes, node.id.get(), [
                     newNewlineNode,
                     newTextNode,

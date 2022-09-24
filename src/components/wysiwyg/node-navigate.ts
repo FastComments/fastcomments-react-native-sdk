@@ -1,5 +1,5 @@
-import {EditorNodeDefinition} from "./editor-node";
 import {State} from "@hookstate/core";
+import {EditorNodeDefinition} from "./node-types";
 
 // We used to use a doubly linked list but it was a huge pain.
 

@@ -1,6 +1,6 @@
-import {EditorNodeDefinition, EditorNodeType} from "./editor-node";
 import {none, State} from "@hookstate/core";
 import {getNextNodeId} from "./node-id";
+import {EditorNodeDefinition, EditorNodeType} from "./node-types";
 
 export interface EditorFormatConfiguration {
     /** How many characters does an image take up? Set to zero to disable validation. **/
@@ -35,7 +35,7 @@ export function getNodeLength(type: EditorNodeType, content: string, config: Pic
     return content.length;
 }
 
-export function deleteNode(nodes: State<EditorNodeDefinition[]>, id: number) {
+export function deleteNodeState(nodes: State<EditorNodeDefinition[]>, id: number) {
     const index = nodes.findIndex((searchingNode) => searchingNode.id.get() === id);
     console.log('Removing (index, id)', index, id);
     nodes[index].set(none);
@@ -103,12 +103,12 @@ export function nodesToString(nodes: State<EditorNodeDefinition[]> | null, forma
                         content += trimmedFormattedValue;
                         // OPTIMIZATION: we don't need to do anything here with length because we're going to stop iteration.
                     } else {
-                        deleteNode(nodes, rawNode.id); // example: empty image node does not make sense
+                        deleteNodeState(nodes, rawNode.id); // example: empty image node does not make sense
                         // OPTIMIZATION: we don't need to do anything here with length because we're going to stop iteration.
                     }
                     break;
                 } else {
-                    deleteNode(nodes, rawNode.id); // example: empty image node does not make sense
+                    deleteNodeState(nodes, rawNode.id); // example: empty image node does not make sense
                     // OPTIMIZATION: we don't need to do anything here with length because we're going to stop iteration.
                     break;
                 }
@@ -165,12 +165,12 @@ export function enforceMaxLength(nodes: State<EditorNodeDefinition[]>, formatCon
                         node.content.set(trimmedFormattedValue);
                         // OPTIMIZATION: we don't need to do anything here with length because we're going to stop iteration.
                     } else {
-                        deleteNode(nodes, rawNode.id); // example: empty image node does not make sense
+                        deleteNodeState(nodes, rawNode.id); // example: empty image node does not make sense
                         // OPTIMIZATION: we don't need to do anything here with length because we're going to stop iteration.
                     }
                     break;
                 } else {
-                    deleteNode(nodes, rawNode.id); // example: empty image node does not make sense
+                    deleteNodeState(nodes, rawNode.id); // example: empty image node does not make sense
                     // OPTIMIZATION: we don't need to do anything here with length because we're going to stop iteration.
                     break;
                 }

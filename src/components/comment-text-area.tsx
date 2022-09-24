@@ -6,8 +6,8 @@ import {useEffect, useRef, useState} from "react";
 import {EditorToolbar, EditorToolbarConfig} from "./wysiwyg/editor-toolbar";
 import {enforceMaxLength, nodesToString, stringToNodes} from "./wysiwyg/editor-node-transform";
 import {EditorFormatConfigurationHTML} from "./wysiwyg/transformers";
-import {EditorNodeDefinition} from "./wysiwyg/editor-node";
 import {EmoticonBarConfig} from "./wysiwyg/emoticon-bar";
+import {EditorNodeDefinition} from "./wysiwyg/node-types";
 
 export interface ValueObserver {
     getValue?: () => string

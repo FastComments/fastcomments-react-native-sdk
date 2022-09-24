@@ -1,4 +1,4 @@
-import {EditorNodeDefinition, EditorNodeProps, EditorNodeType} from "./editor-node";
+import {EditorNodeProps} from "./editor-node";
 import {
     InteractionManager,
     NativeSyntheticEvent,
@@ -8,17 +8,9 @@ import {
     TextInputSubmitEditingEventData,
     TextStyle
 } from "react-native";
-import {MutableRefObject, useEffect, useRef, useState} from "react";
-import {getNextNodeId} from "./node-id";
-
-export function createTextNode(startingValue: string): EditorNodeDefinition {
-    return {
-        id: getNextNodeId(),
-        content: startingValue,
-        type: EditorNodeType.TEXT,
-        isFocused: false
-    }
-}
+import {MutableRefObject, useRef, useState} from "react";
+import {EditorNodeTextType, EditorNodeType} from "./node-types";
+import {useHookstateEffect} from "@hookstate/core";
 
 export interface EditorNodeTextProps extends EditorNodeProps {
     textStyle?: TextStyle
@@ -47,18 +39,28 @@ export function EditorNodeText(props: EditorNodeTextProps) {
     }
 
     const ref = useRef<TextInput>();
-    useEffect(() => {
+    console.log('RE-RENDER', node.id.get());
+    // const [lastLastFocusTime, setLastLastFocusTime] = useState(node.lastFocusTime.get({}));
+    useHookstateEffect(() => {
         let timeout: number;
         if (node.isFocused.get()) {
-            console.log('Focusing node (A)', node.id.get());
+            const lastFocusTime = node.lastFocusTime.get();
+            // if (lastFocusTime === lastLastFocusTime) {
+            //     return;
+            // }
+            console.log('Focusing node (A)', node.id.get(), lastFocusTime);
             setIgnoreNextBlur(true);
+            // @ts-ignore
             timeout = setTimeout(() => {
                 function doFocus() {
+                    // @ts-ignore
                     timeout = setTimeout(function () {
                         InteractionManager.runAfterInteractions(() => {
                             ref.current?.focus();
+                            // @ts-ignore
                             timeout = setTimeout(function () {
                                 setIgnoreNextBlur(false);
+                                // setLastLastFocusTime(lastFocusTime);
                             }, 0);
                         });
                     }, 0);
@@ -75,7 +77,7 @@ export function EditorNodeText(props: EditorNodeTextProps) {
         return () => {
             timeout && clearTimeout(timeout)
         };
-    }, [node.lastFocusTime.get()]);
+    }, [node.lastFocusTime]);
 
     const handleKeyUp = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
         switch (e.nativeEvent.key) {
@@ -132,6 +134,15 @@ export function EditorNodeText(props: EditorNodeTextProps) {
         onSubmitEditing={onSubmit}
         ref={ref as MutableRefObject<TextInput>}
         returnKeyType={isMultiLine ? 'default' : 'send'}
-        style={[textStyle, {padding: 0, borderWidth: 0, position: 'relative', left: 0, minWidth: 0}]}
+        style={[StylesByNodeType[node.type.get()], textStyle]}
     />;
+}
+
+const BaseTextStyles: TextStyle = {padding: 0, borderWidth: 0, position: 'relative', left: 0, minWidth: 0};
+const StylesByNodeType: Record<EditorNodeTextType, TextStyle> = {
+    [EditorNodeType.TEXT_BOLD]: {fontWeight: 'bold', ...BaseTextStyles},
+    [EditorNodeType.TEXT_ITALIC]: {fontStyle: 'italic', ...BaseTextStyles},
+    [EditorNodeType.TEXT_STRIKETHROUGH]: {textDecorationLine: 'line-through', ...BaseTextStyles},
+    [EditorNodeType.TEXT]: BaseTextStyles,
+    [EditorNodeType.TEXT_UNDERLINE]: {textDecorationLine: 'underline', ...BaseTextStyles},
 }

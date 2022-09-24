@@ -1,8 +1,8 @@
 import {StyleSheet, TouchableOpacity, View} from "react-native";
 import {ReactNode} from "react";
-import {EditorNodeDefinition} from "./editor-node";
 import {State} from "@hookstate/core";
 import {FastCommentsFromDiskAsset} from "../../types";
+import {EditorNodeDefinition} from "./node-types";
 
 export interface EditorToolbarConfig {
     selectImage?: (currentNode: State<EditorNodeDefinition>) => void
