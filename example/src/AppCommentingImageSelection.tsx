@@ -16,6 +16,7 @@ export default function AppCommentingImageSelection() {
     tenantId: myTenantId,
     urlId: myAppPageId,
     showLiveRightAway: true,
+    countAll: true,
   });
 
   const callbacks: FastCommentsCallbacks = {
