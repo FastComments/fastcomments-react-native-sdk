@@ -52,7 +52,7 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
         const list: State<RNComment>[] = [];
         const byId = state.commentsById.get({noproxy: true});
         const start = Date.now();
-        // TODO Re-creating the whole list generally takes 1-2ms. Why is toggling only one child comment so laggy?
+        // Re-creating the whole list generally takes 1-2ms.
         console.log('...Re-creating view list from tree...');
         iterateCommentsTreeState(state.commentsTree, (comment) => {
             const parentId = comment.parentId ? comment.parentId.get() : undefined;
