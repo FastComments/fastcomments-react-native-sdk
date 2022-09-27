@@ -186,13 +186,17 @@ export function handleLiveEvent(state: State<FastCommentsState>, dataJSON: Webso
                 flag on said comments and re-renders that part of the tree.
              */
 
-            const isNew = !(commentsById[dataJSONComment._id].get());
+            const isNew = !(commentsById[dataJSONComment._id].get({stealth: true}));
             if (isNew) {
-                commentsById[dataJSONComment._id].set(dataJSONComment);
+                console.log('adding new comment to commentsById')
+                commentsById.merge({
+                    [dataJSONComment._id]: dataJSONComment
+                })
+                // commentsById[dataJSONComment._id].set(dataJSONComment);
             } else {
                 commentsById[dataJSONComment._id].merge(dataJSONComment);
             }
-            console.log('????? isNew', isNew);
+            console.log('????? isNew 2', isNew);
 
             if (!isNew) {
                 if (dataJSONExtraInfo) {

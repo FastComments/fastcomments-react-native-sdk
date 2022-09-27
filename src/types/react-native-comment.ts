@@ -10,4 +10,5 @@ export interface RNComment extends FastCommentsWidgetComment {
     voteEditKey?: string;
     wasPostedCurrentSession?: boolean;
     requiresVerification?: boolean;
+    changeCounter?: number;
 }

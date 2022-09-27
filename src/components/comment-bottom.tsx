@@ -1,7 +1,7 @@
 // @ts-ignore TODO remove
 import * as React from 'react';
 
-import {State, useHookstate, useHookstateEffect} from "@hookstate/core";
+import {State, useHookstate} from "@hookstate/core";
 import {Image, TouchableOpacity, View, Text} from "react-native";
 import {CommentVote} from "./comment-vote";
 import {FastCommentsImageAsset, FastCommentsCallbacks, RNComment, IFastCommentsStyles, ImageAssetConfig, FastCommentsState} from "../types";
@@ -21,7 +21,7 @@ export interface CommentBottomProps extends Pick<FastCommentsCallbacks, 'onVoteS
     translations: Record<string, string>
 }
 
-const STEALTH = { stealth: true };
+const STEALTH = {stealth: true};
 
 export function CommentBottom(props: CommentBottomProps) {
     const {
@@ -35,17 +35,14 @@ export function CommentBottom(props: CommentBottomProps) {
         pickImage,
         replyingTo,
         styles,
+        setRepliesHidden,
         translations,
     } = props;
 
     // OPTIMIZATION: we only use comment.replyBoxOpen for initial render.
-    // TODO This is still not great, because now replyBoxOpen is out of date. Is there a way to use comment.replyBoxOpen.set() without re-rendering all comment objects?
-    const [isReplyBoxOpen, setIsReplyBoxOpen] = useState(comment.replyBoxOpen.get(STEALTH));
     const state = useHookstate(props.state); // OPTIMIZATION local state
-
-    useHookstateEffect(() => {
-        setIsReplyBoxOpen(comment.replyBoxOpen.get()); // for when replyarea changes value
-    }, [comment.replyBoxOpen]);
+    const commentState = useHookstate(comment); // OPTIMIZATION local state
+    const [isReplyBoxOpen, setIsReplyBoxOpen] = useState(commentState.replyBoxOpen.get());
 
     return <View style={styles.commentBottom?.root}>
         <View style={styles.commentBottom?.commentBottomToolbar}>
@@ -58,15 +55,19 @@ export function CommentBottom(props: CommentBottomProps) {
                     absoluteAndRelativeDates={config.absoluteAndRelativeDates}
                     style={styles.comment?.displayDate}/>
             }
-            {!config.renderLikesToRight && <CommentVote comment={comment} config={config} imageAssets={imageAssets} state={state} styles={styles} translations={translations} onVoteSuccess={onVoteSuccess}/>}
+            {!config.renderLikesToRight &&
+            <CommentVote comment={comment} config={config} imageAssets={imageAssets} state={state} styles={styles} translations={translations}
+                         onVoteSuccess={onVoteSuccess}/>}
             <TouchableOpacity style={styles.commentBottom?.commentBottomToolbarReply} onPress={() => {
                 if (config.useSingleReplyField) {
                     // We always expect the callback to exist in this case. Otherwise is an error.
                     replyingTo!(isReplyBoxOpen ? null : comment.get(STEALTH)); // if reply box already open, invoke with null to say we're not replying.
                     setIsReplyBoxOpen(!isReplyBoxOpen);
+                    commentState.replyBoxOpen.set(!isReplyBoxOpen);
                 } else {
                     replyingTo && replyingTo(comment.get(STEALTH));
                     setIsReplyBoxOpen(!isReplyBoxOpen);
+                    commentState.replyBoxOpen.set(!isReplyBoxOpen);
                 }
             }
             }>
@@ -81,7 +82,12 @@ export function CommentBottom(props: CommentBottomProps) {
                 imageAssets={imageAssets}
                 onAuthenticationChange={onAuthenticationChange}
                 onNotificationSelected={onNotificationSelected}
-                onReplySuccess={onReplySuccess}
+                onReplySuccess={(comment) => {
+                    setIsReplyBoxOpen(!isReplyBoxOpen);
+                    commentState.replyBoxOpen.set(false);
+                    onReplySuccess && onReplySuccess(comment);
+                }
+                }
                 parentComment={comment}
                 pickImage={pickImage}
                 state={state}
@@ -91,10 +97,11 @@ export function CommentBottom(props: CommentBottomProps) {
         </View>
         }
         <CommentReplyToggle
+            comment={comment}
             hasDarkBackground={config.hasDarkBackground}
             imageAssets={imageAssets}
             nestedChildrenCount={comment.nestedChildrenCount.get()}
-            repliesHiddenState={props.repliesHiddenState}
+            setRepliesHidden={setRepliesHidden}
             styles={styles}
             translations={translations}
         />

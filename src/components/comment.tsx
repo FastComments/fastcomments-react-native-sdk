@@ -7,7 +7,7 @@ import {Image, Pressable, TouchableOpacity, View} from "react-native";
 import {getCommentMenuItems, getCommentMenuState} from "./comment-menu";
 import {CommentNotices} from "./comment-notices";
 import {CommentUserInfo, getCommentUserInfoHTML} from "./comment-user-info";
-import {State, useHookstate} from "@hookstate/core";
+import {State, useHookstate, useHookstateEffect} from "@hookstate/core";
 import {CommentDisplayDate} from "./comment-dispay-date";
 import {CommentBottom} from "./comment-bottom";
 import {
@@ -48,12 +48,13 @@ export function FastCommentsCommentView(props: CommentViewProps) {
         onAuthenticationChange,
         pickImage,
         replyingTo,
+        setRepliesHidden,
         translations,
         imageAssets,
         width,
     } = props;
 
-    const commentState = props.comment;
+    const commentState = useHookstate(props.comment);
     const comment = props.comment.get(STEALTH);
     const id = comment._id;
     if (RenderCount[id] === undefined) {
@@ -63,13 +64,15 @@ export function FastCommentsCommentView(props: CommentViewProps) {
     }
     console.log('comment render count', RenderCount[id]);
 
+    const state = useHookstate(props.state); // OPTIMIZATION: creating scoped state
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    // const repliesHiddenState = useHookstate(comment.repliesHidden);
+    const repliesHiddenState = commentState.repliesHidden;
+
     if (comment.hidden) {
         return null;
     }
 
-    const state = useHookstate(props.state); // OPTIMIZATION: creating scoped state
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const repliesHiddenState = useHookstate(!!comment.repliesHidden);
     const html = comment.isDeleted
         ? translations.DELETED_PLACEHOLDER
         : (
@@ -132,25 +135,10 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                        onAuthenticationChange={onAuthenticationChange}
                        pickImage={pickImage}
                        replyingTo={replyingTo}
-                       repliesHiddenState={repliesHiddenState}/>
+                       setRepliesHidden={setRepliesHidden}/>
         {!repliesHiddenState.get(STEALTH) && <View style={styles.comment?.children}>
-            {comment.hiddenChildrenCount && <ShowNewChildLiveCommentsButton commentTreeNode={commentState} translations={translations} styles={styles}/>}
-            {/* TODO how to fix stupid cast here? */}
-            {commentState.children?.get(STEALTH)! && (commentState.children as State<RNComment[]>).map((comment) =>
-                <FastCommentsCommentView
-                    key={comment._id.get()}
-                    comment={comment}
-                    config={config}
-                    onVoteSuccess={onVoteSuccess}
-                    onReplySuccess={onReplySuccess}
-                    onAuthenticationChange={onAuthenticationChange}
-                    replyingTo={replyingTo}
-                    translations={translations}
-                    imageAssets={imageAssets}
-                    state={state}
-                    styles={styles}
-                    width={width}/>
-            )}
+            {comment.hiddenChildrenCount &&
+            <ShowNewChildLiveCommentsButton commentTreeNode={commentState} translations={translations} styles={styles}/>}
         </View>}
     </View>
 
@@ -159,7 +147,8 @@ export function FastCommentsCommentView(props: CommentViewProps) {
             {content}
         </Pressable> : content;
 
-    return <View style={styles.comment?.root}>
+    const indentStyles = comment.parentId ? {marginLeft: 20} : null; // TODO THIS IS TEMPORARY - CLEANUP
+    return <View style={[styles.comment?.root, indentStyles]}>
         {contentWrapped}
         {isMenuOpen && menuState ?
             <ModalMenu closeIcon={imageAssets[config.hasDarkBackground ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]}

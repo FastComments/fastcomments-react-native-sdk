@@ -194,7 +194,8 @@ async function submit({
             handleNewCustomConfig(state, response.customConfig);
         }
         const comment = response.comment as RNComment;
-        if (response.status === 'success' && comment) {
+        const wasSuccessful = response.status === 'success' && comment;
+        if (wasSuccessful) {
             comment.wasPostedCurrentSession = true;
             state.commentCountOnClient.set((commentCountOnClient) => {
                 commentCountOnClient++;
@@ -235,7 +236,6 @@ async function submit({
                 // noinspection ES6MissingAwait
                 setupUserPresenceState(state, response.userIdWS!);
             }
-            onReplySuccess && onReplySuccess(comment);
         } else {
             if (isAuthenticating) {
                 state.currentUser.set(null); // saved to authenticate - can't say we are logged in.
@@ -248,11 +248,26 @@ async function submit({
         if (response.maxCharacterLength && response.maxCharacterLength !== state.config.maxCommentCharacterLength.get()) {
             state.config.maxCommentCharacterLength.set(response.maxCharacterLength); // update UI
         }
-        commentReplyState.isReplySaving.set(false);
-        commentReplyState.showAuthInputForm.set(false);
-        commentReplyState.showSuccessMessage.set(showSuccessMessage);
-        commentReplyState.showSuccessMessage.set(showSuccessMessage);
-        commentReplyState.lastSaveResponse.set(response);
+        commentReplyState.set((commentReplyState) => {
+            return {
+                ...commentReplyState,
+                isReplySaving: false,
+                showAuthInputForm: false,
+                showSuccessMessage,
+                lastSaveResponse: response,
+
+                // we only reset these on success.
+                username: none,
+                email: none,
+                websiteUrl: none,
+                comment: ''
+            }
+        });
+        // important that this is after commentReplyState.set otherwise we will detatch the ReplyArea onReplySuccess() and then
+        // we will do a state mutation on a destroyed state object, causing HOOKSTATE-106.
+        if (wasSuccessful) {
+            onReplySuccess && onReplySuccess(comment);
+        }
     } catch (response: any) {
         if ('customConfig' in response && response.customConfig) {
             handleNewCustomConfig(state, response.customConfig);
@@ -261,10 +276,15 @@ async function submit({
             state.currentUser.set(null); // saved to authenticate - can't say we are logged in.
             onAuthenticationChange && onAuthenticationChange('authentication-failed', null, newComment as unknown as RNComment);
         }
-        commentReplyState.isReplySaving.set(false);
-        commentReplyState.showAuthInputForm.set(false);
-        commentReplyState.showSuccessMessage.set(false);
-        commentReplyState.lastSaveResponse.set(response);
+        commentReplyState.set((commentReplyState) => {
+            return {
+                ...commentReplyState,
+                isReplySaving: false,
+                showAuthInputForm: false,
+                showSuccessMessage: false,
+                lastSaveResponse: response
+            }
+        });
     }
 }
 
@@ -425,11 +445,8 @@ export function ReplyArea(props: ReplyAreaProps) {
             } else {
                 commentReplyState.isReplySaving.set(true);
                 try {
+                    // note! This will modify commentReplyState and call onReplySuccess in the desired/required order.
                     await submit({state, parentComment, onReplySuccess}, commentReplyState);
-                    commentReplyState.username.set(none);
-                    commentReplyState.email.set(none);
-                    commentReplyState.websiteUrl.set(none);
-                    commentReplyState.comment.set('');
                 } catch (e) {
                     console.error('Failed to save a comment', e);
                 }

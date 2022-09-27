@@ -1,28 +1,29 @@
 import {CommentViewProps} from "../components/comment";
 import {RNComment} from "../types";
 
+// Yeah this is terrible but I can't get the previous version of the comment via hookstate as by the time React.memo calls the
+// prop comparison method both prevProps and nextProps hold a State object which contains a reference to the latest version and
+// passing the "raw" version of the object around causes the state library to trigger extra excessive renders.
+// So a global count it is.
+const CommentChangeCounter: Record<string, number> = {
+    // Global state nightmares go here.
+}
+
 // Note - functions in this file contain unrolled loops and similar optimizations. Do not try to simplify without benchmarking.
 function areCommentsDifferent(prevComment: RNComment, nextComment: RNComment) {
     // OPTIMIZATION: frequently changed things first
-    // OPTIMIZATION: repliesHidden is handled inside the widget itself, so opening replies feels better.
     // OPTIMIZATION: replyBoxOpen is handled inside the widget itself, so opening reply box feels better.
     // OPTIMIZATION: votes is handled inside the widget itself, so voting feels better.
 
     // Adding/removing replies happens often. Have to re-render parents.
-    if(prevComment._id === 'wIGW2BpsSHs') {
-        console.log('??????????????? **************************', prevComment.children?.length, nextComment.children?.length)
-    }
-    if (prevComment.children?.length !== nextComment.children?.length) { // TODO submitting child replies is not updating the UI!
-        if(prevComment._id === 'wIGW2BpsSHs') {
-            console.log('**************************', prevComment.children?.length, nextComment.children?.length)
-        }
+
+    if (CommentChangeCounter[nextComment._id] !== nextComment.changeCounter) {
+        // Update global state in prop comparison to make functional people mad.
+        CommentChangeCounter[nextComment._id] = nextComment.changeCounter || 1;
         return true;
     }
-    // comparing memory reference
-    if (prevComment.children != nextComment.children) {
-        if(prevComment._id === 'wIGW2BpsSHs') {
-            console.log('**************************', prevComment.children?.length, nextComment.children?.length)
-        }
+
+    if (prevComment.repliesHidden !== nextComment.repliesHidden) {
         return true;
     }
     if (prevComment.isPinned !== nextComment.isPinned) {
