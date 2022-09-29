@@ -3,13 +3,14 @@ import * as React from 'react';
 import {Image, TouchableOpacity, Text} from "react-native";
 import {FastCommentsImageAsset, ImageAssetConfig} from "../types/image-asset";
 import {State} from "@hookstate/core";
-import {IFastCommentsStyles} from "../types";
+import {IFastCommentsStyles, RNComment} from "../types";
 
 export interface CommentReplyToggleProps {
+    comment: State<RNComment>
     hasDarkBackground?: boolean
     imageAssets: ImageAssetConfig
     nestedChildrenCount?: number
-    repliesHiddenState: State<boolean>
+    setRepliesHidden: (comment: State<RNComment>, hidden: boolean) => void
     styles: IFastCommentsStyles
     translations: Record<string, string>
 }
@@ -18,7 +19,6 @@ export function CommentReplyToggle({
     comment,
     hasDarkBackground,
     imageAssets,
-    repliesHiddenState,
     nestedChildrenCount,
     setRepliesHidden,
     styles,

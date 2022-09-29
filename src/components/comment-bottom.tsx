@@ -16,7 +16,7 @@ export interface CommentBottomProps extends Pick<FastCommentsCallbacks, 'onVoteS
     comment: State<RNComment>
     config: FastCommentsRNConfig
     imageAssets: ImageAssetConfig
-    repliesHiddenState: State<boolean>
+    setRepliesHidden: (comment: State<RNComment>, hidden: boolean) => void
     styles: IFastCommentsStyles
     translations: Record<string, string>
 }
@@ -34,8 +34,8 @@ export function CommentBottom(props: CommentBottomProps) {
         onVoteSuccess,
         pickImage,
         replyingTo,
-        styles,
         setRepliesHidden,
+        styles,
         translations,
     } = props;
 

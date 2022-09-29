@@ -4,10 +4,10 @@ import {Text, Image} from "react-native";
 import {Editor, UpdateNodesObserver} from "./wysiwyg/wysiwyg-editor";
 import {useEffect, useRef, useState} from "react";
 import {EditorToolbar, EditorToolbarConfig} from "./wysiwyg/editor-toolbar";
-import {enforceMaxLength, nodesToString, stringToNodes} from "./wysiwyg/editor-node-transform";
+import {enforceMaxLength, graphToString, stringToNodes} from "./wysiwyg/editor-node-transform";
 import {EditorFormatConfigurationHTML} from "./wysiwyg/transformers";
 import {EmoticonBarConfig} from "./wysiwyg/emoticon-bar";
-import {EditorNodeDefinition} from "./wysiwyg/node-types";
+import {EditorNodeNewLine} from "./wysiwyg/node-types";
 
 export interface ValueObserver {
     getValue?: () => string
@@ -44,8 +44,8 @@ export function CommentTextArea({
     const hasDarkBackground = state.config.hasDarkBackground;
     const [isFocused, setFocused] = useState(false);
     const [isEmpty, setIsEmpty] = useState(!!value);
-    const editorInputNodesRef = useRef<EditorNodeDefinition[]>([]);
-    const [nodeState, setNodeState] = useState<State<EditorNodeDefinition[]> | null>(null);
+    const editorInputNodesRef = useRef<EditorNodeNewLine[]>([]);
+    const [nodeState, setNodeState] = useState<State<EditorNodeNewLine[]> | null>(null);
     const updateNodesObserver: UpdateNodesObserver = {};
 
     useEffect(() => {
@@ -98,14 +98,14 @@ export function CommentTextArea({
         }
     }
 
-    function onChange(nodes: State<EditorNodeDefinition[]>) {
+    function onChange(nodes: State<EditorNodeNewLine[]>) {
         const isEmpty = enforceMaxLength(nodes, EditorFormatConfigurationHTML, maxLength);
         setIsEmpty(isEmpty);
         setNodeState(nodes);
     }
 
     output.getValue = () => {
-        return nodesToString(nodeState, EditorFormatConfigurationHTML, maxLength);
+        return graphToString(nodeState, EditorFormatConfigurationHTML, maxLength);
     }
 
     if (focusObserver) {

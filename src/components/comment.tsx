@@ -7,7 +7,7 @@ import {Image, Pressable, TouchableOpacity, View} from "react-native";
 import {getCommentMenuItems, getCommentMenuState} from "./comment-menu";
 import {CommentNotices} from "./comment-notices";
 import {CommentUserInfo, getCommentUserInfoHTML} from "./comment-user-info";
-import {State, useHookstate, useHookstateEffect} from "@hookstate/core";
+import {State, useHookstate} from "@hookstate/core";
 import {CommentDisplayDate} from "./comment-dispay-date";
 import {CommentBottom} from "./comment-bottom";
 import {
@@ -27,6 +27,7 @@ export interface FastCommentsCommentWithState {
     comment: State<RNComment>
     config: FastCommentsRNConfig
     imageAssets: ImageAssetConfig
+    setRepliesHidden: (comment: State<RNComment>, hidden: boolean) => void
     translations: Record<string, string>
     state: State<FastCommentsState>
     styles: IFastCommentsStyles,
