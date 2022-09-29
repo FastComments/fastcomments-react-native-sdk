@@ -8,9 +8,8 @@ import {
     TextInputSubmitEditingEventData,
     TextStyle
 } from "react-native";
-import {MutableRefObject, useRef, useState} from "react";
+import {MutableRefObject, useEffect, useRef, useState} from "react";
 import {EditorNodeTextType, EditorNodeType} from "./node-types";
-import {useHookstateEffect} from "@hookstate/core";
 
 export interface EditorNodeTextProps extends EditorNodeProps {
     textStyle?: TextStyle
@@ -18,16 +17,12 @@ export interface EditorNodeTextProps extends EditorNodeProps {
 }
 
 export function EditorNodeText(props: EditorNodeTextProps) {
-    const {node, onBlur, onDelete, onTryNewline, textStyle, isMultiLine} = props;
-    const [value, setValue] = useState(node.content.get());
+    const {node, onChangeContent, onBlur, onDelete, onTryNewline, textStyle, isMultiLine} = props;
+    // const [value, setValue] = useState(node.content);
     const [selection, setSelection] = useState<{
         start: number;
         end: number;
     }>();
-
-    // useHookstateEffect(() => {
-    //     // TODO use onContentSizeChange
-    // }, [node.content]);
 
     const [ignoreNextBlur, setIgnoreNextBlur] = useState(false);
 
@@ -38,17 +33,17 @@ export function EditorNodeText(props: EditorNodeTextProps) {
         onBlur && onBlur();
     }
 
+    const valueRef = useRef(node.content);
     const ref = useRef<TextInput>();
-    console.log('RE-RENDER', node.id.get());
-    // const [lastLastFocusTime, setLastLastFocusTime] = useState(node.lastFocusTime.get({}));
-    useHookstateEffect(() => {
+    // console.log('RE-RENDER', node.id, node.lastFocusTime);
+    useEffect(() => {
         let timeout: number;
-        if (node.isFocused.get()) {
-            const lastFocusTime = node.lastFocusTime.get();
+        if (node.isFocused) {
+            const lastFocusTime = node.lastFocusTime;
             // if (lastFocusTime === lastLastFocusTime) {
             //     return;
             // }
-            console.log('Focusing node (A)', node.id.get(), lastFocusTime);
+            console.log('Focusing node (A)', node.id, lastFocusTime);
             setIgnoreNextBlur(true);
             // @ts-ignore
             timeout = setTimeout(() => {
@@ -77,7 +72,11 @@ export function EditorNodeText(props: EditorNodeTextProps) {
         return () => {
             timeout && clearTimeout(timeout)
         };
-    }, [node.lastFocusTime]);
+    }, [node.isFocused]);
+
+    useEffect(() => {
+        valueRef.current = node.content;
+    }, [node.content]);
 
     const handleKeyUp = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
         switch (e.nativeEvent.key) {
@@ -87,7 +86,7 @@ export function EditorNodeText(props: EditorNodeTextProps) {
                 }
                 break;
             case 'Backspace':
-                if ((!selection?.start) || node.deleteOnBackspace.get()) {
+                if ((!selection?.start) || node.deleteOnBackspace) {
                     try {
                         /*
                             TODO why is delete before newline triggering delete when only one char left but not other scenarios? Example
@@ -119,12 +118,13 @@ export function EditorNodeText(props: EditorNodeTextProps) {
     }
 
     return <TextInput
-        value={value}
+        value={valueRef.current}
         onChangeText={(newValue: string) => {
             // update ui value right away (why is this faster than defaultValue???
-            setValue(newValue);
+            // setValue(newValue);
+            valueRef.current = newValue;
             // timeout here helps fix UI reflow lag
-            setTimeout(() => node && node.content && node.content.set(newValue), 0)
+            onChangeContent!(newValue);
         }
         }
         onSelectionChange={onSelectionChange}
@@ -134,7 +134,7 @@ export function EditorNodeText(props: EditorNodeTextProps) {
         onSubmitEditing={onSubmit}
         ref={ref as MutableRefObject<TextInput>}
         returnKeyType={isMultiLine ? 'default' : 'send'}
-        style={[StylesByNodeType[node.type.get()], textStyle]}
+        style={[StylesByNodeType[node.type], textStyle]}
     />;
 }
 

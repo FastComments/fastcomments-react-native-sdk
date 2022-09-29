@@ -1,14 +1,15 @@
 import {none, State} from "@hookstate/core";
 import {getNextNodeId} from "./node-id";
-import {EditorNodeDefinition, EditorNodeType} from "./node-types";
+import {EditorNodeNewLine, EditorNodeType, EditorNodeWithoutChildren} from "./node-types";
+import {graphToListStateWithNewlines} from "./node-navigate";
 
 export interface EditorFormatConfiguration {
     /** How many characters does an image take up? Set to zero to disable validation. **/
     imageLength?: number
     /** How many characters does an emoticon take up? Set to zero to disable validation. **/
     emoticonLength?: number
-    tokenize: (input: string) => EditorNodeDefinition[]
-    formatters: Record<EditorNodeType, (node: EditorNodeDefinition, trimToLength?: number) => string>
+    tokenize: (input: string) => (EditorNodeNewLine)[]
+    formatters: Record<EditorNodeType, (node: EditorNodeNewLine | EditorNodeWithoutChildren, trimToLength?: number) => string>
 }
 
 export interface SupportedNodeDefinition {
@@ -21,7 +22,7 @@ export interface SupportedNodeDefinition {
 
 export type SupportedNodesTokenizerConfig = Record<string, SupportedNodeDefinition>;
 
-export function stringToNodes(formatConfig: EditorFormatConfiguration, input: string): EditorNodeDefinition[] {
+export function stringToNodes(formatConfig: EditorFormatConfiguration, input: string): EditorNodeNewLine[] {
     return formatConfig.tokenize(input);
 }
 
@@ -35,36 +36,24 @@ export function getNodeLength(type: EditorNodeType, content: string, config: Pic
     return content.length;
 }
 
-export function deleteNodeState(nodes: State<EditorNodeDefinition[]>, id: number) {
+export function deleteNodeState(nodes: State<EditorNodeNewLine[]>, id: number) {
     const index = nodes.findIndex((searchingNode) => searchingNode.id.get() === id);
     console.log('Removing (index, id)', index, id);
     nodes[index].set(none);
     console.log('Done removing (index, id)', index, id);
 }
 
-export function doNodesHaveContent(nodes: State<EditorNodeDefinition[]>) {
-    for (const node of nodes) {
-        const rawNode = node.get();
-        if (!rawNode || rawNode === none) {
-            continue;
-        }
-        if (rawNode.content) {
-            return true;
-        }
-    }
-    return false;
-}
-
 /**
  * This function is not purely functional for performance reasons. That's why it takes a State<T>.
  * Note: length is based on the content the user sees, not the resulting representation. You should handle this validation server-side.
  */
-export function nodesToString(nodes: State<EditorNodeDefinition[]> | null, formatConfig: Pick<EditorFormatConfiguration, 'formatters' | 'imageLength' | 'emoticonLength'>, maxLength?: number | null): string {
+export function graphToString(graph: State<EditorNodeNewLine[]> | null, formatConfig: Pick<EditorFormatConfiguration, 'formatters' | 'imageLength' | 'emoticonLength'>, maxLength?: number | null): string {
     let content = '';
-    if (!nodes) {
+    if (!graph) {
         return content;
     }
     let length = 0;
+    const nodes = graphToListStateWithNewlines(graph);
     for (const node of nodes) {
         const rawNode = node.get();
         if (!rawNode || rawNode === none) {
@@ -126,7 +115,7 @@ export function nodesToString(nodes: State<EditorNodeDefinition[]> | null, forma
  * This function is not purely functional for performance reasons. That's why it takes a State<T>.
  * Note: length is based on the content the user sees, not the resulting representation. You should handle this validation server-side.
  */
-export function enforceMaxLength(nodes: State<EditorNodeDefinition[]>, formatConfig: Pick<EditorFormatConfiguration, 'formatters' | 'imageLength' | 'emoticonLength'>, maxLength?: number | null): boolean {
+export function enforceMaxLength(nodes: State<EditorNodeNewLine[]>, formatConfig: Pick<EditorFormatConfiguration, 'formatters' | 'imageLength' | 'emoticonLength'>, maxLength?: number | null): boolean {
     let length = 0;
     let isEmpty = true;
     for (const node of nodes) {
@@ -187,7 +176,7 @@ function isMention(type: EditorNodeType, text: string) {
 
 export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTokenizerConfig) {
     console.log('calling defaultTokenizer', input);
-    const result: EditorNodeDefinition[] = [];
+    const result: EditorNodeNewLine[] = [];
     let buffer = '';
 
     let inNode = null;
@@ -263,7 +252,7 @@ export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTo
     return result;
 }
 
-export function toTextTrimmed(node: Pick<EditorNodeDefinition, 'content'>, startToken?: string | null, endToken?: string | null, trimToLength?: number) {
+export function toTextTrimmed(node: Pick<EditorNodeNewLine, 'content'>, startToken?: string | null, endToken?: string | null, trimToLength?: number) {
     const result = trimToLength ? node.content.substr(0, trimToLength) : node.content;
     if (!startToken && !endToken) {
         return result;

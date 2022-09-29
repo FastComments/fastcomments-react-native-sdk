@@ -1,13 +1,13 @@
 import {ImageStyle, TouchableOpacity, View, ViewStyle} from "react-native";
 import {ReactNode} from "react";
 import {State} from "@hookstate/core";
-import {EditorNodeDefinition} from "./node-types";
+import {EditorNodeWithoutChildren} from "./node-types";
 
 export interface EmoticonBarConfig {
     // a list of images, and toolbar buttons (in tuple array to save a few bytes per entry vs having entire object)
     emoticons?: [string, ReactNode][]
-    addEmoticon?: (currentNode: State<EditorNodeDefinition>, src: string) => void
-    getCurrentNode?: () => State<EditorNodeDefinition>
+    addEmoticon?: (currentNode: State<EditorNodeWithoutChildren>, src: string) => void
+    getCurrentNode?: () => State<EditorNodeWithoutChildren>
 }
 
 export interface EmoticonBarStyles {

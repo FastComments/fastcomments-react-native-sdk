@@ -18,12 +18,12 @@ export enum EditorNodeTextType {
 }
 
 export const EditorNodeImageTypes = [EditorNodeType.EMOTICON, EditorNodeType.IMAGE];
-export const EditorNodeTextTypes = [
-    EditorNodeType.TEXT,
-    EditorNodeType.TEXT_BOLD,
-    EditorNodeType.TEXT_ITALIC,
-    EditorNodeType.TEXT_STRIKETHROUGH,
-    EditorNodeType.TEXT_UNDERLINE,
+export const EditorNodeTextTypes: EditorNodeTextType[] = [
+    EditorNodeTextType.TEXT,
+    EditorNodeTextType.TEXT_BOLD,
+    EditorNodeTextType.TEXT_ITALIC,
+    EditorNodeTextType.TEXT_STRIKETHROUGH,
+    EditorNodeTextType.TEXT_UNDERLINE,
 ];
 
 export const EditorNodeNames = {
@@ -37,7 +37,7 @@ export const EditorNodeNames = {
     [EditorNodeType.TEXT_UNDERLINE]: 'TEXT_UNDERLINE',
 }
 
-export interface EditorNodeDefinition {
+export interface EditorNodeWithoutChildren {
     id: number
     content: string
     type: EditorNodeType
@@ -45,4 +45,12 @@ export interface EditorNodeDefinition {
     lastFocusTime?: number
     /** For some text nodes, like those that show @mentions, you want to delete in one backspace. **/
     deleteOnBackspace?: boolean
+}
+
+export interface EditorNodeNewLine {
+    id: number
+    type: EditorNodeType.NEWLINE
+    /** We only support one level of nesting of children (for performance/complexity reasons).
+     * Nobody wants to use an editor on mobile that complicated anyway. **/
+    children?: EditorNodeWithoutChildren[]
 }

@@ -1,21 +1,35 @@
-import {EditorNodeDefinition} from "./node-types";
+import {EditorNodeNewLine, EditorNodeType, EditorNodeWithoutChildren} from "./node-types";
 
-export function insertAfter(nodes: EditorNodeDefinition[], afterId: number, node: EditorNodeDefinition) {
-    let currentIndex = nodes.findIndex((searchingNode) => searchingNode.id === afterId);
-    nodes.splice(currentIndex + 1, 0, node);
+export function insertAfter(nodes: EditorNodeNewLine[], afterId: number, node: EditorNodeNewLine | EditorNodeWithoutChildren) {
+    if (node.type === EditorNodeType.NEWLINE) {
+        let currentIndex = nodes.findIndex((searchingNode) => searchingNode.id === afterId);
+        // @ts-ignore Why is the compiler complaining? node literally cannot be a EditorNodeWithoutChildren in this branch.
+        nodes.splice(currentIndex + 1, 0, node);
+    } else {
+        // check children
+        for (const node of nodes) {
+            if (node.children) {
+                let currentIndex = node.children.findIndex((searchingNode) => searchingNode.id === afterId);
+                // @ts-ignore Why is the compiler complaining? node literally cannot be a EditorNodeNewLine in this branch.
+                node.children.splice(currentIndex + 1, 0, node);
+            }
+        }
+    }
 }
 
-export function insertBefore(nodes: EditorNodeDefinition[], beforeId: number, node: EditorNodeDefinition) {
-    let currentIndex = nodes.findIndex((searchingNode) => searchingNode.id === beforeId);
-    nodes.splice(Math.max(currentIndex - 1, 0), 0, node);
-}
-
-export function insertChainAfter(nodes: EditorNodeDefinition[], afterId: number, newNodes: EditorNodeDefinition[]) {
-    let currentIndex = nodes.findIndex((searchingNode) => searchingNode.id === afterId);
-    nodes.splice(currentIndex + 1, 0, ...newNodes);
-}
-
-export function insertChainBefore(nodes: EditorNodeDefinition[], beforeId: number, newNodes: EditorNodeDefinition[]) {
-    let currentIndex = nodes.findIndex((searchingNode) => searchingNode.id === beforeId);
-    nodes.splice(currentIndex - 1, 0, ...newNodes);
+export function insertBefore(nodes: EditorNodeNewLine[], beforeId: number, node: EditorNodeNewLine) {
+    if (node.type === EditorNodeType.NEWLINE) {
+        let currentIndex = nodes.findIndex((searchingNode) => searchingNode.id === beforeId);
+        // @ts-ignore Why is the compiler complaining? node literally cannot be a EditorNodeWithoutChildren in this branch.
+        nodes.splice(Math.max(currentIndex - 1, 0), 0, node);
+    } else {
+        // check children
+        for (const node of nodes) {
+            if (node.children) {
+                let currentIndex = node.children.findIndex((searchingNode) => searchingNode.id === beforeId);
+                // @ts-ignore Why is the compiler complaining? node literally cannot be a EditorNodeNewLine in this branch.
+                node.children.splice(Math.max(currentIndex - 1, 0), 0, node);
+            }
+        }
+    }
 }

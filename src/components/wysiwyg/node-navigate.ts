@@ -1,40 +1,134 @@
-import {State} from "@hookstate/core";
-import {EditorNodeDefinition} from "./node-types";
+import {none, State} from "@hookstate/core";
+import {EditorNodeNewLine, EditorNodeWithoutChildren} from "./node-types";
 
 // We used to use a doubly linked list but it was a huge pain.
 
-export function getStatePrev(nodes: State<EditorNodeDefinition[]>, id: number) {
-    const index = nodes.findIndex((searchingNode) => searchingNode.id.get() === id);
+export function graphToListStateWithNewlines(nodes: State<EditorNodeNewLine[]>, includeNewlines?: boolean): (State<EditorNodeNewLine> | State<EditorNodeWithoutChildren>)[] {
+    const result: (State<EditorNodeNewLine> | State<EditorNodeWithoutChildren>)[] = [];
+    for (const node of nodes) {
+        if (includeNewlines) {
+            result.push(node);
+        }
+        if (node.children) {
+            (node.children as State<EditorNodeWithoutChildren[]>).forEach(function (child) {
+                result.push(child);
+            });
+        }
+    }
+    return result;
+}
+
+export function graphToListStateWithoutNewlines(nodes: State<EditorNodeNewLine[]>): State<EditorNodeWithoutChildren>[] {
+    const result: State<EditorNodeWithoutChildren>[] = [];
+    for (const node of nodes) {
+        if (node.children) {
+            (node.children as State<EditorNodeWithoutChildren[]>).forEach(function (child) {
+                result.push(child);
+            });
+        }
+    }
+    return result;
+}
+
+export function graphToListWithNewlines(nodes: EditorNodeNewLine[]): (EditorNodeNewLine | EditorNodeWithoutChildren)[] {
+    const result: (EditorNodeNewLine | EditorNodeWithoutChildren)[] = [];
+    for (const node of nodes) {
+        result.push(node);
+        if (node.children) {
+            (node.children as EditorNodeWithoutChildren[]).forEach(function (child) {
+                result.push(child);
+            });
+        }
+    }
+    return result;
+}
+
+// just easier type system wise if this is its own thing
+export function graphToListWithoutNewlines(nodes: EditorNodeNewLine[]): EditorNodeWithoutChildren[] {
+    const result: (EditorNodeNewLine | EditorNodeWithoutChildren)[] = [];
+    for (const node of nodes) {
+        if (node.children) {
+            (node.children as EditorNodeWithoutChildren[]).forEach(function (child) {
+                result.push(child);
+            });
+        }
+    }
+    return result as EditorNodeWithoutChildren[];
+}
+
+export function getStatePrev(nodes: State<EditorNodeNewLine[]>, id: number): State<EditorNodeWithoutChildren> | null {
+    const list = graphToListStateWithNewlines(nodes, false);
+    const index = list.findIndex((searchingNode) => searchingNode.id.get() === id);
     // without this check - weird behavior in delete flow
     if (index - 1 < 0) {
         return null;
     }
-    return nodes[index - 1];
+    return list[index - 1] as State<EditorNodeWithoutChildren>;
 }
 
-export function getStateNext(nodes: State<EditorNodeDefinition[]>, id: number) {
-    const index = nodes.findIndex((searchingNode) => searchingNode.id.get() === id);
+export function getStateNext(nodes: State<EditorNodeNewLine[]>, id: number): State<EditorNodeWithoutChildren> | null {
+    const list = graphToListStateWithNewlines(nodes, false);
+    const index = list.findIndex((searchingNode) => searchingNode.id.get() === id);
     // without this check - weird behavior in delete flow
-    if (index + 1 > nodes.length - 1) {
+    if (index + 1 > list.length - 1) {
         return null;
     }
-    return nodes[index + 1];
+    return list[index + 1] as State<EditorNodeWithoutChildren>;
 }
 
-export function getNext(nodes: EditorNodeDefinition[], id: number) {
-    const index = nodes.findIndex((searchingNode) => searchingNode.id === id);
+// we should always have a node (at least a text node) so this should never return null! otherwise is a bug.
+export function getStateLast(nodes: State<EditorNodeNewLine[]>): State<EditorNodeWithoutChildren> {
+    let newlineCount = nodes.length;
+    while (newlineCount--) {
+        const line = nodes[newlineCount];
+        if (line && line !== none && line.children && line.children!.get()!.length > 0) {
+            // @ts-ignore fuck typescript
+            return line.children[line.children.length - 1];
+        }
+    }
+    throw new Error('getStateLast could not find a visible node other than a newline! This should not happen.');
+}
+
+// we should always have a node (at least a text node) so this should never return null! otherwise is a bug.
+export function getLast(nodes: EditorNodeNewLine[]): EditorNodeWithoutChildren {
+    let newlineCount = nodes.length;
+    while (newlineCount--) {
+        const line = nodes[newlineCount];
+        if (line && line !== none && line.children && line.children!.length > 0) {
+            // @ts-ignore fuck typescript
+            return line.children[line.children.length - 1];
+        }
+    }
+    throw new Error('getLast could not find a visible node other than a newline! This should not happen.');
+}
+
+export function getNext(nodes: EditorNodeNewLine[], id: number): EditorNodeWithoutChildren | null {
+    const list = graphToListWithoutNewlines(nodes);
+    const index = list.findIndex((searchingNode) => searchingNode.id === id);
     // without this check - weird behavior in delete flow
-    if (index + 1 > nodes.length - 1) {
+    if (index + 1 > list.length - 1) {
         return null;
     }
-    return nodes[index + 1];
+    return list[index + 1];
 }
 
-export function getPrev(nodes: EditorNodeDefinition[], id: number) {
-    const index = nodes.findIndex((searchingNode) => searchingNode.id === id);
+export function getPrev(nodes: EditorNodeNewLine[], id: number): EditorNodeWithoutChildren | null {
+    const list = graphToListWithoutNewlines(nodes);
+    const index = list.findIndex((searchingNode) => searchingNode.id === id);
     // without this check - weird behavior in delete flow
     if (index - 1 < 0) {
         return null;
     }
-    return nodes[index - 1];
+    return list[index - 1];
+}
+
+// TODO this n-time lookup is temporary, however it is generally fast enough since we have less than a handful of nodes in most cases.
+export function getStateById(nodes: State<EditorNodeNewLine[]>, id: number): State<EditorNodeWithoutChildren> | null | undefined {
+    const list = graphToListStateWithoutNewlines(nodes);
+    const stealth = {stealth: true, noproxy: true}; // OPTIMIZATION
+    return list.find((node) => node.id.get(stealth) === id);
+}
+
+export function getStateByIdFromMap(nodes: Record<string, State<EditorNodeWithoutChildren>>, id: number) {
+    return nodes[id];
 }

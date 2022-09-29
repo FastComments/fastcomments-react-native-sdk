@@ -1,22 +1,29 @@
-import {createBoldNode, createEmoticonNode, createImageNode, createTextNode} from "../editor-nodes";
+import {createBoldNode, createEmoticonNode, createImageNode, createTextNode} from "../node-create";
 import {focusNode} from "../node-focus";
 import {deleteNodeRetainFocus} from "../node-delete";
-import {EditorNodeDefinition} from "../node-types";
+import {EditorNodeNewLine} from "../node-types";
 import {createNewlineNode} from "../node-create";
 
 describe('node-delete', () => {
 
     it('should merge two text nodes when deleting an empty one before a node with content, resulting in one node', () => {
-        const nodes: EditorNodeDefinition[] = [
-            createTextNode('@some-user-name'),
-            createTextNode('')
+        const firstNode = createTextNode('@some-user-name');
+        const lastNode = createTextNode('');
+        const nodes: EditorNodeNewLine[] = [
+            createNewlineNode([firstNode]),
+            createNewlineNode([lastNode])
         ]
-        focusNode(nodes[1]);
-        const toDelete = nodes[1];
-        const expectedResult: EditorNodeDefinition[] = [
+        focusNode(lastNode);
+        const toDelete = lastNode;
+        const expectedResult: EditorNodeNewLine[] = [
             {
                 ...nodes[1],
-                content: nodes[0].content
+                children: [
+                    {
+                        ...lastNode,
+                        content: firstNode.content
+                    }
+                ]
             }
         ];
         deleteNodeRetainFocus(nodes, toDelete);
@@ -24,20 +31,24 @@ describe('node-delete', () => {
     });
 
     it('should clear all nodes between two text nodes when deleting a text node, merging the starting and ending text nodes', () => {
+        const firstNode = createTextNode('Text before image');
         const lastNode = createTextNode('');
-        const nodes: EditorNodeDefinition[] = [
-            createTextNode('Text before image'),
-            createNewlineNode(),
-            createImageNode('some-image-src'),
-            createNewlineNode(),
-            lastNode
+        const nodes: EditorNodeNewLine[] = [
+            createNewlineNode([firstNode]),
+            createNewlineNode([createImageNode('some-image-src')]),
+            createNewlineNode([lastNode]),
         ]
         focusNode(lastNode);
         const toDelete = lastNode;
-        const expectedResult: EditorNodeDefinition[] = [
+        const expectedResult: EditorNodeNewLine[] = [
             {
-                ...lastNode,
-                content: nodes[0].content
+                ...nodes[2],
+                children: [
+                    {
+                        ...lastNode,
+                        content: firstNode.content
+                    }
+                ]
             }
         ];
         deleteNodeRetainFocus(nodes, toDelete);
@@ -46,27 +57,27 @@ describe('node-delete', () => {
 
     it('should clear all nodes between two text nodes when deleting a text node, merging the starting and ending text nodes (multiple images/text)', () => {
         const lastNode = createTextNode('');
-        const nodes: EditorNodeDefinition[] = [
-            createTextNode('text-0'),
-            createNewlineNode(),
-            createImageNode('some-image-src-0'),
-            createNewlineNode(),
-            createTextNode('text-1'),
-            createNewlineNode(),
-            createImageNode('some-image-src-1'),
-            createNewlineNode(),
-            lastNode
+        const textNodeBeforeImage = createTextNode('text-1');
+        const nodes: EditorNodeNewLine[] = [
+            createNewlineNode([createTextNode('text-0')]),
+            createNewlineNode([createImageNode('some-image-src-0')]),
+            createNewlineNode([textNodeBeforeImage]),
+            createNewlineNode([createImageNode('some-image-src-1')]),
+            createNewlineNode([lastNode]),
         ]
         focusNode(lastNode);
         const toDelete = lastNode;
-        const expectedResult: EditorNodeDefinition[] = [
+        const expectedResult: EditorNodeNewLine[] = [
             nodes[0],
             nodes[1],
-            nodes[2],
-            nodes[3],
             {
-                ...lastNode,
-                content: nodes[4].content
+                ...nodes[4],
+                children: [
+                    {
+                        ...lastNode,
+                        content: textNodeBeforeImage.content
+                    }
+                ]
             }
         ];
         deleteNodeRetainFocus(nodes, toDelete);
@@ -74,18 +85,26 @@ describe('node-delete', () => {
     });
 
     it('should remove an emoticon and merge surrounding text nodes', () => {
-        const nodes: EditorNodeDefinition[] = [
-            createTextNode('Text before emoticon'),
-            createEmoticonNode('some-emoticon-src'),
-            createTextNode(''),
-        ]
-        const lastNode = nodes[nodes.length - 1];
+        const textNodeBeforeEmoticon = createTextNode('Text before emoticon');
+        const emoticonNode = createEmoticonNode('some-emoticon-src');
+        const lastNode = createTextNode('');
+        const newline = createNewlineNode([
+            textNodeBeforeEmoticon,
+            emoticonNode,
+            lastNode,
+        ]);
+        const nodes: EditorNodeNewLine[] = [newline];
         focusNode(lastNode);
         const toDelete = lastNode;
-        const expectedResult: EditorNodeDefinition[] = [
+        const expectedResult: EditorNodeNewLine[] = [
             {
-                ...lastNode,
-                content: nodes[0].content
+                ...newline,
+                children: [
+                    {
+                        ...lastNode,
+                        content: textNodeBeforeEmoticon.content
+                    }
+                ]
             }
         ];
         deleteNodeRetainFocus(nodes, toDelete);
@@ -93,18 +112,25 @@ describe('node-delete', () => {
     });
 
     it('should remove a newline and merge surrounding text nodes', () => {
-        const nodes: EditorNodeDefinition[] = [
-            createTextNode('Text before newline'),
-            createNewlineNode(),
-            createTextNode(''),
+        const firstText = createTextNode('Text before newline');
+        const textAfterNewline = createTextNode('');
+        const firstTextNewline = createNewlineNode([firstText]);
+        const secondTextNewline = createNewlineNode([textAfterNewline]);
+        const nodes: EditorNodeNewLine[] = [
+            firstTextNewline,
+            secondTextNewline,
         ]
-        const lastNode = nodes[nodes.length - 1];
-        focusNode(lastNode);
-        const toDelete = lastNode;
-        const expectedResult: EditorNodeDefinition[] = [
+        focusNode(textAfterNewline);
+        const toDelete = textAfterNewline;
+        const expectedResult: EditorNodeNewLine[] = [
             {
-                ...lastNode,
-                content: nodes[0].content
+                ...secondTextNewline,
+                children: [
+                    {
+                        ...textAfterNewline,
+                        content: firstText.content
+                    }
+                ]
             }
         ];
         deleteNodeRetainFocus(nodes, toDelete);
@@ -112,42 +138,59 @@ describe('node-delete', () => {
     });
 
     it('should only remove one consecutive newline, retaining the focused text node', () => {
-        const nodes: EditorNodeDefinition[] = [
-            createTextNode('Text before newline'),
-            createNewlineNode(),
-            createNewlineNode(),
-            createTextNode(''),
+        const firstText = createTextNode('Text before newline');
+        const secondText = createTextNode('');
+        const thirdText = createTextNode('');
+        const lastText = createTextNode('');
+        const firstNewline = createNewlineNode([firstText]);
+        const secondNewline = createNewlineNode([secondText]);
+        const thirdNewline = createNewlineNode([thirdText]);
+        const lastNewline = createNewlineNode([lastText]);
+        const nodes: EditorNodeNewLine[] = [
+            firstNewline,
+            secondNewline,
+            thirdNewline,
+            lastNewline,
         ]
-        const lastNode = nodes[nodes.length - 1];
-        focusNode(lastNode);
-        const toDelete = lastNode;
-        const expectedResult: EditorNodeDefinition[] = [
-            nodes[0],
-            nodes[1],
-            lastNode
+        focusNode(lastText);
+        const toDelete = lastText;
+        const expectedResult: EditorNodeNewLine[] = [
+            firstNewline,
+            secondNewline,
+            lastNewline,
         ];
         deleteNodeRetainFocus(nodes, toDelete);
         expect(nodes).toEqual(expectedResult);
     });
 
     it('should retain the type of the source node on merging (backspacing BOLD into TEXT)', () => {
-        const nodes: EditorNodeDefinition[] = [
-            createBoldNode('test-0'),
-            createTextNode('test-1'),
-            createBoldNode('')
-        ]
-        const lastNode = nodes[2];
-        focusNode(lastNode);
-        const toDelete = lastNode;
-        const expectedResult: EditorNodeDefinition[] = [
-            nodes[0],
+        const boldNode = createBoldNode('test-0');
+        const textNode = createTextNode('test-1');
+        const lastEmptyBoldNode = createBoldNode('');
+        const newline = createNewlineNode([
+            boldNode,
+            textNode,
+            lastEmptyBoldNode
+        ])
+        const nodes: EditorNodeNewLine[] = [newline];
+        focusNode(lastEmptyBoldNode);
+        const toDelete = lastEmptyBoldNode;
+        const expectedResult: EditorNodeNewLine[] = [
             {
-                // we expect the last node to remain
-                ...nodes[2],
-                // with the content of the node before it
-                content: nodes[1].content,
-                // and with the type of node before it, since it's a type of text node
-                type: nodes[1].type
+                // we expect to have the same container
+                ...newline,
+                children: [
+                    // we expect the first node to remain
+                    boldNode,
+                    {
+                        // we will retain the last node and merge it
+                        ...lastEmptyBoldNode,
+                        // with the content of the node before it
+                        content: textNode.content,
+                        // and with the type of node before it, since it's a type of text node
+                        type: textNode.type
+                    }
+                ]
             }
         ];
         deleteNodeRetainFocus(nodes, toDelete);

@@ -2,24 +2,24 @@ import {StyleSheet, TouchableOpacity, View} from "react-native";
 import {ReactNode} from "react";
 import {State} from "@hookstate/core";
 import {FastCommentsFromDiskAsset} from "../../types";
-import {EditorNodeDefinition} from "./node-types";
+import {EditorNodeWithoutChildren} from "./node-types";
 
 export interface EditorToolbarConfig {
-    selectImage?: (currentNode: State<EditorNodeDefinition>) => void
+    selectImage?: (currentNode: State<EditorNodeWithoutChildren>) => void
     pickImage?: () => Promise<FastCommentsFromDiskAsset | string>
-    uploadImage?: (currentNode: State<EditorNodeDefinition>, asset: FastCommentsFromDiskAsset) => Promise<string>
+    uploadImage?: (currentNode: State<EditorNodeWithoutChildren>, asset: FastCommentsFromDiskAsset) => Promise<string>
     imageButton?: ReactNode
-    toggleBold?: (currentNode: State<EditorNodeDefinition>) => void
+    toggleBold?: (currentNode: State<EditorNodeWithoutChildren>) => void
     boldButton?: ReactNode
-    toggleItalic?: (currentNode: State<EditorNodeDefinition>) => void
+    toggleItalic?: (currentNode: State<EditorNodeWithoutChildren>) => void
     italicButton?: ReactNode
-    toggleUnderline?: (currentNode: State<EditorNodeDefinition>) => void
+    toggleUnderline?: (currentNode: State<EditorNodeWithoutChildren>) => void
     underlineButton?: ReactNode
-    toggleStrikethrough?: (currentNode: State<EditorNodeDefinition>) => void
+    toggleStrikethrough?: (currentNode: State<EditorNodeWithoutChildren>) => void
     strikethroughButton?: ReactNode
-    doNewline?: (currentNode: State<EditorNodeDefinition>) => void
+    doNewline?: (currentNode: State<EditorNodeWithoutChildren>) => void
     newlineButton?: ReactNode
-    getCurrentNode?: () => State<EditorNodeDefinition>
+    getCurrentNode?: () => State<EditorNodeWithoutChildren>
 }
 
 export interface EditorToolbarProps {

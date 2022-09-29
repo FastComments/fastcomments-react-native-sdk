@@ -1,7 +1,7 @@
 import {getNextNodeId} from "./node-id";
-import {EditorNodeDefinition, EditorNodeType} from "./node-types";
+import {EditorNodeNewLine, EditorNodeType, EditorNodeWithoutChildren} from "./node-types";
 
-export function createTextNode(startingValue: string): EditorNodeDefinition {
+export function createTextNode(startingValue: string): EditorNodeWithoutChildren {
     return {
         id: getNextNodeId(),
         content: startingValue,
@@ -10,7 +10,7 @@ export function createTextNode(startingValue: string): EditorNodeDefinition {
     }
 }
 
-export function createBoldNode(startingValue: string): EditorNodeDefinition {
+export function createBoldNode(startingValue: string): EditorNodeWithoutChildren {
     return {
         id: getNextNodeId(),
         content: startingValue,
@@ -19,7 +19,7 @@ export function createBoldNode(startingValue: string): EditorNodeDefinition {
     }
 }
 
-export function createEmoticonNode(startingValue: string): EditorNodeDefinition {
+export function createEmoticonNode(startingValue: string): EditorNodeWithoutChildren {
     return {
         id: getNextNodeId(),
         content: startingValue,
@@ -28,7 +28,7 @@ export function createEmoticonNode(startingValue: string): EditorNodeDefinition 
     }
 }
 
-export function createImageNode(startingValue: string): EditorNodeDefinition {
+export function createImageNode(startingValue: string): EditorNodeWithoutChildren {
     return {
         id: getNextNodeId(),
         content: startingValue,
@@ -37,7 +37,7 @@ export function createImageNode(startingValue: string): EditorNodeDefinition {
     }
 }
 
-export function createItalicNode(startingValue: string): EditorNodeDefinition {
+export function createItalicNode(startingValue: string): EditorNodeWithoutChildren {
     return {
         id: getNextNodeId(),
         content: startingValue,
@@ -46,16 +46,15 @@ export function createItalicNode(startingValue: string): EditorNodeDefinition {
     }
 }
 
-export function createNewlineNode(): EditorNodeDefinition {
+export function createNewlineNode(children?: EditorNodeWithoutChildren[]): EditorNodeNewLine {
     return {
         id: getNextNodeId(),
-        content: '',
         type: EditorNodeType.NEWLINE,
-        isFocused: false
+        children
     }
 }
 
-export function createStrikethroughNode(startingValue: string): EditorNodeDefinition {
+export function createStrikethroughNode(startingValue: string): EditorNodeWithoutChildren {
     return {
         id: getNextNodeId(),
         content: startingValue,
@@ -64,7 +63,7 @@ export function createStrikethroughNode(startingValue: string): EditorNodeDefini
     }
 }
 
-export function createUnderlineNode(startingValue: string): EditorNodeDefinition {
+export function createUnderlineNode(startingValue: string): EditorNodeWithoutChildren {
     return {
         id: getNextNodeId(),
         content: startingValue,

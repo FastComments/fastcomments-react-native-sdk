@@ -1,28 +1,30 @@
 import {Pressable, StyleSheet, TextStyle, View, ViewStyle} from "react-native";
-import {EditorNode} from "./editor-node";
-import {none, State, useHookstate, useHookstateEffect} from "@hookstate/core";
-import {ReactNode, useRef} from "react";
+import {EditorNode, EditorNodeProps} from "./editor-node";
+import {State, useHookstate, useHookstateEffect} from "@hookstate/core";
+import React, {ReactNode, useRef} from "react";
 import {EditorToolbarConfig} from "./editor-toolbar";
 import {deleteNodeState} from "./editor-node-transform";
 import {createBoldNode, createEmoticonNode, createStrikethroughNode, createUnderlineNode} from "./editor-nodes";
 import {EmoticonBarConfig} from "./emoticon-bar";
-import {getNext, getStateNext, getStatePrev} from "./node-navigate";
-import {insertAfter, insertChainAfter} from "./node-insert";
+import {getNext, getStateById, getStateLast, getStateNext, getStatePrev, graphToListStateWithNewlines} from "./node-navigate";
+import {insertAfter} from "./node-insert";
 import {deleteNodeRetainFocus} from "./node-delete";
 import {focusNode, focusNodeState} from "./node-focus";
 import {createImageNode, createNewlineNode, createTextNode} from "./node-create";
-import {EditorNodeDefinition, EditorNodeImageTypes, EditorNodeNames, EditorNodeType} from "./node-types";
+import {EditorNodeWithoutChildren, EditorNodeNewLine, EditorNodeImageTypes, EditorNodeNames, EditorNodeType} from "./node-types";
 
 export interface UpdateNodesObserver {
-    updateNodes?: (nodes: EditorNodeDefinition[]) => void
+    updateNodes?: (tree: EditorNodeNewLine[]) => void
 }
 
 export interface EditorProps {
-    /** This library takes an input of nodes, which can be generated from a string via editor-node-transformer. This is so the input format is flexible (markdown, html, etc). **/
-    nodes: EditorNodeDefinition[]
+    /**
+     * This library takes an input of nodes, which can be generated from a string via editor-node-transformer. This is so the input format is flexible (markdown, html, etc).
+     **/
+    graph: EditorNodeNewLine[]
     updateNodesObserver?: UpdateNodesObserver
     isMultiLine?: boolean
-    onChange: (nodes: State<EditorNodeDefinition[]>) => void
+    onChange: (nodes: State<EditorNodeNewLine[]>) => void
     placeholder?: ReactNode // so you can style it etc
     onBlur?: () => void
     onFocus?: () => void
@@ -36,74 +38,110 @@ export interface EditorProps {
     emoticonBarConfig?: EmoticonBarConfig
 }
 
-interface EditorRow {
-    key: string
-    items: State<EditorNodeDefinition>[]
-}
+const EditorNodeMemo = React.memo<EditorNodeProps>(
+    props => EditorNode(props),
+    (prevProps, nextProps) => {
+        if (prevProps.node.id !== nextProps.node.id) {
+            // console.log('node changed - id')
+            return false;
+        }
+        if (prevProps.node.content !== nextProps.node.content) {
+            // console.log('node changed - content', prevProps.node.content, '->', nextProps.node.content)
+            return false;
+        }
+        if (prevProps.node.isFocused !== nextProps.node.isFocused) {
+            // console.log('node changed - isFocused')
+            return false;
+        }
+        if (prevProps.node.lastFocusTime !== nextProps.node.lastFocusTime) {
+            // console.log('node changed - lastFocusTime')
+            return false;
+        }
+        if (prevProps.node.type !== nextProps.node.type) {
+            // console.log('node changed - type')
+            return false;
+        }
+
+        return true;
+    }
+);
 
 export function Editor(props: EditorProps) {
     // TODO wysiwyg gif button
-    const nodes = useHookstate<EditorNodeDefinition[]>(props.nodes);
-    const editorRowsRef = useRef<EditorRow[]>([]);
+    const graph = useHookstate<EditorNodeNewLine[]>(props.graph);
+    const nodeMapRef = useRef<Record<string, State<EditorNodeNewLine> | State<EditorNodeWithoutChildren>>>({});
 
     if (props.updateNodesObserver) {
         props.updateNodesObserver.updateNodes = (newNodes) => {
             console.log('setting new nodes to', newNodes);
-            nodes.set(newNodes)
+            graph.set(newNodes)
         };
     }
 
     useHookstateEffect(() => {
-        props.onChange(nodes);
+        props.onChange(graph);
         // TODO uncomment in production
         console.log('===== BEGIN EDITOR NODE STRUCTURE =====');
-        for (const node of nodes) {
+        const nodeMap: Record<string, State<EditorNodeNewLine> | State<EditorNodeWithoutChildren>> = {};
+        for (const node of graph) {
             console.log(EditorNodeNames[node.type.get()], `(${node.id.get()})`);
+            nodeMap[node.id.get()] = node;
+            const children = node.children;
+            if (children) {
+                // we only support one level of nesting.
+                // @ts-ignore
+                children.forEach(function (child: State<EditorNodeWithoutChildren>) {
+                    console.log('    ', EditorNodeNames[child.type.get()], `(${child.id.get()})`);
+                    nodeMap[child.id.get()] = child;
+                });
+            }
         }
         console.log('===== END EDITOR NODE STRUCTURE =====');
-        let row: EditorRow = {key: '', items: []};
-        let editorRows: EditorRow[] = [];
-        for (const node of nodes) {
-            if (!node || node === none || node.get() === none) { // WHICH ONE IS IT GOD
-                continue;
-            }
-            if (node.type.get() === EditorNodeType.NEWLINE) {
-                if (row.items.length > 0) {
-                    editorRows.push(row);
-                }
-                row = {
-                    key: node.id.get() + '',
-                    items: [] // OPTIMIZATION: we don't want to actually render the newline node. We'll do this implicitly by creating a new row container.
-                };
-                editorRows.push(row);
-                row = {
-                    key: '',
-                    items: []
-                };
-            } else {
-                row.key += node.id.get();
-                row.items.push(node);
-            }
-        }
-        if (row.items.length > 0) {
-            editorRows.push(row);
-        }
-        editorRowsRef.current = editorRows;
-    }, [nodes]);
+        nodeMapRef.current = nodeMap; // it would be cool to get rid of the map (requires node to not use React.memo and modify node.content itself)
+    }, [graph]);
+
+    // uncomment to test keyboard losing focus.
+    // useEffect(() => {
+    //     let timeout = setTimeout(() => {
+    //         nodes.set((_nodes) => {
+    //             return [
+    //                 createTextNode('123'),
+    //                 createBoldNode('abc')
+    //             ]
+    //         });
+    //         focusNodeState(nodes[1]);
+    //         timeout = setTimeout(() => {
+    //             // nodes[1].content.set(nodes[0].content.get() + nodes[1].content.get());
+    //             nodes.set((nodes) => {
+    //                 nodes.splice(0, 1);
+    //                 return nodes;
+    //             });
+    //             nodes[0].type.set(EditorNodeType.TEXT);
+    //             focusNodeState(nodes[0]);
+    //         }, 7000);
+    //     }, 3000);
+    //     return () => clearTimeout(timeout);
+    // }, []);
 
     const getCurrentNode = () => {
         // TODO OPTIMIZE: we had a ton of problems with keeping track of the last selected node with storing references to a raw js object or State<>
         //  due to hookstatejs (or maybe not using it correctly). Maybe a React expert can help us :)
         //  UPDATE: Probably way to do it is editorState = { lastNode?: Node } - this way optionals are supported via usehookstate
 
-        const hasBeenFocused = nodes.filter((node) => node.lastFocusTime);
+        const hasBeenFocused = graphToListStateWithNewlines(graph).filter((node) => 'lastFocusTime' in node && node.lastFocusTime.get()) as State<EditorNodeWithoutChildren>[];
         if (hasBeenFocused.length === 0) {
-            return nodes[0]; // we ALWAYS have a root node
+            // it really feels like we are using the library wrong if we have to cast like this?
+            const children = graph[0].children as unknown as State<EditorNodeWithoutChildren>[]; // we ALWAYS have a root node
+            if (children && children.length > 0) {
+                return children[0];
+            } else {
+                throw new Error('Could not determine current node!!!'); // if this happens it's a bug.
+            }
         }
         hasBeenFocused.sort((a, b) => {
             return b.lastFocusTime.get()! - a.lastFocusTime.get()!;
         });
-        return hasBeenFocused[0] as State<EditorNodeDefinition>;
+        return hasBeenFocused[0] as State<EditorNodeWithoutChildren>;
     }
 
     if (props.emoticonBarConfig) {
@@ -119,21 +157,24 @@ export function Editor(props: EditorProps) {
                     // now add in a text node after the emoticon so we can keep typing (also so we can backspace the emoticon)
                     const newNode = createTextNode('');
                     focusNode(newNode);
-                    nodes.merge([newNode]);
+                    graph.set((graph) => {
+                        insertAfter(graph, currentNode.id.get(), newNode);
+                        return graph;
+                    });
                 } else {
-                    nodes.set((nodes) => {
+                    graph.set((graph) => {
                         // add a node after the current one
                         const newImageNode = createEmoticonNode(src);
                         currentNode.isFocused.set(false);
-                        insertAfter(nodes, currentNode.id.get(), newImageNode);
-                        if (!getNext(nodes, newImageNode.id)) {
+                        insertAfter(graph, currentNode.id.get(), newImageNode);
+                        if (!getNext(graph, newImageNode.id)) {
                             const newTextNode = createTextNode('');
                             focusNode(newTextNode);
                             // now add in a text node after the emoticon so we can keep typing (also so we can backspace the emoticon)
-                            insertAfter(nodes, newImageNode.id, newTextNode);
+                            insertAfter(graph, newImageNode.id, newTextNode);
                         }
 
-                        return nodes;
+                        return graph;
                     });
                 }
             }
@@ -145,13 +186,13 @@ export function Editor(props: EditorProps) {
             props.toolbarConfig.getCurrentNode = getCurrentNode;
         }
 
-        function toggleElementType(node: State<EditorNodeDefinition> | null, type: EditorNodeType, createFn: (startingValue: string) => EditorNodeDefinition) {
+        function toggleElementType(node: State<EditorNodeWithoutChildren> | null, type: EditorNodeType, createFn: (startingValue: string) => EditorNodeWithoutChildren) {
             if (node && node.get()) {
                 // TODO only bold selected content
                 // TODO if none selected, add new node and set it as bold
                 const nodeType = node.type.get();
                 if (nodeType !== type) {
-                    nodes.set((nodes) => {
+                    graph.set((nodes) => {
                         // add a node after this one that is bold, and focus it.
                         const newNode = createFn('');
                         focusNode(newNode);
@@ -162,10 +203,10 @@ export function Editor(props: EditorProps) {
                 } else if (nodeType === type) {
                     const rawNode = node.get();
                     if (!rawNode.content) {
-                        const prev = getStatePrev(nodes, rawNode.id);
+                        const prev = getStatePrev(graph, rawNode.id);
                         if (prev?.get()) {
                             console.log('node has no content, and has previous node. (removing, focusing)', rawNode.id, prev.id.get());
-                            deleteNodeState(nodes, rawNode.id);
+                            deleteNodeState(graph, rawNode.id);
                             // prev is now the current node.
                             select(prev);
                         }
@@ -179,17 +220,17 @@ export function Editor(props: EditorProps) {
         }
 
         if (props.toolbarConfig.boldButton && !props.toolbarConfig.toggleBold) {
-            props.toolbarConfig.toggleBold = (node: State<EditorNodeDefinition> | null) => {
+            props.toolbarConfig.toggleBold = (node: State<EditorNodeWithoutChildren> | null) => {
                 toggleElementType(node, EditorNodeType.TEXT_BOLD, createBoldNode);
             }
         }
         if (props.toolbarConfig.underlineButton && !props.toolbarConfig.toggleUnderline) {
-            props.toolbarConfig.toggleUnderline = (node: State<EditorNodeDefinition> | null) => {
+            props.toolbarConfig.toggleUnderline = (node: State<EditorNodeWithoutChildren> | null) => {
                 toggleElementType(node, EditorNodeType.TEXT_UNDERLINE, createUnderlineNode);
             }
         }
         if (props.toolbarConfig.strikethroughButton && !props.toolbarConfig.toggleStrikethrough) {
-            props.toolbarConfig.toggleStrikethrough = (node: State<EditorNodeDefinition> | null) => {
+            props.toolbarConfig.toggleStrikethrough = (node: State<EditorNodeWithoutChildren> | null) => {
                 toggleElementType(node, EditorNodeType.TEXT_STRIKETHROUGH, createStrikethroughNode);
             }
         }
@@ -198,7 +239,7 @@ export function Editor(props: EditorProps) {
                 throw new Error('Toolbar config uploadImage() must be defined if image uploads are allowed!'); // could enforce via types?
             }
             if (!props.toolbarConfig.selectImage) {
-                props.toolbarConfig.selectImage = async (node: State<EditorNodeDefinition>) => {
+                props.toolbarConfig.selectImage = async (node: State<EditorNodeWithoutChildren>) => {
                     const pickedPath = await props.toolbarConfig!.pickImage!();
                     let finalPath;
                     if (!pickedPath) {
@@ -213,57 +254,47 @@ export function Editor(props: EditorProps) {
                         return;
                     }
                     const newImageNode = createImageNode(finalPath);
-                    if (node && node.get()) {
-                        // before: root -> text node A (selected)
-                        // after: root -> text node A (not selected) -> newline node -> image -> newline node -> text node B (now selected)
-                        nodes.set((nodes) => {
-                            const newSelectedTextNode = createTextNode('');
-                            focusNode(newSelectedTextNode);
-
-                            insertChainAfter(nodes, node.id.get(), [
-                                createNewlineNode(),
-                                newImageNode,
-                                createNewlineNode(),
-                                newSelectedTextNode
-                            ]);
-
-                            return nodes;
-                        });
-                        select(nodes[nodes.length - 1]);
-                    } else {
-                        nodes.set((nodes) => {
-                            nodes.push(newImageNode);
-                            return nodes;
-                        });
+                    if (!node || !node.get()) {
+                        node = getStateLast(graph);
                     }
+
+                    // before: root -> text node A (selected)
+                    // after: root -> text node A (not selected) -> newline node -> image -> newline node -> text node B (now selected)
+                    const newSelectedTextNode = createTextNode('');
+                    const imageNewLine = createNewlineNode();
+                    imageNewLine.children = [newImageNode];
+
+                    const textNewLine = createNewlineNode();
+                    textNewLine.children = [newSelectedTextNode];
+
+                    graph.set((nodes) => {
+                        insertAfter(nodes, node.id.get(), imageNewLine);
+                        insertAfter(nodes, imageNewLine.id, textNewLine);
+                        return nodes;
+                    });
+                    focusNode(newSelectedTextNode);
                 }
             }
         }
     }
 
-    function select(node?: State<EditorNodeDefinition> | null) {
+    function select(node: State<EditorNodeWithoutChildren>) {
         try {
             props.onFocus && props.onFocus();
-            if (!node || !node.get({stealth: true})) {
-                if (nodes.length === 0) {
-                    const newNode = createTextNode('');
-                    focusNode(newNode);
-                    nodes.set([newNode]);
-                } else {
-                    select(nodes[nodes.length - 1]);
-                }
-                return;
-            } else if (EditorNodeImageTypes.includes(node.type.get())) {
+            if (EditorNodeImageTypes.includes(node.type.get())) {
                 console.log('FOCUSING IMAGE');
                 // if we're selecting an image, is there a node in front of it? then select that
-                // otherwise, we should create a node in front of the image and select it.
-                const next = getStateNext(nodes, node.id.get());
+                const next = getStateNext(graph, node.id.get());
                 if (next && next.get({stealth: true})) {
                     select(next);
                 } else {
+                    // otherwise, we should create a node in front of the image and select it.
                     const newTextNode = createTextNode('');
-                    nodes.merge([newTextNode]);
-                    select(nodes[nodes.length - 1]);
+                    graph.set((graph) => {
+                        insertAfter(graph, node.id.get(), newTextNode);
+                        return graph;
+                    })
+                    focusNode(newTextNode);
                 }
             } else {
                 console.log('FOCUSING OTHER', node.isFocused.get());
@@ -274,7 +305,7 @@ export function Editor(props: EditorProps) {
         }
     }
 
-    function deselect(node: State<EditorNodeDefinition>) {
+    function deselect(node: State<EditorNodeWithoutChildren>) {
         console.log('deselecting', node.id.get());
         if (node.isFocused.get()) {
             node.isFocused.set(false);
@@ -283,7 +314,7 @@ export function Editor(props: EditorProps) {
     }
 
     // taking a State<Node> here caused a ton of confusion, so now we just take a regular JS object.
-    function doDelete(node: State<EditorNodeDefinition>) {
+    function doDelete(node: State<EditorNodeWithoutChildren>) {
         if (!node || typeof node !== 'object') {
             console.error('Tried to delete empty node!', typeof node);
             return;
@@ -294,30 +325,28 @@ export function Editor(props: EditorProps) {
             return;
         }
 
-        nodes.set((nodes) => {
+        graph.set((nodes) => {
             deleteNodeRetainFocus(nodes, node.get({noproxy: true, stealth: true}));
             return nodes;
         });
     }
 
-    function onTryNewline(node: State<EditorNodeDefinition>) {
+    function onTryNewline(node: State<EditorNodeWithoutChildren>) {
         if (props.isMultiLine) {
             console.log('Trying to create a new line.', node.id.get());
             // add a newline node
             // add a text node
             // focus new text node
 
-            nodes.set((nodes) => {
+            graph.set((nodes) => {
                 node.isFocused.set(false); // we don't focus this node anymore
 
                 // add a node after this one that is bold, and focus it.
                 const newNewlineNode = createNewlineNode();
                 const newTextNode = createTextNode('');
+                newNewlineNode.children = [newTextNode];
                 focusNode(newTextNode);
-                insertChainAfter(nodes, node.id.get(), [
-                    newNewlineNode,
-                    newTextNode,
-                ]);
+                insertAfter(nodes, node.id.get(), newNewlineNode);
 
                 return nodes;
             });
@@ -326,24 +355,31 @@ export function Editor(props: EditorProps) {
         }
     }
 
+    function updateNodeContent(id: number, content: string) {
+        const node = getStateById(graph, id);
+        // console.log('updateNodeContent', id, node!.content.get(), '->', content);
+        node!.content.set(content);
+    }
+
     return <View style={props.style}>
-        <Pressable onPress={() => select(nodes[nodes.length - 1])} style={styles.inputArea}>
+        <Pressable onPress={() => select(getStateLast(graph))} style={styles.inputArea}>
             {props.placeholder}
-            {editorRowsRef.current.map((row) => {
-                return <View style={styles.editorRow} key={row.key}>
+            {graph.map((node) => <View style={styles.editorRow} key={node.id.get()}>
                     {/* Node can get set to "none" before the list is re-generated, so the id check is a fast way to eliminate those. */}
-                    {row.items.map((node) => node && node.id !== undefined && <EditorNode
-                        key={node.id.get()}
-                        node={node}
-                        textStyle={props.textStyle}
-                        onBlur={() => deselect(node)}
-                        onFocus={() => select(node)}
-                        onDelete={() => doDelete(node)}
-                        onTryNewline={() => onTryNewline(node)}
-                        isMultiLine={props.isMultiLine}
-                    />)}
+                    {node.children && (node.children as State<EditorNodeWithoutChildren[]>).map((node) => node && node.id !== undefined &&
+                        <EditorNodeMemo
+                            key={node.id.get()}
+                            node={node.get()}
+                            textStyle={props.textStyle}
+                            onBlur={() => deselect(getStateById(graph, node.id.get())! as State<EditorNodeWithoutChildren>)}
+                            onChangeContent={(newContent) => updateNodeContent(node.id.get(), newContent)}
+                            onFocus={() => select(getStateById(graph, node.id.get()) as State<EditorNodeWithoutChildren>)}
+                            onDelete={() => doDelete(getStateById(graph, node.id.get()) as State<EditorNodeWithoutChildren>)}
+                            onTryNewline={() => onTryNewline(getStateById(graph, node.id.get()) as State<EditorNodeWithoutChildren>)}
+                            isMultiLine={props.isMultiLine}
+                        />)}
                 </View>
-            })}
+            )}
         </Pressable>
         {props.emoticonBar && props.emoticonBarConfig && props.emoticonBar(props.emoticonBarConfig)}
         {props.toolbar && props.toolbarConfig && props.toolbar(props.toolbarConfig)}

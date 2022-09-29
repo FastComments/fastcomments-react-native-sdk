@@ -1,23 +1,18 @@
 /**
  * Which node should we focus on after delete?
  */
-import {insertAfter} from "./node-insert";
-import {createTextNode} from "./node-create";
-import {focusNode} from "./node-focus";
-import {EditorNodeDefinition, EditorNodeNames, EditorNodeTextTypes, EditorNodeType} from "./node-types";
+import {EditorNodeNames, EditorNodeNewLine, EditorNodeTextType, EditorNodeTextTypes, EditorNodeType, EditorNodeWithoutChildren} from "./node-types";
+import {graphToListWithNewlines} from "./node-navigate";
 
 interface EditorNodeMergePlan {
-    source: EditorNodeDefinition
-    target: EditorNodeDefinition
+    source: EditorNodeWithoutChildren
+    target: EditorNodeWithoutChildren
 }
 
+// We should only had to remove some nodes, and maybe merge some.
+// We shouldn't ever need to change focus or add nodes because that'd mess with the user's keyboard.
 interface EditorNodeDeletionPlan {
     idsToRemove?: number[]
-    nodeToAdd?: {
-        afterId?: number
-        node: EditorNodeDefinition // could be same as nodeToFocus
-    }
-    nodeToFocus?: EditorNodeDefinition
     merge?: EditorNodeMergePlan
 }
 
@@ -28,14 +23,17 @@ function mergeTextNodes(mergePlan: EditorNodeMergePlan) {
 }
 
 interface NodeSearchResult {
-    start?: EditorNodeDefinition
-    end?: EditorNodeDefinition
-    nodesInBetween?: EditorNodeDefinition[]
+    startContainer?: EditorNodeNewLine
+    start?: EditorNodeWithoutChildren
+    end?: EditorNodeWithoutChildren
+    endContainer?: EditorNodeNewLine
+    nodesInBetween?: (EditorNodeNewLine | EditorNodeWithoutChildren)[]
 }
 
-function searchNodesOfTypeBeforeIdInclusive(nodes: EditorNodeDefinition[], fromId: number, types: EditorNodeType[]): NodeSearchResult {
+function searchNodesOfTypeBeforeIdInclusive(graph: EditorNodeNewLine[], fromId: number, types: EditorNodeTextType[]): NodeSearchResult {
     const result: NodeSearchResult = {};
 
+    const nodes = graphToListWithNewlines(graph);
     let index = nodes.findIndex((searchingNode) => searchingNode.id === fromId);
     console.log('starting index', index, fromId);
     while (index > -1) {
@@ -45,8 +43,13 @@ function searchNodesOfTypeBeforeIdInclusive(nodes: EditorNodeDefinition[], fromI
             continue
         }
         if (result.end) {
-            if (types.includes(node.type)) {
-                result.start = node;
+            if (types.includes(node.type as number)) {
+                result.start = node as EditorNodeWithoutChildren;
+                result.startContainer = graph.find((newline) => {
+                    return newline.children && newline.children.some((child) => {
+                        return child.id === node.id
+                    });
+                });
                 break;
             } else {
                 if (!result.nodesInBetween) {
@@ -55,8 +58,13 @@ function searchNodesOfTypeBeforeIdInclusive(nodes: EditorNodeDefinition[], fromI
                     result.nodesInBetween.push(node);
                 }
             }
-        } else if (types.includes(node.type)) {
-            result.end = node;
+        } else if (types.includes(node.type as number)) {
+            result.end = node as EditorNodeWithoutChildren;
+            result.endContainer = graph.find((newline) => {
+                return newline.children && newline.children.some((child) => {
+                    return child.id === node.id
+                });
+            });
         }
         index--;
     }
@@ -72,7 +80,7 @@ function searchNodesOfTypeBeforeIdInclusive(nodes: EditorNodeDefinition[], fromI
  *
  * This assumes the node to delete is also the node in focus, since we only delete via backspace right now.
  */
-function getNodeDeletionPlan(nodes: EditorNodeDefinition[], node: EditorNodeDefinition): EditorNodeDeletionPlan {
+function getNodeDeletionPlan(graph: EditorNodeNewLine[], node: EditorNodeWithoutChildren): EditorNodeDeletionPlan {
     const plan: EditorNodeDeletionPlan = {};
 
     /**
@@ -81,43 +89,82 @@ function getNodeDeletionPlan(nodes: EditorNodeDefinition[], node: EditorNodeDefi
      * Delete everything in between, and then merge the text nodes. and remove the first one.
      *
      * We will delete all nodes between the current one and that one. So for example:
-     * TEXT (id 1)
-     * NEWLINE
-     * TEXT (id 2)
-     * NEWLINE
-     * IMAGE
-     * NEWLINE
-     * TEXT (id 3, focused)
+     * NEWLINE (1)
+     *  TEXT (2)
+     * NEWLINE (3)
+     *  TEXT (4)
+     * NEWLINE (5)
+     *  IMAGE (6)
+     * NEWLINE (7)
+     * TEXT (8, focused)
      * > User does backspace
      *
      * We should end up with:
-     * TEXT (id 1)
-     * NEWLINE
-     * TEXT (id 3)
+     * NEWLINE (1)
+     *  TEXT (2)
+     * NEWLINE (3)
+     *  TEXT (4)
+     * NEWLINE (7)
+     * TEXT (8, focused)
      *
-     * In this case we have merged nodes 2 and 3 to prevent keyboard from flashing/losing focus.
+     * In this case we have kept nodes 7 and 8 and instead deleted the newline and image before it (5, 6) to prevent keyboard from flashing/losing focus.
      *
      * In the case of emoticons:
-     * TEXT(1) EMOTICON(2) TEXT(3, empty, focused)
+     * NEWLINE (1)
+     *  TEXT(2) EMOTICON(3) TEXT(4, empty, focused)
      * > User does backspace
      *
      * We should end up with:
-     * TEXT(3)
+     * NEWLINE (1)
+     *  TEXT(4, focused)
      *
-     * In this case we have merged nodes 1 and 3 to prevent keyboard from flashing/losing focus.
+     * In this case we have merged nodes 2 and 4 to prevent keyboard from flashing/losing focus, but we deleted the emoticon the user wanted to backspace.
+     * We also kept the same newline node so the view tree does not completely re-render.
      *
      */
 
-    const searchResult = searchNodesOfTypeBeforeIdInclusive(nodes, node.id, EditorNodeTextTypes);
-    // console.log('searchResult', JSON.stringify(searchResult));
-    if (searchResult.nodesInBetween && searchResult.nodesInBetween.length > 1) { // OPTIMIZATION: length check
-        // nodeIdsInBetween is in reverse order
-        const nodeBefore = searchResult.nodesInBetween[0];
-        const nodeBeforeBefore = searchResult.nodesInBetween[1];
-        const hasConsecutiveNewlines = nodeBefore!.type === EditorNodeType.NEWLINE
-            && nodeBeforeBefore!.type === EditorNodeType.NEWLINE;
-        if (hasConsecutiveNewlines) {
-            plan.idsToRemove = [nodeBefore.id];
+    // This was all just hacked together to make all the tests pass, and more elegant solutions are available.
+    console.log('searching', JSON.stringify(graph));
+    const searchResult = searchNodesOfTypeBeforeIdInclusive(graph, node.id, EditorNodeTextTypes);
+    console.log('searchResult', JSON.stringify(searchResult));
+    if (searchResult.nodesInBetween) { // OPTIMIZATION: length check
+        if (searchResult.nodesInBetween.length > 1) {
+            // nodeIdsInBetween is in reverse order
+            const nodeBefore = searchResult.nodesInBetween[0];
+            const nodeBeforeBefore = searchResult.nodesInBetween[1];
+            const hasConsecutiveNewlines = nodeBefore!.type === EditorNodeType.NEWLINE
+                && nodeBeforeBefore!.type === EditorNodeType.NEWLINE;
+            if (hasConsecutiveNewlines) {
+                plan.idsToRemove = [nodeBefore.id];
+                return plan;
+            }
+        } else if (
+            // should merge two text nodes when deleting an empty one before a node with content, resulting in one node
+            searchResult.nodesInBetween.length === 1
+            && searchResult.start
+            && searchResult.end
+            && searchResult.startContainer
+            && searchResult.nodesInBetween[0].id === searchResult.startContainer.id
+        ) {
+            plan.idsToRemove = [searchResult.startContainer.id];
+            plan.merge = {
+                source: searchResult.start,
+                target: searchResult.end,
+            };
+            return plan;
+        } else if (
+            // should remove an emoticon and merge surrounding text nodes
+            searchResult.nodesInBetween.length === 1
+            && searchResult.nodesInBetween[0].type !== EditorNodeType.NEWLINE
+            && searchResult.start
+            && searchResult.end
+            && searchResult.startContainer
+        ) {
+            plan.idsToRemove = [searchResult.start.id, searchResult.nodesInBetween[0].id];
+            plan.merge = {
+                source: searchResult.start,
+                target: searchResult.end,
+            };
             return plan;
         }
     }
@@ -129,33 +176,44 @@ function getNodeDeletionPlan(nodes: EditorNodeDefinition[], node: EditorNodeDefi
         } else {
             plan.idsToRemove.push(searchResult.start.id);
         }
+        if (searchResult.startContainer && searchResult.startContainer.children?.length === 1) {
+            plan.idsToRemove.push(searchResult.startContainer.id);
+        }
+    }
+
+    if (searchResult.endContainer && plan.idsToRemove) {
+        plan.idsToRemove = plan.idsToRemove.filter((id) => {
+            return id !== searchResult.endContainer!.id
+        })
     }
 
     if (searchResult.end) {
         if (searchResult.start) {
-            plan.nodeToFocus = searchResult.end;
             plan.merge = {
                 source: searchResult.start,
                 target: searchResult.end,
             }
-        } else {
-            plan.nodeToFocus = searchResult.end;
-        }
-    } else {
-        const newTextNode = createTextNode('');
-        plan.nodeToFocus = newTextNode;
-        plan.nodeToAdd = {
-            node: newTextNode
         }
     }
 
     return plan;
 }
 
-export function deleteNode(nodes: EditorNodeDefinition[], id: number) {
+export function deleteNode(nodes: EditorNodeNewLine[], id: number) {
     const index = nodes.findIndex((searchingNode) => searchingNode.id === id);
-    if (index > -1) {
+    if (index > -1) { // if it's a top level node - deletion is quick!
         nodes.splice(index, 1);
+    } else {
+        // look for child
+        for (const node of nodes) {
+            if (node.children) {
+                const index = node.children.findIndex((searchingNode) => searchingNode.id === id);
+                if (index > -1) { // if it's a top level node - deletion is quick!
+                    node.children.splice(index, 1);
+                    break;
+                }
+            }
+        }
     }
 }
 
@@ -163,7 +221,7 @@ export function deleteNode(nodes: EditorNodeDefinition[], id: number) {
  * Try to delete from the current node, while retaining focus so keyboard does not "flash" due to nodes being removed (ie, do in-place replacement).
  * This assumes the node to delete is also the node in focus, since we only delete via backspace right now.
  */
-export function deleteNodeRetainFocus(nodes: EditorNodeDefinition[], node: EditorNodeDefinition) {
+export function deleteNodeRetainFocus(nodes: EditorNodeNewLine[], node: EditorNodeWithoutChildren) {
     console.log(`BEGIN deleteNodeRetainFocus id=[${node.id}] type=[${EditorNodeNames[node.type]}] content=[${node.content}]`);
 
     const plan = getNodeDeletionPlan(nodes, node);
@@ -175,31 +233,31 @@ export function deleteNodeRetainFocus(nodes: EditorNodeDefinition[], node: Edito
         }
     }
 
-    if (plan.nodeToAdd) {
-        if (plan.nodeToAdd.afterId !== undefined) {
-            insertAfter(nodes, plan.nodeToAdd.afterId, plan.nodeToAdd.node);
-        } else {
-            nodes.push(plan.nodeToAdd.node);
-        }
-    }
+    // if (plan.nodeToAdd) {
+    //     if (plan.nodeToAdd.afterId !== undefined) {
+    //         insertAfter(nodes, plan.nodeToAdd.afterId, plan.nodeToAdd.node);
+    //     } else {
+    //         insertAfter(nodes, getLast(nodes).id, plan.nodeToAdd.node);
+    //     }
+    // }
 
     if (plan.merge) {
         mergeTextNodes(plan.merge);
     }
 
-    if (plan.nodeToFocus) {
-        if (node.id === plan.nodeToFocus.id && node.isFocused && plan.nodeToFocus.lastFocusTime) {
-            // if we update lastFocusTime then keyboard will go away/show again and feel weird.
-            console.log('Not re-focusing node after deletion, already focused.');
-            plan.nodeToFocus.isFocused = true; // ensure focused after merge
-        } else {
-            for (const node of nodes) {
-                if (!node) { continue }
-                node.isFocused = false;
-            }
-            focusNode(plan.nodeToFocus);
-        }
-    }
+    // if (plan.nodeToFocus) {
+    //     if (node.id === plan.nodeToFocus.id && node.isFocused && plan.nodeToFocus.lastFocusTime) {
+    //         // if we update lastFocusTime then keyboard will go away/show again and feel weird.
+    //         console.log('Not re-focusing node after deletion, already focused.');
+    //         plan.nodeToFocus.isFocused = true; // ensure focused after merge
+    //     } else {
+    //         const focusableNodes = graphToListWithoutNewlines(nodes);
+    //         for (const focusableNode of focusableNodes) {
+    //             focusableNode.isFocused = false;
+    //         }
+    //         focusNode(plan.nodeToFocus);
+    //     }
+    // }
 
     console.log(`END deleteNodeRetainFocus id=[${node.id}] type=[${EditorNodeNames[node.type]}] content=[${node.content}]`);
 }
