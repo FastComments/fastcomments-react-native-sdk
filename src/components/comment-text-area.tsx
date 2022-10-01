@@ -4,10 +4,12 @@ import {Text, Image} from "react-native";
 import {Editor, UpdateNodesObserver} from "./wysiwyg/wysiwyg-editor";
 import {useEffect, useRef, useState} from "react";
 import {EditorToolbar, EditorToolbarConfig} from "./wysiwyg/editor-toolbar";
-import {enforceMaxLength, graphToString, stringToNodes} from "./wysiwyg/editor-node-transform";
+import {graphToString, hasContent, stringToNodes} from "./wysiwyg/editor-node-transform";
 import {EditorFormatConfigurationHTML} from "./wysiwyg/transformers";
 import {EmoticonBarConfig} from "./wysiwyg/emoticon-bar";
 import {EditorNodeNewLine} from "./wysiwyg/node-types";
+import {getLast, getLastFocused} from "./wysiwyg/node-navigate";
+import {focusNode} from "./wysiwyg/node-focus";
 
 export interface ValueObserver {
     getValue?: () => string
@@ -45,7 +47,7 @@ export function CommentTextArea({
     const [isFocused, setFocused] = useState(false);
     const [isEmpty, setIsEmpty] = useState(!!value);
     const editorInputNodesRef = useRef<EditorNodeNewLine[]>([]);
-    const [nodeState, setNodeState] = useState<State<EditorNodeNewLine[]> | null>(null);
+    const editorCurrentNodesRef = useRef<State<EditorNodeNewLine[]> | null>(null);
     const updateNodesObserver: UpdateNodesObserver = {};
 
     useEffect(() => {
@@ -98,26 +100,38 @@ export function CommentTextArea({
         }
     }
 
+    const stealth = {stealth: true, noproxy: true};
     function onChange(nodes: State<EditorNodeNewLine[]>) {
-        const isEmpty = enforceMaxLength(nodes, EditorFormatConfigurationHTML, maxLength);
-        setIsEmpty(isEmpty);
-        setNodeState(nodes);
+        // we could automatically trim content here, via updating the graph in-place.
+        // but it causes lag so probably better to just tell the user to shorten their text
+        // is better UX anyway vs losing keystrokes.
+        const newIsEmpty = !hasContent(nodes.get(stealth));
+        if (isEmpty !== newIsEmpty) {
+            setIsEmpty(isEmpty);
+        }
+        editorCurrentNodesRef.current = nodes;
     }
 
     output.getValue = () => {
-        return graphToString(nodeState, EditorFormatConfigurationHTML, maxLength);
+        return graphToString(editorCurrentNodesRef.current ? editorCurrentNodesRef.current.get() : null, EditorFormatConfigurationHTML, maxLength);
     }
 
     if (focusObserver) {
         focusObserver.setFocused = (isFocused) => {
-            editorInputNodesRef.current[editorInputNodesRef.current.length - 1].isFocused = isFocused;
+            if (isFocused) {
+                const lastFocused = getLastFocused(editorInputNodesRef.current);
+                lastFocused.isFocused = false;
+                focusNode(getLast(editorInputNodesRef.current));
+            } else {
+                const lastFocused = getLastFocused(editorInputNodesRef.current);
+                lastFocused.isFocused = false;
+            }
             updateNodesObserver.updateNodes!(editorInputNodesRef.current);
         }
     }
 
-    // TODO emoticon bar above input area - in separate component - communicates
     return <Editor
-        nodes={editorInputNodesRef.current}
+        graph={editorInputNodesRef.current}
         updateNodesObserver={updateNodesObserver}
         isMultiLine={!state.config.useSingleLineCommentInput}
         onChange={onChange}
@@ -129,7 +143,6 @@ export function CommentTextArea({
         maxLength={maxLength}
         toolbar={(config) => <EditorToolbar config={config}/>}
         toolbarConfig={toolbarConfig}
-        // emoticonBar={(config) => <EmoticonBar config={config}/>}
         emoticonBarConfig={emoticonBarConfig}
     />
 }

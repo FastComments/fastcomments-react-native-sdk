@@ -1,6 +1,6 @@
 import {FastCommentsWidgetComment} from "fastcomments-typescript";
 import {none, State} from "@hookstate/core";
-import {RNComment} from "../types/react-native-comment";
+import {RNComment} from "../types";
 
 export function getCommentsTreeAndCommentsById(collapseRepliesByDefault: boolean, rawComments: RNComment[]) {
     const commentsById: Record<string, FastCommentsWidgetComment> = {};
@@ -97,10 +97,13 @@ export function addCommentToTree(allComments: State<FastCommentsWidgetComment[]>
         if (commentsTree.length > 0 && commentsTree[0].isPinned.get(stealth)) {
             let found = false;
             for (let i = 0; i < commentsTree.length; i++) {
+                if (!commentsTree[i]) {
+                    continue; // tombstone
+                }
                 if (!commentsTree[i].isPinned.get(stealth)) {
                     commentsTree.set((commentsTree) => {
                         commentsTree.splice(i, 0, comment);
-                        return commentsTree;
+                        return [...commentsTree];
                     });
                     found = true;
                     break;
@@ -115,8 +118,11 @@ export function addCommentToTree(allComments: State<FastCommentsWidgetComment[]>
                 commentsTree.merge([comment]);
             } else {
                 commentsTree.set((commentsTree) => {
-                    commentsTree.unshift(comment);
-                    return commentsTree;
+                    // commentsTree.unshift(comment);
+                    return [
+                        ...[comment],
+                        ...commentsTree
+                    ];
                 });
             }
         }
@@ -208,9 +214,7 @@ export function updateNestedChildrenCountInTree(commentsById: State<Record<strin
 }
 
 export function iterateCommentsTree(nodes: FastCommentsWidgetComment[], cb: (comment: FastCommentsWidgetComment) => boolean | 'delete' | undefined | void) {
-    let i = nodes.length;
-    while (i--) {
-        const comment = nodes[i];
+    for (const comment of nodes) {
         const result = cb(comment);
         if (result === false) {
             break;
@@ -222,9 +226,7 @@ export function iterateCommentsTree(nodes: FastCommentsWidgetComment[], cb: (com
 }
 
 export function iterateCommentsTreeState(nodes: State<RNComment[]> | State<RNComment>[], cb: (comment: State<RNComment>) => false | 'delete' | undefined | void) {
-    let i = nodes.length;
-    while (i--) {
-        const comment = nodes[i];
+    for (const comment of nodes) {
         const result = cb(comment);
         if (result === false) {
             break;

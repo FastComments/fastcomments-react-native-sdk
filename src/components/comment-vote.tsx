@@ -10,7 +10,7 @@ import type {
     IFastCommentsStyles, ImageAssetConfig
 } from "../types";
 import {FastCommentsImageAsset} from "../types";
-import {none, State, useHookstate} from "@hookstate/core";
+import {State, useHookstate} from "@hookstate/core";
 import {getActionTenantId} from "../services/tenants";
 import {createURLQueryString, makeRequest} from "../services/http";
 import {newBroadcastId} from '../services/broadcast-id';
@@ -19,7 +19,7 @@ import {FastCommentsRNConfig} from "../types/react-native-config";
 
 export interface CommentVoteProps extends Pick<FastCommentsCallbacks, 'onVoteSuccess'> {
     state: State<FastCommentsState>
-    comment: State<RNComment>
+    comment: RNComment
     config: FastCommentsRNConfig
     imageAssets: ImageAssetConfig
     styles: IFastCommentsStyles
@@ -66,17 +66,17 @@ async function doVote({state, comment, onVoteSuccess}: Pick<CommentVoteProps, 's
     }
     voteState.isLoading.set(true);
     try {
-        const tenantIdToUse = getActionTenantId({state: state, tenantId: comment.tenantId.get()});
+        const tenantIdToUse = getActionTenantId({state: state, tenantId: comment.tenantId});
 
-        if (comment.isVotedUp.get() || comment.isVotedDown.get()) {
+        if (comment.isVotedUp || comment.isVotedDown) {
             // delete vote
             const response = await makeRequest<CommentVoteDeleteResponse>({
                 apiHost: state.apiHost.get(),
                 method: 'DELETE',
-                url: `/comments/${tenantIdToUse}/${comment._id.get()}/vote/${comment.myVoteId.get()}${createURLQueryString({
-                    voteId: comment.myVoteId.get(),
-                    editKey: comment.editKey.get(),
-                    commentId: comment._id.get(),
+                url: `/comments/${tenantIdToUse}/${comment._id}/vote/${comment.myVoteId}${createURLQueryString({
+                    voteId: comment.myVoteId,
+                    editKey: comment.editKey,
+                    commentId: comment._id,
                     sso: state.ssoConfigString.get(),
                     broadcastId: newBroadcastId(),
                     urlId: state.config.urlId.get(),
@@ -84,19 +84,19 @@ async function doVote({state, comment, onVoteSuccess}: Pick<CommentVoteProps, 's
             });
             voteState.voteResponse.set(response);
             if (response.status === 'success') {
-                onVoteSuccess && onVoteSuccess(comment.get(), comment.myVoteId.get()!, 'deleted', response.status);
+                onVoteSuccess && onVoteSuccess(comment, comment.myVoteId!, 'deleted', response.status);
 
-                if (comment.isVotedUp.get()) {
-                    comment.isVotedUp.set(false);
+                if (comment.isVotedUp) {
+                    comment.isVotedUp = false;
                     if (!response.wasPendingVote) {
-                        comment.votes.set((votes) => (votes || 0) - 1);
-                        comment.votesUp.set((votesUp) => (votesUp || 0) - 1);
+                        comment.votes = (comment.votes || 0) - 1;
+                        comment.votesUp = (comment.votesUp || 0) - 1;
                     }
                 } else {
-                    comment.isVotedDown.set(false);
+                    comment.isVotedDown = false;
                     if (!response.wasPendingVote) {
-                        comment.votes.set((votes) => (votes || 0) + 1);
-                        comment.votesDown.set((votesDown) => (votesDown || 0) - 1);
+                        comment.votes = (comment.votes || 0) + 1;
+                        comment.votesDown = (comment.votesDown || 0) - 1;
                     }
                 }
             }
@@ -105,7 +105,7 @@ async function doVote({state, comment, onVoteSuccess}: Pick<CommentVoteProps, 's
             const response = await makeRequest<CommentVoteResponse>({
                 apiHost: state.apiHost.get(),
                 method: 'POST',
-                url: `/comments/${tenantIdToUse}/${comment._id.get()}/vote${createURLQueryString({
+                url: `/comments/${tenantIdToUse}/${comment._id}/vote${createURLQueryString({
                     urlId: state.config.urlId.get(),
                     sso: state.ssoConfigString.get(),
                     broadcastId: newBroadcastId(),
@@ -113,7 +113,7 @@ async function doVote({state, comment, onVoteSuccess}: Pick<CommentVoteProps, 's
                 })}`,
                 body: {
                     voteDir: voteState.voteDir.get(),
-                    commentId: comment._id.get(),
+                    commentId: comment._id,
                     urlId: state.config.urlId.get(),
                     url: state.config.url.get(),
                     commenterName: currentUser ? currentUser.username : voteState.authUserName.get(),
@@ -123,34 +123,34 @@ async function doVote({state, comment, onVoteSuccess}: Pick<CommentVoteProps, 's
             voteState.voteResponse.set(response);
             if (response.status === 'success') {
                 if (voteState.voteDir.get() === 'up') {
-                    comment.isVotedUp.set(true);
-                    comment.votes.set((votes) => (votes || 0) + 1);
-                    comment.votesUp.set((votesUp) => (votesUp || 0) + 1);
+                    comment.isVotedUp = true;
+                    comment.votes = (comment.votes || 0) + 1;
+                    comment.votesUp = (comment.votesUp || 0) + 1;
                 } else {
-                    comment.isVotedDown.set(true);
-                    comment.votes.set((votes) => (votes || 0) - 1);
-                    comment.votesDown.set((votesDown) => (votesDown || 0) + 1);
+                    comment.isVotedDown = true;
+                    comment.votes = (comment.votes || 0) - 1;
+                    comment.votesDown = (comment.votesDown || 0) + 1;
                 }
-                comment.myVoteId.set(response.voteId);
-                onVoteSuccess && onVoteSuccess(comment.get(), response.voteId!, voteState.voteDir.get()!, response.status);
+                comment.myVoteId = response.voteId;
+                onVoteSuccess && onVoteSuccess(comment, response.voteId!, voteState.voteDir.get()!, response.status);
                 if (response.editKey) {
-                    comment.voteEditKey.set(response.editKey);
+                    comment.voteEditKey =response.editKey;
                 } else {
-                    comment.voteEditKey.set(none);
+                    comment.voteEditKey = undefined;
                 }
                 voteState.isAwaitingVerification.set(false);
             } else if (response.status === 'pending-verification') {
                 if (voteState.voteDir.get() === 'up') {
-                    comment.isVotedUp.set(true);
+                    comment.isVotedUp = true;
                 } else {
-                    comment.isVotedDown.set(true);
+                    comment.isVotedDown = true;
                 }
                 if (!response.isVerified) {
                     voteState.isAwaitingVerification.set(true);
                 }
-                comment.myVoteId.set(response.voteId);
-                onVoteSuccess && onVoteSuccess(comment.get(), response.voteId!, voteState.voteDir.get()!, response.status);
-                comment.voteEditKey.set(response.editKey);
+                comment.myVoteId =response.voteId;
+                onVoteSuccess && onVoteSuccess(comment, response.voteId!, voteState.voteDir.get()!, response.status);
+                comment.voteEditKey =response.editKey;
                 voteState.isAwaitingVerification.set(false);
             } else {
                 if (response.code === 'already-voted') {
@@ -187,7 +187,7 @@ export function CommentVote(props: CommentVoteProps) {
 
     // TODO TouchableOpacity throws weird callback exceeded errors
     voteOptions = <View style={styles.commentVote?.commentVoteOptions}>
-        {comment.votesUp.get() ? <Text style={styles.commentVote?.votesUpText}>{Number(comment.votesUp.get()).toLocaleString()}</Text> : null}
+        {comment.votesUp ? <Text style={styles.commentVote?.votesUpText}>{Number(comment.votesUp).toLocaleString()}</Text> : null}
         <Pressable
             style={styles.commentVote?.voteButton}
             onPress={() => {
@@ -197,7 +197,7 @@ export function CommentVote(props: CommentVoteProps) {
             }}
         >
             <Image
-                source={imageAssets[comment.isVotedUp.get() ? (config.hasDarkBackground ? FastCommentsImageAsset.ICON_UP_ACTIVE_WHITE : FastCommentsImageAsset.ICON_UP_ACTIVE) : FastCommentsImageAsset.ICON_UP]}
+                source={imageAssets[comment.isVotedUp ? (config.hasDarkBackground ? FastCommentsImageAsset.ICON_UP_ACTIVE_WHITE : FastCommentsImageAsset.ICON_UP_ACTIVE) : FastCommentsImageAsset.ICON_UP]}
                 style={styles.commentVote?.voteButtonIcon}/>
         </Pressable>
         {showDownVoting && <View style={styles.commentVote?.voteDivider}/>}
@@ -210,10 +210,10 @@ export function CommentVote(props: CommentVoteProps) {
             }}
         >
             <Image
-                source={imageAssets[comment.isVotedDown.get() ? (config.hasDarkBackground ? FastCommentsImageAsset.ICON_DOWN_ACTIVE_WHITE : FastCommentsImageAsset.ICON_DOWN_ACTIVE) : FastCommentsImageAsset.ICON_DOWN]}
+                source={imageAssets[comment.isVotedDown ? (config.hasDarkBackground ? FastCommentsImageAsset.ICON_DOWN_ACTIVE_WHITE : FastCommentsImageAsset.ICON_DOWN_ACTIVE) : FastCommentsImageAsset.ICON_DOWN]}
                 style={styles.commentVote?.voteButtonIcon}/>
         </Pressable>}
-        {showDownVoting && comment.votesDown.get() ? <Text style={styles.commentVote?.votesDownText}>{Number(comment.votesDown.get()).toLocaleString()}</Text> : null}
+        {showDownVoting && comment.votesDown ? <Text style={styles.commentVote?.votesDownText}>{Number(comment.votesDown).toLocaleString()}</Text> : null}
     </View>
 
     if (voteState.isAuthenticating.get()) {

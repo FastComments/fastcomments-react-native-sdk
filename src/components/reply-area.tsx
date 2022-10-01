@@ -34,7 +34,7 @@ const SignUpErrorsTranslationIds: Record<string, string> = {
 
 export interface ReplyAreaProps extends Pick<FastCommentsCallbacks, 'onNotificationSelected' | 'onReplySuccess' | 'replyingTo' | 'onAuthenticationChange' | 'pickImage'> {
     imageAssets: ImageAssetConfig
-    parentComment?: State<RNComment> | null
+    parentComment?: RNComment | null
     state: State<FastCommentsState>
     styles: IFastCommentsStyles
     translations: Record<string, string>
@@ -114,7 +114,7 @@ async function submit({
     if (state.config.readonly.get()) {
         return;
     }
-    const replyingToId = parentComment?.get()?._id;
+    const replyingToId = parentComment?._id;
 
     let isAuthenticating = false;
     const allowAnon = state.config.allowAnon.get();
@@ -141,8 +141,8 @@ async function submit({
     //     return;
     // }
 
-    const tenantIdToUse = getActionTenantId({state, tenantId: parentComment?.get()?.tenantId});
-    const urlIdToUse = getActionURLID({state, urlId: parentComment?.get()?.urlId});
+    const tenantIdToUse = getActionTenantId({state, tenantId: parentComment?.tenantId});
+    const urlIdToUse = getActionURLID({state, urlId: parentComment?.urlId});
 
     const date = new Date();
 
@@ -303,7 +303,7 @@ export function ReplyArea(props: ReplyAreaProps) {
     const state = useHookstate(props.state); // create scoped state
     const currentUser = state.currentUser?.get();
 
-    const needsAuth = !currentUser && !!parentComment && !!parentComment.get();
+    const needsAuth = !currentUser && !!parentComment;
     const valueGetter: ValueObserver = {};
     const focusObserver: FocusObserver = {};
 
@@ -319,8 +319,8 @@ export function ReplyArea(props: ReplyAreaProps) {
         // for root comment area, we don't show the auth input form until they interact to save screen space.
         showAuthInputForm: needsAuth,
     });
-    if (!!parentComment?.get() && state.config.useSingleReplyField.get()) {
-        commentReplyState.comment.set(`**@${parentComment.commenterName.get()}** `);
+    if (!!parentComment && state.config.useSingleReplyField.get()) {
+        commentReplyState.comment.set(`**@${parentComment.commenterName}** `);
     }
     const {width} = useWindowDimensions();
 
@@ -336,10 +336,10 @@ export function ReplyArea(props: ReplyAreaProps) {
 
     // TODO OPTIMIZE BENCHMARK: faster solution than using RenderHtml. RenderHtml is easy because the translation is HTML, but it only has <b></b> elements.
     //  We can't hardcode the order of the bold elements due to localization, so rendering HTML is nice. But we can probably transform this into native elements faster than RenderHtml.
-    const replyToText = parentComment?.get()
+    const replyToText = parentComment
         // we intentionally don't use the REPLYING_TO_AS translation like web to save horizontal space for the cancel button
         ? <RenderHtml source={{
-            html: translations.REPLYING_TO.replace('[to]', parentComment?.get()?.commenterName as string)
+            html: translations.REPLYING_TO.replace('[to]', parentComment?.commenterName as string)
         }} contentWidth={width} baseStyle={styles.replyArea?.replyingToText}/> : null;
 
     const ssoConfig = state.config.sso?.get() || state.config.simpleSSO?.get();
@@ -374,7 +374,7 @@ export function ReplyArea(props: ReplyAreaProps) {
             </View>;
         }
     } else {
-        if (!parentComment?.get() && currentUser) {
+        if (!parentComment && currentUser) {
             topBar = <View style={styles.replyArea?.topBar}>
                 <View style={styles.replyArea?.loggedInInfo}>
                     <Image style={styles.replyArea?.topBarAvatar}
@@ -450,22 +450,11 @@ export function ReplyArea(props: ReplyAreaProps) {
                 } catch (e) {
                     console.error('Failed to save a comment', e);
                 }
-                commentReplyState.isReplySaving.set(false);
-                if (parentComment && parentComment?.get()) {
-                    parentComment.replyBoxOpen!.set(false);
+                if (parentComment && parentComment) {
+                    parentComment.replyBoxOpen = false; // TODO CALLBACK
                 }
             }
         }
-
-        // TODO fancy borders like on web
-        // result += '<div class="horizontal-border-wrapper">';
-        // result += '<div class="horizontal-border horizontal-border-top-left"></div>';
-        // result += '<div class="horizontal-border horizontal-border-top-right"></div>';
-        // result += '<div class="horizontal-border horizontal-border-left"></div>';
-        // result += '<div class="horizontal-border horizontal-border-right"></div>';
-        // result += '<div class="horizontal-border horizontal-border-bottom-left"></div>';
-        // result += '<div class="horizontal-border horizontal-border-bottom-right"></div>';
-        // result += '</div>';
 
         if (!commentReplyState.isReplySaving.get()) {
             commentSubmitButton = <View style={styles.replyArea?.replyButtonWrapper}>

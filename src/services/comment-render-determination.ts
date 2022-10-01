@@ -15,8 +15,7 @@ function areCommentsDifferent(prevComment: RNComment, nextComment: RNComment) {
     // OPTIMIZATION: replyBoxOpen is handled inside the widget itself, so opening reply box feels better.
     // OPTIMIZATION: votes is handled inside the widget itself, so voting feels better.
 
-    // Adding/removing replies happens often. Have to re-render parents.
-
+    // TODO REMOVE
     if (CommentChangeCounter[nextComment._id] !== nextComment.changeCounter) {
         // Update global state in prop comparison to make functional people mad.
         CommentChangeCounter[nextComment._id] = nextComment.changeCounter || 1;
@@ -113,19 +112,13 @@ function areCommentsDifferent(prevComment: RNComment, nextComment: RNComment) {
 
 export function arePropsEqual(prevProps: CommentViewProps, nextProps: CommentViewProps, checkConfig = true) {
     // console.log('HELP', prevProps.comment.children.get()?.length, nextProps.comment.children.get()?.length)
-    const prevComment = prevProps.comment.get({stealth: true, noproxy: true});
-    const nextComment = nextProps.comment.get({stealth: true, noproxy: true});
+    const prevComment = prevProps.comment;
+    const nextComment = nextProps.comment;
 
     if (areCommentsDifferent(prevComment, nextComment)) {
         return false;
     }
-    if (nextComment.children) {
-        for (let i = 0; i < nextComment.children.length; i++) {
-            if (areCommentsDifferent(prevComment.children![i], nextComment.children[i])) {
-                return false;
-            }
-        }
-    }
+
     if (checkConfig) {
         const prevConfig = prevProps.state.config.get({stealth: true, noproxy: true});
         const nextConfig = nextProps.state.config.get({stealth: true, noproxy: true});

@@ -2,15 +2,14 @@
 import * as React from 'react';
 import {Image, TouchableOpacity, Text} from "react-native";
 import {FastCommentsImageAsset, ImageAssetConfig} from "../types/image-asset";
-import {State} from "@hookstate/core";
 import {IFastCommentsStyles, RNComment} from "../types";
 
 export interface CommentReplyToggleProps {
-    comment: State<RNComment>
+    comment: RNComment
     hasDarkBackground?: boolean
     imageAssets: ImageAssetConfig
     nestedChildrenCount?: number
-    setRepliesHidden: (comment: State<RNComment>, hidden: boolean) => void
+    setRepliesHidden: (comment: RNComment, hidden: boolean) => void
     styles: IFastCommentsStyles
     translations: Record<string, string>
 }
@@ -28,7 +27,7 @@ export function CommentReplyToggle({
         return null;
     }
     const countText = <Text style={[styles.commentReplyToggle?.text, styles.commentReplyToggle?.count]}> ({Number(nestedChildrenCount).toLocaleString()})</Text>
-    if (comment.repliesHidden.get()) {
+    if (comment.repliesHidden) {
         return <TouchableOpacity onPress={() => setRepliesHidden(comment, false)} style={styles.commentReplyToggle?.button}>
             <Image
                 source={imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_EYE_WHITE : FastCommentsImageAsset.ICON_EYE]}

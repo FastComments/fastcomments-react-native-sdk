@@ -13,15 +13,13 @@ import {FastCommentsRNConfig} from "../types/react-native-config";
 
 export interface CommentBottomProps extends Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onReplySuccess' | 'onAuthenticationChange' | 'replyingTo' | 'onNotificationSelected' | 'pickImage'> {
     state: State<FastCommentsState> // we take hookstate here but we try to only use it for the things that change.
-    comment: State<RNComment>
+    comment: RNComment
     config: FastCommentsRNConfig
     imageAssets: ImageAssetConfig
-    setRepliesHidden: (comment: State<RNComment>, hidden: boolean) => void
+    setRepliesHidden: (comment: RNComment, hidden: boolean) => void
     styles: IFastCommentsStyles
     translations: Record<string, string>
 }
-
-const STEALTH = {stealth: true};
 
 export function CommentBottom(props: CommentBottomProps) {
     const {
@@ -49,7 +47,7 @@ export function CommentBottom(props: CommentBottomProps) {
             {
                 config.renderDateBelowComment
                 && <CommentDisplayDate
-                    date={comment.date.get({stealth: true})}
+                    date={comment.date}
                     translations={translations}
                     absoluteDates={config.absoluteDates}
                     absoluteAndRelativeDates={config.absoluteAndRelativeDates}
@@ -61,13 +59,13 @@ export function CommentBottom(props: CommentBottomProps) {
             <TouchableOpacity style={styles.commentBottom?.commentBottomToolbarReply} onPress={() => {
                 if (config.useSingleReplyField) {
                     // We always expect the callback to exist in this case. Otherwise is an error.
-                    replyingTo!(isReplyBoxOpen ? null : comment.get(STEALTH)); // if reply box already open, invoke with null to say we're not replying.
+                    replyingTo!(isReplyBoxOpen ? null : comment); // if reply box already open, invoke with null to say we're not replying.
                     setIsReplyBoxOpen(!isReplyBoxOpen);
-                    commentState.replyBoxOpen.set(!isReplyBoxOpen);
+                    commentState.replyBoxOpen.set(!isReplyBoxOpen); // TODO use callbacks
                 } else {
-                    replyingTo && replyingTo(comment.get(STEALTH));
+                    replyingTo && replyingTo(comment);
                     setIsReplyBoxOpen(!isReplyBoxOpen);
-                    commentState.replyBoxOpen.set(!isReplyBoxOpen);
+                    commentState.replyBoxOpen.set(!isReplyBoxOpen); // TODO use callbacks
                 }
             }
             }>
@@ -100,7 +98,7 @@ export function CommentBottom(props: CommentBottomProps) {
             comment={comment}
             hasDarkBackground={config.hasDarkBackground}
             imageAssets={imageAssets}
-            nestedChildrenCount={comment.nestedChildrenCount.get()}
+            nestedChildrenCount={comment.nestedChildrenCount}
             setRepliesHidden={setRepliesHidden}
             styles={styles}
             translations={translations}

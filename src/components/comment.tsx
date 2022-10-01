@@ -24,10 +24,10 @@ import {FastCommentsRNConfig} from "../types/react-native-config";
 import {ShowNewChildLiveCommentsButton} from "./show-new-child-live-comments-button";
 
 export interface FastCommentsCommentWithState {
-    comment: State<RNComment>
+    comment: RNComment
     config: FastCommentsRNConfig
     imageAssets: ImageAssetConfig
-    setRepliesHidden: (comment: State<RNComment>, hidden: boolean) => void
+    setRepliesHidden: (comment: RNComment, hidden: boolean) => void
     translations: Record<string, string>
     state: State<FastCommentsState>
     styles: IFastCommentsStyles,
@@ -43,6 +43,7 @@ const RenderCount: Record<string, number> = {};
 export function FastCommentsCommentView(props: CommentViewProps) {
     const {
         styles,
+        comment,
         config,
         onVoteSuccess,
         onReplySuccess,
@@ -56,7 +57,6 @@ export function FastCommentsCommentView(props: CommentViewProps) {
     } = props;
 
     const commentState = useHookstate(props.comment);
-    const comment = props.comment.get(STEALTH);
     const id = comment._id;
     if (RenderCount[id] === undefined) {
         RenderCount[id] = 1;
@@ -107,6 +107,7 @@ export function FastCommentsCommentView(props: CommentViewProps) {
             source={imageAssets[config.hasDarkBackground ? FastCommentsImageAsset.ICON_EDIT_SMALL_WHITE : FastCommentsImageAsset.ICON_EDIT_SMALL]}
             style={{width: 16, height: 16}}/></TouchableOpacity>}
     </View>
+        {/* TODO: MEMOIZE RenderHTMLSource so that we can re-render comment w/o re-rendering HTML. */}
         <View style={styles.comment?.contentWrapper}>
             <CommentNotices comment={commentState} styles={styles} translations={translations}/>
             {!renderCommentInline &&
@@ -122,10 +123,10 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                 })}${htmlWrapped}</div>` : htmlWrapped
             }} contentWidth={width}/>}
             {config.renderLikesToRight &&
-            <CommentVote comment={commentState} config={config} imageAssets={imageAssets} state={state} styles={styles} translations={translations}
+            <CommentVote comment={comment} config={config} imageAssets={imageAssets} state={state} styles={styles} translations={translations}
                          onVoteSuccess={onVoteSuccess}/>}
         </View>
-        <CommentBottom comment={commentState}
+        <CommentBottom comment={comment}
                        state={state}
                        config={config}
                        translations={translations}

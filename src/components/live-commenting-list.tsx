@@ -7,12 +7,12 @@ import {PaginationNext} from "./pagination-next";
 import {PaginationPrev} from "./pagination-prev";
 import {canPaginateNext, paginateNext, paginatePrev} from "../services/pagination";
 import {CommentViewProps, FastCommentsCommentView} from "./comment";
-import { arePropsEqual } from "../services/comment-render-determination";
+import {arePropsEqual} from "../services/comment-render-determination";
 import {FastCommentsLiveCommentingService} from "../services/fastcomments-live-commenting";
 import {LiveCommentingTopArea} from "./live-commenting-top-area";
 import {FastCommentsRNConfig} from "../types/react-native-config";
 import {CallbackObserver} from "./live-commenting-bottom-area";
-import {iterateCommentsTreeState} from "../services/comment-trees";
+import {iterateCommentsTree} from "../services/comment-trees";
 
 export interface LiveCommentingListProps {
     callbacks?: FastCommentsCallbacks
@@ -45,17 +45,20 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
     const [isFetchingNextPage, setFetchingNextPage] = useState(false);
     const {width} = useWindowDimensions();
 
-    const [viewableComments, setViewableComments] = useState<State<RNComment>[]>([]);
+    const [viewableComments, setViewableComments] = useState<RNComment[]>([]);
 
     // It could be possible to switch to a flat list as the backing store, but not sure worth it yet as a tree is nice to work with.
     function createList() {
-        const list: State<RNComment>[] = [];
+        const list: RNComment[] = [];
         const byId = state.commentsById.get({noproxy: true});
         const start = Date.now();
         // Re-creating the whole list generally takes 1-2ms.
         console.log('...Re-creating view list from tree...');
-        iterateCommentsTreeState(state.commentsTree, (comment) => {
-            const parentId = comment.parentId ? comment.parentId.get() : undefined;
+        iterateCommentsTree(state.commentsTree.get({stealth: true, noproxy: true}), (comment) => {
+            if (!comment) {
+                return;
+            }
+            const parentId = comment.parentId ? comment.parentId : undefined;
             if (parentId) {
                 const parent = byId[parentId];
                 if (parent && !parent.hidden && !parent.repliesHidden) {
@@ -75,9 +78,10 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
         createList()
     }, state.commentsTree);
 
-    const setRepliesHidden = (parentComment: State<RNComment>, repliesHidden: boolean) => {
-        parentComment.repliesHidden.set(repliesHidden);
-        parentComment.changeCounter.set((changeCounter) => changeCounter ? changeCounter + 1 : 1); // sigh
+    const setRepliesHidden = (parentComment: RNComment, repliesHidden: boolean) => {
+        parentComment.repliesHidden = repliesHidden;
+        // TODO REMOVE
+        parentComment.changeCounter = parentComment.changeCounter ? parentComment.changeCounter + 1 : 1; // sigh
         createList();
     }
 
@@ -109,7 +113,7 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
     };
 
     // Note: we do not support changing image assets or translations without a complete reload, as a (reasonable) optimization.
-    const renderItem = (info: ListRenderItemInfo<State<RNComment>>) =>
+    const renderItem = (info: ListRenderItemInfo<RNComment>) =>
         <CommentViewMemo
             comment={info.item}
             config={config}
@@ -155,7 +159,7 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
         <RenderHTMLConfigProvider><FlatList
             style={styles.commentsWrapper}
             data={viewableComments}
-            keyExtractor={item => item._id.get({stealth: true})}
+            keyExtractor={item => item && item._id !== undefined ? item._id : '???'}
             inverted={state.config.newCommentsToBottom.get()}
             maxToRenderPerBatch={state.PAGE_SIZE.get()}
             onEndReachedThreshold={0.3}
