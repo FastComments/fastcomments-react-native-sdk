@@ -77,10 +77,8 @@ function searchNodesOfTypeBeforeIdInclusive(graph: EditorNodeNewLine[], fromId: 
  * This is kind of like a plan for how a database executes a query. We create the "plan" for deletion and then act on it.
  * This is more of a functional-way of doing things, and it sacrifices a tiny bit of performance, but it makes this much easier
  * to debug.
- *
- * This assumes the node to delete is also the node in focus, since we only delete via backspace right now.
  */
-function getNodeDeletionPlan(graph: EditorNodeNewLine[], node: EditorNodeWithoutChildren): EditorNodeDeletionPlan {
+function getNodeDeletionPlan(graph: EditorNodeNewLine[], node: EditorNodeWithoutChildren, focusNode: EditorNodeWithoutChildren): EditorNodeDeletionPlan {
     const plan: EditorNodeDeletionPlan = {};
 
     /**
@@ -166,6 +164,18 @@ function getNodeDeletionPlan(graph: EditorNodeNewLine[], node: EditorNodeWithout
                 target: searchResult.end,
             };
             return plan;
+        } else if (
+            // should delete an empty newline before a newline with text, retaining the current newline and text node
+            searchResult.nodesInBetween.length === 1
+            && searchResult.nodesInBetween[0].type === EditorNodeType.NEWLINE
+            && !searchResult.start
+            && searchResult.endContainer
+            && searchResult.end
+            && searchResult.end.id !== focusNode.id
+        ) {
+            plan.idsToRemove = [searchResult.endContainer.id];
+            // no merge. just remove the empty row.
+            return plan;
         }
     }
 
@@ -219,12 +229,11 @@ export function deleteNode(nodes: EditorNodeNewLine[], id: number) {
 
 /**
  * Try to delete from the current node, while retaining focus so keyboard does not "flash" due to nodes being removed (ie, do in-place replacement).
- * This assumes the node to delete is also the node in focus, since we only delete via backspace right now.
  */
-export function deleteNodeRetainFocus(nodes: EditorNodeNewLine[], node: EditorNodeWithoutChildren) {
+export function deleteNodeRetainFocus(nodes: EditorNodeNewLine[], node: EditorNodeWithoutChildren, focusNode: EditorNodeWithoutChildren) {
     console.log(`BEGIN deleteNodeRetainFocus id=[${node.id}] type=[${EditorNodeNames[node.type]}] content=[${node.content}]`);
 
-    const plan = getNodeDeletionPlan(nodes, node);
+    const plan = getNodeDeletionPlan(nodes, node, focusNode);
     console.log(`PROGRESS deleteNodeRetainFocus PLAN=[${JSON.stringify(plan)}]`);
 
     if (plan.idsToRemove) {

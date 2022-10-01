@@ -17,7 +17,7 @@ export interface EditorNodeTextProps extends EditorNodeProps {
 }
 
 export function EditorNodeText(props: EditorNodeTextProps) {
-    const {node, onChangeContent, onBlur, onDelete, onTryNewline, textStyle, isMultiLine} = props;
+    const {nodeState, onBlur, doDelete, doDeleteNodeBefore, onTryNewline, textStyle, isMultiLine} = props;
     // const [value, setValue] = useState(node.content);
     const [selection, setSelection] = useState<{
         start: number;
@@ -33,17 +33,16 @@ export function EditorNodeText(props: EditorNodeTextProps) {
         onBlur && onBlur();
     }
 
-    const valueRef = useRef(node.content);
     const ref = useRef<TextInput>();
     // console.log('RE-RENDER', node.id, node.lastFocusTime);
     useEffect(() => {
         let timeout: number;
-        if (node.isFocused) {
-            const lastFocusTime = node.lastFocusTime;
+        if (nodeState.isFocused.get()) {
+            const lastFocusTime = nodeState.lastFocusTime.get();
             // if (lastFocusTime === lastLastFocusTime) {
             //     return;
             // }
-            console.log('Focusing node (A)', node.id, lastFocusTime);
+            console.log('Focusing node (A)', nodeState.id.get(), lastFocusTime);
             setIgnoreNextBlur(true);
             // @ts-ignore
             timeout = setTimeout(() => {
@@ -72,11 +71,7 @@ export function EditorNodeText(props: EditorNodeTextProps) {
         return () => {
             timeout && clearTimeout(timeout)
         };
-    }, [node.isFocused]);
-
-    useEffect(() => {
-        valueRef.current = node.content;
-    }, [node.content]);
+    }, [nodeState.isFocused.get()]);
 
     const handleKeyUp = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
         switch (e.nativeEvent.key) {
@@ -86,7 +81,7 @@ export function EditorNodeText(props: EditorNodeTextProps) {
                 }
                 break;
             case 'Backspace':
-                if ((!selection?.start) || node.deleteOnBackspace) {
+                if ((!selection?.start) || nodeState.deleteOnBackspace.get()) {
                     try {
                         /*
                             TODO why is delete before newline triggering delete when only one char left but not other scenarios? Example
@@ -96,9 +91,14 @@ export function EditorNodeText(props: EditorNodeTextProps) {
                                 ---trigger backspace - ends up with:---
                                 abcx|
                          */
-                        // console.log('TRIGGERING DELETE', selection?.start, node.content.get());
-                        // delete this node
-                        onDelete && onDelete();
+                        if (nodeState.content.get()) {
+                            console.log('TRIGGERING DELETE NODE BEFORE', selection?.start, nodeState.content.get());
+                            doDeleteNodeBefore && doDeleteNodeBefore(); // user is backspacing at start of node
+                        } else {
+                            console.log('TRIGGERING DELETE CURRENT NODE', selection?.start, nodeState.content.get());
+                            // delete this node
+                            doDelete && doDelete();
+                        }
                     } catch (e) {
                         console.error('wtf', e); // TODO remove
                     }
@@ -118,13 +118,9 @@ export function EditorNodeText(props: EditorNodeTextProps) {
     }
 
     return <TextInput
-        value={valueRef.current}
+        value={nodeState.content.get()}
         onChangeText={(newValue: string) => {
-            // update ui value right away (why is this faster than defaultValue???
-            // setValue(newValue);
-            valueRef.current = newValue;
-            // timeout here helps fix UI reflow lag
-            onChangeContent!(newValue);
+            nodeState.content.set(newValue);
         }
         }
         onSelectionChange={onSelectionChange}
@@ -134,7 +130,7 @@ export function EditorNodeText(props: EditorNodeTextProps) {
         onSubmitEditing={onSubmit}
         ref={ref as MutableRefObject<TextInput>}
         returnKeyType={isMultiLine ? 'default' : 'send'}
-        style={[StylesByNodeType[node.type], textStyle]}
+        style={[StylesByNodeType[nodeState.type.get()], textStyle]}
     />;
 }
 

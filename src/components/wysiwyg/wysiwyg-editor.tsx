@@ -1,12 +1,19 @@
 import {Pressable, StyleSheet, TextStyle, View, ViewStyle} from "react-native";
-import {EditorNode, EditorNodeProps} from "./editor-node";
+import {EditorNode} from "./editor-node";
 import {State, useHookstate, useHookstateEffect} from "@hookstate/core";
-import React, {ReactNode, useRef} from "react";
+import {ReactNode} from "react";
 import {EditorToolbarConfig} from "./editor-toolbar";
 import {deleteNodeState} from "./editor-node-transform";
 import {createBoldNode, createEmoticonNode, createStrikethroughNode, createUnderlineNode} from "./editor-nodes";
 import {EmoticonBarConfig} from "./emoticon-bar";
-import {getNext, getStateById, getStateLast, getStateNext, getStatePrev, graphToListStateWithNewlines} from "./node-navigate";
+import {
+    getLastFocusedState,
+    getNext,
+    getStateById,
+    getStateLast,
+    getStateNext,
+    getStatePrev,
+} from "./node-navigate";
 import {insertAfter} from "./node-insert";
 import {deleteNodeRetainFocus} from "./node-delete";
 import {focusNode, focusNodeState} from "./node-focus";
@@ -38,38 +45,9 @@ export interface EditorProps {
     emoticonBarConfig?: EmoticonBarConfig
 }
 
-const EditorNodeMemo = React.memo<EditorNodeProps>(
-    props => EditorNode(props),
-    (prevProps, nextProps) => {
-        if (prevProps.node.id !== nextProps.node.id) {
-            // console.log('node changed - id')
-            return false;
-        }
-        if (prevProps.node.content !== nextProps.node.content) {
-            // console.log('node changed - content', prevProps.node.content, '->', nextProps.node.content)
-            return false;
-        }
-        if (prevProps.node.isFocused !== nextProps.node.isFocused) {
-            // console.log('node changed - isFocused')
-            return false;
-        }
-        if (prevProps.node.lastFocusTime !== nextProps.node.lastFocusTime) {
-            // console.log('node changed - lastFocusTime')
-            return false;
-        }
-        if (prevProps.node.type !== nextProps.node.type) {
-            // console.log('node changed - type')
-            return false;
-        }
-
-        return true;
-    }
-);
-
 export function Editor(props: EditorProps) {
     // TODO wysiwyg gif button
     const graph = useHookstate<EditorNodeNewLine[]>(props.graph);
-    const nodeMapRef = useRef<Record<string, State<EditorNodeNewLine> | State<EditorNodeWithoutChildren>>>({});
 
     if (props.updateNodesObserver) {
         props.updateNodesObserver.updateNodes = (newNodes) => {
@@ -82,22 +60,17 @@ export function Editor(props: EditorProps) {
         props.onChange(graph);
         // TODO uncomment in production
         console.log('===== BEGIN EDITOR NODE STRUCTURE =====');
-        const nodeMap: Record<string, State<EditorNodeNewLine> | State<EditorNodeWithoutChildren>> = {};
-        for (const node of graph) {
-            console.log(EditorNodeNames[node.type.get()], `(${node.id.get()})`);
-            nodeMap[node.id.get()] = node;
+        const graphRaw = graph.get({stealth: true});
+        for (const node of graphRaw) {
+            console.log(EditorNodeNames[node.type], `(${node.id})`);
             const children = node.children;
             if (children) {
-                // we only support one level of nesting.
-                // @ts-ignore
-                children.forEach(function (child: State<EditorNodeWithoutChildren>) {
-                    console.log('    ', EditorNodeNames[child.type.get()], `(${child.id.get()})`);
-                    nodeMap[child.id.get()] = child;
-                });
+                for (const child of children) {
+                    console.log('    ', EditorNodeNames[child.type], `(${child.id})`);
+                }
             }
         }
         console.log('===== END EDITOR NODE STRUCTURE =====');
-        nodeMapRef.current = nodeMap; // it would be cool to get rid of the map (requires node to not use React.memo and modify node.content itself)
     }, [graph]);
 
     // uncomment to test keyboard losing focus.
@@ -124,24 +97,7 @@ export function Editor(props: EditorProps) {
     // }, []);
 
     const getCurrentNode = () => {
-        // TODO OPTIMIZE: we had a ton of problems with keeping track of the last selected node with storing references to a raw js object or State<>
-        //  due to hookstatejs (or maybe not using it correctly). Maybe a React expert can help us :)
-        //  UPDATE: Probably way to do it is editorState = { lastNode?: Node } - this way optionals are supported via usehookstate
-
-        const hasBeenFocused = graphToListStateWithNewlines(graph).filter((node) => 'lastFocusTime' in node && node.lastFocusTime.get()) as State<EditorNodeWithoutChildren>[];
-        if (hasBeenFocused.length === 0) {
-            // it really feels like we are using the library wrong if we have to cast like this?
-            const children = graph[0].children as unknown as State<EditorNodeWithoutChildren>[]; // we ALWAYS have a root node
-            if (children && children.length > 0) {
-                return children[0];
-            } else {
-                throw new Error('Could not determine current node!!!'); // if this happens it's a bug.
-            }
-        }
-        hasBeenFocused.sort((a, b) => {
-            return b.lastFocusTime.get()! - a.lastFocusTime.get()!;
-        });
-        return hasBeenFocused[0] as State<EditorNodeWithoutChildren>;
+        return getLastFocusedState(graph);
     }
 
     if (props.emoticonBarConfig) {
@@ -297,7 +253,7 @@ export function Editor(props: EditorProps) {
                     focusNode(newTextNode);
                 }
             } else {
-                console.log('FOCUSING OTHER', node.isFocused.get());
+                console.log('FOCUSING OTHER', node.id.get(), EditorNodeNames[node.type.get()], node.isFocused.get());
                 focusNodeState(node);
             }
         } catch (e) {
@@ -314,7 +270,7 @@ export function Editor(props: EditorProps) {
     }
 
     // taking a State<Node> here caused a ton of confusion, so now we just take a regular JS object.
-    function doDelete(node: State<EditorNodeWithoutChildren>) {
+    function doDelete(node: State<EditorNodeWithoutChildren>, focusNodeState: State<EditorNodeWithoutChildren>) {
         if (!node || typeof node !== 'object') {
             console.error('Tried to delete empty node!', typeof node);
             return;
@@ -326,7 +282,9 @@ export function Editor(props: EditorProps) {
         }
 
         graph.set((nodes) => {
-            deleteNodeRetainFocus(nodes, node.get({noproxy: true, stealth: true}));
+            const deleteNode = node.get({noproxy: true, stealth: true});
+            const focusNode = focusNodeState.get({noproxy: true, stealth: true});
+            deleteNodeRetainFocus(nodes, deleteNode, focusNode);
             return nodes;
         });
     }
@@ -355,27 +313,34 @@ export function Editor(props: EditorProps) {
         }
     }
 
-    function updateNodeContent(id: number, content: string) {
-        const node = getStateById(graph, id);
+    function updateNodeContent(node: State<EditorNodeWithoutChildren>, content: string) {
+        if (node) {
+            node.content.set(content);
+        }
         // console.log('updateNodeContent', id, node!.content.get(), '->', content);
-        node!.content.set(content);
     }
 
     return <View style={props.style}>
         <Pressable onPress={() => select(getStateLast(graph))} style={styles.inputArea}>
             {props.placeholder}
-            {graph.map((node) => <View style={styles.editorRow} key={node.id.get()}>
+            {graph.map((node) => node && node.id !== undefined && <View style={styles.editorRow} key={node.id.get()}>
                     {/* Node can get set to "none" before the list is re-generated, so the id check is a fast way to eliminate those. */}
                     {node.children && (node.children as State<EditorNodeWithoutChildren[]>).map((node) => node && node.id !== undefined &&
-                        <EditorNodeMemo
+                        <EditorNode
                             key={node.id.get()}
-                            node={node.get()}
+                            nodeState={node}
                             textStyle={props.textStyle}
-                            onBlur={() => deselect(getStateById(graph, node.id.get())! as State<EditorNodeWithoutChildren>)}
-                            onChangeContent={(newContent) => updateNodeContent(node.id.get(), newContent)}
-                            onFocus={() => select(getStateById(graph, node.id.get()) as State<EditorNodeWithoutChildren>)}
-                            onDelete={() => doDelete(getStateById(graph, node.id.get()) as State<EditorNodeWithoutChildren>)}
-                            onTryNewline={() => onTryNewline(getStateById(graph, node.id.get()) as State<EditorNodeWithoutChildren>)}
+                            onBlur={() => deselect(getStateById(graph, node.id.get())!)}
+                            onChangeContent={(newContent) => updateNodeContent(node, newContent)}
+                            onFocus={() => select(getStateById(graph, node.id.get())!)}
+                            doDelete={() => doDelete(getStateById(graph, node.id.get())!, node)}
+                            doDeleteNodeBefore={() => {
+                                const nodeBefore = getStatePrev(graph, node.id.get());
+                                if (nodeBefore) {
+                                    doDelete(nodeBefore, node)
+                                }
+                            }}
+                            onTryNewline={() => onTryNewline(getStateById(graph, node.id.get())!)}
                             isMultiLine={props.isMultiLine}
                         />)}
                 </View>

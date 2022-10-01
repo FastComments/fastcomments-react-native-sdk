@@ -1,5 +1,5 @@
 import {defaultTokenizer, EditorFormatConfiguration, SupportedNodesTokenizerConfig, toTextTrimmed} from "../editor-node-transform";
-import {EditorNodeNewLine, EditorNodeType} from "../node-types";
+import {EditorNodeNewLine, EditorNodeType, EditorNodeWithoutChildren} from "../node-types";
 
 const SupportedNodes: SupportedNodesTokenizerConfig = {
     // text is implicit
@@ -48,27 +48,27 @@ export const EditorFormatConfigurationMarkdown: EditorFormatConfiguration = {
         [EditorNodeType.NEWLINE]: (_node: EditorNodeNewLine, _trimToLength?: number) => {
             return '\n';
         },
-        [EditorNodeType.TEXT]: (node: EditorNodeNewLine, trimToLength?: number) => {
+        [EditorNodeType.TEXT]: (node: EditorNodeWithoutChildren, trimToLength?: number) => {
             return toTextTrimmed(node, null, null, trimToLength);
         },
-        [EditorNodeType.TEXT_BOLD]: (node: EditorNodeNewLine, trimToLength?: number) => {
+        [EditorNodeType.TEXT_BOLD]: (node: EditorNodeWithoutChildren, trimToLength?: number) => {
             return toTextTrimmed(node, '**', '**', trimToLength);
         },
-        [EditorNodeType.EMOTICON]: (node: EditorNodeNewLine, _trimToLength?: number) => {
+        [EditorNodeType.EMOTICON]: (node: EditorNodeWithoutChildren, _trimToLength?: number) => {
             // images should not be trimmed
             return `![](${node.content})`;
         },
-        [EditorNodeType.IMAGE]: (node: EditorNodeNewLine, _trimToLength?: number) => {
+        [EditorNodeType.IMAGE]: (node: EditorNodeWithoutChildren, _trimToLength?: number) => {
             // images should not be trimmed
             return `![](${node.content})`;
         },
-        [EditorNodeType.TEXT_ITALIC]: (node: EditorNodeNewLine, trimToLength?: number) => {
+        [EditorNodeType.TEXT_ITALIC]: (node: EditorNodeWithoutChildren, trimToLength?: number) => {
             return toTextTrimmed(node, '*', '*', trimToLength);
         },
-        [EditorNodeType.TEXT_STRIKETHROUGH]: (node: EditorNodeNewLine, trimToLength?: number) => {
+        [EditorNodeType.TEXT_STRIKETHROUGH]: (node: EditorNodeWithoutChildren, trimToLength?: number) => {
             return toTextTrimmed(node, '~~', '~~', trimToLength);
         },
-        [EditorNodeType.TEXT_UNDERLINE]: (node: EditorNodeNewLine, trimToLength?: number) => {
+        [EditorNodeType.TEXT_UNDERLINE]: (node: EditorNodeWithoutChildren, trimToLength?: number) => {
             // if you don't support underline then disable it in the toolbar.
             return toTextTrimmed(node, '<u>', '</u>', trimToLength);
         },

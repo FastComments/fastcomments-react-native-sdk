@@ -6,6 +6,22 @@ import {createNewlineNode} from "../node-create";
 
 describe('node-delete', () => {
 
+    it('should delete an empty newline before a newline with text, retaining the current newline and text node', () => {
+        const firstNode = createTextNode('');
+        const lastNode = createTextNode('test');
+        const nodes: EditorNodeNewLine[] = [
+            createNewlineNode([firstNode]),
+            createNewlineNode([lastNode])
+        ]
+        focusNode(lastNode);
+        const toDelete = firstNode;
+        const expectedResult: EditorNodeNewLine[] = [
+            nodes[1]
+        ];
+        deleteNodeRetainFocus(nodes, toDelete, lastNode);
+        expect(nodes).toEqual(expectedResult);
+    });
+
     it('should merge two text nodes when deleting an empty one before a node with content, resulting in one node', () => {
         const firstNode = createTextNode('@some-user-name');
         const lastNode = createTextNode('');
@@ -26,7 +42,7 @@ describe('node-delete', () => {
                 ]
             }
         ];
-        deleteNodeRetainFocus(nodes, toDelete);
+        deleteNodeRetainFocus(nodes, toDelete, toDelete);
         expect(nodes).toEqual(expectedResult);
     });
 
@@ -51,7 +67,7 @@ describe('node-delete', () => {
                 ]
             }
         ];
-        deleteNodeRetainFocus(nodes, toDelete);
+        deleteNodeRetainFocus(nodes, toDelete, toDelete);
         expect(nodes).toEqual(expectedResult);
     });
 
@@ -80,7 +96,7 @@ describe('node-delete', () => {
                 ]
             }
         ];
-        deleteNodeRetainFocus(nodes, toDelete);
+        deleteNodeRetainFocus(nodes, toDelete, toDelete);
         expect(nodes).toEqual(expectedResult);
     });
 
@@ -107,7 +123,7 @@ describe('node-delete', () => {
                 ]
             }
         ];
-        deleteNodeRetainFocus(nodes, toDelete);
+        deleteNodeRetainFocus(nodes, toDelete, toDelete);
         expect(nodes).toEqual(expectedResult);
     });
 
@@ -133,7 +149,7 @@ describe('node-delete', () => {
                 ]
             }
         ];
-        deleteNodeRetainFocus(nodes, toDelete);
+        deleteNodeRetainFocus(nodes, toDelete, toDelete);
         expect(nodes).toEqual(expectedResult);
     });
 
@@ -159,7 +175,7 @@ describe('node-delete', () => {
             secondNewline,
             lastNewline,
         ];
-        deleteNodeRetainFocus(nodes, toDelete);
+        deleteNodeRetainFocus(nodes, toDelete, toDelete);
         expect(nodes).toEqual(expectedResult);
     });
 
@@ -193,7 +209,7 @@ describe('node-delete', () => {
                 ]
             }
         ];
-        deleteNodeRetainFocus(nodes, toDelete);
+        deleteNodeRetainFocus(nodes, toDelete, toDelete);
         expect(nodes).toEqual(expectedResult);
     });
 
