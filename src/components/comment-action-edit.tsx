@@ -11,21 +11,21 @@ import {FastCommentsState, IFastCommentsStyles, RNComment} from "../types";
 import {State} from "@hookstate/core";
 
 export interface CommentActionEditProps {
-    comment: State<RNComment>
+    comment: RNComment
     state: State<FastCommentsState>
     styles: IFastCommentsStyles
     close: () => void;
 }
 
 async function saveCommentText({comment, state}: Pick<FastCommentsCommentWithState, 'comment' | 'state'>, newValue: string) {
-    const tenantId = getActionTenantId({state, tenantId: comment.tenantId.get()});
+    const tenantId = getActionTenantId({state, tenantId: comment.tenantId});
     const broadcastId = newBroadcastId();
     const response = await makeRequest<UpdateCommentTextResponse>({
         apiHost: state.apiHost.get(),
         method: 'POST',
-        url: '/comments/' + tenantId + '/' + comment._id.get() + '/update-text/' + createURLQueryString({
+        url: '/comments/' + tenantId + '/' + comment._id + '/update-text/' + createURLQueryString({
             urlId: state.config.urlId.get(),
-            editKey: comment.editKey.get(),
+            editKey: comment.editKey,
             sso: state.ssoConfigString.get(),
             broadcastId
         }),
@@ -37,11 +37,9 @@ async function saveCommentText({comment, state}: Pick<FastCommentsCommentWithSta
         }
     });
     if (response.status === 'success') {
-        comment.merge({
-            approved: response.comment.approved,
-            comment: response.comment.comment,
-            commentHTML: response.comment.commentHTML,
-        });
+        comment.approved = response.comment.approved;
+        comment.comment = response.comment.comment;
+        comment.commentHTML = response.comment.commentHTML;
     } else {
         // TODO error handling
         // TODO handle code 'edit-key-invalid')
@@ -55,7 +53,7 @@ export function CommentActionEdit({comment, state, styles, close}: CommentAction
     return <View style={styles.commentEditModal?.centeredView}>
         <View style={styles.commentEditModal?.modalView}>
             <CommentTextArea
-                state={state.get()} value={comment.comment.get()}
+                state={state.get()} value={comment.comment}
                 styles={styles}
                 output={valueGetter}
             />
@@ -64,8 +62,10 @@ export function CommentActionEdit({comment, state, styles, close}: CommentAction
                 onPress={async () => {
                     setLoading(true);
                     try {
-                        valueGetter.getValue && comment.comment.set(valueGetter.getValue());
-                        await saveCommentText({comment, state}, comment.comment.get()!);
+                        if (valueGetter.getValue) {
+                            comment.comment = valueGetter.getValue();
+                        }
+                        await saveCommentText({comment, state}, comment.comment!);
                         setLoading(false);
                         close();
                     } catch (e) {
@@ -81,7 +81,9 @@ export function CommentActionEdit({comment, state, styles, close}: CommentAction
                 style={styles.commentEditModal?.modalCancel}
                 onPress={close}
             >
-                {<Image source={state.imageAssets.get()[state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]} style={{width: 16, height: 16}} />}
+                {<Image
+                    source={state.imageAssets.get()[state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]}
+                    style={{width: 16, height: 16}}/>}
             </TouchableOpacity>
             {
                 isLoading && <View style={styles.commentEditModal?.loadingView}>

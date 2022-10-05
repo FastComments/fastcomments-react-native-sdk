@@ -10,19 +10,19 @@ import {State} from "@hookstate/core";
 
 export interface CommentActionDeleteProps {
     close: () => void;
-    comment: State<RNComment>
+    comment: RNComment
     state: State<FastCommentsState>
 }
 
 async function deleteComment({comment, state}: Pick<FastCommentsCommentWithState, 'comment' | 'state'>) {
-    const tenantId = getActionTenantId({state, tenantId: comment.tenantId.get()});
+    const tenantId = getActionTenantId({state, tenantId: comment.tenantId});
     const broadcastId = newBroadcastId();
     const response = await makeRequest<DeleteCommentResponse>({
         apiHost: state.apiHost.get(),
         method: 'DELETE',
         url: '/comments/' + tenantId + '/' + comment._id + '/' + createURLQueryString({
             urlId: state.config.urlId.get(),
-            editKey: comment.editKey.get(),
+            editKey: comment.editKey,
             sso: state.ssoConfigString.get(),
             broadcastId
         })
@@ -33,13 +33,11 @@ async function deleteComment({comment, state}: Pick<FastCommentsCommentWithState
             removeCommentOnClient({comment, state});
             console.log(state.commentsTree.length);
         } else {
-            comment.merge({
-                isDeleted: response.comment.isDeleted,
-                comment: response.comment.comment,
-                commentHTML: response.comment.commentHTML,
-                commenterName: response.comment.commenterName,
-                userId: response.comment.userId,
-            });
+            comment.isDeleted = response.comment.isDeleted;
+            comment.comment = response.comment.comment;
+            comment.commentHTML = response.comment.commentHTML;
+            comment.commenterName = response.comment.commenterName;
+            comment.userId = response.comment.userId;
         }
     } else {
         // TODO error handling
