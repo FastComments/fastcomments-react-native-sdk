@@ -15,6 +15,14 @@ export interface FastCommentsCallbacks {
     onCommentsRendered?: (comment: RNComment[]) => void,
     /** Invoked when the user selects a notification. **/
     onNotificationSelected?: (notification: UserNotification) => void,
+    /**
+     * Invoked when the user selects the gif toolbar icon.
+     * Return a publicly accessible image path (should start with http).
+     * You can use the built in GifBrowser as in the examples.
+     * If using the FastComments GifBrowser, just return the string path from the browser. It will already be publicly available.
+     * If you're using some other gif picker, you'll have to provide a public path.
+     * **/
+    pickGIF?: () => Promise<string | false>,
     /** Invoked when the user selects the image toolbar icon. Return a path on disk or a publicly accessible image path (should start with http). **/
     pickImage?: () => Promise<FastCommentsFromDiskAsset | string>,
     /** Invoked when the comment count changes. **/

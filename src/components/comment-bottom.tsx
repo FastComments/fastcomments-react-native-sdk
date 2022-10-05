@@ -11,7 +11,7 @@ import {ReplyArea} from "./reply-area";
 import {CommentDisplayDate} from "./comment-dispay-date";
 import {FastCommentsRNConfig} from "../types/react-native-config";
 
-export interface CommentBottomProps extends Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onReplySuccess' | 'onAuthenticationChange' | 'replyingTo' | 'onNotificationSelected' | 'pickImage'> {
+export interface CommentBottomProps extends Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onReplySuccess' | 'onAuthenticationChange' | 'replyingTo' | 'onNotificationSelected' | 'pickGIF' | 'pickImage'> {
     state: State<FastCommentsState> // we take hookstate here but we try to only use it for the things that change.
     comment: RNComment
     config: FastCommentsRNConfig
@@ -30,6 +30,7 @@ export function CommentBottom(props: CommentBottomProps) {
         onNotificationSelected,
         onReplySuccess,
         onVoteSuccess,
+        pickGIF,
         pickImage,
         replyingTo,
         setRepliesHidden,
@@ -87,6 +88,7 @@ export function CommentBottom(props: CommentBottomProps) {
                 }
                 }
                 parentComment={comment}
+                pickGIF={pickGIF}
                 pickImage={pickImage}
                 state={state}
                 styles={styles}

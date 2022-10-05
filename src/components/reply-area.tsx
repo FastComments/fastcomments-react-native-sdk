@@ -32,7 +32,7 @@ const SignUpErrorsTranslationIds: Record<string, string> = {
     'invalid-name-is-email': 'USERNAME_CANT_BE_EMAIL'
 };
 
-export interface ReplyAreaProps extends Pick<FastCommentsCallbacks, 'onNotificationSelected' | 'onReplySuccess' | 'replyingTo' | 'onAuthenticationChange' | 'pickImage'> {
+export interface ReplyAreaProps extends Pick<FastCommentsCallbacks, 'onNotificationSelected' | 'onReplySuccess' | 'replyingTo' | 'onAuthenticationChange' | 'pickImage' | 'pickGIF'> {
     imageAssets: ImageAssetConfig
     parentComment?: RNComment | null
     state: State<FastCommentsState>
@@ -295,6 +295,7 @@ export function ReplyArea(props: ReplyAreaProps) {
         onAuthenticationChange,
         onReplySuccess,
         parentComment,
+        pickGIF,
         pickImage,
         replyingTo,
         styles,
@@ -429,6 +430,7 @@ export function ReplyArea(props: ReplyAreaProps) {
                     focusObserver={focusObserver}
                     onFocus={() => needsAuth && !commentReplyState.showAuthInputForm.get() && commentReplyState.showAuthInputForm.set(true)}
                     pickImage={pickImage}
+                    pickGIF={pickGIF}
                 />;
         }
 

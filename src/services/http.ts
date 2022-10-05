@@ -1,3 +1,5 @@
+import {FastCommentsRNConfig} from "../types/react-native-config";
+
 export interface HTTPRequest {
     apiHost: string,
     method: 'DELETE' | 'GET' | 'PUT' | 'POST';
@@ -68,4 +70,8 @@ export function createURLQueryString(obj: Record<string, string | string[] | num
         }
     }
     return '?' + result.join('&');
+}
+
+export function getAPIHost(config: FastCommentsRNConfig) {
+    return config.apiHost ? config.apiHost : (config.region === 'eu' ? 'https://eu.fastcomments.com' : 'https://fastcomments.com');
 }

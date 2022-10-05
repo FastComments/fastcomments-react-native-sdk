@@ -23,14 +23,14 @@ async function startEditingComment({
     const response = await makeRequest<GetCommentTextResponse>({
         apiHost: state.apiHost.get(),
         method: 'GET',
-        url: `/comments/${state.config.tenantId.get()}/${comment._id.get()}/text${createURLQueryString({
+        url: `/comments/${state.config.tenantId.get()}/${comment._id}/text${createURLQueryString({
             sso: state.ssoConfigString.get(),
-            editKey: comment.editKey.get()
+            editKey: comment.editKey
         })}`
     });
     console.log('got response', response);
     if (response.status === 'success') {
-        comment.comment.set(response.commentText);
+        comment.comment = response.commentText;
         setModalId('edit');
     } else {
         // TODO show error
@@ -41,14 +41,14 @@ async function setCommentPinStatus({state, comment}: Pick<FastCommentsCommentWit
     const response = await makeRequest<PinCommentResponse>({
         apiHost: state.apiHost.get(),
         method: 'POST',
-        url: `/comments/${state.config.tenantId.get()}/${comment._id.get()}/${doPin ? 'pin' : 'unpin'}${createURLQueryString({
+        url: `/comments/${state.config.tenantId.get()}/${comment._id}/${doPin ? 'pin' : 'unpin'}${createURLQueryString({
             sso: state.ssoConfigString.get(),
-            editKey: comment.editKey.get()
+            editKey: comment.editKey
         })}`
     });
     if (response.status === 'success') {
-        comment.isPinned.set(doPin);
-        repositionComment(comment._id.get(), response.commentPositions!, state);
+        comment.isPinned = doPin;
+        repositionComment(comment._id, response.commentPositions!, state);
     } else {
         // TODO show error
     }
@@ -58,18 +58,18 @@ async function setCommentBlockedStatus({state, comment}: Pick<FastCommentsCommen
     const response = await makeRequest<BlockCommentResponse>({
         apiHost: state.apiHost.get(),
         method: doBlock ? 'POST' : 'DELETE',
-        url: `/block-from-comment/${comment._id.get()}/${createURLQueryString({
+        url: `/block-from-comment/${comment._id}/${createURLQueryString({
             tenantId: state.config.tenantId.get(),
             urlId: state.config.urlId.get(),
             sso: state.ssoConfigString.get(),
-            editKey: comment.editKey.get()
+            editKey: comment.editKey
         })}`,
         body: {
             commentIds: Object.keys(state.commentsById.get())
         }
     });
     if (response.status === 'success') {
-        comment.isBlocked.set(doBlock);
+        comment.isBlocked = doBlock;
         for (const otherCommentId in response.commentStatuses) {
             if (state.commentsById[otherCommentId].get()) {
                 const existing = !!state.commentsById[otherCommentId].isBlocked.get();
@@ -88,7 +88,7 @@ async function setCommentFlaggedStatus({state, comment}: Pick<FastCommentsCommen
     const response = await makeRequest<BlockCommentResponse>({
         apiHost: state.apiHost.get(),
         method: 'POST',
-        url: `/flag-comment/${comment._id.get()}/${createURLQueryString({
+        url: `/flag-comment/${comment._id}/${createURLQueryString({
             tenantId: state.config.tenantId.get(),
             urlId: state.config.urlId.get(),
             sso: state.ssoConfigString.get(),
@@ -96,7 +96,7 @@ async function setCommentFlaggedStatus({state, comment}: Pick<FastCommentsCommen
         })}`
     });
     if (response.status === 'success') {
-        comment.isFlagged.set(doFlag);
+        comment.isFlagged = doFlag;
     } else {
         // TODO show error
         // response.translatedError is supported here (but why not in all actions?)
@@ -146,7 +146,7 @@ export function getCommentMenuItems({comment, styles, state}: FastCommentsCommen
     }
 
     if (canPin) {
-        if (comment.isPinned.get()) {
+        if (comment.isPinned) {
             menuItems.push({
                 id: 'unpin',
                 label: state.translations.COMMENT_MENU_UNPIN.get(),
@@ -189,7 +189,7 @@ export function getCommentMenuItems({comment, styles, state}: FastCommentsCommen
     }
 
     if (canBlockOrFlag) {
-        if (comment.isBlocked.get()) {
+        if (comment.isBlocked) {
             menuItems.push({
                 id: 'unblock',
                 label: state.translations.COMMENT_MENU_UNBLOCK_USER.get(),
@@ -215,7 +215,7 @@ export function getCommentMenuItems({comment, styles, state}: FastCommentsCommen
     }
 
     if (canBlockOrFlag) {
-        if (comment.isFlagged.get()) {
+        if (comment.isFlagged) {
             menuItems.push({
                 id: 'unflag',
                 label: state.translations.COMMENT_MENU_UNFLAG.get(),

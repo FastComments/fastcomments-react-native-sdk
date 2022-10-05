@@ -179,6 +179,16 @@ export interface IFastCommentsStyles {
         prevHTMLStyles?: MixedStyleRecord
         text?: MixedStyleDeclaration
     }
+    gifBrowser?: {
+        centeredView?: ViewStyle
+        modalView?: ViewStyle
+        modalCancel?: ViewStyle
+        modalCancelImage?: ImageStyle
+        searchInput?: ViewStyle
+        list?: ViewStyle
+        listImage?: ImageStyle
+        noResultsMessage?: TextStyle
+    }
     replyArea?: {
         replyingTo?: ViewStyle
         replyingToText?: MixedStyleDeclaration

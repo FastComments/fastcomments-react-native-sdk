@@ -738,6 +738,69 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             },
             text: {}
         },
+        gifBrowser: {
+            centeredView: {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                flex: 1,
+                width: '100%',
+                height: '100%',
+                justifyContent: "flex-start", // top of the screen feels better than the center
+            },
+            modalView: {
+                minWidth: 300,
+                margin: 20,
+                backgroundColor: "white",
+                borderRadius: 20,
+                paddingTop: 35,
+                paddingLeft: 10,
+                paddingRight: 10,
+                paddingBottom: 20,
+                alignItems: "flex-start",
+                shadowColor: "#000",
+                shadowOffset: {
+                    width: 0,
+                    height: 2
+                },
+                shadowOpacity: 0.25,
+                shadowRadius: 4,
+                elevation: 5
+            },
+            modalCancel: {
+                position: 'absolute',
+                top: 10,
+                right: 10
+            },
+            modalCancelImage: {
+                width: 16,
+                height: 16
+            },
+            searchInput: {
+                width: '100%',
+                marginBottom: 10,
+                paddingTop: 5,
+                paddingBottom: 5,
+                borderWidth: 1,
+                borderColor: '#000',
+                borderRadius: 10
+            },
+            list: {
+                width: '100%'
+            },
+            listImage: {
+                marginBottom: 5,
+                aspectRatio: 1,
+                resizeMode: 'stretch',
+                borderWidth: 1,
+                borderColor: 'red'
+            },
+            noResultsMessage: {
+                marginTop: 10,
+                marginBottom: 10,
+                textAlign: 'center'
+            }
+        },
         replyArea: {
             replyingTo: {
                 marginBottom: 5,

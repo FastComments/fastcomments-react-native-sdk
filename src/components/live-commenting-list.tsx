@@ -145,6 +145,7 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
             onAuthenticationChange={callbacks?.onAuthenticationChange}
             onNotificationSelected={callbacks?.onNotificationSelected}
             onReplySuccess={callbacks?.onReplySuccess}
+            pickGIF={callbacks?.pickGIF}
             pickImage={callbacks?.pickImage}
             state={state}
             styles={styles}

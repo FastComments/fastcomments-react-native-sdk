@@ -105,6 +105,7 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
                 onAuthenticationChange={callbacks?.onAuthenticationChange}
                 onNotificationSelected={callbacks?.onNotificationSelected}
                 onReplySuccess={callbacks?.onReplySuccess}
+                pickGIF={callbacks?.pickGIF}
                 pickImage={callbacks?.pickImage}
                 state={state}
                 styles={styles}

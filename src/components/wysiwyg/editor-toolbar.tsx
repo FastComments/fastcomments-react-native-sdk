@@ -5,10 +5,13 @@ import {FastCommentsFromDiskAsset} from "../../types";
 import {EditorNodeWithoutChildren} from "./node-types";
 
 export interface EditorToolbarConfig {
-    selectImage?: (currentNode: State<EditorNodeWithoutChildren>) => void
-    pickImage?: () => Promise<FastCommentsFromDiskAsset | string>
+    selectAndInsertImageAfterCurrentNode?: (currentNode: State<EditorNodeWithoutChildren>) => void
+    getImagePathToInsert?: () => Promise<FastCommentsFromDiskAsset | string>
     uploadImage?: (currentNode: State<EditorNodeWithoutChildren>, asset: FastCommentsFromDiskAsset) => Promise<string>
     imageButton?: ReactNode
+    gifPickerButton?: ReactNode
+    selectAndInsertGIFAfterCurrentNode?: (currentNode: State<EditorNodeWithoutChildren>) => void
+    getGIFPathToInsert?: () => Promise<string | false>
     toggleBold?: (currentNode: State<EditorNodeWithoutChildren>) => void
     boldButton?: ReactNode
     toggleItalic?: (currentNode: State<EditorNodeWithoutChildren>) => void
@@ -40,8 +43,11 @@ export function EditorToolbar({config}: EditorToolbarProps) {
         {config.strikethroughButton && config.toggleStrikethrough && <TouchableOpacity onPress={() => config.toggleStrikethrough!(config.getCurrentNode!())} style={styles.button}>
             {config.strikethroughButton}
         </TouchableOpacity>}
-        {config.imageButton && config.selectImage && <TouchableOpacity onPress={() => config.selectImage!(config.getCurrentNode!())} style={styles.button}>
+        {config.imageButton && config.selectAndInsertImageAfterCurrentNode && <TouchableOpacity onPress={() => config.selectAndInsertImageAfterCurrentNode!(config.getCurrentNode!())} style={styles.button}>
             {config.imageButton}
+        </TouchableOpacity>}
+        {config.gifPickerButton && config.selectAndInsertGIFAfterCurrentNode && <TouchableOpacity onPress={() => config.selectAndInsertGIFAfterCurrentNode!(config.getCurrentNode!())} style={styles.button}>
+            {config.gifPickerButton}
         </TouchableOpacity>}
     </View>;
 }

@@ -1,6 +1,6 @@
 import {FastCommentsCommentWidgetConfig, FastCommentsWidgetComment} from "fastcomments-typescript";
 import {FastCommentsState, GetCommentsResponse, FastCommentsCallbacks, ImageAssetConfig} from "../types";
-import {createURLQueryString, makeRequest} from "./http";
+import {createURLQueryString, getAPIHost, makeRequest} from "./http";
 import {ensureRepliesOpenToComment, getCommentsTreeAndCommentsById} from "./comment-trees";
 import {SubscriberInstance} from "./subscribe-to-changes";
 import {mergeSimpleSSO} from "./sso";
@@ -36,7 +36,7 @@ export class FastCommentsLiveCommentingService {
         mergeSimpleSSO(config);
         return {
             instanceId: Math.random() + '.' + Date.now(),
-            apiHost: config.apiHost ? config.apiHost : (config.region === 'eu' ? 'https://eu.fastcomments.com' : 'https://fastcomments.com'),
+            apiHost: getAPIHost(config),
             wsHost: config.wsHost ? config.wsHost : (config.region === 'eu' ? 'wss://ws-eu.fastcomments.com' : 'wss://ws.fastcomments.com'),
             PAGE_SIZE: 30,
             blockingErrorMessage: undefined,

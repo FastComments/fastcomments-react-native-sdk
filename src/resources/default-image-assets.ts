@@ -51,7 +51,7 @@ export function getDefaultImageAssets(): ImageAssetConfig {
         [FastCommentsImageAsset.ICON_IMAGE_UPLOAD_WHITE]: require('./icons/editor_image_white.png'),
         [FastCommentsImageAsset.ICON_RETURN]: require('./icons/return.png'),
         [FastCommentsImageAsset.ICON_RETURN_WHITE]: require('./icons/return_white.png'),
-        [FastCommentsImageAsset.ICON_GIF]: require('./icons/bell.png'),
+        [FastCommentsImageAsset.ICON_GIF]: require('./icons/gif.png'),
         [FastCommentsImageAsset.ICON_IP]: require('./icons/ip.png'),
         [FastCommentsImageAsset.ICON_BELL]: require('./icons/bell.png'),
         [FastCommentsImageAsset.ICON_BELL_RED]: require('./icons/bell-red.png'),

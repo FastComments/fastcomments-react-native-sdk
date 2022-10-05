@@ -194,9 +194,9 @@ export function Editor(props: EditorProps) {
             if (!props.toolbarConfig.uploadImage) {
                 throw new Error('Toolbar config uploadImage() must be defined if image uploads are allowed!'); // could enforce via types?
             }
-            if (!props.toolbarConfig.selectImage) {
-                props.toolbarConfig.selectImage = async (node: State<EditorNodeWithoutChildren>) => {
-                    const pickedPath = await props.toolbarConfig!.pickImage!();
+            if (!props.toolbarConfig.selectAndInsertImageAfterCurrentNode) {
+                props.toolbarConfig.selectAndInsertImageAfterCurrentNode = async (node: State<EditorNodeWithoutChildren>) => {
+                    const pickedPath = await props.toolbarConfig!.getImagePathToInsert!();
                     let finalPath;
                     if (!pickedPath) {
                         return;
@@ -210,6 +210,39 @@ export function Editor(props: EditorProps) {
                         return;
                     }
                     const newImageNode = createImageNode(finalPath);
+                    if (!node || !node.get()) {
+                        node = getStateLast(graph);
+                    }
+
+                    // before: root -> text node A (selected)
+                    // after: root -> text node A (not selected) -> newline node -> image -> newline node -> text node B (now selected)
+                    const newSelectedTextNode = createTextNode('');
+                    const imageNewLine = createNewlineNode();
+                    imageNewLine.children = [newImageNode];
+
+                    const textNewLine = createNewlineNode();
+                    textNewLine.children = [newSelectedTextNode];
+
+                    graph.set((nodes) => {
+                        insertAfter(nodes, node.id.get(), imageNewLine);
+                        insertAfter(nodes, imageNewLine.id, textNewLine);
+                        return nodes;
+                    });
+                    focusNode(newSelectedTextNode);
+                }
+            }
+        }
+        if (props.toolbarConfig.gifPickerButton) {
+            if (!props.toolbarConfig.getGIFPathToInsert) {
+                throw new Error('Toolbar config getGIFPathToInsert() must be defined if gif uploads are allowed!'); // could enforce via types?
+            }
+            if (!props.toolbarConfig.selectAndInsertGIFAfterCurrentNode) {
+                props.toolbarConfig.selectAndInsertGIFAfterCurrentNode = async (node: State<EditorNodeWithoutChildren>) => {
+                    const publicGifPath = await props.toolbarConfig!.getGIFPathToInsert!();
+                    if (!publicGifPath) {
+                        return;
+                    }
+                    const newImageNode = createImageNode(publicGifPath);
                     if (!node || !node.get()) {
                         node = getStateLast(graph);
                     }

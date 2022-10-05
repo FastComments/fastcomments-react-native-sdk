@@ -34,7 +34,7 @@ export interface FastCommentsCommentWithState {
     width: number
 }
 
-export interface CommentViewProps extends FastCommentsCommentWithState, Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onReplySuccess' | 'onAuthenticationChange' | 'replyingTo' | 'pickImage'> {
+export interface CommentViewProps extends FastCommentsCommentWithState, Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onReplySuccess' | 'onAuthenticationChange' | 'replyingTo' | 'pickGIF' | 'pickImage'> {
 }
 
 const STEALTH = {stealth: true, noproxy: true};
@@ -48,6 +48,7 @@ export function FastCommentsCommentView(props: CommentViewProps) {
         onVoteSuccess,
         onReplySuccess,
         onAuthenticationChange,
+        pickGIF,
         pickImage,
         replyingTo,
         setRepliesHidden,
@@ -135,6 +136,7 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                        onVoteSuccess={onVoteSuccess}
                        onReplySuccess={onReplySuccess}
                        onAuthenticationChange={onAuthenticationChange}
+                       pickGIF={pickGIF}
                        pickImage={pickImage}
                        replyingTo={replyingTo}
                        setRepliesHidden={setRepliesHidden}/>

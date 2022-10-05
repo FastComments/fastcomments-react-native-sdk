@@ -9,7 +9,7 @@ import {IFastCommentsStyles} from "../types";
 import {ImageAssetConfig, RNComment} from "../types";
 import {useState} from "react";
 
-export interface LiveCommentingTopAreaProps extends Pick<FastCommentsCallbacks, 'onAuthenticationChange' | 'onNotificationSelected' | 'onReplySuccess' | 'pickImage'> {
+export interface LiveCommentingTopAreaProps extends Pick<FastCommentsCallbacks, 'onAuthenticationChange' | 'onNotificationSelected' | 'onReplySuccess' | 'pickGIF' | 'pickImage'> {
     imageAssets: ImageAssetConfig
     state: State<FastCommentsState>
     styles: IFastCommentsStyles
@@ -27,17 +27,17 @@ export function LiveCommentingBottomArea(props: LiveCommentingTopAreaProps) {
         onAuthenticationChange,
         onNotificationSelected,
         onReplySuccess,
+        pickGIF,
         pickImage,
         styles,
         translations
     } = props;
     const state = useHookstate(props.state); // OPTIMIZATION: creating scoped state
-    const [parentComment, setParentComment] = useState<State<RNComment> | null>();
+    const [parentComment, setParentComment] = useState<RNComment | null>();
 
     props.callbackObserver.replyingTo = (comment) => {
         if (comment) {
-            const commentState = state.commentsById[comment._id];
-            setParentComment(commentState);
+            setParentComment(comment);
         } else {
             setParentComment(null);
         }
@@ -53,6 +53,7 @@ export function LiveCommentingBottomArea(props: LiveCommentingTopAreaProps) {
                     onNotificationSelected={onNotificationSelected}
                     onReplySuccess={onReplySuccess}
                     parentComment={parentComment}
+                    pickGIF={pickGIF}
                     pickImage={pickImage}
                     replyingTo={props.callbackObserver.replyingTo}
                     state={state}

@@ -19,7 +19,7 @@ export interface FocusObserver {
     setFocused?: (focused: boolean) => void
 }
 
-export interface CommentTextAreaProps extends Pick<FastCommentsCallbacks, 'pickImage'> {
+export interface CommentTextAreaProps extends Pick<FastCommentsCallbacks, 'pickImage' | 'pickGIF'> {
     emoticonBarConfig?: EmoticonBarConfig
     focusObserver?: FocusObserver
     state: FastCommentsState
@@ -37,11 +37,9 @@ export function CommentTextArea({
     output,
     onFocus: _onFocus,
     pickImage,
+    pickGIF,
     value,
 }: CommentTextAreaProps) {
-    // console.log('opening text area', value);
-    // TODO toolbar supports inline reacts - support for extension customizing toolbar?
-    // TODO gif selector
     const maxLength = state.config.maxCommentCharacterLength || 2000;
     const hasDarkBackground = state.config.hasDarkBackground;
     const [isFocused, setFocused] = useState(false);
@@ -58,7 +56,6 @@ export function CommentTextArea({
 
     const placeholder = <Text style={styles.commentTextArea?.placeholder}>{state.translations.ENTER_COMMENT_HERE}</Text>
 
-    // TODO not live responding to dark background config change
     const toolbarConfig: EditorToolbarConfig | undefined = state.config.disableToolbar ? undefined : {
         boldButton: <Image source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_BOLD_WHITE : FastCommentsImageAsset.ICON_BOLD]}
                            style={styles.commentTextArea?.toolbarButton}/>,
@@ -74,7 +71,12 @@ export function CommentTextArea({
         imageButton: pickImage ? <Image
             source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_IMAGE_UPLOAD_WHITE : FastCommentsImageAsset.ICON_IMAGE_UPLOAD]}
             style={[styles.commentTextArea?.toolbarButton]}/> : null,
-        pickImage,
+        // TODO dark mode gif picker icon
+        gifPickerButton: pickGIF ? <Image
+            source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_GIF : FastCommentsImageAsset.ICON_GIF]}
+            style={[styles.commentTextArea?.toolbarButton]}/> : null,
+        getGIFPathToInsert: pickGIF,
+        getImagePathToInsert: pickImage,
         uploadImage: async (_node, photoData) => {
             const formData = new FormData();
             formData.append('file', photoData);

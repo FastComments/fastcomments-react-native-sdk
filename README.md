@@ -41,10 +41,10 @@ This is in heavy development! Examples will be posted here once the library is m
 - [x] User activity indicators
 - [x] Native WYSIWYG Multiline Support
 - [x] Media Selection & Uploads
-- [ ] Gif Browser
+- [x] Gif Browser - With default trending + search capability. Images and searching anonymized by proxy.
 - [x] Release to NPM
 - [x] Switch Pressable usage to Button or TouchableOpacity where possible
-- [ ] WYSIWYG Editor Optimizations (ideally 60fps while typing)
+- [x] WYSIWYG Editor Optimizations (ideally 60fps while typing)
 - [ ] Better WYSIWYG bar icons (web ones don't look good in native)
 - [ ] Complete all TODOs
 - [x] Profile & ensure 40 FPS minimum during writing comments, submitting, voting, and opening reply menu.
