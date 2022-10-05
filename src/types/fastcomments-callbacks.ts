@@ -27,10 +27,6 @@ export interface FastCommentsCallbacks {
     pickImage?: () => Promise<FastCommentsFromDiskAsset | string>,
     /** Invoked when the comment count changes. **/
     // commentCountUpdated?: (newCount: number) => void TODO
-    /** Invoked when clicking an image inside a comment. **/
-    // onImageClicked?: (imageSrc: string) => void TODO
-    /** Invoked when trying to open a user's profile, like when clicking an avatar. Return true to prevent loading spinner. **/
-    // onOpenProfile?: (userId: string) => boolean TODO
 }
 
 export interface FastCommentsFromDiskAsset {

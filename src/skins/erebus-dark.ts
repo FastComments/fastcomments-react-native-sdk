@@ -19,8 +19,6 @@ export function setupErebusDarkSkin(config: FastCommentsRNConfig, styles: IFastC
             'https://cdn.fastcomments.com/images/star-64-filled.png',
         ],
 
-        // TODO textarea looks like vanillajs version
-        // TODO pagination
         useSingleReplyField: true,
         disableToolbar: true,
         disableSuccessMessage: true,

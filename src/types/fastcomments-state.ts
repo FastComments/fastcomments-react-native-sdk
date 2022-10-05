@@ -45,7 +45,6 @@ export interface FastCommentsState {
     hasBillingIssue: boolean;
     hasMore: boolean;
     imageAssets: ImageAssetConfig;
-    instanceId: string; // TODO is this useful since we are not using iframes?
     isDemo: boolean;
     isSiteAdmin: boolean;
     moderatingTenantIds?: string[];
@@ -53,7 +52,7 @@ export interface FastCommentsState {
     page: number;
     pagesLoaded: number[];
     sortDirection: FastCommentsSortDirection;
-    translations: Record<string, string>;  // TODO
+    translations: Record<string, string>;
     userNotificationState: UserNotificationState;
     userPresenceState: UserPresenceState;
     urlIdWS?: string;
