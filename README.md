@@ -45,6 +45,7 @@ This is in heavy development! Examples will be posted here once the library is m
 - [x] Release to NPM
 - [x] Switch Pressable usage to Button or TouchableOpacity where possible
 - [x] WYSIWYG Editor Optimizations (ideally 60fps while typing)
+- [ ] Notification Service (get user's unread notifications in the background to push to them, etc)
 - [ ] Better WYSIWYG bar icons (web ones don't look good in native)
 - [ ] Complete all TODOs
 - [x] Profile & ensure 40 FPS minimum during writing comments, submitting, voting, and opening reply menu.
