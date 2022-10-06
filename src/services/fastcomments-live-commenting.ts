@@ -35,7 +35,6 @@ export class FastCommentsLiveCommentingService {
     static createFastCommentsStateFromConfig(config: FastCommentsCommentWidgetConfig, assets?: ImageAssetConfig): FastCommentsState {
         mergeSimpleSSO(config);
         return {
-            instanceId: Math.random() + '.' + Date.now(),
             apiHost: getAPIHost(config),
             wsHost: config.wsHost ? config.wsHost : (config.region === 'eu' ? 'wss://ws-eu.fastcomments.com' : 'wss://ws.fastcomments.com'),
             PAGE_SIZE: 30,
@@ -49,6 +48,7 @@ export class FastCommentsLiveCommentingService {
             currentUser: !config.sso && config.simpleSSO && config.simpleSSO.username ? config.simpleSSO : undefined,
             hasBillingIssue: false,
             hasMore: false,
+            instanceId: Math.random() + '.' + Date.now(),
             imageAssets: assets ? assets : getDefaultImageAssets(),
             isDemo: false,
             isSiteAdmin: false,
