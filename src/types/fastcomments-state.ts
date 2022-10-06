@@ -47,6 +47,7 @@ export interface FastCommentsState {
     imageAssets: ImageAssetConfig;
     isDemo: boolean;
     isSiteAdmin: boolean;
+    instanceId: string;
     moderatingTenantIds?: string[];
     newRootCommentCount: number;
     page: number;
