@@ -148,7 +148,7 @@ export function handleLiveEvent(state: State<FastCommentsState>, dataJSON: Webso
             }
             break;
         case 'deleted-comment':
-            removeCommentOnClient({state: state, comment: state.commentsById[dataJSON.comment._id]});
+            removeCommentOnClient(state, state.commentsById[dataJSON.comment._id]);
             break;
         case 'new-comment':
         case 'updated-comment':

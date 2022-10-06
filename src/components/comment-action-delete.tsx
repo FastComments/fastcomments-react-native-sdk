@@ -3,9 +3,8 @@ import {Alert} from "react-native";
 import {getActionTenantId} from "../services/tenants";
 import {newBroadcastId} from "../services/broadcast-id";
 import {createURLQueryString, makeRequest} from "../services/http";
-import {DeleteCommentResponse} from "../types/dto/delete-comment";
 import {removeCommentOnClient} from "../services/remove-comment-on-client";
-import {FastCommentsState, RNComment} from "../types";
+import {DeleteCommentResponse, FastCommentsState, RNComment} from "../types";
 import {State} from "@hookstate/core";
 
 export interface CommentActionDeleteProps {
@@ -30,7 +29,7 @@ async function deleteComment({comment, state}: Pick<FastCommentsCommentWithState
     if (response.status === 'success') {
         if (response.hardRemoved) {
             console.log(state.commentsTree.length);
-            removeCommentOnClient({comment, state});
+            removeCommentOnClient(state, state.commentsById[comment._id]);
             console.log(state.commentsTree.length);
         } else {
             comment.isDeleted = response.comment.isDeleted;
