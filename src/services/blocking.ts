@@ -1,6 +1,5 @@
 import {createURLQueryString, makeRequest} from "./http";
-import {CheckedBlockedCommentsResponse} from "../types/dto/checked-blocked-comments";
-import {FastCommentsState} from "../types/fastcomments-state";
+import {CheckedBlockedCommentsResponse, FastCommentsState} from "../types";
 
 // this is used for handling live events since the pub-sub server is stateless.
 export async function checkBlockedComments(state: FastCommentsState, commentIds: string[]): Promise<Record<string, boolean>> {
