@@ -1,5 +1,6 @@
 import { FastCommentsCommentWidgetConfig } from "fastcomments-typescript";
 
+// this should be safe to call multiple times for the same config object
 export function mergeSimpleSSO(config: FastCommentsCommentWidgetConfig) {
     if (config.simpleSSO !== undefined) {
         // have to check email since gets mapped to id
