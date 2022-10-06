@@ -104,7 +104,7 @@ export function GifBrowser({
         if (config.locale) {
             url += '&locale=' + config.locale;
         }
-        const response = await makeRequest<GetTranslationsResponse>({
+        const response = await makeRequest<GetTranslationsResponse<string>>({
             apiHost: getAPIHost(config),
             method: 'GET',
             url: url
