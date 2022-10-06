@@ -15,7 +15,8 @@ export default function AppCommenting() {
   const [config] = useState<FastCommentsCommentWidgetConfig>({
     tenantId: myTenantId,
     urlId: myAppPageId,
-    showLiveRightAway: true
+    showLiveRightAway: true,
+    countAll: true,
   });
 
   // Uncomment this to test changing pages without reloading the whole widget.

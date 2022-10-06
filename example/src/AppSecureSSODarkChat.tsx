@@ -42,6 +42,7 @@ export default function AppSecureSSODarkChat() {
             tenantId: myTenantId,
             urlId: myAppPageId,
             showLiveRightAway: true,
+            countAll: true,
             sso: {
                 verificationHash: ssoJSON.verificationHash,
                 userDataJSONBase64: ssoJSON.userDataJSONBase64,
