@@ -9,6 +9,7 @@ import {newBroadcastId} from "../services/broadcast-id";
 import {CommentTextArea, ValueObserver} from "./comment-text-area";
 import {FastCommentsState, IFastCommentsStyles, RNComment} from "../types";
 import {State} from "@hookstate/core";
+import {incChangeCounter} from "../services/comment-render-determination";
 
 export interface CommentActionEditProps {
     comment: RNComment
@@ -40,6 +41,7 @@ async function saveCommentText({comment, state}: Pick<FastCommentsCommentWithSta
         comment.approved = response.comment.approved;
         comment.comment = response.comment.comment;
         comment.commentHTML = response.comment.commentHTML;
+        incChangeCounter(comment);
     } else {
         // TODO error handling
         // TODO handle code 'edit-key-invalid')

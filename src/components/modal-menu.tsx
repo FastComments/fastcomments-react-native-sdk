@@ -31,15 +31,19 @@ export function ModalMenu({
 }: ModalMenuProps) {
     const [activeModalId, setModalIdVisible] = useState<string | null>(isOpen ? 'menu' : null);
     const [isLoading, setLoading] = useState(false);
+
+    function close() {
+        setModalIdVisible(null);
+        onClose && onClose();
+    }
+
     return <View style={styles.modalMenu?.rootView}>
         {activeModalId && <View>
             <Modal
                 animationType="slide"
                 transparent={true}
                 visible={activeModalId === 'menu'}
-                onRequestClose={() => {
-                    setModalIdVisible(null);
-                }}
+                onRequestClose={close}
             >
                 <View style={styles.modalMenu?.centeredView}>
                     <View style={styles.modalMenu?.modalView}>
@@ -48,7 +52,13 @@ export function ModalMenu({
                                 key={item.id}
                                 style={styles.modalMenu?.menuOptionButton} onPress={async () => {
                                 setLoading(true);
-                                await item.handler(setModalIdVisible);
+                                await item.handler((newModalId) => {
+                                    if (newModalId === null) {
+                                        close();
+                                    } else {
+                                        setModalIdVisible(newModalId);
+                                    }
+                                });
                                 setLoading(false);
                             }}
                             >
@@ -58,7 +68,7 @@ export function ModalMenu({
                         )}
                         <TouchableOpacity
                             style={styles.modalMenu?.modalCancel}
-                            onPress={() => setModalIdVisible(null)}
+                            onPress={close}
                         >
                             {<Image source={closeIcon} style={styles.modalMenu?.menuCancelIcon}/>}
                         </TouchableOpacity>
@@ -78,7 +88,9 @@ export function ModalMenu({
                     setModalIdVisible(null);
                     onClose && onClose();
                 }}>
-                {!!activeModalId && activeModalId !== 'menu' && items && items.find((item) => item.subModalContent && item.id === activeModalId)?.subModalContent!(() => setModalIdVisible(null))}
+                {!!activeModalId && activeModalId !== 'menu' && items && items.find((item) => item.subModalContent && item.id === activeModalId)?.subModalContent!(() => {
+                    close();
+                })}
             </Modal>
         </View>}
         {openButton && <TouchableOpacity onPress={() => setModalIdVisible('menu')}>

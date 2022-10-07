@@ -6,12 +6,14 @@ import {FastCommentsLiveCommentingService} from "../services/fastcomments-live-c
 // @ts-ignore
 import React, {useEffect, useRef, useState} from 'react';
 import {Downgraded, useHookstate, useHookstateEffect} from "@hookstate/core";
-import {IFastCommentsStyles, FastCommentsCallbacks, RNComment, ImageAssetConfig} from "../types";
+import {IFastCommentsStyles, FastCommentsCallbacks, RNComment, ImageAssetConfig, FastCommentsImageAsset} from "../types";
 import {CallbackObserver, LiveCommentingBottomArea} from "./live-commenting-bottom-area";
 import {getDefaultFastCommentsStyles} from "../resources";
 import {FastCommentsRNConfig} from "../types/react-native-config";
 import {ShowHideCommentsToggle} from "./show-hide-comments-toggle";
 import {LiveCommentingList} from "./live-commenting-list";
+import {ModalMenu} from "./modal-menu";
+import {getCommentMenuItems, OpenCommentMenuRequest} from "./comment-menu";
 
 export interface FastCommentsLiveCommentingProps {
     config: FastCommentsRNConfig
@@ -36,6 +38,7 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
     const [isLoaded, setIsLoaded] = useState(false);
     const [isReplyingToParent, setIsReplyingToParent] = useState(false);
     const isReplyingToParentRef = useRef(isReplyingToParent);
+    const [commentMenuRequest, setCommentMenuRequest] = useState<OpenCommentMenuRequest>();
     const loadAsync = async () => {
         if (service.current) {
             setLoading(true);
@@ -96,9 +99,19 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
                 config={config}
                 handleReplyingTo={handleReplyingTo}
                 imageAssets={imageAssets}
+                openCommentMenu={(comment, menuState) => setCommentMenuRequest({
+                    comment, menuState
+                })}
                 styles={styles}
                 state={state}
-                service={service} />}
+                service={service}/>}
+            {commentMenuRequest ?
+                <ModalMenu
+                    key={commentMenuRequest.comment._id}
+                    closeIcon={imageAssets[config.hasDarkBackground ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]}
+                    styles={styles} items={getCommentMenuItems({comment: commentMenuRequest.comment, styles, state}, commentMenuRequest.menuState)}
+                    isOpen={true}
+                    onClose={() => setCommentMenuRequest(undefined)}/> : null}
             <LiveCommentingBottomArea
                 callbackObserver={callbackObserverRef.current}
                 imageAssets={imageAssets}

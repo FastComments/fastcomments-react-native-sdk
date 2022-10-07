@@ -6,6 +6,7 @@ import {createURLQueryString, makeRequest} from "../services/http";
 import {removeCommentOnClient} from "../services/remove-comment-on-client";
 import {DeleteCommentResponse, FastCommentsState, RNComment} from "../types";
 import {State} from "@hookstate/core";
+import {incChangeCounter} from "../services/comment-render-determination";
 
 export interface CommentActionDeleteProps {
     close: () => void;
@@ -28,15 +29,14 @@ async function deleteComment({comment, state}: Pick<FastCommentsCommentWithState
     });
     if (response.status === 'success') {
         if (response.hardRemoved) {
-            console.log(state.commentsTree.length);
             removeCommentOnClient(state, state.commentsById[comment._id]);
-            console.log(state.commentsTree.length);
         } else {
             comment.isDeleted = response.comment.isDeleted;
             comment.comment = response.comment.comment;
             comment.commentHTML = response.comment.commentHTML;
             comment.commenterName = response.comment.commenterName;
             comment.userId = response.comment.userId;
+            incChangeCounter(comment);
         }
     } else {
         // TODO error handling

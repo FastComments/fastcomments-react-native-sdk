@@ -110,8 +110,12 @@ function areCommentsDifferent(prevComment: RNComment, nextComment: RNComment) {
     return false;
 }
 
+export function incChangeCounter(comment: RNComment) {
+    comment.changeCounter = comment.changeCounter ? comment.changeCounter + 1 : 1;
+}
+
 export function arePropsEqual(prevProps: CommentViewProps, nextProps: CommentViewProps, checkConfig = true) {
-    // console.log('HELP', prevProps.comment.children.get()?.length, nextProps.comment.children.get()?.length)
+    // console.log('HELP', prevProps.comment.comment, nextProps.comment.comment)
     const prevComment = prevProps.comment;
     const nextComment = nextProps.comment;
 

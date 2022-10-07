@@ -4,7 +4,7 @@ import * as React from 'react';
 import {RenderHTMLSource} from 'react-native-render-html';
 
 import {Image, Pressable, TouchableOpacity, View} from "react-native";
-import {getCommentMenuItems, getCommentMenuState} from "./comment-menu";
+import {CommentMenuState, getCommentMenuState} from "./comment-menu";
 import {CommentNotices} from "./comment-notices";
 import {CommentUserInfo, getCommentUserInfoHTML} from "./comment-user-info";
 import {State, useHookstate} from "@hookstate/core";
@@ -17,8 +17,6 @@ import {
     IFastCommentsStyles,
     FastCommentsCallbacks, ImageAssetConfig,
 } from "../types";
-import {useState} from "react";
-import {ModalMenu} from "./modal-menu";
 import {CommentVote} from "./comment-vote";
 import {FastCommentsRNConfig} from "../types/react-native-config";
 import {ShowNewChildLiveCommentsButton} from "./show-new-child-live-comments-button";
@@ -27,6 +25,7 @@ export interface FastCommentsCommentWithState {
     comment: RNComment
     config: FastCommentsRNConfig
     imageAssets: ImageAssetConfig
+    openCommentMenu: (comment: RNComment, menuState: CommentMenuState) => void
     setRepliesHidden: (comment: RNComment, hidden: boolean) => void
     translations: Record<string, string>
     state: State<FastCommentsState>
@@ -45,9 +44,10 @@ export function FastCommentsCommentView(props: CommentViewProps) {
         styles,
         comment,
         config,
-        onVoteSuccess,
-        onReplySuccess,
         onAuthenticationChange,
+        onReplySuccess,
+        onVoteSuccess,
+        openCommentMenu,
         pickGIF,
         pickImage,
         replyingTo,
@@ -67,13 +67,8 @@ export function FastCommentsCommentView(props: CommentViewProps) {
     console.log('comment render count', RenderCount[id]);
 
     const state = useHookstate(props.state); // OPTIMIZATION: creating scoped state
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
     // const repliesHiddenState = useHookstate(comment.repliesHidden);
     const repliesHiddenState = commentState.repliesHidden;
-
-    if (comment.hidden) {
-        return null;
-    }
 
     const html = comment.isDeleted
         ? translations.DELETED_PLACEHOLDER
@@ -104,7 +99,7 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                 style={styles.comment?.displayDate}/>
         }
         {comment.isPinned && <Image source={imageAssets[FastCommentsImageAsset.ICON_PIN_RED]} style={styles.comment?.pin}/>}
-        {!usePressableEditTrigger && shouldShowMenu && <TouchableOpacity style={{padding: 5}} onPress={() => setIsMenuOpen(true)}><Image
+        {!usePressableEditTrigger && shouldShowMenu && <TouchableOpacity style={{padding: 5}} onPress={() => openCommentMenu(comment, menuState)}><Image
             source={imageAssets[config.hasDarkBackground ? FastCommentsImageAsset.ICON_EDIT_SMALL_WHITE : FastCommentsImageAsset.ICON_EDIT_SMALL]}
             style={{width: 16, height: 16}}/></TouchableOpacity>}
     </View>
@@ -147,16 +142,12 @@ export function FastCommentsCommentView(props: CommentViewProps) {
     </View>
 
     const contentWrapped = usePressableEditTrigger && shouldShowMenu
-        ? <Pressable onLongPress={() => setIsMenuOpen(true)}>
+        ? <Pressable onLongPress={() => openCommentMenu(comment, menuState)}>
             {content}
         </Pressable> : content;
 
     const indentStyles = comment.parentId ? {marginLeft: 20} : null; // TODO THIS IS TEMPORARY - CLEANUP
     return <View style={[styles.comment?.root, indentStyles]}>
         {contentWrapped}
-        {isMenuOpen && menuState ?
-            <ModalMenu closeIcon={imageAssets[config.hasDarkBackground ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]}
-                       styles={styles} items={getCommentMenuItems(props, menuState)} isOpen={true}
-                       onClose={() => setIsMenuOpen(false)}/> : null}
     </View>;
 }

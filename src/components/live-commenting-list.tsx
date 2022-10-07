@@ -13,6 +13,7 @@ import {LiveCommentingTopArea} from "./live-commenting-top-area";
 import {FastCommentsRNConfig} from "../types/react-native-config";
 import {CallbackObserver} from "./live-commenting-bottom-area";
 import {iterateCommentsTree} from "../services/comment-trees";
+import {CommentMenuState} from "./comment-menu";
 
 export interface LiveCommentingListProps {
     callbacks?: FastCommentsCallbacks
@@ -20,6 +21,7 @@ export interface LiveCommentingListProps {
     config: FastCommentsRNConfig
     handleReplyingTo: (comment: RNComment | null) => void
     imageAssets: ImageAssetConfig
+    openCommentMenu: (comment: RNComment, menuState: CommentMenuState) => void
     styles: IFastCommentsStyles
     state: State<FastCommentsState>
     service: MutableRefObject<FastCommentsLiveCommentingService | undefined>
@@ -37,6 +39,7 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
         config,
         handleReplyingTo,
         imageAssets,
+        openCommentMenu,
         styles,
         service
     } = props;
@@ -76,7 +79,7 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
     // due to state management/re-rendering of deep elements in the tree.
     useHookstateEffect(() => {
         createList()
-    }, state.commentsTree);
+    }, [state.commentsTree]);
 
     const setRepliesHidden = (parentComment: RNComment, repliesHidden: boolean) => {
         parentComment.repliesHidden = repliesHidden;
@@ -122,9 +125,10 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
             translations={state.translations.get({stealth: true})}
             state={state}
             styles={styles!}
-            onVoteSuccess={callbacks?.onVoteSuccess}
-            onReplySuccess={callbacks?.onReplySuccess}
             onAuthenticationChange={callbacks?.onAuthenticationChange}
+            onReplySuccess={callbacks?.onReplySuccess}
+            onVoteSuccess={callbacks?.onVoteSuccess}
+            openCommentMenu={openCommentMenu}
             pickImage={callbacks?.pickImage}
             replyingTo={handleReplyingTo}
             width={width}
@@ -157,25 +161,27 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
     console.log('!!!! ************** list re-rendered ************** !!!!')
 
     return <TRenderEngineProvider baseStyle={styles.comment?.text}>
-        <RenderHTMLConfigProvider><FlatList
-            style={styles.commentsWrapper}
-            data={viewableComments}
-            keyExtractor={item => item && item._id !== undefined ? item._id : '???'}
-            inverted={state.config.newCommentsToBottom.get()}
-            maxToRenderPerBatch={state.PAGE_SIZE.get()}
-            onEndReachedThreshold={0.3}
-            onEndReached={onEndReached}
-            renderItem={renderItem}
-            ListHeaderComponent={header}
-            ListFooterComponent={
-                <View>
-                    {
-                        isFetchingNextPage
-                            ? <ActivityIndicator size="small"/>
-                            : paginationAfterComments
-                    }
-                </View>
-            }
-        /></RenderHTMLConfigProvider>
+        <RenderHTMLConfigProvider>
+            <FlatList
+                style={styles.commentsWrapper}
+                data={viewableComments}
+                keyExtractor={item => item && item._id !== undefined ? item._id : '???'}
+                inverted={state.config.newCommentsToBottom.get()}
+                maxToRenderPerBatch={state.PAGE_SIZE.get()}
+                onEndReachedThreshold={0.3}
+                onEndReached={onEndReached}
+                renderItem={renderItem}
+                ListHeaderComponent={header}
+                ListFooterComponent={
+                    <View>
+                        {
+                            isFetchingNextPage
+                                ? <ActivityIndicator size="small"/>
+                                : paginationAfterComments
+                        }
+                    </View>
+                }
+            />
+        </RenderHTMLConfigProvider>
     </TRenderEngineProvider>;
 }

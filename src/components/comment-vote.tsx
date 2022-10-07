@@ -16,6 +16,7 @@ import {createURLQueryString, makeRequest} from "../services/http";
 import {newBroadcastId} from '../services/broadcast-id';
 import {Pressable} from 'react-native';
 import {FastCommentsRNConfig} from "../types/react-native-config";
+import {incChangeCounter} from "../services/comment-render-determination";
 
 export interface CommentVoteProps extends Pick<FastCommentsCallbacks, 'onVoteSuccess'> {
     state: State<FastCommentsState>
@@ -134,11 +135,12 @@ async function doVote({state, comment, onVoteSuccess}: Pick<CommentVoteProps, 's
                 comment.myVoteId = response.voteId;
                 onVoteSuccess && onVoteSuccess(comment, response.voteId!, voteState.voteDir.get()!, response.status);
                 if (response.editKey) {
-                    comment.voteEditKey =response.editKey;
+                    comment.voteEditKey = response.editKey;
                 } else {
                     comment.voteEditKey = undefined;
                 }
                 voteState.isAwaitingVerification.set(false);
+                incChangeCounter(comment);
             } else if (response.status === 'pending-verification') {
                 if (voteState.voteDir.get() === 'up') {
                     comment.isVotedUp = true;
@@ -148,10 +150,11 @@ async function doVote({state, comment, onVoteSuccess}: Pick<CommentVoteProps, 's
                 if (!response.isVerified) {
                     voteState.isAwaitingVerification.set(true);
                 }
-                comment.myVoteId =response.voteId;
+                comment.myVoteId = response.voteId;
                 onVoteSuccess && onVoteSuccess(comment, response.voteId!, voteState.voteDir.get()!, response.status);
-                comment.voteEditKey =response.editKey;
+                comment.voteEditKey = response.editKey;
                 voteState.isAwaitingVerification.set(false);
+                incChangeCounter(comment);
             } else {
                 if (response.code === 'already-voted') {
                     // we'll show a message based on this response code.
@@ -213,7 +216,8 @@ export function CommentVote(props: CommentVoteProps) {
                 source={imageAssets[comment.isVotedDown ? (config.hasDarkBackground ? FastCommentsImageAsset.ICON_DOWN_ACTIVE_WHITE : FastCommentsImageAsset.ICON_DOWN_ACTIVE) : FastCommentsImageAsset.ICON_DOWN]}
                 style={styles.commentVote?.voteButtonIcon}/>
         </Pressable>}
-        {showDownVoting && comment.votesDown ? <Text style={styles.commentVote?.votesDownText}>{Number(comment.votesDown).toLocaleString()}</Text> : null}
+        {showDownVoting && comment.votesDown ?
+            <Text style={styles.commentVote?.votesDownText}>{Number(comment.votesDown).toLocaleString()}</Text> : null}
     </View>
 
     if (voteState.isAuthenticating.get()) {

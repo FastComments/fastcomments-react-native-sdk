@@ -14,12 +14,13 @@ import {PinCommentResponse} from "../types/dto/pin-comment";
 import {BlockCommentResponse} from "../types/dto/block-comment";
 import {ModalMenuItem} from "./modal-menu";
 import {State} from "@hookstate/core";
-import {FastCommentsState, RNComment} from "../types";
+import {FastCommentsState, IFastCommentsStyles, RNComment} from "../types";
+import {incChangeCounter} from "../services/comment-render-determination";
 
 async function startEditingComment({
-                                       state,
-                                       comment
-                                   }: Pick<FastCommentsCommentWithState, 'state' | 'comment'>, setModalId: Dispatch<SetStateAction<string | null>>) {
+    state,
+    comment
+}: Pick<FastCommentsCommentWithState, 'state' | 'comment'>, setModalId: Dispatch<SetStateAction<string | null>>) {
     const response = await makeRequest<GetCommentTextResponse>({
         apiHost: state.apiHost.get(),
         method: 'GET',
@@ -28,7 +29,6 @@ async function startEditingComment({
             editKey: comment.editKey
         })}`
     });
-    console.log('got response', response);
     if (response.status === 'success') {
         comment.comment = response.commentText;
         setModalId('edit');
@@ -49,6 +49,7 @@ async function setCommentPinStatus({state, comment}: Pick<FastCommentsCommentWit
     if (response.status === 'success') {
         comment.isPinned = doPin;
         repositionComment(comment._id, response.commentPositions!, state);
+        incChangeCounter(comment);
     } else {
         // TODO show error
     }
@@ -70,12 +71,14 @@ async function setCommentBlockedStatus({state, comment}: Pick<FastCommentsCommen
     });
     if (response.status === 'success') {
         comment.isBlocked = doBlock;
+        incChangeCounter(comment);
         for (const otherCommentId in response.commentStatuses) {
             if (state.commentsById[otherCommentId].get()) {
                 const existing = !!state.commentsById[otherCommentId].isBlocked.get();
                 const newValue = response.commentStatuses[otherCommentId];
                 if (existing !== newValue) {
                     state.commentsById[otherCommentId].isBlocked.set(newValue);
+                    incChangeCounter(state.commentsById[otherCommentId].get({stealth: true}));
                 }
             }
         }
@@ -97,13 +100,15 @@ async function setCommentFlaggedStatus({state, comment}: Pick<FastCommentsCommen
     });
     if (response.status === 'success') {
         comment.isFlagged = doFlag;
+        state.commentsById[comment._id].isFlagged.set(doFlag);
+        incChangeCounter(comment);
     } else {
         // TODO show error
         // response.translatedError is supported here (but why not in all actions?)
     }
 }
 
-interface CommentMenuState {
+export interface CommentMenuState {
     canEdit: boolean
     canPin: boolean
     canBlockOrFlag: boolean
@@ -122,7 +127,18 @@ export function getCommentMenuState(state: State<FastCommentsState>, comment: St
     }
 }
 
-export function getCommentMenuItems({comment, styles, state}: FastCommentsCommentWithState, {
+export interface GetCommentMenuItemsProps {
+    comment: RNComment
+    state: State<FastCommentsState>
+    styles: IFastCommentsStyles,
+}
+
+export interface OpenCommentMenuRequest {
+    comment: RNComment
+    menuState: CommentMenuState
+}
+
+export function getCommentMenuItems({comment, styles, state}: GetCommentMenuItemsProps, {
     canEdit,
     canPin,
     canBlockOrFlag,
