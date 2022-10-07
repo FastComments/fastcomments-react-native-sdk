@@ -345,7 +345,7 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 "paddingTop": 5,
                 "paddingRight": 7,
                 "paddingBottom": 5,
-                "paddingLeft": 7,
+                "paddingLeft": 0,
                 "borderTopLeftRadius": 4,
                 "borderTopRightRadius": 4,
                 "borderBottomRightRadius": 4,
@@ -354,7 +354,9 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 "backgroundColor": "transparent"
             },
             imageBadgeImage: {
-                maxWidth: 22
+                width: 22,
+                aspectRatio: 1,
+                resizeMode: 'contain',
             },
             textBadge: {
                 "marginTop": 3,
@@ -385,7 +387,10 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             infoLeft: {
                 marginRight: 7
             },
-            infoRight: {},
+            infoRight: {
+                flexDirection: 'column',
+                justifyContent: 'center'
+            },
             label: {
                 fontSize: 10,
                 textTransform: "uppercase",
@@ -433,7 +438,9 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                     width: 6,
                     height: 3
                 },
-                elevation: 2
+                elevation: 2,
+                // otherwise the elevation causes the image to appear too dark since the default image has some transparency
+                backgroundColor: '#fff'
             },
             avatarImage: {
                 width: 36,
