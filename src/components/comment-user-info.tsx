@@ -118,7 +118,7 @@ export function CommentUserInfo(props: CommentUserInfoProps) {
             {avatar}
         </View> : null}
         <View style={styles.commentUserInfo?.infoRight}>
-            {comment.badges && comment.badges.map((badge) => <CommentUserBadge key={badge.id} badge={badge} styles={styles}/>)}
+            {comment.badges && comment.badges.length > 0 && comment.badges.map((badge) => <CommentUserBadge key={badge.id} badge={badge} styles={styles}/>)}
             {!comment.verified && !(comment.wasPostedCurrentSession && comment.requiresVerification) && !config.disableUnverifiedLabel &&
             <Text style={styles.commentUserInfo?.label}>{translations.UNVERIFIED_COMMENT}</Text>
             }
