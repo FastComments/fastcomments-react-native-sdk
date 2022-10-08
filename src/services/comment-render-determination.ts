@@ -1,5 +1,6 @@
 import {CommentViewProps} from "../components/comment";
 import {RNComment} from "../types";
+import {State} from "@hookstate/core";
 
 // Yeah this is terrible but I can't get the previous version of the comment via hookstate as by the time React.memo calls the
 // prop comparison method both prevProps and nextProps hold a State object which contains a reference to the latest version and
@@ -114,6 +115,10 @@ function areCommentsDifferent(prevComment: RNComment, nextComment: RNComment) {
 
 export function incChangeCounter(comment: RNComment) {
     comment.changeCounter = comment.changeCounter ? comment.changeCounter + 1 : 1;
+}
+
+export function incChangeCounterState(comment: State<RNComment>) {
+    comment.changeCounter.set((changeCounter) => changeCounter ? changeCounter + 1 : 1);
 }
 
 export function arePropsEqual(prevProps: CommentViewProps, nextProps: CommentViewProps, checkConfig = true) {

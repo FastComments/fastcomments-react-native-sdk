@@ -17,6 +17,7 @@ import {
 import {CommentVote} from "./comment-vote";
 import {FastCommentsRNConfig} from "../types/react-native-config";
 import {ShowNewChildLiveCommentsButton} from "./show-new-child-live-comments-button";
+import {memo} from "react";
 
 export interface FastCommentsCommentWithState {
     comment: RNComment
@@ -30,10 +31,23 @@ export interface FastCommentsCommentWithState {
     width: number
 }
 
+interface HTMLRenderMemoProps {
+    html: string
+    width: number
+}
+
+const CommentHTMLRenderMemo = memo<HTMLRenderMemoProps>(
+    ({html, width}) => <RenderHTMLSource source={{
+        html
+    }} contentWidth={width}/>,
+    (prevProps, nextProps) => {
+        return prevProps.html === nextProps.html && prevProps.width === nextProps.width;
+    }
+);
+
 export interface CommentViewProps extends FastCommentsCommentWithState, Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onReplySuccess' | 'onAuthenticationChange' | 'replyingTo' | 'pickGIF' | 'pickImage'> {
 }
 
-const STEALTH = {stealth: true, noproxy: true};
 const RenderCount: Record<string, number> = {};
 
 export function FastCommentsCommentView(props: CommentViewProps) {
@@ -54,7 +68,6 @@ export function FastCommentsCommentView(props: CommentViewProps) {
         width,
     } = props;
 
-    const commentState = useHookstate(props.comment);
     const id = comment._id;
     if (RenderCount[id] === undefined) {
         RenderCount[id] = 1;
@@ -64,8 +77,6 @@ export function FastCommentsCommentView(props: CommentViewProps) {
     console.log('comment render count', RenderCount[id]);
 
     const state = useHookstate(props.state); // OPTIMIZATION: creating scoped state
-    // const repliesHiddenState = useHookstate(comment.repliesHidden);
-    const repliesHiddenState = commentState.repliesHidden;
 
     const html = comment.isDeleted
         ? translations.DELETED_PLACEHOLDER
@@ -79,12 +90,19 @@ export function FastCommentsCommentView(props: CommentViewProps) {
     const renderCommentInline = config.renderCommentInline;
     const usePressableEditTrigger = config.usePressToEdit;
     const isReadonly = config.readonly;
-    const menuState = isReadonly ? null : getCommentMenuState(state, commentState);
+    const menuState = isReadonly ? null : getCommentMenuState(state, comment);
     const shouldShowMenu = menuState
         && (menuState.canEdit
             || menuState.canPin
             || menuState.canBlockOrFlag);
     const htmlWrapped = `<div style="${styles.comment?.textHTML || ''}">${html}</div>`; // goes away when fixed: https://github.com/meliorence/react-native-render-html/issues/582
+    const finalHTML = renderCommentInline ? `<div style="flex-direction:row">${getCommentUserInfoHTML({
+        comment,
+        config,
+        imageAssets,
+        translations,
+        styles
+    })}${htmlWrapped}</div>` : htmlWrapped;
     const content = <View style={styles.comment?.subRoot}><View style={styles.comment?.topRight}>
         {
             !config.renderDateBelowComment
@@ -95,26 +113,19 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                 absoluteAndRelativeDates={config.absoluteAndRelativeDates}
                 style={styles.comment?.displayDate}/>
         }
-        {comment.isPinned && <Image source={imageAssets[FastCommentsImageAsset.ICON_PIN_RED]} style={styles.comment?.pin}/>}
-        {!usePressableEditTrigger && shouldShowMenu && <TouchableOpacity style={{padding: 5}} onPress={() => openCommentMenu(comment, menuState)}><Image
+        {comment.isPinned && <Image source={imageAssets[config.hasDarkBackground ? FastCommentsImageAsset.ICON_PIN_WHITE : FastCommentsImageAsset.ICON_PIN_RED]} style={styles.comment?.pin}/>}
+        {!usePressableEditTrigger && shouldShowMenu &&
+        <TouchableOpacity style={{padding: 5}} onPress={() => openCommentMenu(comment, menuState)}><Image
             source={imageAssets[config.hasDarkBackground ? FastCommentsImageAsset.ICON_EDIT_SMALL_WHITE : FastCommentsImageAsset.ICON_EDIT_SMALL]}
             style={{width: 16, height: 16}}/></TouchableOpacity>}
     </View>
         {/* TODO: MEMOIZE RenderHTMLSource so that we can re-render comment w/o re-rendering HTML. */}
         <View style={styles.comment?.contentWrapper}>
-            <CommentNotices comment={commentState} styles={styles} translations={translations}/>
+            <CommentNotices comment={comment} styles={styles} translations={translations}/>
             {!renderCommentInline &&
             <CommentUserInfo comment={comment} config={config} imageAssets={imageAssets} styles={styles} translations={translations}
                              userPresenceState={state.userPresenceState}/>}
-            {<RenderHTMLSource source={{
-                html: renderCommentInline ? `<div style="flex-direction:row">${getCommentUserInfoHTML({
-                    comment,
-                    config,
-                    imageAssets,
-                    translations,
-                    styles
-                })}${htmlWrapped}</div>` : htmlWrapped
-            }} contentWidth={width}/>}
+            <CommentHTMLRenderMemo html={finalHTML} width={width} />
             {config.renderLikesToRight &&
             <CommentVote comment={comment} config={config} imageAssets={imageAssets} state={state} styles={styles} translations={translations}
                          onVoteSuccess={onVoteSuccess}/>}
@@ -132,9 +143,9 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                        pickImage={pickImage}
                        replyingTo={replyingTo}
                        setRepliesHidden={setRepliesHidden}/>
-        {!repliesHiddenState.get(STEALTH) && <View style={styles.comment?.children}>
+        {!comment.repliesHidden && <View style={styles.comment?.children}>
             {comment.hiddenChildrenCount &&
-            <ShowNewChildLiveCommentsButton commentTreeNode={commentState} translations={translations} styles={styles}/>}
+            <ShowNewChildLiveCommentsButton comment={comment} translations={translations} styles={styles}/>}
         </View>}
     </View>
 

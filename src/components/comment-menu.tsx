@@ -13,7 +13,7 @@ import {BlockCommentResponse} from "../types";
 import {ModalMenuItem} from "./modal-menu";
 import {State} from "@hookstate/core";
 import {FastCommentsState, IFastCommentsStyles, RNComment} from "../types";
-import {incChangeCounter} from "../services/comment-render-determination";
+import {incChangeCounter, incChangeCounterState} from "../services/comment-render-determination";
 import {getMergedTranslations} from "../services/translations";
 
 async function startEditingComment({
@@ -59,6 +59,7 @@ async function setCommentPinStatus({state, comment}: Pick<FastCommentsCommentWit
         comment.isPinned = doPin;
         repositionComment(comment._id, response.commentPositions!, state);
         incChangeCounter(comment);
+        incChangeCounterState(state.commentsById[comment._id]);
     } else {
         const translations = getMergedTranslations(state.translations.get({stealth: true}), response);
         Alert.alert(
@@ -150,12 +151,12 @@ export interface CommentMenuState {
     canBlockOrFlag: boolean
 }
 
-export function getCommentMenuState(state: State<FastCommentsState>, comment: State<RNComment>): CommentMenuState {
+export function getCommentMenuState(state: State<FastCommentsState>, comment: RNComment): CommentMenuState {
     const currentUser = state.currentUser.get({stealth: true});
-    const isMyComment = !!currentUser && 'id' in currentUser && (comment.userId.get({stealth: true}) === currentUser.id || comment.anonUserId.get({stealth: true}) === currentUser.id);
-    const canEdit: boolean = !comment.isDeleted.get({stealth: true}) && !!((currentUser && 'authorized' in currentUser && !!currentUser.authorized && (state.isSiteAdmin.get({stealth: true}) || isMyComment))); // can have edit key and be anon
-    const canPin: boolean = state.isSiteAdmin.get({stealth: true}) && !(comment.parentId?.get({stealth: true}));
-    const canBlockOrFlag: boolean = !comment.isDeleted?.get({stealth: true}) && !comment.isByAdmin?.get({stealth: true}) && !comment.isByModerator?.get({stealth: true}) && !isMyComment && !!currentUser && 'authorized' in currentUser && !!currentUser.authorized;
+    const isMyComment = !!currentUser && 'id' in currentUser && (comment.userId === currentUser.id || comment.anonUserId === currentUser.id);
+    const canEdit: boolean = !comment.isDeleted && !!((currentUser && 'authorized' in currentUser && !!currentUser.authorized && (state.isSiteAdmin.get({stealth: true}) || isMyComment))); // can have edit key and be anon
+    const canPin: boolean = state.isSiteAdmin.get({stealth: true}) && !comment.parentId;
+    const canBlockOrFlag: boolean = !comment.isDeleted && !comment.isByAdmin && !comment.isByModerator && !isMyComment && !!currentUser && 'authorized' in currentUser && !!currentUser.authorized;
     return {
         canEdit,
         canPin,
