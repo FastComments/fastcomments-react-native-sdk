@@ -368,8 +368,10 @@ export function ReplyArea(props: ReplyAreaProps) {
         if (!parentComment && currentUser) {
             topBar = <View style={styles.replyArea?.topBar}>
                 <View style={styles.replyArea?.loggedInInfo}>
-                    <Image style={styles.replyArea?.topBarAvatar}
+                    <View style={styles.replyArea?.topBarAvatarWrapper}>
+                        <Image style={styles.replyArea?.topBarAvatar}
                            source={currentUser.avatarSrc ? {uri: currentUser.avatarSrc} : getDefaultAvatarSrc(imageAssets)}/>
+                    </View>
                     <Text style={styles.replyArea?.topBarUsername}>{currentUser.username}</Text>
                 </View>
                 <View style={styles.replyArea?.topBarRight}>

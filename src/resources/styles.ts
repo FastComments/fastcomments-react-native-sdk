@@ -1,4 +1,23 @@
 import {IFastCommentsStyles} from "../types";
+import {ViewStyle} from "react-native";
+
+const LoadingOverlay: ViewStyle = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff50'
+}
+
+const GreyButton = {
+    borderWidth: 1,
+    borderColor: "#a2a2a2",
+    backgroundColor: "#fbfbfb"
+}
 
 export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
     return {
@@ -6,16 +25,7 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             flex: 1
         },
         loadingOverlay: {
-            // TODO common
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#ffffff50'
+            ...LoadingOverlay
         },
         red: {
             color: 'red'
@@ -165,16 +175,7 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 right: 10
             },
             loadingView: {
-                // TODO common
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                flex: 1,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#ffffff80'
+                ...LoadingOverlay
             },
             saveButton: {
                 marginTop: 10
@@ -266,7 +267,7 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 flexDirection: 'row',
                 alignItems: "center",
                 justifyContent: 'flex-start',
-                marginTop: 10, // TODO move to consumer
+                marginTop: 10,
             },
             text: {
                 fontSize: 12
@@ -289,7 +290,7 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             placeholder: {
                 position: 'absolute',
                 padding: 8,
-                color: '#000' // TODO don't use #000
+                color: '#000'
             },
             toolbarButton: {
                 height: 18,
@@ -505,16 +506,7 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 "fontSize": 13
             },
             loadingView: {
-                // TODO common
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                flex: 1,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#ffffff80'
+                ...LoadingOverlay
             },
             voteAuthButtons: {
                 flexDirection: 'row',
@@ -575,15 +567,7 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 right: 10
             },
             loadingView: {
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                flex: 1,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#ffffff80'
+                ...LoadingOverlay
             }
         },
         notificationBell: {
@@ -713,10 +697,8 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 paddingRight: 20,
                 paddingBottom: 10,
                 paddingLeft: 20,
-                borderWidth: 1,
                 borderRadius: 7,
-                borderColor: "#a2a2a2",
-                backgroundColor: "#fbfbfb"
+                ...GreyButton
             },
             nextHTMLStyles: {
                 span: {
@@ -728,10 +710,8 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 paddingRight: 20,
                 paddingBottom: 10,
                 paddingLeft: 20,
-                borderWidth: 1,
                 borderRadius: 7,
-                borderColor: "#a2a2a2",
-                backgroundColor: "#fbfbfb"
+                ...GreyButton
             },
             allHTMLStyles: {
                 span: {
@@ -859,15 +839,24 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 alignItems: 'center',
                 "minWidth": 150
             },
+            topBarAvatarWrapper: {
+                height: 25,
+                width: 25,
+                marginRight: 5,
+                borderRadius: 25,
+                overflow: "hidden",
+                shadowRadius: 5,
+                shadowColor: '#000',
+                shadowOpacity: 1,
+                shadowOffset: {
+                    width: 6,
+                    height: 3
+                },
+                elevation: 2
+            },
             topBarAvatar: {
-                "height": 25,
-                "width": 25,
-                "marginRight": 5,
-                "borderTopLeftRadius": 25,
-                "borderTopRightRadius": 25,
-                "borderBottomRightRadius": 25,
-                "borderBottomLeftRadius": 25,
-                // TODO box shadow
+                height: 25,
+                width: 25,
             },
             topBarUsername: {
                 "overflow": "scroll",
@@ -889,24 +878,22 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 alignItems: 'flex-end',
                 justifyContent: 'space-between'
             },
-            replyButton: { // TODO common button colors
+            replyButton: {
                 flexDirection: 'row',
                 alignItems: 'flex-start',
                 justifyContent: 'space-between',
                 marginTop: 15,
                 marginBottom: 10,
                 marginRight: 0,
-                "paddingTop": 10,
-                "paddingRight": 20,
-                "paddingBottom": 10,
-                "paddingLeft": 20,
-                borderWidth: 1,
+                paddingTop: 10,
+                paddingRight: 20,
+                paddingBottom: 10,
+                paddingLeft: 20,
                 borderRadius: 7,
-                borderColor: "#a2a2a2",
-                "backgroundColor": "#fbfbfb"
+                ...GreyButton
             },
             replyButtonText: {
-                "color": "#333"
+                color: "#333"
             },
             replyButtonIcon: {
                 width: 22,
@@ -916,16 +903,7 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 resizeMode: 'stretch'
             },
             loadingView: {
-                // TODO common
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                flex: 1,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#ffffff80'
+                ...LoadingOverlay
             },
             error: {
                 "margin": 5,
@@ -980,13 +958,11 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 "paddingRight": 10,
                 "paddingBottom": 10,
                 "paddingLeft": 10,
-                "borderWidth": 1,
                 "borderTopLeftRadius": 4,
                 "borderTopRightRadius": 4,
                 "borderBottomRightRadius": 4,
                 "borderBottomLeftRadius": 4,
-                "borderColor": "#a2a2a2",
-                "backgroundColor": "#fbfbfb"
+                ...GreyButton
             }
         },
         selectSortDirection: {

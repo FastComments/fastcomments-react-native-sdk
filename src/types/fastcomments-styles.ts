@@ -3,7 +3,7 @@ import {MixedStyleDeclaration, MixedStyleRecord} from "react-native-render-html"
 
 export interface IFastCommentsStyles {
     root?: ViewStyle,
-    loadingOverlay?: TextStyle
+    loadingOverlay?: ViewStyle
     red?: TextStyle
     threeDotMenu?: {
         root?: ViewStyle
@@ -199,6 +199,7 @@ export interface IFastCommentsStyles {
         topBar?: ViewStyle
         topBarAndInputArea?: ViewStyle
         loggedInInfo?: ViewStyle
+        topBarAvatarWrapper?: ViewStyle
         topBarAvatar?: ImageStyle
         topBarUsername?: TextStyle
         topBarRight?: ViewStyle
