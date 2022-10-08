@@ -8,6 +8,7 @@ import {State} from "@hookstate/core";
 import {handleNewCustomConfig} from "./custom-config";
 import {persistSubscriberState} from "./live";
 import {getDefaultImageAssets} from "../resources";
+import {Alert} from "react-native";
 
 interface FastCommentsInternalState {
     isFirstRequest: boolean;
@@ -217,7 +218,6 @@ export class FastCommentsLiveCommentingService {
             state.commentsTree.set(result.comments);
 
             if (config.jumpToId) {
-                // TODO OPTIMIZE - would passing State<state.commentsById> be faster here?
                 ensureRepliesOpenToComment(state.commentsById.get(), config.jumpToId);
             }
 
@@ -227,6 +227,7 @@ export class FastCommentsLiveCommentingService {
             state.isDemo.set(!!response.isDemo);
             if (response.commentCount !== undefined && Number.isFinite(response.commentCount)) {
                 state.commentCountOnServer.set(response.commentCount);
+                this.callbacks?.commentCountUpdated && this.callbacks?.commentCountUpdated(response.commentCount);
             }
 
             if (config.jumpToId) {
@@ -245,10 +246,21 @@ export class FastCommentsLiveCommentingService {
             }
             internalState.isFirstRequest = false;
             config.onCommentsRendered && config.onCommentsRendered(response.comments || []);
-            // console.log('RESULTING STATE', JSON.stringify(state.get())); // TODO remove
         } catch (e) {
-            // TODO handle failures
             console.error(e);
+            const translations = this.state.translations.get({stealth: true}) ? this.state.translations.get({stealth: true}) : {
+                DISMISS: 'Dismiss',
+                ERROR_MESSAGE: 'Whoops! Something went wrong. Please try again later.' // pre-fill, in case we need to show this before translations are loaded.
+            }
+            Alert.alert(
+                ":(",
+                translations.ERROR_MESSAGE,
+                [
+                    {
+                        text: translations.DISMISS
+                    }
+                ]
+            );
         }
     }
 }

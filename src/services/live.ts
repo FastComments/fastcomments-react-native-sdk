@@ -14,7 +14,7 @@ import {handleNewCustomConfig} from "./custom-config";
 const SubscriberInstanceById: Record<string, SubscriberInstance | void> = {};
 
 export function handleLiveEvent(state: State<FastCommentsState>, dataJSON: WebsocketLiveEvent) {
-    console.log('handleLiveEvent', dataJSON); // TODO remove
+    // console.log('handleLiveEvent', dataJSON);
     if ('broadcastId' in dataJSON && broadcastIdsSent.includes(dataJSON.broadcastId)) {
         return;
     }
@@ -161,7 +161,6 @@ export function handleLiveEvent(state: State<FastCommentsState>, dataJSON: Webso
                 if (!commentsById[dataJSONComment._id].approved.get() && dataJSONComment.approved) {
                     dataJSON.type = 'updated-comment'; // we'll just set the comment as approved
                 } else {
-                    console.log('returning', commentsById[dataJSONComment._id].get()); // TODO REMOVE
                     return;
                 }
             }
@@ -217,19 +216,25 @@ export function handleLiveEvent(state: State<FastCommentsState>, dataJSON: Webso
                     updateRoot = true;
                 } else {
                     currentParent = commentsById[dataJSONComment.parentId];
-                    // TODO What was this supposed to do? It does not look like it was working correctly as we would hit iteratedCount when a new comment comes in that is a child of a comment that is not visible.
-                    // let iteratedCount = 0;
-                    // while ((!currentParent || currentParent.hidden === true) && iteratedCount < 5000) {
-                    //     if (currentParent && !currentParent.parentId) {
-                    //         updateRoot = true;
-                    //         break; // reached top of page
-                    //     }
-                    //     currentParent = currentParent ? commentsById[currentParent.parentId] : null;
-                    //     iteratedCount++;
-                    // }
-                    // if (iteratedCount >= 4998) {
-                    //     console.warn('FC - iteration hit limit', iteratedCount);
-                    // }
+                    let iteratedCount = 0;
+                    while (
+                        (
+                            (!currentParent || !currentParent.get({stealth: true}))
+                            || currentParent.hidden.get({stealth: true}) === true
+                        )
+                        && iteratedCount < 5000
+                        ) {
+                        const nextParentId: string | undefined | null = currentParent ? currentParent.parentId.get({stealth: true}) : null;
+                        if (currentParent && currentParent.get({stealth: true}) && !nextParentId) {
+                            updateRoot = true;
+                            break; // reached top of page
+                        }
+                        currentParent = nextParentId ? commentsById[nextParentId] : null;
+                        iteratedCount++;
+                    }
+                    if (iteratedCount >= 4998) {
+                        console.warn('FC - iteration hit limit', iteratedCount);
+                    }
                 }
 
                 addCommentToTree(state.allComments, state.commentsTree, commentsById, dataJSONComment, !!state.config.newCommentsToBottom.get());
@@ -299,7 +304,6 @@ export function persistSubscriberState(state: State<FastCommentsState>, newUrlId
                 // reset user presence state because we know nothing since we disconnected
                 state.userPresenceState.userIdsToCommentIds.set({});
                 state.userPresenceState.usersOnlineMap.set({});
-                // getAndRenderLatestNotificationCount(); // TODO
             }
             // noinspection JSIgnoredPromiseFromCall
             setupUserPresenceState(state, newUrlIdWS); // TODO can cause exception if handled event after component unmounted, how to detect?

@@ -1,21 +1,20 @@
-// @ts-ignore TODO remove
-import * as React from 'react';
 import {Dispatch, SetStateAction} from 'react';
 
 import {FastCommentsCommentWithState} from "./comment";
-import {FastCommentsImageAsset} from "../types/image-asset";
-import {Image} from "react-native";
+import {FastCommentsImageAsset} from "../types";
+import {Alert, Image} from "react-native";
 import {createURLQueryString, makeRequest} from "../services/http";
-import {GetCommentTextResponse} from "../types/dto/get-comment-text";
+import {GetCommentTextResponse} from "../types";
 import {CommentActionEdit} from './comment-action-edit';
 import {CommentPromptDelete} from "./comment-action-delete";
 import {repositionComment} from "../services/comment-positioning";
-import {PinCommentResponse} from "../types/dto/pin-comment";
-import {BlockCommentResponse} from "../types/dto/block-comment";
+import {PinCommentResponse} from "../types";
+import {BlockCommentResponse} from "../types";
 import {ModalMenuItem} from "./modal-menu";
 import {State} from "@hookstate/core";
 import {FastCommentsState, IFastCommentsStyles, RNComment} from "../types";
 import {incChangeCounter} from "../services/comment-render-determination";
+import {getMergedTranslations} from "../services/translations";
 
 async function startEditingComment({
     state,
@@ -33,7 +32,17 @@ async function startEditingComment({
         comment.comment = response.commentText;
         setModalId('edit');
     } else {
-        // TODO show error
+        const translations = getMergedTranslations(state.translations.get({stealth: true}), response);
+        const message = response.code === 'edit-key-invalid' ? translations.LOGIN_TO_EDIT : translations.FAILED_TO_SAVE_EDIT;
+        Alert.alert(
+            ":(",
+            message,
+            [
+                {
+                    text: translations.DISMISS
+                }
+            ]
+        );
     }
 }
 
@@ -51,7 +60,16 @@ async function setCommentPinStatus({state, comment}: Pick<FastCommentsCommentWit
         repositionComment(comment._id, response.commentPositions!, state);
         incChangeCounter(comment);
     } else {
-        // TODO show error
+        const translations = getMergedTranslations(state.translations.get({stealth: true}), response);
+        Alert.alert(
+            ":(",
+            translations.ERROR_MESSAGE,
+            [
+                {
+                    text: translations.DISMISS
+                }
+            ]
+        );
     }
 }
 
@@ -83,7 +101,16 @@ async function setCommentBlockedStatus({state, comment}: Pick<FastCommentsCommen
             }
         }
     } else {
-        // TODO show error
+        const translations = getMergedTranslations(state.translations.get({stealth: true}), response);
+        Alert.alert(
+            ":(",
+            translations.ERROR_MESSAGE,
+            [
+                {
+                    text: translations.DISMISS
+                }
+            ]
+        );
     }
 }
 
@@ -103,8 +130,17 @@ async function setCommentFlaggedStatus({state, comment}: Pick<FastCommentsCommen
         state.commentsById[comment._id].isFlagged.set(doFlag);
         incChangeCounter(comment);
     } else {
-        // TODO show error
-        // response.translatedError is supported here (but why not in all actions?)
+        // response.translatedError is supported here
+        const translations = getMergedTranslations(state.translations.get({stealth: true}), response);
+        Alert.alert(
+            ":(",
+            response.translatedError ? response.translatedError : translations.ERROR_MESSAGE,
+            [
+                {
+                    text: translations.DISMISS
+                }
+            ]
+        );
     }
 }
 

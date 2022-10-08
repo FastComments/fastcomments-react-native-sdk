@@ -1,12 +1,7 @@
-// @ts-ignore TODO remove
-import * as React from 'react';
-
-import {FastCommentsSortDirection, FastCommentsState} from "../types/fastcomments-state";
+import {FastCommentsSortDirection, FastCommentsState, FastCommentsImageAsset, IFastCommentsStyles} from "../types";
 import {State, useHookstate} from "@hookstate/core";
 import {View, Text} from 'react-native';
 import {ModalMenu} from "./modal-menu";
-import {IFastCommentsStyles} from "../types/fastcomments-styles";
-import {FastCommentsImageAsset} from "../types";
 
 const SortDirectionTranslationsById: Record<string, string> = {
     'OF': 'OLDEST_FIRST',

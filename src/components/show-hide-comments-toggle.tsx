@@ -1,10 +1,6 @@
-// @ts-ignore TODO remove
-import * as React from 'react';
-
-import {FastCommentsState} from "../types/fastcomments-state";
+import {FastCommentsState, IFastCommentsStyles} from "../types";
 import {Text, TouchableOpacity} from 'react-native';
 import {State} from "@hookstate/core";
-import {IFastCommentsStyles} from "../types/fastcomments-styles";
 
 export interface ShowHideCommentsToggleProps {
     state: State<FastCommentsState>

@@ -7,6 +7,7 @@ import {removeCommentOnClient} from "../services/remove-comment-on-client";
 import {DeleteCommentResponse, FastCommentsState, RNComment} from "../types";
 import {State} from "@hookstate/core";
 import {incChangeCounter} from "../services/comment-render-determination";
+import {getMergedTranslations} from "../services/translations";
 
 export interface CommentActionDeleteProps {
     close: () => void;
@@ -39,8 +40,17 @@ async function deleteComment({comment, state}: Pick<FastCommentsCommentWithState
             incChangeCounter(comment);
         }
     } else {
-        // TODO error handling
-        // TODO handle code 'edit-key-invalid')
+        const translations = getMergedTranslations(state.translations.get({stealth: true}), response);
+        const message = response.code === 'edit-key-invalid' ? translations.LOGIN_TO_DELETE : translations.DELETE_FAILURE;
+        Alert.alert(
+            ":(",
+            message,
+            [
+                {
+                    text: translations.DISMISS
+                }
+            ]
+        );
     }
 }
 
@@ -52,7 +62,7 @@ export async function CommentPromptDelete({comment, state, close}: CommentAction
             {
                 text: state.translations.CANCEL.get(),
                 onPress: close,
-                style: "cancel" // TODO what does this do
+                style: 'cancel'
             },
             {
                 text: state.translations.DELETE_CONFIRM.get(),
@@ -60,7 +70,15 @@ export async function CommentPromptDelete({comment, state, close}: CommentAction
                     try {
                         await deleteComment({comment, state});
                     } catch (e) {
-                        // TODO handle failures
+                        Alert.alert(
+                            ":(",
+                            state.translations.DELETE_FAILURE.get(),
+                            [
+                                {
+                                    text: state.translations.DISMISS.get()
+                                }
+                            ]
+                        );
                     }
                     close();
                 }

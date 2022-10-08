@@ -1,11 +1,7 @@
-// @ts-ignore TODO remove
-import * as React from 'react';
-
-import {FastCommentsState} from "../types/fastcomments-state";
+import {FastCommentsState, IFastCommentsStyles} from "../types";
 import {TouchableOpacity, useWindowDimensions, View} from "react-native";
 import {State} from "@hookstate/core";
 import RenderHtml from 'react-native-render-html';
-import {IFastCommentsStyles} from "../types/fastcomments-styles";
 import {canPaginatePrev} from "../services/pagination";
 
 export function PaginationPrev({state, styles, doPaginate}: { state: State<FastCommentsState>, styles: IFastCommentsStyles, doPaginate: () => void  }) {

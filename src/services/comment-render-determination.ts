@@ -15,7 +15,9 @@ function areCommentsDifferent(prevComment: RNComment, nextComment: RNComment) {
     // OPTIMIZATION: replyBoxOpen is handled inside the widget itself, so opening reply box feels better.
     // OPTIMIZATION: votes is handled inside the widget itself, so voting feels better.
 
-    // TODO REMOVE
+    // This isn't very react-esque but it works, is fairly fast, and allows us to use memoized components with usehookstate
+    // This is due to prev/next objects being a ref to the same object that hook state "ownes", so normal
+    // prev/next comparison of objects w/ React.memo doesn't work.
     if (CommentChangeCounter[nextComment._id] !== nextComment.changeCounter) {
         // Update global state in prop comparison to make functional people mad.
         CommentChangeCounter[nextComment._id] = nextComment.changeCounter || 1;

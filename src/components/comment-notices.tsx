@@ -1,6 +1,3 @@
-// @ts-ignore TODO remove
-import * as React from 'react';
-
 import {Text} from "react-native";
 import {IFastCommentsStyles, RNComment} from "../types";
 import {State} from "@hookstate/core";

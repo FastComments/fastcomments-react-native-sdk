@@ -1,6 +1,3 @@
-// @ts-ignore TODO remove
-import * as React from 'react';
-
 import {FastCommentsState} from "../types";
 import {View, Text, Image, Linking, ActivityIndicator, TextInput, useWindowDimensions, TouchableOpacity} from "react-native";
 import {none, State, useHookstate, useHookstateEffect} from "@hookstate/core";
@@ -85,7 +82,7 @@ async function logout(state: State<FastCommentsState>, callbacks: Pick<FastComme
     state.currentUser.set(null);
     persistSubscriberState(state, state.urlIdWS.get()!, state.tenantIdWS.get()!, null); // reconnect w/o a user
     callbacks?.onAuthenticationChange && callbacks.onAuthenticationChange('logout', currentUser, null);
-    state.userNotificationState.set({ // TODO put default somewhere since also defined in fastcomments-state
+    state.userNotificationState.set({
         isOpen: false,
         isLoading: false,
         count: 0,
@@ -167,13 +164,6 @@ async function submit({
         moderationGroupIds: state.config.moderationGroupIds.get(),
         isFromMyAccountPage: state.config.tenantId.get() === 'all'
     };
-
-    console.log('saving comment', newComment) // TODO remove
-
-    // extensions.forEach((extension) => {
-    //     extension.prepareCommentForSaving && extension.prepareCommentForSaving(newComment, replyingToId);
-    // });
-
     const broadcastId = newBroadcastId();
 
     try {
@@ -209,7 +199,7 @@ async function submit({
             incOverallCommentCount(state.config.countAll.get(), state, comment.parentId);
 
             if (response.user) {
-                if (state.config.simpleSSO.get()) { // for avatar, for example. TODO CLEANUP
+                if (state.config.simpleSSO.get()) { // for avatar, for example.
                     state.currentUser.merge(response.user);
                 } else {
                     state.currentUser.set(response.user);
@@ -442,8 +432,7 @@ export function ReplyArea(props: ReplyAreaProps) {
         const handleSubmit = async () => {
             getLatestInputValue();
             if (commentReplyState.showSuccessMessage.get() && !parentComment) {
-                commentReplyState.showSuccessMessage.set(true);
-                // TODO focus on text area
+                commentReplyState.showSuccessMessage.set(false); // hide success message in this case
             } else {
                 commentReplyState.isReplySaving.set(true);
                 try {
@@ -453,7 +442,7 @@ export function ReplyArea(props: ReplyAreaProps) {
                     console.error('Failed to save a comment', e);
                 }
                 if (parentComment && parentComment) {
-                    parentComment.replyBoxOpen = false; // TODO CALLBACK
+                    parentComment.replyBoxOpen = false;
                 }
             }
         }

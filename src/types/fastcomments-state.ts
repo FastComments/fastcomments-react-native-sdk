@@ -34,7 +34,7 @@ export interface FastCommentsState {
     allComments: RNComment[];
     apiHost: string;
     wsHost: string;
-    blockingErrorMessage?: string; // TODO
+    blockingErrorMessage?: string;
     commentCountOnClient: number;
     commentCountOnServer: number;
     commentsById: Record<string, RNComment>;

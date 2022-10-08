@@ -1,5 +1,3 @@
-// @ts-ignore TODO remove
-import * as React from 'react';
 import {Dispatch, ReactNode, SetStateAction, useState} from 'react';
 import {ActivityIndicator, Image, ImageURISource, Modal, Text, TouchableOpacity, View} from "react-native";
 import {IFastCommentsStyles} from "../types";

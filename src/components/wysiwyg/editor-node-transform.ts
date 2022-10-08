@@ -12,7 +12,7 @@ export interface EditorFormatConfiguration {
     /** How many characters does an emoticon take up? Set to zero to disable validation. **/
     emoticonLength?: number
     tokenize: (input: string) => (EditorNodeNewLine)[]
-    formatters: Record<EditorNodeType, ((node: EditorNodeWithoutChildren, trimToLength?: number) => string) | ((node: EditorNodeNewLine, trimToLength?: number) => string)>
+    formatters: Record<EditorNodeType, (node: EditorNodeWithoutChildren | EditorNodeNewLine, trimToLength?: number) => string>
 }
 
 export interface SupportedNodeDefinition {
@@ -66,7 +66,6 @@ export function graphToString(graph: EditorNodeNewLine[] | null, formatConfig: P
         // It really sucks that we have to do so many hashmap lookups due to the performance overhead, but not sure how else to make the library
         // be flexible. If you aren't getting the performance needed, maybe we could maintain a fork that uses a switch() to try to get the JIT to
         // create a jump table. We can't maintain a reference to a function on EditorNodeDefinition because serializing functions breaks usehookstate.
-        // @ts-ignore - TODO make typescript compiler happy
         const formattedValue = formatConfig.formatters[node.type](node);
         // OPTIMIZATION checking maxLength before doing type + EditorNodeType property lookup
         if (maxLength) {
@@ -89,8 +88,7 @@ export function graphToString(graph: EditorNodeNewLine[] | null, formatConfig: P
             if (length + nodeLength > maxLength) {
                 const remainingLength = maxLength - length;
                 if (remainingLength > 0) {
-                    console.log('???', node.type, typeof formatConfig.formatters[node.type]);
-                    // @ts-ignore - TODO make typescript compiler happy
+                    // console.log('???', node.type, typeof formatConfig.formatters[node.type]);
                     const trimmedFormattedValue = formatConfig.formatters[node.type](node, remainingLength);
                     if (trimmedFormattedValue) {
                         // if we wanted to, we could trim the node in the graph here, too, but this might be a weird experience for the user.
@@ -108,7 +106,6 @@ export function graphToString(graph: EditorNodeNewLine[] | null, formatConfig: P
                 }
             } else {
                 // console.log('???', node.type, typeof formatConfig.formatters[node.type]);
-                // @ts-ignore - TODO make typescript compiler happy
                 const fullFormattedValue = formatConfig.formatters[node.type](node);
                 content += fullFormattedValue;
             }
@@ -159,7 +156,6 @@ export function enforceMaxLength(graph: State<EditorNodeNewLine[]>, formatConfig
             if (length + nodeLength > maxLength) {
                 const remainingLength = maxLength - length;
                 if (remainingLength > 0) {
-                    // @ts-ignore - TODO make typescript compiler happy
                     const trimmedFormattedValue = formatConfig.formatters[rawNode.type](rawNode, remainingLength);
                     if (trimmedFormattedValue) {
                         node.content.set(trimmedFormattedValue);
@@ -199,7 +195,7 @@ export function hasContent(graph: EditorNodeNewLine[]) {
     return false;
 }
 
-// TODO HACK
+// HACK
 function isMention(type: EditorNodeType, text: string) {
     return type === EditorNodeType.TEXT_BOLD && text.startsWith('@') && text.length < 300;
 }
@@ -244,7 +240,7 @@ export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTo
                     }
                     inNode = node;
                     if (buffer.length - startToken.length > 0) {
-                        const content = buffer.substr(0, buffer.length - startToken.length); // TODO replace substr with substring
+                        const content = buffer.substring(0, buffer.length - startToken.length);
                         currentNewLine.children!.push({
                             id: getNextNodeId(), // we do this so react knows to re-render via key, since we use id as key. If we just use an incrementing number here, react may not re-render for a whole new tree.
                             type: EditorNodeType.TEXT,
@@ -253,7 +249,7 @@ export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTo
                         });
                     }
                     if (!node.end) { // some node types like newlines do not have ends
-                        const content = buffer.substr(0, buffer.length - startToken.length); // TODO replace substr with substring
+                        const content = buffer.substring(0, buffer.length - startToken.length);
                         currentNewLine.children!.push({
                             id: getNextNodeId(), // we do this so react knows to re-render via key, since we use id as key. If we just use an incrementing number here, react may not re-render for a whole new tree.
                             type: node.type,
@@ -293,8 +289,11 @@ export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTo
     return result;
 }
 
-export function toTextTrimmed(node: Pick<EditorNodeWithoutChildren, 'content'>, startToken?: string | null, endToken?: string | null, trimToLength?: number) {
-    const result = trimToLength ? node.content.substr(0, trimToLength) : node.content;
+export function toTextTrimmed(node: EditorNodeNewLine | Pick<EditorNodeWithoutChildren, 'content'>, startToken?: string | null, endToken?: string | null, trimToLength?: number) {
+    if (!('content' in node)) {
+        return '';
+    }
+    const result = trimToLength ? node.content.substring(0, trimToLength) : node.content;
     if (!startToken && !endToken) {
         return result;
     }

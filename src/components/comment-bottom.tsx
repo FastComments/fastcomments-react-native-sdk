@@ -1,6 +1,3 @@
-// @ts-ignore TODO remove
-import * as React from 'react';
-
 import {State, useHookstate} from "@hookstate/core";
 import {Image, TouchableOpacity, View, Text} from "react-native";
 import {CommentVote} from "./comment-vote";
@@ -40,8 +37,7 @@ export function CommentBottom(props: CommentBottomProps) {
 
     // OPTIMIZATION: we only use comment.replyBoxOpen for initial render.
     const state = useHookstate(props.state); // OPTIMIZATION local state
-    const commentState = useHookstate(comment); // OPTIMIZATION local state
-    const [isReplyBoxOpen, setIsReplyBoxOpen] = useState(commentState.replyBoxOpen.get());
+    const [isReplyBoxOpen, setIsReplyBoxOpen] = useState(comment.replyBoxOpen);
 
     return <View style={styles.commentBottom?.root}>
         <View style={styles.commentBottom?.commentBottomToolbar}>
@@ -62,11 +58,9 @@ export function CommentBottom(props: CommentBottomProps) {
                     // We always expect the callback to exist in this case. Otherwise is an error.
                     replyingTo!(isReplyBoxOpen ? null : comment); // if reply box already open, invoke with null to say we're not replying.
                     setIsReplyBoxOpen(!isReplyBoxOpen);
-                    commentState.replyBoxOpen.set(!isReplyBoxOpen); // TODO use callbacks
                 } else {
                     replyingTo && replyingTo(comment);
                     setIsReplyBoxOpen(!isReplyBoxOpen);
-                    commentState.replyBoxOpen.set(!isReplyBoxOpen); // TODO use callbacks
                 }
             }
             }>
@@ -83,7 +77,6 @@ export function CommentBottom(props: CommentBottomProps) {
                 onNotificationSelected={onNotificationSelected}
                 onReplySuccess={(comment) => {
                     setIsReplyBoxOpen(!isReplyBoxOpen);
-                    commentState.replyBoxOpen.set(false);
                     onReplySuccess && onReplySuccess(comment);
                 }
                 }

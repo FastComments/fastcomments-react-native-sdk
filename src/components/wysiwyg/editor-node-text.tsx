@@ -83,24 +83,16 @@ export function EditorNodeText(props: EditorNodeTextProps) {
             case 'Backspace':
                 if ((!selection?.start) || nodeState.deleteOnBackspace.get()) {
                     try {
-                        /*
-                            TODO why is delete before newline triggering delete when only one char left but not other scenarios? Example
-                                abc
-                                <newline>
-                                x|
-                                ---trigger backspace - ends up with:---
-                                abcx|
-                         */
                         if (nodeState.content.get()) {
-                            console.log('TRIGGERING DELETE NODE BEFORE', selection?.start, nodeState.content.get());
+                            // console.log('TRIGGERING DELETE NODE BEFORE', selection?.start, nodeState.content.get());
                             doDeleteNodeBefore && doDeleteNodeBefore(); // user is backspacing at start of node
                         } else {
-                            console.log('TRIGGERING DELETE CURRENT NODE', selection?.start, nodeState.content.get());
+                            // console.log('TRIGGERING DELETE CURRENT NODE', selection?.start, nodeState.content.get());
                             // delete this node
                             doDelete && doDelete();
                         }
                     } catch (e) {
-                        console.error('wtf', e); // TODO remove
+                        console.log(e);
                     }
                 } else {
                     console.log('selection was', selection.start);

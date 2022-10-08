@@ -1,8 +1,5 @@
-// @ts-ignore TODO remove
-import * as React from 'react';
-
 import {Text, View} from "react-native";
-import {IFastCommentsStyles} from "../types/fastcomments-styles";
+import {IFastCommentsStyles} from "../types";
 
 export function CommentAreaMessage({message, styles}: {message: string | undefined, styles: IFastCommentsStyles}) {
     return <View style={styles.commentAreaMessage?.wrapper}>

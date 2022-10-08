@@ -1,7 +1,5 @@
-// @ts-ignore TODO remove
-import * as React from 'react';
 import {View} from "react-native";
-import {IFastCommentsStyles} from "../types/fastcomments-styles";
+import {IFastCommentsStyles} from "../types";
 
 export interface ThreeDotProps {
     styles: IFastCommentsStyles

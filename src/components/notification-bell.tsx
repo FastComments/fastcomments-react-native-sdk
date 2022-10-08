@@ -1,5 +1,3 @@
-// @ts-ignore TODO remove
-import * as React from 'react';
 import {FastCommentsState} from "../types";
 import {State} from "@hookstate/core";
 import {Image, View, Text, TouchableOpacity, Modal} from 'react-native';

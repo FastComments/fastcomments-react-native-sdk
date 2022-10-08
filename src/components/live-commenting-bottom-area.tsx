@@ -1,6 +1,3 @@
-// @ts-ignore TODO remove
-import * as React from 'react';
-
 import {FastCommentsCallbacks, FastCommentsState} from "../types";
 import {View} from "react-native";
 import {ReplyArea} from "./reply-area";

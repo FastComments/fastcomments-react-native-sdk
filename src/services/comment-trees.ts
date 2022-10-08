@@ -137,21 +137,6 @@ export function removeCommentFromTree(allComments: State<FastCommentsWidgetComme
         allComments[allCommentsIndex].set(none);
     }
 
-    // allComments.set((allComments) => {
-    //     const allCommentsIndex = allComments.findIndex((otherComment) => otherComment._id === commentBeforeRemoval._id);
-    //     console.log('allCommentsIndex', allCommentsIndex); // TODO REMOVE
-    //     if (allCommentsIndex > -1) {
-    //         allComments.splice(allCommentsIndex, 1);
-    //     }
-    //     console.log('allComments Spliced', allCommentsIndex); // TODO REMOVE
-    //     return allComments;
-    // });
-    console.log('comment.parentId:');
-    console.log('???', commentBeforeRemoval);
-    if (commentBeforeRemoval.parentId) {
-        console.log('commentsById[commentBeforeRemoval.parentId].get()');
-        console.log(commentsById[commentBeforeRemoval.parentId].get());
-    }
     if (commentBeforeRemoval.parentId && commentsById[commentBeforeRemoval.parentId].get()) {
         const parentChildrenState = commentsById[commentBeforeRemoval.parentId].children;
         const parentChildren = parentChildrenState?.get();
@@ -161,28 +146,12 @@ export function removeCommentFromTree(allComments: State<FastCommentsWidgetComme
                 // @ts-ignore
                 parentChildrenState[index].set(none);
             }
-            // const index = parentChildren.findIndex((otherComment) => otherComment._id === commentBeforeRemoval._id);
-            // if (index > -1) {
-            //     parentChildrenState.set((parentChildrenState) => {
-            //         parentChildrenState!.splice(index, 1);
-            //         return parentChildrenState;
-            //     });
-            // }
         }
     } else {
         const index = commentsTree.get().findIndex((otherComment) => otherComment?._id === commentBeforeRemoval._id);
-        console.log('commentsTree index', index); // TODO REMOVE
         if (index > -1) {
             commentsTree[index].set(none);
         }
-        // const index = commentsTree.get().findIndex((otherComment) => otherComment._id === commentBeforeRemoval._id);
-        // console.log('commentsTree index', index); // TODO REMOVE
-        // if (index > -1) {
-        //     commentsTree.set((commentsTree) => {
-        //         commentsTree.splice(index, 1);
-        //         return commentsTree;
-        //     });
-        // }
     }
     updateNestedChildrenCountInTree(commentsById, commentBeforeRemoval.parentId, -1);
     commentsById[commentBeforeRemoval._id].set(none);
@@ -237,32 +206,3 @@ export function iterateCommentsTreeState(nodes: State<RNComment[]> | State<RNCom
         }
     }
 }
-
-
-// /**
-//  *
-//  * @param {translations} translations
-//  * @param {Array.<Object>} commentsTree
-//  * @param {Object.<string, Object>} commentsById
-//  * @param {Object.<string, boolean>} commentRepliesHiddenById
-//  * @param {string} parentId
-//  */
-// export function updateNestedChildrenCountInDOM(translations, commentsTree, commentsById, commentRepliesHiddenById, parentId) {
-//     while (parentId) {
-//         const comment = commentsById[parentId];
-//         if (!comment) {
-//             break;
-//         }
-//         const element = document.getElementById(parentId);
-//
-//         if (element) {
-//             const toggleRepliesElement = element.querySelector('.toggle-replies');
-//             if (toggleRepliesElement) {
-//                 // TODO
-//                 // toggleRepliesElement.outerHTML = getCommentReplyToggleHTML(translations, commentRepliesHiddenById, comment);
-//             }
-//         }
-//
-//         parentId = comment.parentId;
-//     }
-// }

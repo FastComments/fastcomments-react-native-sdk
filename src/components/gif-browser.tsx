@@ -1,5 +1,5 @@
 import {
-    ActivityIndicator,
+    ActivityIndicator, Alert,
     BackHandler,
     FlatList,
     Image,
@@ -16,6 +16,7 @@ import {GetGifsResponse} from "../types/dto/get-gifs";
 import {FastCommentsRNConfig} from "../types/react-native-config";
 import {GetTranslationsResponse} from "../types/dto/get-translations-response";
 import {GetGifLargeResponse} from "../types/dto/get-gif-large";
+import {getMergedTranslations} from "../services/translations";
 
 export interface GifBrowserProps {
     cancelled: () => void
@@ -95,11 +96,20 @@ export function GifBrowser({
                 ]);
             }
         } else {
-            // TODO
+            const mergedTranslations = getMergedTranslations(translations, response);
+            Alert.alert(
+                ":(",
+                mergedTranslations.ERROR_MESSAGE,
+                [
+                    {
+                        text: mergedTranslations.DISMISS
+                    }
+                ]
+            );
         }
     }
 
-    async function setupTranslations() {
+    async function getGifsTranslations() {
         let url = '/translations/widgets/comment-ui-gifs?useFullTranslationIds=true';
         if (config.locale) {
             url += '&locale=' + config.locale;
@@ -109,9 +119,34 @@ export function GifBrowser({
             method: 'GET',
             url: url
         });
-        if (response.translations) {
-            setTranslations(response.translations);
+        return response.translations || {};
+    }
+
+    async function getCommonTranslations() {
+        let url = '/translations/widgets/comment-ui?useFullTranslationIds=true';
+        if (config.locale) {
+            url += '&locale=' + config.locale;
         }
+        const response = await makeRequest<GetTranslationsResponse<string>>({
+            apiHost: getAPIHost(config),
+            method: 'GET',
+            url: url
+        });
+        return response.translations || {};
+    }
+
+    async function setupTranslations() {
+        const [
+            commonTranslations,
+            gifsTranslations,
+        ] = await Promise.all([
+            getCommonTranslations(),
+            getGifsTranslations(),
+        ]);
+        setTranslations({
+            ...commonTranslations,
+            ...gifsTranslations,
+        })
     }
 
     async function initialLoad() {
@@ -143,22 +178,23 @@ export function GifBrowser({
         await getGifs(lastGifsRequest.current);
     };
 
-    const handleSelected = async (rawBigSrc: string) => {
-        if (rawBigSrc.includes('fastcomments') || rawBigSrc.includes('localhost:')) { // support prod and local dev
-            pickedGIF(rawBigSrc);
+    const handleSelected = async (rawSrc: string) => {
+        if (rawSrc.includes('fastcomments') || rawSrc.includes('localhost:')) { // support prod and local dev
+            pickedGIF(rawSrc);
         } else {
             // TODO show loading
             const response = await makeRequest<GetGifLargeResponse>({
                 apiHost: getAPIHost(config),
                 method: 'GET',
                 url: '/gifs/get-large/' + config.tenantId + createURLQueryString({
-                    largeInternalURLSanitized: rawBigSrc
+                    largeInternalURLSanitized: rawSrc
                 })
             });
-            if (response.status === 'success') {
-                pickedGIF(rawBigSrc);
+            if (response.status === 'success' && response.src) {
+                pickedGIF(response.src);
             } else {
-                // TODO
+                console.warn('Could not get full version of GIF to use. Error response from API.', response);
+                pickedGIF(rawSrc); // silently pick smaller version :/
             }
         }
     };
@@ -223,7 +259,8 @@ export function GifBrowser({
                 />
             }
             <TouchableOpacity style={styles.gifBrowser?.modalCancel} onPress={cancelled}>
-                <Image style={styles.gifBrowser?.modalCancelImage} source={imageAssets[config.hasDarkBackground ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]}/>
+                <Image style={styles.gifBrowser?.modalCancelImage}
+                       source={imageAssets[config.hasDarkBackground ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]}/>
             </TouchableOpacity>
         </View>
     </View>;

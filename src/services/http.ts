@@ -9,13 +9,15 @@ export interface HTTPRequest {
 }
 
 export interface CommonHTTPResponse {
-    status: 'success' | 'failed';
-    code?: string;
-    reason?: string;
+    status: 'success' | 'failed'
+    code?: string
+    reason?: string
+    translatedError?: string
+    translations?: Record<string, string> // any error message can send back additional translations
 }
 
 export async function makeRequest<T>({apiHost, method, url, body, attemptsRemaining}: HTTPRequest): Promise<T> {
-    console.log('FastComments request', method, url); // TODO remove
+    // console.log('FastComments request', method, url);
     if (attemptsRemaining === undefined) {
         attemptsRemaining = 2;
     }

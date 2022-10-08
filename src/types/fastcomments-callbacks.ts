@@ -26,7 +26,7 @@ export interface FastCommentsCallbacks {
     /** Invoked when the user selects the image toolbar icon. Return a path on disk or a publicly accessible image path (should start with http). **/
     pickImage?: () => Promise<FastCommentsFromDiskAsset | string>,
     /** Invoked when the comment count changes. **/
-    // commentCountUpdated?: (newCount: number) => void TODO
+    commentCountUpdated?: (newCount: number) => void
 }
 
 export interface FastCommentsFromDiskAsset {

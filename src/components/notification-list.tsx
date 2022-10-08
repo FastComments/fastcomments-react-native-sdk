@@ -1,7 +1,6 @@
-// @ts-ignore TODO remove
-import * as React from 'react';
+import {memo} from 'react';
 import {useEffect, useState} from 'react';
-import {ActivityIndicator, FlatList, ListRenderItemInfo, useWindowDimensions, View} from "react-native";
+import {ActivityIndicator, Alert, FlatList, ListRenderItemInfo, useWindowDimensions, View} from "react-native";
 import {RenderHTMLConfigProvider, TRenderEngineProvider} from "react-native-render-html";
 import {
     FastCommentsCallbacks,
@@ -15,6 +14,7 @@ import {getDefaultAvatarSrc} from "../services/default-avatar";
 import {CheckBox} from "./checkbox";
 import {changePageSubscriptionStateForUser, getNotificationTranslations, getUserNotifications} from "../services/notifications";
 import {UserNotificationTranslations} from "../types/user-notification-translations";
+import {getMergedTranslations} from "../services/translations";
 
 export interface NotificationListProps extends Pick<FastCommentsCallbacks, 'onNotificationSelected'> {
     imageAssets: ImageAssetConfig
@@ -23,7 +23,7 @@ export interface NotificationListProps extends Pick<FastCommentsCallbacks, 'onNo
     translations: Record<string, string>
 }
 
-const NotificationListItemMemo = React.memo<NotificationListItemProps>(
+const NotificationListItemMemo = memo<NotificationListItemProps>(
     props => NotificationListItem(props),
     (prevProps, nextProps) => {
         if (prevProps.notification.viewed !== nextProps.notification.viewed) {
@@ -71,12 +71,24 @@ export function NotificationList({imageAssets, onNotificationSelected, state, st
             imageStyle={styles.notificationList?.subscriptionHeaderCheckBoxImage}
             onValueChange={(value: boolean) => {
                 (async function () {
-                    await changePageSubscriptionStateForUser({
+                    const response = await changePageSubscriptionStateForUser({
                         config: state.config,
                         isSubscribed: value
                     });
-                    // TODO check response and update checkbox if failed
-                    setIsSubscribed(value);
+                    if (response.status === 'success') {
+                        setIsSubscribed(value);
+                    } else {
+                        const mergedTranslations = getMergedTranslations(translations, response);
+                        Alert.alert(
+                            ":(",
+                            mergedTranslations.ERROR_MESSAGE,
+                            [
+                                {
+                                    text: mergedTranslations.DISMISS
+                                }
+                            ]
+                        );
+                    }
                 })();
             }}
             style={styles.notificationList?.subscriptionHeaderCheckBox}

@@ -7,7 +7,7 @@ export interface SaveCommentResponse extends CommonHTTPResponse {
     comment?: FastCommentsWidgetComment;
     user?: FastCommentsSessionUser;
     customConfig?: FastCommentsCommentWidgetConfig;
-    translations?: Record<string, string>; // TODO when do we do this. Replace with translatedError? Web client has same structure.
+    translations?: Record<string, string>; // REFACTOR: When do we do this? Ideally replace with translatedError? Web client has same structure.
     bannedUntil?: number; // unix time ms
     translatedError?: string;
     maxCharacterLength?: number; // sent when client sends comment that exceeds max character length on server, in case value was updated since client was last loaded

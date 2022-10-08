@@ -45,30 +45,36 @@ const SupportedNodes: SupportedNodesTokenizerConfig = {
 export const EditorFormatConfigurationMarkdown: EditorFormatConfiguration = {
     tokenize: (input: string) => defaultTokenizer(input, SupportedNodes),
     formatters: {
-        [EditorNodeType.NEWLINE]: (_node: EditorNodeNewLine, _trimToLength?: number) => {
+        [EditorNodeType.NEWLINE]: (_node: EditorNodeNewLine | EditorNodeWithoutChildren, _trimToLength?: number) => {
             return '\n';
         },
-        [EditorNodeType.TEXT]: (node: EditorNodeWithoutChildren, trimToLength?: number) => {
+        [EditorNodeType.TEXT]: (node: EditorNodeNewLine | EditorNodeWithoutChildren, trimToLength?: number) => {
             return toTextTrimmed(node, null, null, trimToLength);
         },
-        [EditorNodeType.TEXT_BOLD]: (node: EditorNodeWithoutChildren, trimToLength?: number) => {
+        [EditorNodeType.TEXT_BOLD]: (node: EditorNodeNewLine | EditorNodeWithoutChildren, trimToLength?: number) => {
             return toTextTrimmed(node, '**', '**', trimToLength);
         },
-        [EditorNodeType.EMOTICON]: (node: EditorNodeWithoutChildren, _trimToLength?: number) => {
+        [EditorNodeType.EMOTICON]: (node: EditorNodeNewLine | EditorNodeWithoutChildren, _trimToLength?: number) => {
+            if (!('content' in node)) {
+                return '';
+            }
             // images should not be trimmed
             return `![](${node.content})`;
         },
-        [EditorNodeType.IMAGE]: (node: EditorNodeWithoutChildren, _trimToLength?: number) => {
+        [EditorNodeType.IMAGE]: (node: EditorNodeNewLine | EditorNodeWithoutChildren, _trimToLength?: number) => {
+            if (!('content' in node)) {
+                return '';
+            }
             // images should not be trimmed
             return `![](${node.content})`;
         },
-        [EditorNodeType.TEXT_ITALIC]: (node: EditorNodeWithoutChildren, trimToLength?: number) => {
+        [EditorNodeType.TEXT_ITALIC]: (node: EditorNodeNewLine | EditorNodeWithoutChildren, trimToLength?: number) => {
             return toTextTrimmed(node, '*', '*', trimToLength);
         },
-        [EditorNodeType.TEXT_STRIKETHROUGH]: (node: EditorNodeWithoutChildren, trimToLength?: number) => {
+        [EditorNodeType.TEXT_STRIKETHROUGH]: (node: EditorNodeNewLine | EditorNodeWithoutChildren, trimToLength?: number) => {
             return toTextTrimmed(node, '~~', '~~', trimToLength);
         },
-        [EditorNodeType.TEXT_UNDERLINE]: (node: EditorNodeWithoutChildren, trimToLength?: number) => {
+        [EditorNodeType.TEXT_UNDERLINE]: (node: EditorNodeNewLine | EditorNodeWithoutChildren, trimToLength?: number) => {
             // if you don't support underline then disable it in the toolbar.
             return toTextTrimmed(node, '<u>', '</u>', trimToLength);
         },

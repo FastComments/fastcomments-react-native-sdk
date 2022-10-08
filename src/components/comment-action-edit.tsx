@@ -1,5 +1,5 @@
 import {FastCommentsCommentWithState} from "./comment";
-import {View, Text, ActivityIndicator, Image, TouchableOpacity} from "react-native";
+import {View, Text, ActivityIndicator, Image, TouchableOpacity, Alert} from "react-native";
 import {FastCommentsImageAsset} from "../types";
 import {useState} from "react";
 import {createURLQueryString, makeRequest} from "../services/http";
@@ -10,6 +10,7 @@ import {CommentTextArea, ValueObserver} from "./comment-text-area";
 import {FastCommentsState, IFastCommentsStyles, RNComment} from "../types";
 import {State} from "@hookstate/core";
 import {incChangeCounter} from "../services/comment-render-determination";
+import {getMergedTranslations} from "../services/translations";
 
 export interface CommentActionEditProps {
     comment: RNComment
@@ -43,8 +44,17 @@ async function saveCommentText({comment, state}: Pick<FastCommentsCommentWithSta
         comment.commentHTML = response.comment.commentHTML;
         incChangeCounter(comment);
     } else {
-        // TODO error handling
-        // TODO handle code 'edit-key-invalid')
+        const translations = getMergedTranslations(state.translations.get({stealth: true}), response);
+        const message = response.code === 'edit-key-invalid' ? translations.LOGIN_TO_EDIT : translations.ERROR_MESSAGE;
+        Alert.alert(
+            ":(",
+            message,
+            [
+                {
+                    text: translations.DISMISS
+                }
+            ]
+        );
     }
 }
 
@@ -73,7 +83,15 @@ export function CommentActionEdit({comment, state, styles, close}: CommentAction
                     } catch (e) {
                         console.error(e);
                         setLoading(false);
-                        // TODO show err message
+                        Alert.alert(
+                            ":(",
+                            state.translations.FAILED_TO_SAVE_EDIT.get(),
+                            [
+                                {
+                                    text: state.translations.DISMISS.get()
+                                }
+                            ]
+                        );
                     }
                 }}
             >

@@ -1,7 +1,5 @@
-// @ts-ignore TODO remove
-import * as React from 'react';
 import {Text, TextStyle} from 'react-native';
-import {FastCommentsState} from "../types/fastcomments-state";
+import {FastCommentsState} from "../types";
 import {State} from "@hookstate/core";
 
 export interface LiveCommentingCommentCountProps {

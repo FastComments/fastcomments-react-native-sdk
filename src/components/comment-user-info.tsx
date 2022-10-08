@@ -1,6 +1,3 @@
-// @ts-ignore TODO remove
-import * as React from 'react';
-
 import {CommentUserActivityIcon} from "./comment-user-activity-icon";
 import {CommentUserBadge} from "./comment-user-badge";
 import {View, Text, Linking, Image, TouchableOpacity} from "react-native";

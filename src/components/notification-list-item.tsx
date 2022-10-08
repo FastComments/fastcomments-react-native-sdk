@@ -1,6 +1,3 @@
-// @ts-ignore TODO remove
-import * as React from 'react';
-
 import {Image, ImageURISource, View, Text, TouchableOpacity} from "react-native";
 import {FastCommentsCallbacks, FastCommentsImageAsset, IFastCommentsStyles, ImageAssetConfig, UserNotification} from "../types";
 import {RenderHTMLSource} from "react-native-render-html";

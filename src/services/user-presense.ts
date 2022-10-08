@@ -1,8 +1,8 @@
 import {FastCommentsCommentWidgetConfig, FastCommentsWidgetComment} from 'fastcomments-typescript';
-import {FastCommentsState, UserPresenceState} from "../types/fastcomments-state";
+import {FastCommentsState, UserPresenceState} from "../types";
 import {iterateCommentsTree} from "./comment-trees";
 import {createURLQueryString, makeRequest} from "./http";
-import {GetUserPresenceStatusesResponse} from "../types/dto/get-user-presence-statuses";
+import {GetUserPresenceStatusesResponse} from "../types";
 import {State} from "@hookstate/core";
 
 /**
@@ -17,6 +17,8 @@ const UserPresencePollStateEnum = {
     Disabled: 0,
     Poll: 1
 };
+
+const STEALTH = {stealth: true};
 
 /**
  * @typedef {Object} UserPresenceState
@@ -40,21 +42,20 @@ export async function setupUserPresenceState(state: State<FastCommentsState>, ur
     });
     const userIds = Object.keys(userIdsToCheck);
     if (userIds.length > 0) {
-        await getAndUpdateUserStatuses(state.get(), urlIdWS, state.userPresenceState, userIds);
+        await getAndUpdateUserStatuses(state.apiHost.get(STEALTH), state.config.tenantId.get(STEALTH), state.ssoConfigString.get(STEALTH), urlIdWS, state.userPresenceState, userIds);
     } else if (!state.userPresenceState.heartbeatActive.get()) {
-        setupUserPresenceHeartbeat(state.get(), urlIdWS);
-        setupUserPresencePolling(state.get(), urlIdWS, state.userPresenceState, userIds);
+        setupUserPresenceHeartbeat(state.apiHost.get(STEALTH), state.config.tenantId.get(STEALTH), state.ssoConfigString.get(STEALTH),  urlIdWS);
+        setupUserPresencePolling(state.apiHost.get(STEALTH), state.config.tenantId.get(STEALTH), state.ssoConfigString.get(STEALTH),  urlIdWS, state.userPresenceState, userIds);
         state.userPresenceState.heartbeatActive.set(true);
     }
 }
 
-// TODO OPTIMIZE - don't take whole state object
-async function getAndUpdateUserStatuses(state: FastCommentsState, urlIdWS: string, userPresenceState: State<UserPresenceState>, userIds: string[]) {
+async function getAndUpdateUserStatuses(apiHost: string, tenantId: string, ssoConfigString: string | undefined, urlIdWS: string, userPresenceState: State<UserPresenceState>, userIds: string[]) {
     const response = await makeRequest<GetUserPresenceStatusesResponse>({
-        apiHost: state.apiHost,
+        apiHost,
         method: 'GET',
         url: '/user-presence-status' + createURLQueryString({
-            tenantId: state.config.apiHost,
+            tenantId,
             urlIdWS: urlIdWS,
             userIds: userIds.join(',')
         })
@@ -68,8 +69,8 @@ async function getAndUpdateUserStatuses(state: FastCommentsState, urlIdWS: strin
         }
     }
     if (!userPresenceState.heartbeatActive.get()) {
-        setupUserPresenceHeartbeat(state, urlIdWS);
-        setupUserPresencePolling(state, urlIdWS, userPresenceState, userIds);
+        setupUserPresenceHeartbeat(apiHost, tenantId, ssoConfigString, urlIdWS);
+        setupUserPresencePolling(apiHost, tenantId, ssoConfigString, urlIdWS, userPresenceState, userIds);
         userPresenceState.heartbeatActive.set(true);
     }
 }
@@ -131,17 +132,16 @@ export function addCommentToUserPresenceState(state: State<UserPresenceState>, c
     }
 }
 
-// TODO optimize - don't take whole state object
-function setupUserPresenceHeartbeat(state: FastCommentsState, urlIdWS: string) {
+function setupUserPresenceHeartbeat(apiHost: string, tenantId: string, ssoConfigString: string | undefined, urlIdWS: string) {
     async function next() {
         try {
             await makeRequest({
-                apiHost: state.apiHost,
+                apiHost,
                 method: 'PUT',
                 url: '/user-presence-heartbeat' + createURLQueryString({
-                    tenantId: state.config.tenantId,
+                    tenantId,
                     urlIdWS: urlIdWS,
-                    sso: state.ssoConfigString
+                    sso: ssoConfigString
                 })
             });
         } catch (e) {
@@ -152,13 +152,12 @@ function setupUserPresenceHeartbeat(state: FastCommentsState, urlIdWS: string) {
     setTimeout(next, 1800000); // every 30 minutes
 }
 
-// TODO OPTIMIZE - don't take whole state object
-function setupUserPresencePolling(state: FastCommentsState, urlIdWS: string, userPresenceState: State<UserPresenceState>, userIds: string[]) {
+function setupUserPresencePolling(apiHost: string, tenantId: string, ssoConfigString: string | undefined, urlIdWS: string, userPresenceState: State<UserPresenceState>, userIds: string[]) {
     if (userPresenceState.presencePollState?.get() === UserPresencePollStateEnum.Poll) {
         const offset = Math.ceil(10000 * Math.random());
         const timeout = 30000 + offset; // every 30 seconds + a random offset
         async function next() {
-            await getAndUpdateUserStatuses(state, urlIdWS, userPresenceState, userIds);
+            await getAndUpdateUserStatuses(apiHost, tenantId, ssoConfigString, urlIdWS, userPresenceState, userIds);
             setTimeout(next, timeout);
         }
 

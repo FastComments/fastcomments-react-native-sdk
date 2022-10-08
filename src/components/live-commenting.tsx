@@ -36,8 +36,7 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
     }, []);
     const [isLoading, setLoading] = useState(true);
     const [isLoaded, setIsLoaded] = useState(false);
-    const [isReplyingToParent, setIsReplyingToParent] = useState(false);
-    const isReplyingToParentRef = useRef(isReplyingToParent);
+    const isReplyingToParentIdRef = useRef<string | null>(null);
     const [commentMenuRequest, setCommentMenuRequest] = useState<OpenCommentMenuRequest>();
     const loadAsync = async () => {
         if (service.current) {
@@ -61,9 +60,13 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
     const callbackObserverRef = useRef(callbackObserver);
 
     function handleReplyingTo(comment: RNComment | null) {
-        // TODO confirm cancel here? would be a nice place to handle it as this is called for back button press and clicking cancel in UI.
-        setIsReplyingToParent(!!comment);
-        isReplyingToParentRef.current = !!comment;
+        // TODO confirm cancel here if reply box has content? would be a nice place to handle it as this is called for back button press and clicking cancel in UI.
+        if (comment) {
+            comment.replyBoxOpen = true;
+        } else if (isReplyingToParentIdRef.current) {
+            state.commentsById[isReplyingToParentIdRef.current].replyBoxOpen.set(false);
+        }
+        isReplyingToParentIdRef.current = comment ? comment._id : null;
         callbackObserverRef.current.replyingTo && callbackObserverRef.current.replyingTo(comment);
         callbacks && callbacks.replyingTo && callbacks.replyingTo(comment);
     }
@@ -72,7 +75,7 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
         const backHandler = BackHandler.addEventListener(
             "hardwareBackPress",
             () => {
-                if (isReplyingToParentRef.current) {
+                if (isReplyingToParentIdRef.current) {
                     handleReplyingTo(null);
                     return true;
                 }

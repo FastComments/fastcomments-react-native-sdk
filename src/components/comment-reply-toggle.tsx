@@ -1,5 +1,3 @@
-// @ts-ignore TODO remove
-import * as React from 'react';
 import {Image, TouchableOpacity, Text} from "react-native";
 import {FastCommentsImageAsset, ImageAssetConfig} from "../types/image-asset";
 import {IFastCommentsStyles, RNComment} from "../types";

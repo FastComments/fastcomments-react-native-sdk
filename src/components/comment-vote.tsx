@@ -1,5 +1,3 @@
-// @ts-ignore TODO remove
-import * as React from 'react';
 import {View, Text, Image, TextInput, ActivityIndicator, Button, Linking} from 'react-native';
 import type {
     CommentVoteResponse,

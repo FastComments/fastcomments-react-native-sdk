@@ -1,6 +1,3 @@
-// @ts-ignore TODO remove
-import * as React from 'react';
-
 import {RenderHTMLSource} from 'react-native-render-html';
 
 import {Image, Pressable, TouchableOpacity, View} from "react-native";

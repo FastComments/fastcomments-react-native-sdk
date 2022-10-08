@@ -7,7 +7,7 @@ import {PaginationNext} from "./pagination-next";
 import {PaginationPrev} from "./pagination-prev";
 import {canPaginateNext, paginateNext, paginatePrev} from "../services/pagination";
 import {CommentViewProps, FastCommentsCommentView} from "./comment";
-import {arePropsEqual} from "../services/comment-render-determination";
+import {arePropsEqual, incChangeCounter} from "../services/comment-render-determination";
 import {FastCommentsLiveCommentingService} from "../services/fastcomments-live-commenting";
 import {LiveCommentingTopArea} from "./live-commenting-top-area";
 import {FastCommentsRNConfig} from "../types/react-native-config";
@@ -83,8 +83,7 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
 
     const setRepliesHidden = (parentComment: RNComment, repliesHidden: boolean) => {
         parentComment.repliesHidden = repliesHidden;
-        // TODO REMOVE
-        parentComment.changeCounter = parentComment.changeCounter ? parentComment.changeCounter + 1 : 1; // sigh
+        incChangeCounter(parentComment);
         createList();
     }
 
