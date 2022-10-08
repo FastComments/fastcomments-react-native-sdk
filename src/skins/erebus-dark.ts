@@ -136,9 +136,6 @@ export function setupErebusDarkSkin(config: FastCommentsRNConfig, styles: IFastC
         comment: {
             subRoot: {},
             contentWrapper: {
-                // TODO trying to get inline rendering w/ text wrap working
-                // flexDirection: 'row',
-                // alignItems: 'center'
             },
             text: {
                 marginLeft: 5,
@@ -146,7 +143,6 @@ export function setupErebusDarkSkin(config: FastCommentsRNConfig, styles: IFastC
                 color: '#fff',
                 maxWidth: '90%'
             },
-            // textHTML: 'color: #fff;'
             displayDate: {
                 marginRight: 10
             }

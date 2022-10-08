@@ -15,7 +15,7 @@ export function setupDarkModeSkin(config: FastCommentsRNConfig, styles: IFastCom
         },
         threeDotMenu: {
             dot: {
-                "backgroundColor": "#333",
+                backgroundColor: "#333",
             }
         },
         topArea: {
