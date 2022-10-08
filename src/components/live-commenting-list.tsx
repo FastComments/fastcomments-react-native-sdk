@@ -165,7 +165,6 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
                 style={styles.commentsWrapper}
                 data={viewableComments}
                 keyExtractor={item => item && item._id !== undefined ? item._id : '???'}
-                inverted={state.config.newCommentsToBottom.get()}
                 maxToRenderPerBatch={state.PAGE_SIZE.get()}
                 onEndReachedThreshold={0.3}
                 onEndReached={onEndReached}
