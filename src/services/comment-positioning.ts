@@ -11,7 +11,9 @@ export function repositionComment(id: string, commentPositions: FastCommentsComm
                 break;
             }
         }
-        commentsTree.splice(currentIndex!, 1); // TODO checking for > -1 here breaks pin and unpin, not sure why
+        if (currentIndex! > -1) {
+            commentsTree.splice(currentIndex!, 1);
+        }
         return commentsTree;
     });
 
@@ -30,7 +32,9 @@ export function repositionComment(id: string, commentPositions: FastCommentsComm
                 break;
             }
         }
-        commentsTree.splice(newIndex!, 0, state.commentsById[id].get()); // TODO checking for > -1 here breaks pin and unpin, not sure why
+        if (newIndex! > -1) {
+            commentsTree.splice(newIndex!, 0, state.commentsById[id].get());
+        }
         return commentsTree;
     });
 }
