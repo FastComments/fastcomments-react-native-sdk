@@ -43,24 +43,24 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 justifyContent: 'space-between'
             },
             dot: {
-                "width": 4,
-                "height": 4,
-                "backgroundColor": "#333",
-                "borderTopLeftRadius": 4,
-                "borderTopRightRadius": 4,
-                "borderBottomRightRadius": 4,
-                "borderBottomLeftRadius": 4,
-                "marginTop": 0,
-                "marginRight": 2,
-                "marginBottom": 0,
-                "marginLeft": 2
+                width: 4,
+                height: 4,
+                backgroundColor: "#333",
+                borderTopLeftRadius: 4,
+                borderTopRightRadius: 4,
+                borderBottomRightRadius: 4,
+                borderBottomLeftRadius: 4,
+                marginTop: 0,
+                marginRight: 2,
+                marginBottom: 0,
+                marginLeft: 2
             }
         },
         topArea: {
             replyArea: {
-                "marginTop": 15,
-                "marginRight": 15,
-                "marginLeft": 15
+                marginTop: 15,
+                marginRight: 15,
+                marginLeft: 15
             },
             separator: {
                 flexDirection: 'row',
@@ -80,9 +80,9 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
         },
         bottomArea: {
             replyArea: {
-                "marginTop": 15,
-                "marginRight": 15,
-                "marginLeft": 15
+                marginTop: 15,
+                marginRight: 15,
+                marginLeft: 15
             },
             separator: {
                 flexDirection: 'row',
@@ -129,10 +129,10 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 fontSize: 13,
             },
             children: {
-                "marginTop": 15,
-                "marginRight": 0,
-                "marginBottom": 0,
-                "marginLeft": 15
+                marginTop: 15,
+                marginRight: 0,
+                marginBottom: 0,
+                marginLeft: 15
             },
         },
         commentMenu: {
@@ -194,24 +194,24 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 borderBottomEndRadius: 11
             },
             message: {
-                "paddingTop": 10,
-                "paddingRight": 17,
-                "paddingBottom": 10,
-                "paddingLeft": 27,
-                "borderTopLeftRadius": 0,
-                "borderTopRightRadius": 7,
-                "borderBottomRightRadius": 7,
-                "borderBottomLeftRadius": 7,
-                "backgroundColor": "#333",
-                "marginTop": 0,
-                "marginRight": "5%",
-                "marginBottom": 0,
-                "marginLeft": "5%",
+                paddingTop: 10,
+                paddingRight: 17,
+                paddingBottom: 10,
+                paddingLeft: 27,
+                borderTopLeftRadius: 0,
+                borderTopRightRadius: 7,
+                borderBottomRightRadius: 7,
+                borderBottomLeftRadius: 7,
+                backgroundColor: "#333",
+                marginTop: 0,
+                marginRight: "5%",
+                marginBottom: 0,
+                marginLeft: "5%",
             },
             messageText: {
-                "marginRight": 10,
-                "fontSize": 17,
-                "fontWeight": "500",
+                marginRight: 10,
+                fontSize: 17,
+                fontWeight: "500",
             }
         },
         commentBottom: {
@@ -240,26 +240,26 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
         },
         commentNotices: {
             spamNotice: {
-                "paddingTop": 15,
-                "paddingRight": 0,
-                "paddingBottom": 15,
-                "paddingLeft": 0,
-                "fontSize": 12,
-                "color": "red"
+                paddingTop: 15,
+                paddingRight: 0,
+                paddingBottom: 15,
+                paddingLeft: 0,
+                fontSize: 12,
+                color: "red"
             },
             requiresVerificationApprovalNotice: {
-                "paddingTop": 15,
-                "paddingRight": 0,
-                "paddingBottom": 15,
-                "paddingLeft": 0,
-                "fontSize": 12,
+                paddingTop: 15,
+                paddingRight: 0,
+                paddingBottom: 15,
+                paddingLeft: 0,
+                fontSize: 12,
             },
             awaitingApprovalNotice: {
-                "paddingTop": 15,
-                "paddingRight": 0,
-                "paddingBottom": 15,
-                "paddingLeft": 0,
-                "fontSize": 12,
+                paddingTop: 15,
+                paddingRight: 0,
+                paddingBottom: 15,
+                paddingLeft: 0,
+                fontSize: 12,
             }
         },
         commentReplyToggle: {
@@ -339,20 +339,20 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
         },
         commentUserBadge: {
             imageBadge: {
-                "marginTop": 3,
-                "marginRight": 5,
-                "marginBottom": 0,
-                "marginLeft": 0,
-                "paddingTop": 5,
-                "paddingRight": 7,
-                "paddingBottom": 5,
-                "paddingLeft": 0,
-                "borderTopLeftRadius": 4,
-                "borderTopRightRadius": 4,
-                "borderBottomRightRadius": 4,
-                "borderBottomLeftRadius": 4,
-                "borderColor": "transparent",
-                "backgroundColor": "transparent"
+                marginTop: 3,
+                marginRight: 5,
+                marginBottom: 0,
+                marginLeft: 0,
+                paddingTop: 5,
+                paddingRight: 7,
+                paddingBottom: 5,
+                paddingLeft: 0,
+                borderTopLeftRadius: 4,
+                borderTopRightRadius: 4,
+                borderBottomRightRadius: 4,
+                borderBottomLeftRadius: 4,
+                borderColor: "transparent",
+                backgroundColor: "transparent"
             },
             imageBadgeImage: {
                 width: 22,
@@ -360,24 +360,24 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 resizeMode: 'contain',
             },
             textBadge: {
-                "marginTop": 3,
-                "marginRight": 5,
-                "marginBottom": 0,
-                "marginLeft": 0,
-                "paddingTop": 5,
-                "paddingRight": 7,
-                "paddingBottom": 5,
-                "paddingLeft": 7,
-                "borderTopLeftRadius": 4,
-                "borderTopRightRadius": 4,
-                "borderBottomRightRadius": 4,
-                "borderBottomLeftRadius": 4,
-                "borderColor": "transparent",
-                "backgroundColor": "transparent"
+                marginTop: 3,
+                marginRight: 5,
+                marginBottom: 0,
+                marginLeft: 0,
+                paddingTop: 5,
+                paddingRight: 7,
+                paddingBottom: 5,
+                paddingLeft: 7,
+                borderTopLeftRadius: 4,
+                borderTopRightRadius: 4,
+                borderBottomRightRadius: 4,
+                borderBottomLeftRadius: 4,
+                borderColor: "transparent",
+                backgroundColor: "transparent"
             },
             textBadgeText: {
-                "fontSize": 12,
-                "color": "#000",
+                fontSize: 12,
+                color: "#000",
             }
         },
         commentUserInfo: {
@@ -454,10 +454,10 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                "marginTop": 0,
-                "marginRight": 7,
-                "marginBottom": 0,
-                "marginLeft": 2,
+                marginTop: 0,
+                marginRight: 7,
+                marginBottom: 0,
+                marginLeft: 2,
             },
             votesUpText: {
                 fontSize: 12,
@@ -485,25 +485,25 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             },
             commentVoteAuth: {
                 maxWidth: 400,
-                "marginTop": 10,
-                "paddingTop": 9,
-                "paddingRight": 12,
-                "paddingBottom": 9,
-                "paddingLeft": 12,
-                "borderTopLeftRadius": 0,
-                "borderTopRightRadius": 6,
-                "borderBottomRightRadius": 6,
-                "borderBottomLeftRadius": 6,
-                "borderWidth": 1,
-                "borderColor": "#a2a2a2",
-                "borderStyle": "solid"
+                marginTop: 10,
+                paddingTop: 9,
+                paddingRight: 12,
+                paddingBottom: 9,
+                paddingLeft: 12,
+                borderTopLeftRadius: 0,
+                borderTopRightRadius: 6,
+                borderBottomRightRadius: 6,
+                borderBottomLeftRadius: 6,
+                borderWidth: 1,
+                borderColor: "#a2a2a2",
+                borderStyle: "solid"
             },
             authInput: {
-                "marginTop": 10,
-                "marginRight": 0,
-                "marginBottom": 10,
-                "marginLeft": 0,
-                "fontSize": 13
+                marginTop: 10,
+                marginRight: 0,
+                marginBottom: 10,
+                marginLeft: 0,
+                fontSize: 13
             },
             loadingView: {
                 ...LoadingOverlay
@@ -721,7 +721,7 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
         },
         paginationPrev: {
             root: {
-                "paddingTop": 50,
+                paddingTop: 50,
             },
             text: {}
         },
@@ -794,31 +794,31 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             },
             ssoLoginWrapper: {
                 flex: 1,
-                "minHeight": 140,
-                "paddingTop": 30,
-                "paddingRight": 0,
-                "paddingBottom": 30,
-                "paddingLeft": 0,
-                "alignItems": "center",
-                "justifyContent": "center",
-                "borderWidth": 1,
-                "borderColor": "#bfbfbf",
-                "borderStyle": "solid",
-                "borderTopLeftRadius": 0,
-                "borderTopRightRadius": 11,
-                "borderBottomRightRadius": 11,
-                "borderBottomLeftRadius": 11
+                minHeight: 140,
+                paddingTop: 30,
+                paddingRight: 0,
+                paddingBottom: 30,
+                paddingLeft: 0,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1,
+                borderColor: "#bfbfbf",
+                borderStyle: "solid",
+                borderTopLeftRadius: 0,
+                borderTopRightRadius: 11,
+                borderBottomRightRadius: 11,
+                borderBottomLeftRadius: 11
             },
             ssoLoginButton: {
-                "paddingTop": 10,
-                "paddingRight": 17,
-                "paddingBottom": 10,
-                "paddingLeft": 27,
-                "borderTopLeftRadius": 0,
-                "borderTopRightRadius": 7,
-                "borderBottomRightRadius": 7,
-                "borderBottomLeftRadius": 7,
-                "backgroundColor": "#333"
+                paddingTop: 10,
+                paddingRight: 17,
+                paddingBottom: 10,
+                paddingLeft: 27,
+                borderTopLeftRadius: 0,
+                borderTopRightRadius: 7,
+                borderBottomRightRadius: 7,
+                borderBottomLeftRadius: 7,
+                backgroundColor: "#333"
             },
             ssoLoginButtonText: {
                 color: "#fff",
@@ -828,16 +828,16 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             topBar: {
                 flexDirection: 'row',
                 justifyContent: 'space-between',
-                "minHeight": 25,
-                "marginTop": 0,
-                "marginRight": 26,
-                "marginBottom": 15,
-                "marginLeft": 26,
+                minHeight: 25,
+                marginTop: 0,
+                marginRight: 26,
+                marginBottom: 15,
+                marginLeft: 26,
             },
             loggedInInfo: {
                 flexDirection: 'row',
                 alignItems: 'center',
-                "minWidth": 150
+                minWidth: 150
             },
             topBarAvatarWrapper: {
                 height: 25,
@@ -859,8 +859,8 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 width: 25,
             },
             topBarUsername: {
-                "overflow": "scroll",
-                "fontWeight": "700",
+                overflow: "scroll",
+                fontWeight: "700",
                 flexWrap: 'nowrap'
             },
             topBarRight: {
@@ -906,47 +906,47 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 ...LoadingOverlay
             },
             error: {
-                "margin": 5,
-                "color": "#ff0000"
+                margin: 5,
+                color: "#ff0000"
             },
             userInfoInput: {
-                "marginTop": 10,
-                "marginRight": 0,
-                "marginBottom": 10,
-                "marginLeft": 0,
-                "fontSize": 13
+                marginTop: 10,
+                marginRight: 0,
+                marginBottom: 10,
+                marginLeft: 0,
+                fontSize: 13
             },
             emailReasoning: {
                 fontWeight: '600'
             },
             authInput: {
-                "marginTop": 10,
-                "paddingTop": 9,
-                "paddingRight": 12,
-                "paddingBottom": 9,
-                "paddingLeft": 12,
-                "borderTopLeftRadius": 0,
-                "borderTopRightRadius": 6,
-                "borderBottomRightRadius": 6,
-                "borderBottomLeftRadius": 6,
-                "fontSize": 14,
-                "borderWidth": 1,
-                "borderColor": "#a2a2a2",
-                "borderStyle": "solid"
+                marginTop: 10,
+                paddingTop: 9,
+                paddingRight: 12,
+                paddingBottom: 9,
+                paddingLeft: 12,
+                borderTopLeftRadius: 0,
+                borderTopRightRadius: 6,
+                borderBottomRightRadius: 6,
+                borderBottomLeftRadius: 6,
+                fontSize: 14,
+                borderWidth: 1,
+                borderColor: "#a2a2a2",
+                borderStyle: "solid"
             },
             solicitationInfo: {
-                "marginTop": 10
+                marginTop: 10
             },
             authInputSubmit: {
-                "paddingTop": 10,
-                "paddingRight": 27,
-                "paddingBottom": 10,
-                "paddingLeft": 27,
-                "borderTopLeftRadius": 0,
-                "borderTopRightRadius": 7,
-                "borderBottomRightRadius": 7,
-                "borderBottomLeftRadius": 7,
-                "backgroundColor": "#333"
+                paddingTop: 10,
+                paddingRight: 27,
+                paddingBottom: 10,
+                paddingLeft: 27,
+                borderTopLeftRadius: 0,
+                borderTopRightRadius: 7,
+                borderBottomRightRadius: 7,
+                borderBottomLeftRadius: 7,
+                backgroundColor: "#333"
             },
             replyCancelButtonWrapper: {
                 position: 'absolute',
@@ -954,14 +954,14 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 right: 10
             },
             replyCancelButton: {
-                "paddingTop": 10,
-                "paddingRight": 10,
-                "paddingBottom": 10,
-                "paddingLeft": 10,
-                "borderTopLeftRadius": 4,
-                "borderTopRightRadius": 4,
-                "borderBottomRightRadius": 4,
-                "borderBottomLeftRadius": 4,
+                paddingTop: 10,
+                paddingRight: 10,
+                paddingBottom: 10,
+                paddingLeft: 10,
+                borderTopLeftRadius: 4,
+                borderTopRightRadius: 4,
+                borderBottomRightRadius: 4,
+                borderBottomLeftRadius: 4,
                 ...GreyButton
             }
         },
@@ -1005,9 +1005,9 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             text: {
                 marginTop: 10,
                 marginBottom: 10,
-                "color": "#fff",
-                "fontSize": 16,
-                "fontWeight": "500",
+                color: "#fff",
+                fontSize: 16,
+                fontWeight: "500",
             }
         },
         showNewLiveComments: {
