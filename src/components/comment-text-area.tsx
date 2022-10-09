@@ -109,7 +109,7 @@ export function CommentTextArea({
         // is better UX anyway vs losing keystrokes.
         const newIsEmpty = !hasContent(nodes.get(stealth));
         if (isEmpty !== newIsEmpty) {
-            setIsEmpty(isEmpty);
+            setIsEmpty(newIsEmpty);
         }
         editorCurrentNodesRef.current = nodes;
     }
