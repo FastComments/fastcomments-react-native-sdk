@@ -15,6 +15,7 @@ import {State} from "@hookstate/core";
 import {FastCommentsState, IFastCommentsStyles, RNComment} from "../types";
 import {incChangeCounter, incChangeCounterState} from "../services/comment-render-determination";
 import {getMergedTranslations} from "../services/translations";
+import { newBroadcastId } from '../services/broadcast-id';
 
 async function startEditingComment({
     state,
@@ -52,7 +53,8 @@ async function setCommentPinStatus({state, comment}: Pick<FastCommentsCommentWit
         method: 'POST',
         url: `/comments/${state.config.tenantId.get()}/${comment._id}/${doPin ? 'pin' : 'unpin'}${createURLQueryString({
             sso: state.ssoConfigString.get(),
-            editKey: comment.editKey
+            editKey: comment.editKey,
+            broadcastId: newBroadcastId()
         })}`
     });
     if (response.status === 'success') {
@@ -82,7 +84,8 @@ async function setCommentBlockedStatus({state, comment}: Pick<FastCommentsCommen
             tenantId: state.config.tenantId.get(),
             urlId: state.config.urlId.get(),
             sso: state.ssoConfigString.get(),
-            editKey: comment.editKey
+            editKey: comment.editKey,
+            broadcastId: newBroadcastId()
         })}`,
         body: {
             commentIds: Object.keys(state.commentsById.get())
@@ -123,7 +126,8 @@ async function setCommentFlaggedStatus({state, comment}: Pick<FastCommentsCommen
             tenantId: state.config.tenantId.get(),
             urlId: state.config.urlId.get(),
             sso: state.ssoConfigString.get(),
-            isFlagged: doFlag
+            isFlagged: doFlag,
+            broadcastId: newBroadcastId()
         })}`
     });
     if (response.status === 'success') {
