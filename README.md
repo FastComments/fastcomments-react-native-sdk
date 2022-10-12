@@ -3,7 +3,7 @@
 This library is a complete webview-free react-native implementation of [FastComments](https://fastcomments.com).
 
 It supports live commenting, chat, threads, emoticons, notifications, SSO, skins, and full customization by passing in a stylesheet object. All assets
-can also be customized, and it supports toggling different assets based on dark mode. It only has three direct dependencies (react, hookstate, and a library to render HTML).
+can also be customized, and it supports toggling different assets based on dark mode. It only has three direct dependencies (`react`, `hookstate`, and a library to render HTML).
 
 It all runs on the FastComments backend, so you only have to incorporate the UI:
 

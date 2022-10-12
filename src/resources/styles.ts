@@ -296,6 +296,31 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 height: 18,
                 aspectRatio: 1,
                 resizeMode: 'contain'
+            },
+            imageUploadModalCenteredView: {
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center"
+            },
+            imageUploadModalContent: {
+                backgroundColor: "white",
+                borderRadius: 20,
+                padding: 35,
+                alignItems: "center",
+                shadowColor: "#000",
+                shadowOffset: {
+                    width: 0,
+                    height: 2
+                },
+                shadowOpacity: 0.25,
+                shadowRadius: 4,
+                elevation: 5
+            },
+            imageUploadModalProgressSpinnerSize: 100,
+            imageUploadModalProgressText: {
+                marginTop: 10,
+                fontSize: 20,
+                fontWeight: 'bold'
             }
         },
         commentTextAreaEmoticonBar: {

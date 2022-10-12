@@ -1,7 +1,7 @@
 import {FastCommentsCommentWithState} from "./comment";
 import {View, Text, ActivityIndicator, Image, TouchableOpacity, Alert} from "react-native";
 import {FastCommentsImageAsset} from "../types";
-import {useState} from "react";
+import {MutableRefObject, useState} from "react";
 import {createURLQueryString, makeRequest} from "../services/http";
 import {getActionTenantId} from "../services/tenants";
 import {UpdateCommentTextResponse} from "../types";
@@ -13,10 +13,11 @@ import {incChangeCounter} from "../services/comment-render-determination";
 import {getMergedTranslations} from "../services/translations";
 
 export interface CommentActionEditProps {
+    close: () => void
     comment: RNComment
+    isDirtyObserver: MutableRefObject<(() => boolean) | undefined>
     state: State<FastCommentsState>
     styles: IFastCommentsStyles
-    close: () => void;
 }
 
 async function saveCommentText({comment, state}: Pick<FastCommentsCommentWithState, 'comment' | 'state'>, newValue: string) {
@@ -58,10 +59,21 @@ async function saveCommentText({comment, state}: Pick<FastCommentsCommentWithSta
     }
 }
 
-export function CommentActionEdit({comment, state, styles, close}: CommentActionEditProps) {
+export function CommentActionEdit({
+    comment,
+    isDirtyObserver,
+    state,
+    styles,
+    close
+}: CommentActionEditProps) {
     const [isLoading, setLoading] = useState(false);
-    const valueGetter: ValueObserver = {}
-    // TODO ask before closing if content changed
+    const valueGetter: ValueObserver = {};
+    isDirtyObserver.current = () => {
+        if (valueGetter.getValue) {
+            return comment.comment !== valueGetter.getValue();
+        }
+        return false;
+    };
     return <View style={styles.commentEditModal?.centeredView}>
         <View style={styles.commentEditModal?.modalView}>
             <CommentTextArea

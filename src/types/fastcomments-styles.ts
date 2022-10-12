@@ -73,6 +73,10 @@ export interface IFastCommentsStyles {
         placeholder?: TextStyle
         text?: TextStyle
         toolbarButton?: ImageStyle
+        imageUploadModalCenteredView?: ViewStyle
+        imageUploadModalContent?: ViewStyle
+        imageUploadModalProgressSpinnerSize?: number
+        imageUploadModalProgressText?: TextStyle
     }
     commentTextAreaEmoticonBar?: {
         root?: ViewStyle

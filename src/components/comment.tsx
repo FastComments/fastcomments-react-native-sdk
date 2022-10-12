@@ -24,6 +24,8 @@ export interface FastCommentsCommentWithState {
     config: FastCommentsRNConfig
     imageAssets: ImageAssetConfig
     openCommentMenu: (comment: RNComment, menuState: CommentMenuState) => void
+    onReplySuccess: (comment: RNComment) => void
+    requestSetReplyingTo: (comment: RNComment | null) => Promise<boolean> // true on success
     setRepliesHidden: (comment: RNComment, hidden: boolean) => void
     translations: Record<string, string>
     state: State<FastCommentsState>
@@ -45,7 +47,7 @@ const CommentHTMLRenderMemo = memo<HTMLRenderMemoProps>(
     }
 );
 
-export interface CommentViewProps extends FastCommentsCommentWithState, Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onReplySuccess' | 'onAuthenticationChange' | 'replyingTo' | 'pickGIF' | 'pickImage'> {
+export interface CommentViewProps extends FastCommentsCommentWithState, Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onAuthenticationChange' | 'pickGIF' | 'pickImage'> {
 }
 
 const RenderCount: Record<string, number> = {};
@@ -61,7 +63,7 @@ export function FastCommentsCommentView(props: CommentViewProps) {
         openCommentMenu,
         pickGIF,
         pickImage,
-        replyingTo,
+        requestSetReplyingTo,
         setRepliesHidden,
         translations,
         imageAssets,
@@ -141,7 +143,7 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                        onAuthenticationChange={onAuthenticationChange}
                        pickGIF={pickGIF}
                        pickImage={pickImage}
-                       replyingTo={replyingTo}
+                       requestSetReplyingTo={requestSetReplyingTo}
                        setRepliesHidden={setRepliesHidden}/>
         {!comment.repliesHidden && <View style={styles.comment?.children}>
             {comment.hiddenChildrenCount &&

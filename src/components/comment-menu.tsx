@@ -1,4 +1,4 @@
-import {Dispatch, SetStateAction} from 'react';
+import {Dispatch, SetStateAction, useRef} from 'react';
 
 import {FastCommentsCommentWithState} from "./comment";
 import {FastCommentsImageAsset} from "../types";
@@ -10,12 +10,14 @@ import {CommentPromptDelete} from "./comment-action-delete";
 import {repositionComment} from "../services/comment-positioning";
 import {PinCommentResponse} from "../types";
 import {BlockCommentResponse} from "../types";
-import {ModalMenuItem} from "./modal-menu";
+import {CAN_CLOSE, CAN_NOT_CLOSE, ModalMenuItem} from "./modal-menu";
 import {State} from "@hookstate/core";
 import {FastCommentsState, IFastCommentsStyles, RNComment} from "../types";
 import {incChangeCounter, incChangeCounterState} from "../services/comment-render-determination";
-import {getMergedTranslations} from "../services/translations";
-import { newBroadcastId } from '../services/broadcast-id';
+import {addTranslationsToState, getMergedTranslations} from "../services/translations";
+import {newBroadcastId} from '../services/broadcast-id';
+import {GetTranslationsResponse} from "../types/dto/get-translations-response";
+import {CommentCancelTranslations} from "../types/comment-cancel-translations";
 
 async function startEditingComment({
     state,
@@ -189,6 +191,7 @@ export function getCommentMenuItems({comment, styles, state}: GetCommentMenuItem
     const menuItems: ModalMenuItem[] = []; // creating an array for every comment rendered is not ideal
 
     if (canEdit) {
+        const isDirtyObserver = useRef<() => boolean>();
         menuItems.push({
             id: 'edit',
             label: state.translations.COMMENT_MENU_EDIT.get(),
@@ -198,7 +201,53 @@ export function getCommentMenuItems({comment, styles, state}: GetCommentMenuItem
             handler: async (setModalId: Dispatch<SetStateAction<string | null>>) => {
                 await startEditingComment({comment, state}, setModalId);
             },
-            subModalContent: (close: () => void) => <CommentActionEdit comment={comment} state={state} styles={styles} close={close}/>
+            subModalContent: (close: () => void) => <CommentActionEdit comment={comment} isDirtyObserver={isDirtyObserver} state={state}
+                                                                       styles={styles} close={close}/>,
+            requestClose: async () => {
+                if (isDirtyObserver.current && isDirtyObserver.current()) {
+                    if (!state.translations.CONFIRM_CANCEL_EDIT.get()) {
+                        let url = '/translations/widgets/comment-ui-cancel?useFullTranslationIds=true';
+                        if (state.config.locale.get()) {
+                            url += '&locale=' + state.config.locale.get();
+                        }
+                        const translationsResponse = await makeRequest<GetTranslationsResponse<CommentCancelTranslations>>({
+                            apiHost: state.apiHost.get(),
+                            method: 'GET',
+                            url
+                        });
+                        if (translationsResponse.status === 'success') {
+                            addTranslationsToState(state.translations, translationsResponse.translations!);
+                        }
+                    }
+                    return new Promise((resolve) => {
+                        Alert.alert(
+                            state.translations.CONFIRM_CANCEL_EDIT_TITLE.get(),
+                            state.translations.CONFIRM_CANCEL_EDIT.get(),
+                            [
+                                {
+                                    text: state.translations.CONFIRM_CANCEL_EDIT_CANCEL.get(),
+                                    onPress: () => {
+                                        resolve(CAN_NOT_CLOSE);
+                                    },
+                                    style: 'cancel'
+                                },
+                                {
+                                    text: state.translations.CONFIRM_CANCEL_EDIT_OK.get(),
+                                    onPress: () => {
+                                        resolve(CAN_CLOSE);
+                                    },
+                                    style: 'destructive'
+                                }
+                            ], {
+                                onDismiss: () => {
+                                    resolve(CAN_NOT_CLOSE);
+                                }
+                            }
+                        );
+                    });
+                }
+                return CAN_CLOSE;
+            }
         });
     }
 

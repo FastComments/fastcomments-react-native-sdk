@@ -2,12 +2,16 @@ import {Dispatch, ReactNode, SetStateAction, useState} from 'react';
 import {ActivityIndicator, Image, ImageURISource, Modal, Text, TouchableOpacity, View} from "react-native";
 import {IFastCommentsStyles} from "../types";
 
+export const CAN_CLOSE = true;
+export const CAN_NOT_CLOSE = false;
+
 export interface ModalMenuItem {
     id: string
     label: string
     handler: (setModalId: Dispatch<SetStateAction<string | null>>) => void
     icon?: ReactNode
     subModalContent?: (close: () => void) => ReactNode
+    requestClose?: () => Promise<typeof CAN_CLOSE | typeof CAN_NOT_CLOSE> // return true if can close
 }
 
 export interface ModalMenuProps {
@@ -30,7 +34,20 @@ export function ModalMenu({
     const [activeModalId, setModalIdVisible] = useState<string | null>(isOpen ? 'menu' : null);
     const [isLoading, setLoading] = useState(false);
 
-    function close() {
+    async function close() {
+        if (
+            activeModalId
+            && activeModalId !== 'menu'
+            && items
+        ) {
+            const currentItem = items.find((item) => item.id === activeModalId);
+            if (currentItem && currentItem.requestClose) {
+                const requestResult = await currentItem.requestClose(); // will return false cancel
+                if (requestResult === CAN_NOT_CLOSE) {
+                    return;
+                }
+            }
+        }
         setModalIdVisible(null);
         onClose && onClose();
     }

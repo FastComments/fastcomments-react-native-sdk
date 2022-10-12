@@ -19,9 +19,10 @@ export interface LiveCommentingListProps {
     callbacks?: FastCommentsCallbacks
     callbackObserver: CallbackObserver
     config: FastCommentsRNConfig
-    handleReplyingTo: (comment: RNComment | null) => void
     imageAssets: ImageAssetConfig
+    onReplySuccess: (comment: RNComment) => void
     openCommentMenu: (comment: RNComment, menuState: CommentMenuState) => void
+    requestSetReplyingTo: (comment: RNComment | null) => Promise<boolean>
     styles: IFastCommentsStyles
     state: State<FastCommentsState>
     service: MutableRefObject<FastCommentsLiveCommentingService | undefined>
@@ -37,9 +38,10 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
         callbacks,
         callbackObserver,
         config,
-        handleReplyingTo,
         imageAssets,
+        onReplySuccess,
         openCommentMenu,
+        requestSetReplyingTo,
         styles,
         service
     } = props;
@@ -125,11 +127,11 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
             state={state}
             styles={styles!}
             onAuthenticationChange={callbacks?.onAuthenticationChange}
-            onReplySuccess={callbacks?.onReplySuccess}
+            onReplySuccess={onReplySuccess}
             onVoteSuccess={callbacks?.onVoteSuccess}
             openCommentMenu={openCommentMenu}
             pickImage={callbacks?.pickImage}
-            replyingTo={handleReplyingTo}
+            requestSetReplyingTo={requestSetReplyingTo}
             width={width}
         />;
 

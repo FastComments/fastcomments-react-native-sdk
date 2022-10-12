@@ -7,12 +7,15 @@ import {useState} from "react";
 import {ReplyArea} from "./reply-area";
 import {CommentDisplayDate} from "./comment-dispay-date";
 import {FastCommentsRNConfig} from "../types/react-native-config";
+import {CAN_CLOSE} from "./modal-menu";
 
-export interface CommentBottomProps extends Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onReplySuccess' | 'onAuthenticationChange' | 'replyingTo' | 'onNotificationSelected' | 'pickGIF' | 'pickImage'> {
+export interface CommentBottomProps extends Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onAuthenticationChange' | 'onNotificationSelected' | 'pickGIF' | 'pickImage'> {
     state: State<FastCommentsState> // we take hookstate here but we try to only use it for the things that change.
     comment: RNComment
     config: FastCommentsRNConfig
     imageAssets: ImageAssetConfig
+    onReplySuccess: (comment: RNComment) => void
+    requestSetReplyingTo: (comment: RNComment | null) => Promise<boolean> // true on success
     setRepliesHidden: (comment: RNComment, hidden: boolean) => void
     styles: IFastCommentsStyles
     translations: Record<string, string>
@@ -29,7 +32,7 @@ export function CommentBottom(props: CommentBottomProps) {
         onVoteSuccess,
         pickGIF,
         pickImage,
-        replyingTo,
+        requestSetReplyingTo,
         setRepliesHidden,
         styles,
         translations,
@@ -53,13 +56,9 @@ export function CommentBottom(props: CommentBottomProps) {
             {!config.renderLikesToRight &&
             <CommentVote comment={comment} config={config} imageAssets={imageAssets} state={state} styles={styles} translations={translations}
                          onVoteSuccess={onVoteSuccess}/>}
-            <TouchableOpacity style={styles.commentBottom?.commentBottomToolbarReply} onPress={() => {
-                if (config.useSingleReplyField) {
-                    // We always expect the callback to exist in this case. Otherwise is an error.
-                    replyingTo!(isReplyBoxOpen ? null : comment); // if reply box already open, invoke with null to say we're not replying.
-                    setIsReplyBoxOpen(!isReplyBoxOpen);
-                } else {
-                    replyingTo && replyingTo(comment);
+            <TouchableOpacity style={styles.commentBottom?.commentBottomToolbarReply} onPress={async () => {
+                const canClose = await requestSetReplyingTo!(isReplyBoxOpen ? null : comment);
+                if (canClose === CAN_CLOSE) {
                     setIsReplyBoxOpen(!isReplyBoxOpen);
                 }
             }
@@ -77,7 +76,7 @@ export function CommentBottom(props: CommentBottomProps) {
                 onNotificationSelected={onNotificationSelected}
                 onReplySuccess={(comment) => {
                     setIsReplyBoxOpen(!isReplyBoxOpen);
-                    onReplySuccess && onReplySuccess(comment);
+                    onReplySuccess(comment);
                 }
                 }
                 parentComment={comment}

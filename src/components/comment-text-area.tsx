@@ -1,6 +1,6 @@
 import {FastCommentsState, FastCommentsImageAsset, IFastCommentsStyles, FastCommentsCallbacks} from "../types";
 import {State} from "@hookstate/core";
-import {Text, Image} from "react-native";
+import {Text, Image, View, ActivityIndicator} from "react-native";
 import {Editor, UpdateNodesObserver} from "./wysiwyg/wysiwyg-editor";
 import {useEffect, useRef, useState} from "react";
 import {EditorToolbar, EditorToolbarConfig} from "./wysiwyg/editor-toolbar";
@@ -44,6 +44,7 @@ export function CommentTextArea({
     const hasDarkBackground = state.config.hasDarkBackground;
     const [isFocused, setFocused] = useState(false);
     const [isEmpty, setIsEmpty] = useState(!!value);
+    const [imageUploadProgress, setImageUploadProgress] = useState<number | null>(null);
     const editorInputNodesRef = useRef<EditorNodeNewLine[]>([]);
     const editorCurrentNodesRef = useRef<State<EditorNodeNewLine[]> | null>(null);
     const updateNodesObserver: UpdateNodesObserver = {};
@@ -78,17 +79,19 @@ export function CommentTextArea({
         getGIFPathToInsert: pickGIF,
         getImagePathToInsert: pickImage,
         uploadImage: async (_node, photoData) => {
+            console.log('BEGIN UPLOAD IMAGE', photoData);
             const formData = new FormData();
             formData.append('file', photoData);
             const xhr = new XMLHttpRequest();
             xhr.open('POST', state.apiHost + '/upload-image/' + state.config.tenantId);
-            xhr.onprogress = function () {
-                // TODO show progress
+            xhr.onprogress = function (progressEvent) {
                 console.log('uploading image', xhr.status);
+                const progress = Math.round(progressEvent.loaded / progressEvent.total);
+                setImageUploadProgress(progress);
             }
             return new Promise((resolve, reject) => {
                 xhr.onload = function () {
-                    // TODO show progress done
+                    setImageUploadProgress(null);
                     console.log('done uploading image', xhr.status);
                     if (xhr.status === 200) {
                         const url = JSON.parse(xhr.response).url;
@@ -103,6 +106,7 @@ export function CommentTextArea({
     }
 
     const stealth = {stealth: true, noproxy: true};
+
     function onChange(nodes: State<EditorNodeNewLine[]>) {
         // we could automatically trim content here, via updating the graph in-place.
         // but it causes lag so probably better to just tell the user to shorten their text
@@ -132,19 +136,29 @@ export function CommentTextArea({
         }
     }
 
-    return <Editor
-        graph={editorInputNodesRef.current}
-        updateNodesObserver={updateNodesObserver}
-        isMultiLine={!state.config.useSingleLineCommentInput}
-        onChange={onChange}
-        style={styles.commentTextArea?.textarea}
-        textStyle={styles.commentTextArea?.text}
-        placeholder={!isFocused && isEmpty && placeholder}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        maxLength={maxLength}
-        toolbar={(config) => <EditorToolbar config={config}/>}
-        toolbarConfig={toolbarConfig}
-        emoticonBarConfig={emoticonBarConfig}
-    />
+    return <View>
+        <Editor
+            graph={editorInputNodesRef.current}
+            updateNodesObserver={updateNodesObserver}
+            isMultiLine={!state.config.useSingleLineCommentInput}
+            onChange={onChange}
+            style={styles.commentTextArea?.textarea}
+            textStyle={styles.commentTextArea?.text}
+            placeholder={!isFocused && isEmpty && placeholder}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            maxLength={maxLength}
+            toolbar={(config) => <EditorToolbar config={config}/>}
+            toolbarConfig={toolbarConfig}
+            emoticonBarConfig={emoticonBarConfig}
+        />
+        {imageUploadProgress !== null
+            ? <View style={styles.commentTextArea?.imageUploadModalCenteredView}>
+                <View style={styles.commentTextArea?.imageUploadModalContent}>
+                    <ActivityIndicator size={styles.commentTextArea?.imageUploadModalProgressSpinnerSize} />
+                    <Text style={styles.commentTextArea?.imageUploadModalProgressText}>{Math.round(imageUploadProgress * 100)}%</Text>
+                </View>
+            </View>
+            : null}
+    </View>
 }

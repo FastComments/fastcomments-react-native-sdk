@@ -8,7 +8,7 @@ const SupportedNodes: SupportedNodesTokenizerConfig = {
         type: EditorNodeType.NEWLINE,
         lookaheadIgnore: null
     },
-    // TODO this is the fastcomments format. replace with standard markdown and allow this to be customizable before launching library.
+    // TODO this is the fastcomments format. replace with standard markdown and allow this to be customizable before launching standalone WYSIWYG library.
     '[img]': {
         start: '[img]',
         end: '[/img]',

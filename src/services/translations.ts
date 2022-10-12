@@ -1,4 +1,5 @@
 import {CommonHTTPResponse} from "./http";
+import {State} from "@hookstate/core";
 
 export function getMergedTranslations(sourceTranslations: Record<string, string>, response: CommonHTTPResponse): Record<string, string> {
     let translations = sourceTranslations;
@@ -9,4 +10,13 @@ export function getMergedTranslations(sourceTranslations: Record<string, string>
         }
     }
     return translations;
+}
+
+export function addTranslationsToState(stateTranslations: State<Record<string, string>>, translations: Record<string, string>) {
+    stateTranslations.set((stateTranslations) => {
+        for (const translationId in translations) {
+            stateTranslations[translationId] = translations[translationId];
+        }
+        return stateTranslations;
+    });
 }

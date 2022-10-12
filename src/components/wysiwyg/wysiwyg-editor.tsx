@@ -46,7 +46,6 @@ export interface EditorProps {
 }
 
 export function Editor(props: EditorProps) {
-    // TODO wysiwyg gif button
     const graph = useHookstate<EditorNodeNewLine[]>(props.graph);
 
     if (props.updateNodesObserver) {
