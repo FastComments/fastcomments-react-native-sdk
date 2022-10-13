@@ -59,14 +59,14 @@ export const EditorFormatConfigurationHTML: EditorFormatConfiguration = {
                 return '';
             }
             // images should not be trimmed
-            return `![](${node.content})`;
+            return `<img src="${node.content}" class="react" />`;
         },
         [EditorNodeType.IMAGE]: (node: EditorNodeNewLine | EditorNodeWithoutChildren, _trimToLength?: number) => {
             if (!('content' in node)) {
                 return '';
             }
             // images should not be trimmed
-            return `![](${node.content})`;
+            return `[img]${node.content}[/img]`; // when we pull the WYSIWYG library out of this library, this format will change.
         },
         [EditorNodeType.TEXT_ITALIC]: (node: EditorNodeNewLine | EditorNodeWithoutChildren, trimToLength?: number) => {
             return toTextTrimmed(node, '<i>', '</i>', trimToLength);

@@ -29,9 +29,11 @@ export interface IFastCommentsStyles {
         pin?: ImageStyle
         contentWrapper?: ViewStyle
         text?: MixedStyleDeclaration
+        HTMLNodeStyleByClass?: MixedStyleRecord
         /** Will be deprecated when this is fixed and can move to 6.x: https://github.com/meliorence/react-native-render-html/issues/582 **/
         textHTML?: string
         children?: ViewStyle
+        childIndent?: number
     }
     commentMenu?: {
         itemIcon?: ImageStyle

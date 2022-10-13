@@ -1,4 +1,4 @@
-import RenderHtml, {RenderHTMLConfigProvider, TRenderEngineProvider} from "react-native-render-html";
+import RenderHtml, {defaultHTMLElementModels, HTMLContentModel, RenderHTMLConfigProvider, TRenderEngineProvider} from "react-native-render-html";
 import {ActivityIndicator, FlatList, ListRenderItemInfo, useWindowDimensions, View, Text} from "react-native";
 import {Downgraded, State, useHookstate, useHookstateEffect} from "@hookstate/core";
 import {FastCommentsCallbacks, FastCommentsState, IFastCommentsStyles, ImageAssetConfig, RNComment} from "../types";
@@ -12,7 +12,7 @@ import {FastCommentsLiveCommentingService} from "../services/fastcomments-live-c
 import {LiveCommentingTopArea} from "./live-commenting-top-area";
 import {FastCommentsRNConfig} from "../types/react-native-config";
 import {CallbackObserver} from "./live-commenting-bottom-area";
-import {iterateCommentsTree} from "../services/comment-trees";
+import {iterateCommentsTreeWithDepth} from "../services/comment-trees";
 import {CommentMenuState} from "./comment-menu";
 
 export interface LiveCommentingListProps {
@@ -32,6 +32,13 @@ const CommentViewMemo = React.memo<CommentViewProps>(
     props => FastCommentsCommentView(props),
     (prevProps, nextProps) => arePropsEqual(prevProps, nextProps)
 );
+
+// makes reacts show inline
+const customHTMLElementModels = {
+    img: defaultHTMLElementModels.img.extend({
+        contentModel: HTMLContentModel.mixed
+    })
+}
 
 export function LiveCommentingList(props: LiveCommentingListProps) {
     const {
@@ -59,7 +66,7 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
         const start = Date.now();
         // Re-creating the whole list generally takes 1-2ms.
         console.log('...Re-creating view list from tree...');
-        iterateCommentsTree(state.commentsTree.get({stealth: true, noproxy: true}), (comment) => {
+        iterateCommentsTreeWithDepth(state.commentsTree.get({stealth: true, noproxy: true}), 0, (comment, depth) => {
             if (!comment) {
                 return;
             }
@@ -67,9 +74,11 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
             if (parentId) {
                 const parent = byId[parentId];
                 if (parent && !parent.hidden && !parent.repliesHidden) {
+                    comment.depth = depth;
                     list.push(comment);
                 }
             } else {
+                comment.depth = depth;
                 list.push(comment);
             }
         });
@@ -161,7 +170,11 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
 
     console.log('!!!! ************** list re-rendered ************** !!!!')
 
-    return <TRenderEngineProvider baseStyle={styles.comment?.text}>
+    return <TRenderEngineProvider
+        baseStyle={styles.comment?.text}
+        classesStyles={styles.comment?.HTMLNodeStyleByClass}
+        customHTMLElementModels={customHTMLElementModels}
+    >
         <RenderHTMLConfigProvider>
             <FlatList
                 style={styles.commentsWrapper}

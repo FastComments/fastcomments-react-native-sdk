@@ -15,7 +15,6 @@ const SupportedNodes: SupportedNodesTokenizerConfig = {
         type: EditorNodeType.IMAGE,
         lookaheadIgnore: null,
     },
-    // TODO parse emoticons? (raw html images today)
     '**': {
         start: '**',
         end: '**',

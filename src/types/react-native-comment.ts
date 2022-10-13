@@ -11,4 +11,5 @@ export interface RNComment extends FastCommentsWidgetComment {
     wasPostedCurrentSession?: boolean;
     requiresVerification?: boolean;
     changeCounter?: number;
+    depth?: number; // for rendering
 }

@@ -214,7 +214,7 @@ export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTo
 
         if (inNode) {
             if (inNode.end && buffer.endsWith(inNode.end)) {
-                const content = buffer.substr(0, buffer.length - inNode.end.length);
+                const content = buffer.substring(0, buffer.length - inNode.end.length);
                 currentNewLine.children!.push({
                     id: getNextNodeId(), // we do this so react knows to re-render via key, since we use id as key. If we just use an incrementing number here, react may not re-render for a whole new tree.
                     type: inNode.type,
@@ -234,6 +234,18 @@ export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTo
                         continue;
                     }
                     if (node.type === EditorNodeType.NEWLINE) {
+                        const content = buffer.substring(0, buffer.length - startToken.length);
+                        if (content.length > 0) {
+                            currentNewLine.children!.push({
+                                id: getNextNodeId(), // we do this so react knows to re-render via key, since we use id as key. If we just use an incrementing number here, react may not re-render for a whole new tree.
+                                type: EditorNodeType.TEXT,
+                                content,
+                                isFocused: false,
+                                deleteOnBackspace: isMention(node.type, content)
+                            });
+                        }
+                        inNode = null;
+                        buffer = '';
                         result.push(currentNewLine);
                         currentNewLine = createNewlineNode([]);
                         continue;
@@ -271,6 +283,7 @@ export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTo
             content: buffer,
             isFocused: false
         });
+        result.push(currentNewLine);
     }
     if (result.length === 0) {
         if (currentNewLine.children!.length === 0) {
@@ -285,7 +298,7 @@ export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTo
         }
         result.push(currentNewLine);
     }
-    console.log('Tokenizer', input, '->', result);
+    console.log('Tokenizer', input, '->', JSON.stringify(result));
     return result;
 }
 

@@ -42,6 +42,9 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
     const [isLoaded, setIsLoaded] = useState(false);
     const isReplyingToParentIdRef = useRef<string | null>(null);
     const [commentMenuRequest, setCommentMenuRequest] = useState<OpenCommentMenuRequest>();
+    const callbackObserver: CallbackObserver = {};
+    const callbackObserverRef = useRef(callbackObserver);
+
     const loadAsync = async () => {
         if (service.current) {
             setLoading(true);
@@ -62,8 +65,21 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
         }
     }, [state.sortDirection]);
 
-    const callbackObserver: CallbackObserver = {};
-    const callbackObserverRef = useRef(callbackObserver);
+    useEffect(() => {
+        const backHandler = BackHandler.addEventListener(
+            "hardwareBackPress",
+            () => {
+                if (isReplyingToParentIdRef.current) {
+                    // noinspection JSIgnoredPromiseFromCall
+                    requestSetReplyingTo(null, true); // TODO request is async and this does not support that yet :(
+                    return true;
+                }
+                return false;
+            }
+        );
+
+        return () => backHandler.remove()
+    }, []);
 
     async function requestSetReplyingTo(comment: RNComment | null, force?: boolean) {
         // If we're cancelling, and we're already replying to someone, confirm the change.
@@ -127,22 +143,6 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
         callbacks && callbacks?.onReplySuccess && callbacks?.onReplySuccess(comment);
     }
 
-    useEffect(() => {
-        const backHandler = BackHandler.addEventListener(
-            "hardwareBackPress",
-            () => {
-                if (isReplyingToParentIdRef.current) {
-                    // noinspection JSIgnoredPromiseFromCall
-                    requestSetReplyingTo(null, true); // TODO request is async and this does not support that yet :(
-                    return true;
-                }
-                return false;
-            }
-        );
-
-        return () => backHandler.remove()
-    }, []);
-
     if (state.blockingErrorMessage.get()) {
         return <View style={styles.root}><CommentAreaMessage styles={styles} message={state.blockingErrorMessage.get()}/></View>;
     } else if (!((state.commentsTree.length === 0 && state.config.readonly.get()) || ((state.config.hideCommentsUnderCountTextFormat.get() || state.config.useShowCommentsToggle.get()) && !state.commentsVisible.get()))) {
@@ -170,7 +170,13 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
                 <ModalMenu
                     key={commentMenuRequest.comment._id}
                     closeIcon={imageAssets[config.hasDarkBackground ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]}
-                    styles={styles} items={getCommentMenuItems({comment: commentMenuRequest.comment, styles, state}, commentMenuRequest.menuState)}
+                    styles={styles} items={getCommentMenuItems({
+                        comment: commentMenuRequest.comment,
+                        pickGIF: callbacks?.pickGIF,
+                        pickImage: callbacks?.pickImage,
+                        styles,
+                        state
+                    }, commentMenuRequest.menuState)}
                     isOpen={true}
                     onClose={() => setCommentMenuRequest(undefined)}/> : null}
             <LiveCommentingBottomArea

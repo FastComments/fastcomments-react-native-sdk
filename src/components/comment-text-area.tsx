@@ -136,7 +136,7 @@ export function CommentTextArea({
         }
     }
 
-    return <View>
+    return <View style={{width: '100%'}}>
         <Editor
             graph={editorInputNodesRef.current}
             updateNodesObserver={updateNodesObserver}

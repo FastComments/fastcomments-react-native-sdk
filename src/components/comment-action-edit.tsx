@@ -1,7 +1,7 @@
 import {FastCommentsCommentWithState} from "./comment";
 import {View, Text, ActivityIndicator, Image, TouchableOpacity, Alert} from "react-native";
-import {FastCommentsImageAsset} from "../types";
-import {MutableRefObject, useState} from "react";
+import {FastCommentsCallbacks, FastCommentsImageAsset} from "../types";
+import {useState} from "react";
 import {createURLQueryString, makeRequest} from "../services/http";
 import {getActionTenantId} from "../services/tenants";
 import {UpdateCommentTextResponse} from "../types";
@@ -11,11 +11,16 @@ import {FastCommentsState, IFastCommentsStyles, RNComment} from "../types";
 import {State} from "@hookstate/core";
 import {incChangeCounter} from "../services/comment-render-determination";
 import {getMergedTranslations} from "../services/translations";
+import { EmoticonBarConfig } from "./wysiwyg/emoticon-bar";
 
-export interface CommentActionEditProps {
+export interface DirtyRef {
+    current?: () => boolean
+}
+
+export interface CommentActionEditProps extends Pick<FastCommentsCallbacks, 'pickGIF' | 'pickImage'> {
     close: () => void
     comment: RNComment
-    isDirtyObserver: MutableRefObject<(() => boolean) | undefined>
+    isDirtyRef: DirtyRef
     state: State<FastCommentsState>
     styles: IFastCommentsStyles
 }
@@ -61,25 +66,38 @@ async function saveCommentText({comment, state}: Pick<FastCommentsCommentWithSta
 
 export function CommentActionEdit({
     comment,
-    isDirtyObserver,
+    isDirtyRef,
+    pickGIF,
+    pickImage,
     state,
     styles,
     close
 }: CommentActionEditProps) {
     const [isLoading, setLoading] = useState(false);
     const valueGetter: ValueObserver = {};
-    isDirtyObserver.current = () => {
+    isDirtyRef.current = () => {
         if (valueGetter.getValue) {
             return comment.comment !== valueGetter.getValue();
         }
         return false;
     };
+    const inlineReactImages = state.config.inlineReactImages.get();
+    let emoticonBarConfig: EmoticonBarConfig = {};
+    if (inlineReactImages) {
+        emoticonBarConfig.emoticons = inlineReactImages.map(function (src) {
+            return [src, <Image source={{uri: src}} style={styles.commentTextAreaEmoticonBar?.icon}/>]
+        })
+    }
     return <View style={styles.commentEditModal?.centeredView}>
         <View style={styles.commentEditModal?.modalView}>
             <CommentTextArea
-                state={state.get()} value={comment.comment}
+                emoticonBarConfig={emoticonBarConfig}
                 styles={styles}
+                state={state.get()}
+                value={comment.comment}
                 output={valueGetter}
+                pickImage={pickImage}
+                pickGIF={pickGIF}
             />
             <TouchableOpacity
                 style={styles.commentEditModal?.saveButton}

@@ -1,11 +1,11 @@
-import {Dispatch, SetStateAction, useRef} from 'react';
+import {Dispatch, SetStateAction} from 'react';
 
 import {FastCommentsCommentWithState} from "./comment";
-import {FastCommentsImageAsset} from "../types";
+import {FastCommentsCallbacks, FastCommentsImageAsset} from "../types";
 import {Alert, Image} from "react-native";
 import {createURLQueryString, makeRequest} from "../services/http";
 import {GetCommentTextResponse} from "../types";
-import {CommentActionEdit} from './comment-action-edit';
+import {CommentActionEdit, DirtyRef} from './comment-action-edit';
 import {CommentPromptDelete} from "./comment-action-delete";
 import {repositionComment} from "../services/comment-positioning";
 import {PinCommentResponse} from "../types";
@@ -170,7 +170,7 @@ export function getCommentMenuState(state: State<FastCommentsState>, comment: RN
     }
 }
 
-export interface GetCommentMenuItemsProps {
+export interface GetCommentMenuItemsProps extends Pick<FastCommentsCallbacks, 'pickGIF' | 'pickImage'> {
     comment: RNComment
     state: State<FastCommentsState>
     styles: IFastCommentsStyles,
@@ -181,7 +181,13 @@ export interface OpenCommentMenuRequest {
     menuState: CommentMenuState
 }
 
-export function getCommentMenuItems({comment, styles, state}: GetCommentMenuItemsProps, {
+export function getCommentMenuItems({
+    comment,
+    pickGIF,
+    pickImage,
+    styles,
+    state
+}: GetCommentMenuItemsProps, {
     canEdit,
     canPin,
     canBlockOrFlag,
@@ -191,7 +197,7 @@ export function getCommentMenuItems({comment, styles, state}: GetCommentMenuItem
     const menuItems: ModalMenuItem[] = []; // creating an array for every comment rendered is not ideal
 
     if (canEdit) {
-        const isDirtyObserver = useRef<() => boolean>();
+        const isDirtyRef: DirtyRef = {}; // can't use useRef here due to hook lifecycle
         menuItems.push({
             id: 'edit',
             label: state.translations.COMMENT_MENU_EDIT.get(),
@@ -201,10 +207,16 @@ export function getCommentMenuItems({comment, styles, state}: GetCommentMenuItem
             handler: async (setModalId: Dispatch<SetStateAction<string | null>>) => {
                 await startEditingComment({comment, state}, setModalId);
             },
-            subModalContent: (close: () => void) => <CommentActionEdit comment={comment} isDirtyObserver={isDirtyObserver} state={state}
-                                                                       styles={styles} close={close}/>,
+            subModalContent: (close: () => void) => <CommentActionEdit
+                comment={comment}
+                isDirtyRef={isDirtyRef}
+                pickGIF={pickGIF}
+                pickImage={pickImage}
+                state={state}
+                styles={styles}
+                close={close}/>,
             requestClose: async () => {
-                if (isDirtyObserver.current && isDirtyObserver.current()) {
+                if (isDirtyRef.current && isDirtyRef.current()) {
                     if (!state.translations.CONFIRM_CANCEL_EDIT.get()) {
                         let url = '/translations/widgets/comment-ui-cancel?useFullTranslationIds=true';
                         if (state.config.locale.get()) {

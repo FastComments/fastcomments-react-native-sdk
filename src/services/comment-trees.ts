@@ -194,6 +194,18 @@ export function iterateCommentsTree(nodes: FastCommentsWidgetComment[], cb: (com
     }
 }
 
+export function iterateCommentsTreeWithDepth(nodes: RNComment[], depth: number, cb: (comment: RNComment, depth: number) => boolean | 'delete' | undefined | void) {
+    for (const comment of nodes) {
+        const result = cb(comment, depth);
+        if (result === false) {
+            break;
+        }
+        if (comment.children) {
+            iterateCommentsTreeWithDepth(comment.children, depth + 1, cb);
+        }
+    }
+}
+
 export function iterateCommentsTreeState(nodes: State<RNComment[]> | State<RNComment>[], cb: (comment: State<RNComment>) => false | 'delete' | undefined | void) {
     for (const comment of nodes) {
         const result = cb(comment);

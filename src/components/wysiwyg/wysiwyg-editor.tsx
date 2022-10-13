@@ -9,7 +9,6 @@ import {EmoticonBarConfig} from "./emoticon-bar";
 import {
     getLastFocusedState,
     getNext,
-    getStateById,
     getStateLast,
     getStateNext,
     getStatePrev,
@@ -57,19 +56,19 @@ export function Editor(props: EditorProps) {
 
     useHookstateEffect(() => {
         props.onChange(graph);
-        // TODO uncomment in production
-        console.log('===== BEGIN EDITOR NODE STRUCTURE =====');
-        const graphRaw = graph.get({stealth: true});
-        for (const node of graphRaw) {
-            console.log(EditorNodeNames[node.type], `(${node.id})`);
-            const children = node.children;
-            if (children) {
-                for (const child of children) {
-                    console.log('    ', EditorNodeNames[child.type], `(${child.id})`);
-                }
-            }
-        }
-        console.log('===== END EDITOR NODE STRUCTURE =====');
+        // uncomment in production
+        // console.log('===== BEGIN EDITOR NODE STRUCTURE =====');
+        // const graphRaw = graph.get({stealth: true});
+        // for (const node of graphRaw) {
+        //     console.log(EditorNodeNames[node.type], `(${node.id})`);
+        //     const children = node.children;
+        //     if (children) {
+        //         for (const child of children) {
+        //             console.log('    ', EditorNodeNames[child.type], `(${child.id})`);
+        //         }
+        //     }
+        // }
+        // console.log('===== END EDITOR NODE STRUCTURE =====');
     }, [graph]);
 
     // uncomment to test keyboard losing focus.
@@ -104,7 +103,6 @@ export function Editor(props: EditorProps) {
             props.emoticonBarConfig.getCurrentNode = getCurrentNode;
         }
         if (!props.emoticonBarConfig.addEmoticon) {
-            // @ts-ignore - TODO better way to do this or useHookstate<EditorNodeDefinition | null>(null); ?
             props.emoticonBarConfig.addEmoticon = (currentNode, src) => {
                 // if current node is an empty node, just replace it.
                 if (!currentNode.content.get()) {
@@ -143,7 +141,7 @@ export function Editor(props: EditorProps) {
 
         function toggleElementType(node: State<EditorNodeWithoutChildren> | null, type: EditorNodeType, createFn: (startingValue: string) => EditorNodeWithoutChildren) {
             if (node && node.get()) {
-                // TODO only bold selected content
+                // TODO only bold selected content. This means we have to keep track of selected content somehow. Text nodes could call back up to top when selection changes.
                 // TODO if none selected, add new node and set it as bold
                 const nodeType = node.type.get();
                 if (nodeType !== type) {
@@ -362,17 +360,17 @@ export function Editor(props: EditorProps) {
                             key={node.id.get()}
                             nodeState={node}
                             textStyle={props.textStyle}
-                            onBlur={() => deselect(getStateById(graph, node.id.get())!)}
+                            onBlur={() => deselect(node)}
                             onChangeContent={(newContent) => updateNodeContent(node, newContent)}
-                            onFocus={() => select(getStateById(graph, node.id.get())!)}
-                            doDelete={() => doDelete(getStateById(graph, node.id.get())!, node)}
+                            onFocus={() => select(node)}
+                            doDelete={() => doDelete(node, node)}
                             doDeleteNodeBefore={() => {
                                 const nodeBefore = getStatePrev(graph, node.id.get());
                                 if (nodeBefore) {
                                     doDelete(nodeBefore, node)
                                 }
                             }}
-                            onTryNewline={() => onTryNewline(getStateById(graph, node.id.get())!)}
+                            onTryNewline={() => onTryNewline(node)}
                             isMultiLine={props.isMultiLine}
                         />)}
                 </View>

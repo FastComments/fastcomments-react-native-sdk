@@ -121,7 +121,6 @@ export function FastCommentsCommentView(props: CommentViewProps) {
             source={imageAssets[config.hasDarkBackground ? FastCommentsImageAsset.ICON_EDIT_SMALL_WHITE : FastCommentsImageAsset.ICON_EDIT_SMALL]}
             style={{width: 16, height: 16}}/></TouchableOpacity>}
     </View>
-        {/* TODO: MEMOIZE RenderHTMLSource so that we can re-render comment w/o re-rendering HTML. */}
         <View style={styles.comment?.contentWrapper}>
             <CommentNotices comment={comment} styles={styles} translations={translations}/>
             {!renderCommentInline &&
@@ -156,7 +155,7 @@ export function FastCommentsCommentView(props: CommentViewProps) {
             {content}
         </Pressable> : content;
 
-    const indentStyles = comment.parentId ? {marginLeft: 20} : null; // TODO THIS IS TEMPORARY - CLEANUP
+    const indentStyles = comment.depth ? {marginLeft: comment.depth * (styles.comment?.childIndent || 20)} : null;
     return <View style={[styles.comment?.root, indentStyles]}>
         {contentWrapped}
     </View>;

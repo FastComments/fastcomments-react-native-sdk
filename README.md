@@ -97,7 +97,7 @@ Keep in mind that most features should be opt-in by default to maximize flexibil
 - [x] Switch Pressable usage to Button or TouchableOpacity where possible
 - [x] WYSIWYG Editor Optimizations (ideally 60fps while typing)
 - [x] Notification Service (get user's unread notifications in the background to push to them, etc)
-- [ ] Better WYSIWYG bar icons (web ones don't look good in native)
+- [x] Better WYSIWYG bar icons (web ones don't look good in native)
 - [ ] Complete all TODOs
 - [x] Profile & ensure 40 FPS minimum during writing comments, submitting, voting, and opening reply menu.
 - [x] Add @username to text box when replying and using useSingleReplyField = true

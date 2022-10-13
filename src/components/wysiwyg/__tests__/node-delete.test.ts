@@ -71,6 +71,28 @@ describe('node-delete', () => {
         expect(nodes).toEqual(expectedResult);
     });
 
+    it('should remove an image node and retain focus on the desired text node', () => {
+        const firstNode = createTextNode('Text before image');
+        const imageNode = createImageNode('some-image-src');
+        const lastNode = createTextNode('');
+        const nodes: EditorNodeNewLine[] = [
+            createNewlineNode([firstNode]),
+            createNewlineNode([imageNode]),
+            createNewlineNode([lastNode]),
+        ]
+        focusNode(lastNode);
+        const expectedResult: EditorNodeNewLine[] = [
+            {
+                ...nodes[0]
+            },
+            {
+                ...nodes[2]
+            }
+        ];
+        deleteNodeRetainFocus(nodes, imageNode, lastNode);
+        expect(nodes).toEqual(expectedResult);
+    });
+
     it('should clear all nodes between two text nodes when deleting a text node, merging the starting and ending text nodes (multiple images/text)', () => {
         const lastNode = createTextNode('');
         const textNodeBeforeImage = createTextNode('text-1');

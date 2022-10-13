@@ -121,6 +121,23 @@ function getNodeDeletionPlan(graph: EditorNodeNewLine[], node: EditorNodeWithout
      *
      */
 
+    // if the node to delete is an image, then we can just delete that image, or the row if that's the only thing the row contains.
+    // we ignore focus in this case, since the keyboard will already go away if the user has clicked to delete the image :(
+    if ('type' in node && (node.type === EditorNodeType.IMAGE || node.type === EditorNodeType.EMOTICON)) {
+        const correspondingRow = graph.find((graphEntry) => graphEntry.children?.some((child) => {
+            return child.id === node.id;
+        }));
+        if (correspondingRow && correspondingRow.children!.length === 1) {
+            return { // delete whole row
+                idsToRemove: [correspondingRow.id]
+            };
+        } else {
+            return {
+                idsToRemove: [node.id]
+            };
+        }
+    }
+
     // This was all just hacked together to make all the tests pass, and more elegant solutions are available.
     console.log('searching', JSON.stringify(graph));
     const searchResult = searchNodesOfTypeBeforeIdInclusive(graph, node.id, EditorNodeTextTypes);
@@ -242,31 +259,9 @@ export function deleteNodeRetainFocus(nodes: EditorNodeNewLine[], node: EditorNo
         }
     }
 
-    // if (plan.nodeToAdd) {
-    //     if (plan.nodeToAdd.afterId !== undefined) {
-    //         insertAfter(nodes, plan.nodeToAdd.afterId, plan.nodeToAdd.node);
-    //     } else {
-    //         insertAfter(nodes, getLast(nodes).id, plan.nodeToAdd.node);
-    //     }
-    // }
-
     if (plan.merge) {
         mergeTextNodes(plan.merge);
     }
-
-    // if (plan.nodeToFocus) {
-    //     if (node.id === plan.nodeToFocus.id && node.isFocused && plan.nodeToFocus.lastFocusTime) {
-    //         // if we update lastFocusTime then keyboard will go away/show again and feel weird.
-    //         console.log('Not re-focusing node after deletion, already focused.');
-    //         plan.nodeToFocus.isFocused = true; // ensure focused after merge
-    //     } else {
-    //         const focusableNodes = graphToListWithoutNewlines(nodes);
-    //         for (const focusableNode of focusableNodes) {
-    //             focusableNode.isFocused = false;
-    //         }
-    //         focusNode(plan.nodeToFocus);
-    //     }
-    // }
 
     console.log(`END deleteNodeRetainFocus id=[${node.id}] type=[${EditorNodeNames[node.type]}] content=[${node.content}]`);
 }

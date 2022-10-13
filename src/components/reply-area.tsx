@@ -239,19 +239,21 @@ async function submit({
             state.config.maxCommentCharacterLength.set(response.maxCharacterLength); // update UI
         }
         commentReplyState.set((commentReplyState) => {
-            return {
+            const newCommentReplyState = {
                 ...commentReplyState,
                 isReplySaving: false,
                 showAuthInputForm: false,
                 showSuccessMessage,
                 lastSaveResponse: response,
-
+            };
+            if (wasSuccessful) {
                 // we only reset these on success.
-                username: none,
-                email: none,
-                websiteUrl: none,
-                comment: ''
+                newCommentReplyState.username = none;
+                newCommentReplyState.email = none;
+                newCommentReplyState.websiteUrl = none;
+                newCommentReplyState.comment = '';
             }
+            return newCommentReplyState;
         });
         // important that this is after commentReplyState.set otherwise we will detatch the ReplyArea onReplySuccess() and then
         // we will do a state mutation on a destroyed state object, causing HOOKSTATE-106.
@@ -370,7 +372,7 @@ export function ReplyArea(props: ReplyAreaProps) {
                 <View style={styles.replyArea?.loggedInInfo}>
                     <View style={styles.replyArea?.topBarAvatarWrapper}>
                         <Image style={styles.replyArea?.topBarAvatar}
-                           source={currentUser.avatarSrc ? {uri: currentUser.avatarSrc} : getDefaultAvatarSrc(imageAssets)}/>
+                               source={currentUser.avatarSrc ? {uri: currentUser.avatarSrc} : getDefaultAvatarSrc(imageAssets)}/>
                     </View>
                     <Text style={styles.replyArea?.topBarUsername}>{currentUser.username}</Text>
                 </View>

@@ -128,6 +128,11 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 marginTop: 10,
                 fontSize: 13,
             },
+            HTMLNodeStyleByClass: {
+                react: {
+                    paddingRight: 5
+                }
+            },
             children: {
                 marginTop: 15,
                 marginRight: 0,
@@ -151,6 +156,7 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 marginTop: 22
             },
             modalView: {
+                width: '100%',
                 minWidth: 300,
                 margin: 20,
                 backgroundColor: "white",

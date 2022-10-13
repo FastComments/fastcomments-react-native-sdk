@@ -120,13 +120,6 @@ export function getPrev(nodes: EditorNodeNewLine[], id: number): EditorNodeWitho
     return list[index - 1];
 }
 
-// TODO this n-time lookup is temporary, however it is generally fast enough since we have less than a handful of nodes in most cases.
-export function getStateById(nodes: State<EditorNodeNewLine[]>, id: number): State<EditorNodeWithoutChildren> | null | undefined {
-    const list = graphToListStateWithoutNewlines(nodes);
-    const stealth = {stealth: true, noproxy: true}; // OPTIMIZATION
-    return list.find((node) => node.id.get(stealth) === id);
-}
-
 export function getStateByIdFromMap(nodes: Record<string, State<EditorNodeWithoutChildren>>, id: number) {
     return nodes[id];
 }
