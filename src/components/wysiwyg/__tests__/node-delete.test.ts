@@ -46,7 +46,7 @@ describe('node-delete', () => {
         expect(nodes).toEqual(expectedResult);
     });
 
-    it('should clear all nodes between two text nodes when deleting a text node, merging the starting and ending text nodes', () => {
+    it('should clear at most one node between two text nodes when deleting a text node, merging the starting and ending text nodes', () => {
         const firstNode = createTextNode('Text before image');
         const lastNode = createTextNode('');
         const nodes: EditorNodeNewLine[] = [
@@ -142,6 +142,31 @@ describe('node-delete', () => {
                         ...lastNode,
                         content: textNodeBeforeEmoticon.content
                     }
+                ]
+            }
+        ];
+        deleteNodeRetainFocus(nodes, toDelete, toDelete);
+        expect(nodes).toEqual(expectedResult);
+    });
+
+    it('should only remove one emoticon when backspacing from a text node, and retain the text node', () => {
+        const emoticonOne = createEmoticonNode('emoticon-one');
+        const emoticonTwo = createEmoticonNode('emoticon-two');
+        const lastTextNode = createTextNode('');
+        const newline = createNewlineNode([
+            emoticonOne,
+            emoticonTwo,
+            lastTextNode,
+        ]);
+        const nodes: EditorNodeNewLine[] = [newline];
+        focusNode(lastTextNode);
+        const toDelete = lastTextNode;
+        const expectedResult: EditorNodeNewLine[] = [
+            {
+                ...newline,
+                children: [
+                    emoticonOne,
+                    lastTextNode
                 ]
             }
         ];

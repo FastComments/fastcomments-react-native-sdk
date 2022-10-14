@@ -17,6 +17,7 @@ export interface EditorNodeProps {
     doDeleteNodeBefore?: () => void
     onTryNewline?: () => void
     isMultiLine?: boolean
+    setSelection?: (selection?: {start: number, end: number}) => void
 }
 
 export function EditorNode(props: EditorNodeProps) {

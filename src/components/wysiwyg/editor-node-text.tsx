@@ -17,9 +17,8 @@ export interface EditorNodeTextProps extends EditorNodeProps {
 }
 
 export function EditorNodeText(props: EditorNodeTextProps) {
-    const {nodeState, onBlur, doDelete, doDeleteNodeBefore, onTryNewline, textStyle, isMultiLine} = props;
-    // const [value, setValue] = useState(node.content);
-    const [selection, setSelection] = useState<{
+    const {nodeState, onBlur, doDelete, doDeleteNodeBefore, onTryNewline, setSelection, textStyle, isMultiLine} = props;
+    const [selection, setLocalSelection] = useState<{
         start: number;
         end: number;
     }>();
@@ -106,7 +105,9 @@ export function EditorNodeText(props: EditorNodeTextProps) {
     }
 
     const onSelectionChange = (e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
-        setSelection(e.nativeEvent.selection);
+        setLocalSelection(e.nativeEvent.selection);
+        console.log('Setting selection to', e.nativeEvent.selection);
+        setSelection && setSelection(e.nativeEvent.selection);
     }
 
     return <TextInput

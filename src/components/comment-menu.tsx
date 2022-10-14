@@ -207,7 +207,7 @@ export function getCommentMenuItems({
             handler: async (setModalId: Dispatch<SetStateAction<string | null>>) => {
                 await startEditingComment({comment, state}, setModalId);
             },
-            subModalContent: (close: () => void) => <CommentActionEdit
+            subModalContent: (close: (safe: boolean) => void) => <CommentActionEdit
                 comment={comment}
                 isDirtyRef={isDirtyRef}
                 pickGIF={pickGIF}

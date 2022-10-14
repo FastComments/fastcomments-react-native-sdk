@@ -11,14 +11,14 @@ import {FastCommentsState, IFastCommentsStyles, RNComment} from "../types";
 import {State} from "@hookstate/core";
 import {incChangeCounter} from "../services/comment-render-determination";
 import {getMergedTranslations} from "../services/translations";
-import { EmoticonBarConfig } from "./wysiwyg/emoticon-bar";
+import {EmoticonBar, EmoticonBarConfig} from "./wysiwyg/emoticon-bar";
 
 export interface DirtyRef {
     current?: () => boolean
 }
 
 export interface CommentActionEditProps extends Pick<FastCommentsCallbacks, 'pickGIF' | 'pickImage'> {
-    close: () => void
+    close: (safe: boolean) => void
     comment: RNComment
     isDirtyRef: DirtyRef
     state: State<FastCommentsState>
@@ -83,13 +83,16 @@ export function CommentActionEdit({
     };
     const inlineReactImages = state.config.inlineReactImages.get();
     let emoticonBarConfig: EmoticonBarConfig = {};
+    let reactsBar;
     if (inlineReactImages) {
         emoticonBarConfig.emoticons = inlineReactImages.map(function (src) {
             return [src, <Image source={{uri: src}} style={styles.commentTextAreaEmoticonBar?.icon}/>]
         })
+        reactsBar = <EmoticonBar config={emoticonBarConfig} styles={styles.commentTextAreaEmoticonBar}/>
     }
     return <View style={styles.commentEditModal?.centeredView}>
         <View style={styles.commentEditModal?.modalView}>
+            {reactsBar}
             <CommentTextArea
                 emoticonBarConfig={emoticonBarConfig}
                 styles={styles}
@@ -109,7 +112,7 @@ export function CommentActionEdit({
                         }
                         await saveCommentText({comment, state}, comment.comment!);
                         setLoading(false);
-                        close();
+                        close(true);
                     } catch (e) {
                         console.error(e);
                         setLoading(false);
@@ -129,7 +132,7 @@ export function CommentActionEdit({
             </TouchableOpacity>
             <TouchableOpacity
                 style={styles.commentEditModal?.modalCancel}
-                onPress={close}
+                onPress={() => close(false)}
             >
                 {<Image
                     source={state.imageAssets.get()[state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]}

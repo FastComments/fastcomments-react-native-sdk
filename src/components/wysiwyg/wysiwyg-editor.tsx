@@ -1,7 +1,7 @@
 import {Pressable, StyleSheet, TextStyle, View, ViewStyle} from "react-native";
 import {EditorNode} from "./editor-node";
 import {State, useHookstate, useHookstateEffect} from "@hookstate/core";
-import {ReactNode} from "react";
+import {ReactNode, useRef} from "react";
 import {EditorToolbarConfig} from "./editor-toolbar";
 import {deleteNodeState} from "./editor-node-transform";
 import {createBoldNode, createEmoticonNode, createStrikethroughNode, createUnderlineNode} from "./editor-nodes";
@@ -13,7 +13,7 @@ import {
     getStateNext,
     getStatePrev,
 } from "./node-navigate";
-import {insertAfter} from "./node-insert";
+import {insertAfter, insertBefore} from "./node-insert";
 import {deleteNodeRetainFocus} from "./node-delete";
 import {focusNode, focusNodeState} from "./node-focus";
 import {createImageNode, createNewlineNode, createTextNode} from "./node-create";
@@ -44,8 +44,14 @@ export interface EditorProps {
     emoticonBarConfig?: EmoticonBarConfig
 }
 
+interface Selection {
+    start: number
+    end: number
+}
+
 export function Editor(props: EditorProps) {
     const graph = useHookstate<EditorNodeNewLine[]>(props.graph);
+    const selectionRef = useRef<Selection>();
 
     if (props.updateNodesObserver) {
         props.updateNodesObserver.updateNodes = (newNodes) => {
@@ -54,21 +60,25 @@ export function Editor(props: EditorProps) {
         };
     }
 
+    function printGraph() {
+        console.log('===== BEGIN EDITOR NODE STRUCTURE =====');
+        const graphRaw = graph.get({stealth: true});
+        for (const node of graphRaw) {
+            console.log(EditorNodeNames[node.type], `(${node.id})`);
+            const children = node.children;
+            if (children) {
+                for (const child of children) {
+                    console.log('    ', EditorNodeNames[child.type], `(${child.id})`);
+                }
+            }
+        }
+        console.log('===== END EDITOR NODE STRUCTURE =====');
+    }
+
     useHookstateEffect(() => {
         props.onChange(graph);
         // uncomment in production
-        // console.log('===== BEGIN EDITOR NODE STRUCTURE =====');
-        // const graphRaw = graph.get({stealth: true});
-        // for (const node of graphRaw) {
-        //     console.log(EditorNodeNames[node.type], `(${node.id})`);
-        //     const children = node.children;
-        //     if (children) {
-        //         for (const child of children) {
-        //             console.log('    ', EditorNodeNames[child.type], `(${child.id})`);
-        //         }
-        //     }
-        // }
-        // console.log('===== END EDITOR NODE STRUCTURE =====');
+        // printGraph();
     }, [graph]);
 
     // uncomment to test keyboard losing focus.
@@ -104,29 +114,48 @@ export function Editor(props: EditorProps) {
         }
         if (!props.emoticonBarConfig.addEmoticon) {
             props.emoticonBarConfig.addEmoticon = (currentNode, src) => {
-                // if current node is an empty node, just replace it.
-                if (!currentNode.content.get()) {
+                if (currentNode.content.get()) {
+                    graph.set((graph) => {
+                        // if selectionStart is 0, then add a node before the current one
+                        // if selectionStart is the end of the current text node, then add a node after the current one
+                        // if selectionStart is in the middle of the current text node, then split the text node
+                        //  new text node goes before current with text before cursor
+                        //  then new image node is inserted before current node
+                        //  then existing text node, which only gets the text after the cursor position, remains in graph in same spot and is not unfocused.
+
+                        const selection = selectionRef.current;
+                        if (!selection?.start || selection.start === currentNode.content.get().length) {
+                            // add a node after the current one
+                            const newImageNode = createEmoticonNode(src);
+                            insertAfter(graph, currentNode.id.get(), newImageNode);
+                            if (!getNext(graph, newImageNode.id)) {
+                                currentNode.isFocused.set(false);
+                                const newTextNode = createTextNode('');
+                                focusNode(newTextNode);
+                                // now add in a text node after the emoticon so we can keep typing (also so we can backspace the emoticon)
+                                insertAfter(graph, newImageNode.id, newTextNode);
+                            }
+                        } else {
+                            const rawContent = currentNode.content.get();
+                            const newTextNodeContent = rawContent.slice(0, selection.start);
+                            const existingTextNodeContent = rawContent.slice(selection.start, rawContent.length);
+                            const newTextNodeBefore = createTextNode(newTextNodeContent);
+                            const newImageNode = createEmoticonNode(src);
+                            currentNode.content.set(existingTextNodeContent);
+                            insertBefore(graph, currentNode.id.get(), newTextNodeBefore);
+                            insertAfter(graph, newTextNodeBefore.id, newImageNode);
+                        }
+
+                        return graph;
+                    });
+                } else {
+                    // if current node is an empty node, just replace it.
                     currentNode.set(createEmoticonNode(src));
                     // now add in a text node after the emoticon so we can keep typing (also so we can backspace the emoticon)
                     const newNode = createTextNode('');
                     focusNode(newNode);
                     graph.set((graph) => {
                         insertAfter(graph, currentNode.id.get(), newNode);
-                        return graph;
-                    });
-                } else {
-                    graph.set((graph) => {
-                        // add a node after the current one
-                        const newImageNode = createEmoticonNode(src);
-                        currentNode.isFocused.set(false);
-                        insertAfter(graph, currentNode.id.get(), newImageNode);
-                        if (!getNext(graph, newImageNode.id)) {
-                            const newTextNode = createTextNode('');
-                            focusNode(newTextNode);
-                            // now add in a text node after the emoticon so we can keep typing (also so we can backspace the emoticon)
-                            insertAfter(graph, newImageNode.id, newTextNode);
-                        }
-
                         return graph;
                     });
                 }
@@ -141,8 +170,7 @@ export function Editor(props: EditorProps) {
 
         function toggleElementType(node: State<EditorNodeWithoutChildren> | null, type: EditorNodeType, createFn: (startingValue: string) => EditorNodeWithoutChildren) {
             if (node && node.get()) {
-                // TODO only bold selected content. This means we have to keep track of selected content somehow. Text nodes could call back up to top when selection changes.
-                // TODO if none selected, add new node and set it as bold
+                // TODO bold selected content. We now track the cursor position/selection in text nodes so this should be easy... Can split nodes similar to addEmoticon().
                 const nodeType = node.type.get();
                 if (nodeType !== type) {
                     graph.set((nodes) => {
@@ -364,6 +392,10 @@ export function Editor(props: EditorProps) {
                             onChangeContent={(newContent) => updateNodeContent(node, newContent)}
                             onFocus={() => select(node)}
                             doDelete={() => doDelete(node, node)}
+                            setSelection={(selection) => {
+                                console.log('???', selection);
+                                selectionRef.current = selection;
+                            }}
                             doDeleteNodeBefore={() => {
                                 const nodeBefore = getStatePrev(graph, node.id.get());
                                 if (nodeBefore) {

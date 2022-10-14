@@ -152,6 +152,14 @@ function getNodeDeletionPlan(graph: EditorNodeNewLine[], node: EditorNodeWithout
             if (hasConsecutiveNewlines) {
                 plan.idsToRemove = [nodeBefore.id];
                 return plan;
+            } else if (
+                // is there more than one image? if so, only remove that one image.
+                searchResult.nodesInBetween.filter((node) => {
+                    return node.type === EditorNodeType.EMOTICON || node.type === EditorNodeType.IMAGE;
+                }).length > 1
+            ) {
+                plan.idsToRemove = [searchResult.nodesInBetween[0].id];
+                return plan;
             }
         } else if (
             // should merge two text nodes when deleting an empty one before a node with content, resulting in one node

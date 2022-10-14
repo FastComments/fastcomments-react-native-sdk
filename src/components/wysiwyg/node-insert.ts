@@ -45,7 +45,11 @@ export function insertBefore(nodes: EditorNodeNewLine[], beforeId: number, nodeT
         if (node.id === beforeId) {
             if (nodeToInsert.type === EditorNodeType.NEWLINE) {
                 if ('children' in nodeToInsert) { // this is to make compiler happy, but not sure it would ever not be true.
-                    nodes.splice(topLevelIndex - 1, 0, nodeToInsert);
+                    if (topLevelIndex === 0) {
+                        nodes.unshift(nodeToInsert);
+                    } else {
+                        nodes.splice(topLevelIndex - 1, 0, nodeToInsert);
+                    }
                 } else {
                     console.log('FastComments node-insert: Unexpected state - inserting newline node without children?');
                 }
@@ -53,7 +57,7 @@ export function insertBefore(nodes: EditorNodeNewLine[], beforeId: number, nodeT
                 if (!node.children) {
                     node.children = [];
                 }
-                node.children.push(nodeToInsert);
+                node.children.unshift(nodeToInsert);
             }
             return;
         }
@@ -70,7 +74,11 @@ export function insertBefore(nodes: EditorNodeNewLine[], beforeId: number, nodeT
                         console.log('FastComments insertBefore: Unexpected state - inserting newline node without children?');
                     }
                 } else {
-                    node.children.splice(currentIndex - 1, 0, nodeToInsert);
+                    if (currentIndex === 0) {
+                        node.children.unshift(nodeToInsert);
+                    } else {
+                        node.children.splice(currentIndex - 1, 0, nodeToInsert);
+                    }
                 }
                 return;
             }

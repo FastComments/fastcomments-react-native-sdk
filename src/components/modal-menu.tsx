@@ -10,7 +10,7 @@ export interface ModalMenuItem {
     label: string
     handler: (setModalId: Dispatch<SetStateAction<string | null>>) => void
     icon?: ReactNode
-    subModalContent?: (close: () => void) => ReactNode
+    subModalContent?: (close: (safe?: boolean) => void) => ReactNode // if safe, won't call/check requestClose
     requestClose?: () => Promise<typeof CAN_CLOSE | typeof CAN_NOT_CLOSE> // return true if can close
 }
 
@@ -34,9 +34,10 @@ export function ModalMenu({
     const [activeModalId, setModalIdVisible] = useState<string | null>(isOpen ? 'menu' : null);
     const [isLoading, setLoading] = useState(false);
 
-    async function close() {
+    async function close(isSafe?: boolean) {
         if (
-            activeModalId
+            !isSafe
+            && activeModalId
             && activeModalId !== 'menu'
             && items
         ) {
@@ -58,7 +59,7 @@ export function ModalMenu({
                 animationType="slide"
                 transparent={true}
                 visible={activeModalId === 'menu'}
-                onRequestClose={close}
+                onRequestClose={() => close(false)}
             >
                 <View style={styles.modalMenu?.centeredView}>
                     <View style={styles.modalMenu?.modalView}>
@@ -69,7 +70,7 @@ export function ModalMenu({
                                 setLoading(true);
                                 await item.handler((newModalId) => {
                                     if (newModalId === null) {
-                                        close();
+                                        close(false);
                                     } else {
                                         setModalIdVisible(newModalId);
                                     }
@@ -83,7 +84,7 @@ export function ModalMenu({
                         )}
                         <TouchableOpacity
                             style={styles.modalMenu?.modalCancel}
-                            onPress={close}
+                            onPress={() => close(false)}
                         >
                             {<Image source={closeIcon} style={styles.modalMenu?.menuCancelIcon}/>}
                         </TouchableOpacity>
@@ -103,8 +104,9 @@ export function ModalMenu({
                     setModalIdVisible(null);
                     onClose && onClose();
                 }}>
-                {!!activeModalId && activeModalId !== 'menu' && items && items.find((item) => item.subModalContent && item.id === activeModalId)?.subModalContent!(() => {
-                    close();
+                {!!activeModalId && activeModalId !== 'menu' && items && items.find((item) => item.subModalContent && item.id === activeModalId)?.subModalContent!((isSafe) => {
+                    // noinspection JSIgnoredPromiseFromCall
+                    close(isSafe);
                 })}
             </Modal>
         </View>}
