@@ -35,10 +35,10 @@ function searchNodesOfTypeBeforeIdInclusive(graph: EditorNodeNewLine[], fromId: 
 
     const nodes = graphToListWithNewlines(graph);
     let index = nodes.findIndex((searchingNode) => searchingNode.id === fromId);
-    console.log('starting index', index, fromId);
+    // console.log('starting index', index, fromId);
     while (index > -1) {
         const node = nodes[index];
-        console.log('checking', index, node);
+        // console.log('checking', index, node);
         if (!node) {
             continue
         }
@@ -139,9 +139,9 @@ function getNodeDeletionPlan(graph: EditorNodeNewLine[], node: EditorNodeWithout
     }
 
     // This was all just hacked together to make all the tests pass, and more elegant solutions are available.
-    console.log('searching', JSON.stringify(graph));
+    // console.log('searching', JSON.stringify(graph));
     const searchResult = searchNodesOfTypeBeforeIdInclusive(graph, node.id, EditorNodeTextTypes);
-    console.log('searchResult', JSON.stringify(searchResult));
+    // console.log('searchResult', JSON.stringify(searchResult));
     if (searchResult.nodesInBetween) { // OPTIMIZATION: length check
         if (searchResult.nodesInBetween.length > 1) {
             // nodeIdsInBetween is in reverse order
