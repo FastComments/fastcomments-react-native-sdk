@@ -1,5 +1,13 @@
 # fastcomments-react-native-sdk
 
+## Installation
+
+```sh
+npm install fastcomments-react-native-sdk --save
+```
+
+## About
+
 This library is a complete webview-free react-native implementation of [FastComments](https://fastcomments.com).
 
 It supports live commenting, chat, threads, emoticons, notifications, SSO, skins, and full customization by passing in a stylesheet object. All assets
@@ -14,6 +22,15 @@ It all runs on the FastComments backend, so you only have to incorporate the UI:
 See [example/src](./example/src) for more examples.
 
 Add live chat to your existing React Native application, or even build a social network!
+
+## Screenshots
+
+#### Skin: Erebus
+![Skin: Erebus](./example/screenshots/skin-erebus.PNG)
+#### Skin: Default
+![Skin: Default](./example/screenshots/skin-default.PNG)
+#### Native WYSIWYG Editor with Image Support!
+![Native WYSIWYG Editor with Image Support](./example/screenshots/native-wysiwyg.PNG)
 
 ### No WebViews!
 
@@ -98,6 +115,6 @@ Keep in mind that most features should be opt-in by default to maximize flexibil
 - [x] WYSIWYG Editor Optimizations (ideally 60fps while typing)
 - [x] Notification Service (get user's unread notifications in the background to push to them, etc)
 - [x] Better WYSIWYG bar icons (web ones don't look good in native)
-- [ ] Complete all TODOs
+- [x] Complete all TODOs
 - [x] Profile & ensure 40 FPS minimum during writing comments, submitting, voting, and opening reply menu.
 - [x] Add @username to text box when replying and using useSingleReplyField = true
