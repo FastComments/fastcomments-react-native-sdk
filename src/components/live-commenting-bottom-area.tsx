@@ -6,7 +6,7 @@ import {IFastCommentsStyles} from "../types";
 import {ImageAssetConfig, RNComment} from "../types";
 import {useState} from "react";
 
-export interface LiveCommentingTopAreaProps extends Pick<FastCommentsCallbacks, 'onAuthenticationChange' | 'onNotificationSelected' | 'onReplySuccess' | 'pickGIF' | 'pickImage'> {
+export interface LiveCommentingBottomAreaProps extends Pick<FastCommentsCallbacks, 'onAuthenticationChange' | 'onNotificationSelected' | 'onReplySuccess' | 'pickGIF' | 'pickImage'> {
     imageAssets: ImageAssetConfig
     state: State<FastCommentsState>
     styles: IFastCommentsStyles
@@ -18,7 +18,7 @@ export interface CallbackObserver {
     replyingTo?: (comment: RNComment | null) => void
 }
 
-export function LiveCommentingBottomArea(props: LiveCommentingTopAreaProps) {
+export function LiveCommentingBottomArea(props: LiveCommentingBottomAreaProps) {
     const {
         imageAssets,
         onAuthenticationChange,

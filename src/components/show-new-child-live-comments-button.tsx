@@ -3,7 +3,7 @@ import {Text, TouchableOpacity} from "react-native";
 import {iterateCommentsTree} from "../services/comment-trees";
 import {incChangeCounter} from "../services/comment-render-determination";
 
-export interface ShowNewLiveCommentsButtonProps {
+export interface ShowNewChildLiveCommentsButtonProps {
     comment: RNComment
     translations: Record<string, string>
     styles: IFastCommentsStyles
@@ -24,7 +24,7 @@ export function ShowNewChildLiveCommentsButton({
     comment,
     translations,
     styles
-}: ShowNewLiveCommentsButtonProps) {
+}: ShowNewChildLiveCommentsButtonProps) {
     const hiddenChildrenCount = comment.hiddenChildrenCount;
     return <TouchableOpacity style={styles.showNewLiveComments?.button} onPress={() => showHiddenComments(comment)}>
         <Text style={styles.showNewLiveComments?.count}>{Number(hiddenChildrenCount).toLocaleString()}</Text>
