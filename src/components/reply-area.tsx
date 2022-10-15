@@ -4,7 +4,7 @@ import {none, State, useHookstate, useHookstateEffect} from "@hookstate/core";
 import {FastCommentsImageAsset, ImageAssetConfig} from '../types';
 import {getDefaultAvatarSrc} from "../services/default-avatar";
 import {ModalMenu} from "./modal-menu";
-import {Dispatch, SetStateAction} from 'react';
+import {Dispatch, SetStateAction, useEffect} from 'react';
 import {ThreeDot} from "./three-dot";
 import {NotificationBell} from "./notification-bell";
 import {CommentAreaMessage} from "./comment-area-message";
@@ -312,9 +312,13 @@ export function ReplyArea(props: ReplyAreaProps) {
         // for root comment area, we don't show the auth input form until they interact to save screen space.
         showAuthInputForm: needsAuth,
     });
-    if (!!parentComment && state.config.useSingleReplyField.get()) {
-        commentReplyState.comment.set(`**@${parentComment.commenterName}** `);
-    }
+
+    useEffect(() => {
+        if (!!parentComment && state.config.useSingleReplyField.get()) {
+            commentReplyState.comment.set(`**@${parentComment.commenterName}** `);
+        }
+    }, [parentComment]);
+
     const {width} = useWindowDimensions();
 
     const getLatestInputValue = () => {
@@ -414,18 +418,17 @@ export function ReplyArea(props: ReplyAreaProps) {
                 })
                 reactsBar = <EmoticonBar config={emoticonBarConfig} styles={styles.commentTextAreaEmoticonBar}/>
             }
-            commentInputAreaContent =
-                <CommentTextArea
-                    emoticonBarConfig={emoticonBarConfig}
-                    styles={styles}
-                    state={state.get()}
-                    value={commentReplyState.comment.get()}
-                    output={valueGetter}
-                    focusObserver={focusObserver}
-                    onFocus={() => needsAuth && !commentReplyState.showAuthInputForm.get() && commentReplyState.showAuthInputForm.set(true)}
-                    pickImage={pickImage}
-                    pickGIF={pickGIF}
-                />;
+            commentInputAreaContent = <CommentTextArea
+                emoticonBarConfig={emoticonBarConfig}
+                styles={styles}
+                state={state.get()}
+                value={commentReplyState.comment.get()}
+                output={valueGetter}
+                focusObserver={focusObserver}
+                onFocus={() => needsAuth && !commentReplyState.showAuthInputForm.get() && commentReplyState.showAuthInputForm.set(true)}
+                pickImage={pickImage}
+                pickGIF={pickGIF}
+            />
         }
 
         commentInputArea = <View
