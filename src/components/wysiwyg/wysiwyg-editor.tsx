@@ -60,20 +60,20 @@ export function Editor(props: EditorProps) {
         };
     }
 
-    function printGraph() {
-        console.log('===== BEGIN EDITOR NODE STRUCTURE =====');
-        const graphRaw = graph.get({stealth: true});
-        for (const node of graphRaw) {
-            console.log(EditorNodeNames[node.type], `(${node.id})`);
-            const children = node.children;
-            if (children) {
-                for (const child of children) {
-                    console.log('    ', EditorNodeNames[child.type], `(${child.id})`);
-                }
-            }
-        }
-        console.log('===== END EDITOR NODE STRUCTURE =====');
-    }
+    // function printGraph() {
+    //     console.log('===== BEGIN EDITOR NODE STRUCTURE =====');
+    //     const graphRaw = graph.get({stealth: true});
+    //     for (const node of graphRaw) {
+    //         console.log(EditorNodeNames[node.type], `(${node.id})`);
+    //         const children = node.children;
+    //         if (children) {
+    //             for (const child of children) {
+    //                 console.log('    ', EditorNodeNames[child.type], `(${child.id})`);
+    //             }
+    //         }
+    //     }
+    //     console.log('===== END EDITOR NODE STRUCTURE =====');
+    // }
 
     useHookstateEffect(() => {
         props.onChange(graph);
@@ -381,7 +381,7 @@ export function Editor(props: EditorProps) {
     return <View style={props.style}>
         <Pressable onPress={() => select(getStateLast(graph))} style={styles.inputArea}>
             {props.placeholder}
-            {graph.map((node) => node && node.id !== undefined && <View style={styles.editorRow} key={node.id.get()}>
+            {graph.map((node) => node && node.id !== undefined && <View style={props.isMultiLine ? styles.editorRow : styles.editorRowSingleLine} key={node.id.get()}>
                     {/* Node can get set to "none" before the list is re-generated, so the id check is a fast way to eliminate those. */}
                     {node.children && (node.children as State<EditorNodeWithoutChildren[]>).map((node) => node && node.id !== undefined &&
                         <EditorNode
@@ -393,7 +393,6 @@ export function Editor(props: EditorProps) {
                             onFocus={() => select(node)}
                             doDelete={() => doDelete(node, node)}
                             setSelection={(selection) => {
-                                console.log('???', selection);
                                 selectionRef.current = selection;
                             }}
                             doDeleteNodeBefore={() => {
@@ -419,8 +418,15 @@ const styles = StyleSheet.create({
         padding: 5
     },
     editorRow: {
+        maxWidth: '100%',
         flexDirection: 'row',
         alignItems: 'flex-start',
         flexWrap: 'wrap'
+    },
+    editorRowSingleLine: {
+        maxWidth: '100%',
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        flexWrap: 'nowrap'
     }
 })
