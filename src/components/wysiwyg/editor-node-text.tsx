@@ -106,7 +106,6 @@ export function EditorNodeText(props: EditorNodeTextProps) {
 
     const onSelectionChange = (e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
         setLocalSelection(e.nativeEvent.selection);
-        console.log('Setting selection to', e.nativeEvent.selection);
         setSelection && setSelection(e.nativeEvent.selection);
     }
 
@@ -127,7 +126,7 @@ export function EditorNodeText(props: EditorNodeTextProps) {
     />;
 }
 
-const BaseTextStyles: TextStyle = {padding: 0, borderWidth: 0, position: 'relative', left: 0, minWidth: 0};
+const BaseTextStyles: TextStyle = {flex: 1, padding: 0, borderWidth: 0, position: 'relative', left: 0, minWidth: 0};
 const StylesByNodeType: Record<EditorNodeTextType, TextStyle> = {
     [EditorNodeType.TEXT_BOLD]: {fontWeight: 'bold', ...BaseTextStyles},
     [EditorNodeType.TEXT_ITALIC]: {fontStyle: 'italic', ...BaseTextStyles},
