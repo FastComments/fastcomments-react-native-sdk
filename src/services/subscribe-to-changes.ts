@@ -39,11 +39,14 @@ export function subscribeToChanges(
         // it simply fetches any events in the log that it would have missed.
         async function fetchEventLog(startTime: number | undefined, endTime: number) {
             // console.log('FastComments: fetchEventLog.', startTime, endTime);
-            const response = await makeRequest<GetEventLogResponse>({apiHost: config.apiHost!, method: 'GET', url: '/event-log/' + config.tenantId + '/' + createURLQueryString({
-                urlId, // important this isn't urlIdWS. urlIdWS contains tenant id and is only meant for the pubsub server.
-                startTime,
-                endTime,
-            })});
+            const response = await makeRequest<GetEventLogResponse>({
+                apiHost: config.apiHost!, method: 'GET', url: '/event-log/' + config.tenantId + '/' + createURLQueryString({
+                    urlId, // important this isn't urlIdWS. urlIdWS contains tenant id and is only meant for the pubsub server.
+                    startTime,
+                    endTime,
+                    userIdWS // this will be used to validate the SSO session
+                })
+            });
 
             if (response && response.status === 'success') {
                 if (response.events) {
@@ -122,7 +125,11 @@ export function subscribeToChanges(
             }
         } else {
             console.log('FastComments: connecting...');
-            const socket = new WebSocket(wsHost + '/sub?urlId=' + urlIdWS + '&userIdWS=' + userIdWS + '&tenantIdWS=' + tenantIdWS);
+            const socket = new WebSocket(wsHost + '/sub' + createURLQueryString({
+                urlId: urlIdWS,
+                userIdWS, // this will be used to validate the SSO session
+                tenantIdWS
+            }));
 
             socket.onopen = async function () {
                 if (isIntentionallyClosed) {
