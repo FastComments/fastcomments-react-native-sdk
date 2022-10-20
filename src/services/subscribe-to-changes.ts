@@ -124,6 +124,12 @@ export function subscribeToChanges(
                 }
             }
         } else {
+            if (lastLiveEventTime) {
+                console.log('FastComments: Detected potentially missed events, fetching log...');
+                // noinspection JSIgnoredPromiseFromCall
+                fetchEventLog(lastLiveEventTime, Date.now());
+            }
+
             console.log('FastComments: connecting...');
             const socket = new WebSocket(wsHost + '/sub' + createURLQueryString({
                 urlId: urlIdWS,
