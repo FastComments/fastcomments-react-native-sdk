@@ -1,11 +1,8 @@
-import {FastCommentsRNConfig} from "../types/react-native-config";
+import {FastCommentsRNConfig, GetTranslationsResponse, GetUserUnreadNotificationsCountResponse, UserNotificationTranslations} from "../types";
 import {CommonHTTPResponse, createURLQueryString, getAPIHost, makeRequest} from "./http";
 import {mergeSimpleSSO} from "./sso";
 import {GetUserNotificationsResponse, UserNotification} from "../types";
 import {NotificationType} from "fastcomments-typescript";
-import {GetTranslationsResponse} from "../types/dto/get-translations-response";
-import {UserNotificationTranslations} from "../types/user-notification-translations";
-import {GetUserUnreadNotificationsCountResponse} from "../types/dto/get-user-unread-notifications-count";
 
 export interface GetUserNotificationsRequest {
     config: FastCommentsRNConfig
@@ -128,6 +125,8 @@ export function getNotificationDisplayHTML(notification: UserNotification, notif
             return notificationTranslations.NOTIFICATION_PROFILE_COMMENT.replace('[fromUserName]', fromUserName);
         case NotificationType.DirectMessage:
             return notificationTranslations.NOTIFICATION_DM.replace('[fromUserName]', fromUserName);
+        case NotificationType.Mentioned:
+            return notificationTranslations.NOTIFICATION_MENTION.replace('[fromUserName]', fromUserName);
     }
     return 'Unsupported Notification Type!';
 }

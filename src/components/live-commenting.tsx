@@ -172,6 +172,8 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
                     closeIcon={imageAssets[config.hasDarkBackground ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]}
                     styles={styles} items={getCommentMenuItems({
                         comment: commentMenuRequest.comment,
+                        onCommentFlagged: callbacks?.onCommentFlagged,
+                        onUserBlocked: callbacks?.onUserBlocked,
                         pickGIF: callbacks?.pickGIF,
                         pickImage: callbacks?.pickImage,
                         styles,

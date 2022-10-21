@@ -3,11 +3,10 @@ import {FastCommentsCallbacks, FastCommentsImageAsset, IFastCommentsStyles, Imag
 import {RenderHTMLSource} from "react-native-render-html";
 import {getPrettyDate} from '../services/pretty-date';
 import {ModalMenu, ModalMenuItem} from "./modal-menu";
-import {FastCommentsRNConfig} from "../types/react-native-config";
+import {FastCommentsRNConfig, UserNotificationTranslations} from "../types";
 import {ThreeDot} from "./three-dot";
 import {Dispatch, SetStateAction, useState} from "react";
 import {getNotificationDisplayHTML, markNotificationOptedOut, markNotificationRead} from "../services/notifications";
-import {UserNotificationTranslations} from "../types/user-notification-translations";
 
 export interface NotificationListItemProps extends Pick<FastCommentsCallbacks, 'onNotificationSelected'> {
     config: FastCommentsRNConfig

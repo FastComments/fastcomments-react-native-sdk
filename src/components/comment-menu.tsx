@@ -16,8 +16,8 @@ import {FastCommentsState, IFastCommentsStyles, RNComment} from "../types";
 import {incChangeCounter, incChangeCounterState} from "../services/comment-render-determination";
 import {addTranslationsToState, getMergedTranslations} from "../services/translations";
 import {newBroadcastId} from '../services/broadcast-id';
-import {GetTranslationsResponse} from "../types/dto/get-translations-response";
-import {CommentCancelTranslations} from "../types/comment-cancel-translations";
+import {GetTranslationsResponse} from "../types";
+import {CommentCancelTranslations} from "../types";
 
 async function startEditingComment({
     state,
@@ -170,7 +170,7 @@ export function getCommentMenuState(state: State<FastCommentsState>, comment: RN
     }
 }
 
-export interface GetCommentMenuItemsProps extends Pick<FastCommentsCallbacks, 'pickGIF' | 'pickImage'> {
+export interface GetCommentMenuItemsProps extends Pick<FastCommentsCallbacks, 'pickGIF' | 'pickImage' | 'onUserBlocked' | 'onCommentFlagged'> {
     comment: RNComment
     state: State<FastCommentsState>
     styles: IFastCommentsStyles,
@@ -183,6 +183,8 @@ export interface OpenCommentMenuRequest {
 
 export function getCommentMenuItems({
     comment,
+    onCommentFlagged,
+    onUserBlocked,
     pickGIF,
     pickImage,
     styles,
@@ -316,6 +318,12 @@ export function getCommentMenuItems({
                     style={styles.commentMenu?.itemIcon}/>,
                 handler: async () => {
                     await setCommentBlockedStatus({comment, state}, false);
+                    if (onUserBlocked) {
+                        const currentUser = state.currentUser.get();
+                        if (currentUser && 'id' in currentUser) {
+                            onUserBlocked(currentUser.id, comment, false);
+                        }
+                    }
                 }
             });
         } else {
@@ -327,6 +335,12 @@ export function getCommentMenuItems({
                     style={styles.commentMenu?.itemIcon}/>,
                 handler: async () => {
                     await setCommentBlockedStatus({comment, state}, true);
+                    if (onUserBlocked) {
+                        const currentUser = state.currentUser.get();
+                        if (currentUser && 'id' in currentUser) {
+                            onUserBlocked(currentUser.id, comment, true);
+                        }
+                    }
                 }
             });
         }
@@ -342,6 +356,12 @@ export function getCommentMenuItems({
                     style={styles.commentMenu?.itemIcon}/>,
                 handler: async () => {
                     await setCommentFlaggedStatus({comment, state}, false);
+                    if (onCommentFlagged) {
+                        const currentUser = state.currentUser.get();
+                        if (currentUser && 'id' in currentUser) {
+                            onCommentFlagged(currentUser.id, comment, false);
+                        }
+                    }
                 }
             });
         } else {
@@ -353,6 +373,12 @@ export function getCommentMenuItems({
                     style={styles.commentMenu?.itemIcon}/>,
                 handler: async () => {
                     await setCommentFlaggedStatus({comment, state}, true);
+                    if (onCommentFlagged) {
+                        const currentUser = state.currentUser.get();
+                        if (currentUser && 'id' in currentUser) {
+                            onCommentFlagged(currentUser.id, comment, true);
+                        }
+                    }
                 }
             });
         }

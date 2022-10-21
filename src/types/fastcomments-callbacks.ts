@@ -15,6 +15,10 @@ export interface FastCommentsCallbacks {
     onCommentsRendered?: (comment: RNComment[]) => void,
     /** Invoked when the user selects a notification. **/
     onNotificationSelected?: (notification: UserNotification) => void,
+    /** Invoked when a user blocks or unblocks another user. userId is the user doing the blocking, and comment is the comment that was blocked/unblocked. To get the blocked user id, look at the comment. **/
+    onUserBlocked?: (userId: string, comment: RNComment, isBlocked: boolean) => void,
+    /** Invoked when a user flags or un-flags a comment. userId is the user doing the flagging, and comment is the comment that was flagged/un-flagged. **/
+    onCommentFlagged?: (userId: string, comment: RNComment, isFlagged: boolean) => void,
     /**
      * Invoked when the user selects the gif toolbar icon.
      * Return a publicly accessible image path (should start with http).
@@ -30,15 +34,15 @@ export interface FastCommentsCallbacks {
 }
 
 export interface FastCommentsFromDiskAsset {
-  base64?: string;
-  uri?: string;
-  width?: number;
-  height?: number;
-  fileSize?: number;
-  type?: string;
-  fileName?: string;
-  duration?: number;
-  bitrate?: number;
-  timestamp?: string;
-  id?: string;
+    base64?: string;
+    uri?: string;
+    width?: number;
+    height?: number;
+    fileSize?: number;
+    type?: string;
+    fileName?: string;
+    duration?: number;
+    bitrate?: number;
+    timestamp?: string;
+    id?: string;
 }

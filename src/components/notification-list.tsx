@@ -7,13 +7,13 @@ import {
     FastCommentsState,
     IFastCommentsStyles,
     ImageAssetConfig,
-    UserNotification
+    UserNotification,
+    UserNotificationTranslations,
 } from "../types";
 import {NotificationListItem, NotificationListItemProps} from "./notification-list-item";
 import {getDefaultAvatarSrc} from "../services/default-avatar";
 import {CheckBox} from "./checkbox";
 import {changePageSubscriptionStateForUser, getNotificationTranslations, getUserNotifications} from "../services/notifications";
-import {UserNotificationTranslations} from "../types/user-notification-translations";
 import {getMergedTranslations} from "../services/translations";
 
 export interface NotificationListProps extends Pick<FastCommentsCallbacks, 'onNotificationSelected'> {
