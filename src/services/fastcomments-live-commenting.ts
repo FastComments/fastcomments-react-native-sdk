@@ -138,7 +138,7 @@ export class FastCommentsLiveCommentingService {
                 method: 'GET',
                 url: url + createURLQueryString(queryParams),
             });
-            console.log('got', response);
+            // console.log('got', response);
             const isRateLimited = response.code === 'rate-limited';
 
             handleNewCustomConfig(this.state, response.customConfig);
@@ -176,7 +176,9 @@ export class FastCommentsLiveCommentingService {
             if (isLiveChatStyle) {
                 responseComments.reverse();
             }
-            state.hasMore.set(state.page.get() !== -1 && responseComments.length >= state.PAGE_SIZE.get());
+            if (typeof response.hasMore === 'boolean') {
+                state.hasMore.set(response.hasMore);
+            }
 
             if (!response.includesPastPages) {
                 if (isPrev) {

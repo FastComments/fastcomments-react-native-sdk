@@ -26,4 +26,5 @@ export interface GetCommentsResponse extends CommonHTTPResponse {
     user?: FastCommentsSessionUser;
     userIdWS?: string;
     presencePollState?: UserPresencePollStateEnum;
+    hasMore?: boolean;
 }
