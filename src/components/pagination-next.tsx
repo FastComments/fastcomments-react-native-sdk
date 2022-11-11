@@ -10,7 +10,7 @@ export function PaginationNext({state, styles, doPaginate}: { state: State<FastC
         // These translations contain HTML.
         return <View style={styles.paginationNext?.root}>
             <TouchableOpacity onPress={() => doPaginate(false)}><RenderHtml source={{
-                html: state.translations.NEXT_30.get()
+                html: state.translations.NEXT.get()
             }} contentWidth={width} baseStyle={styles.paginationNext?.next} tagsStyles={styles.paginationNext?.nextHTMLStyles}/></TouchableOpacity>
             {
                 state.commentCountOnServer.get() < 2000 &&

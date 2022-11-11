@@ -10,7 +10,7 @@ export function PaginationPrev({state, styles, doPaginate}: { state: State<FastC
         return <View style={styles.paginationPrev?.root}>
             <TouchableOpacity onPress={doPaginate}>
                 <RenderHtml source={{
-                    html: state.translations.PREV_30.get()
+                    html: state.translations.PREV.get()
                 }} contentWidth={width} baseStyle={styles.paginationPrev?.text} tagsStyles={styles.paginationPrev?.prevHTMLStyles}/>
             </TouchableOpacity>
         </View>;
