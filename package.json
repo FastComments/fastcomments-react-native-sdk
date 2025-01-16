@@ -40,7 +40,7 @@
     "android"
   ],
   "repository": "https://github.com/FastComments/fastcomments-react-native-sdk",
-  "author": "winrid <winrid@gmail.com> (https://github.com/winrid)",
+  "author": "winrid",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/FastComments/fastcomments-react-native-sdk/issues"
