@@ -64,5 +64,5 @@ android/keystores/debug.keystore
 lib/
 
 # Ignore generated files.
-./example/src/**/*.js
-./src/**/*.js
+example/src/**/*.js
+src/**/*.js
