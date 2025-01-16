@@ -1,4 +1,4 @@
-import { FastCommentsSSOSimple } from "fastcomments-typescript/src/fast-comments-comment-widget-config";
+import { FastCommentsSSOSimple } from "fastcomments-typescript";
 
 // examples:
 // - Logged into fastcomments.com, or by entering email to comment, and verified their session

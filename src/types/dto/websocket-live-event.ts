@@ -1,5 +1,4 @@
-import {FastCommentsCommentWidgetConfig, FastCommentsWidgetComment } from "fastcomments-typescript";
-import {FastCommentsBadge} from "fastcomments-typescript/src/fast-comments-badge";
+import {FastCommentsBadge, FastCommentsCommentWidgetConfig, FastCommentsWidgetComment } from "fastcomments-typescript";
 import {UserNotification} from "../user-notification";
 
 export interface FastCommentsUserBadge extends FastCommentsBadge {
