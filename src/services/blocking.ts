@@ -1,8 +1,9 @@
 import {createURLQueryString, makeRequest} from "./http";
 import {CheckedBlockedCommentsResponse, FastCommentsState} from "../types";
+import {ImmutableObject} from "@hookstate/core";
 
 // this is used for handling live events since the pub-sub server is stateless.
-export async function checkBlockedComments(state: FastCommentsState, commentIds: string[]): Promise<Record<string, boolean>> {
+export async function checkBlockedComments(state: ImmutableObject<FastCommentsState>, commentIds: string[]): Promise<Record<string, boolean>> {
     if (state.currentUser && 'hasBlockedUsers' in state.currentUser && state.currentUser.hasBlockedUsers) {
         try {
             const response = await makeRequest<CheckedBlockedCommentsResponse>({

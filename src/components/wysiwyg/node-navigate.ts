@@ -1,4 +1,4 @@
-import {none, State} from "@hookstate/core";
+import {ImmutableArray, ImmutableObject, none, State} from "@hookstate/core";
 import {EditorNodeNewLine, EditorNodeWithoutChildren} from "./node-types";
 
 // We used to use a doubly linked list but it was a huge pain.
@@ -28,8 +28,8 @@ export function graphToListStateWithoutNewlines(nodes: State<EditorNodeNewLine[]
     return result;
 }
 
-export function graphToListWithNewlines(nodes: EditorNodeNewLine[]): (EditorNodeNewLine | EditorNodeWithoutChildren)[] {
-    const result: (EditorNodeNewLine | EditorNodeWithoutChildren)[] = [];
+export function graphToListWithNewlines(nodes: ImmutableArray<EditorNodeNewLine>): ImmutableObject<(EditorNodeNewLine | EditorNodeWithoutChildren)>[] {
+    const result: ImmutableObject<(EditorNodeNewLine | EditorNodeWithoutChildren)>[] = [];
     for (const node of nodes) {
         result.push(node);
         if (node.children) {

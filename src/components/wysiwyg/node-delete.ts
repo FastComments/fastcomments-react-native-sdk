@@ -3,6 +3,7 @@
  */
 import {EditorNodeNames, EditorNodeNewLine, EditorNodeTextType, EditorNodeTextTypes, EditorNodeType, EditorNodeWithoutChildren} from "./node-types";
 import {graphToListWithNewlines} from "./node-navigate";
+import {ImmutableObject} from "@hookstate/core";
 
 interface EditorNodeMergePlan {
     source: EditorNodeWithoutChildren
@@ -27,7 +28,7 @@ interface NodeSearchResult {
     start?: EditorNodeWithoutChildren
     end?: EditorNodeWithoutChildren
     endContainer?: EditorNodeNewLine
-    nodesInBetween?: (EditorNodeNewLine | EditorNodeWithoutChildren)[]
+    nodesInBetween?: ImmutableObject<EditorNodeNewLine | EditorNodeWithoutChildren>[]
 }
 
 function searchNodesOfTypeBeforeIdInclusive(graph: EditorNodeNewLine[], fromId: number, types: EditorNodeTextType[]): NodeSearchResult {

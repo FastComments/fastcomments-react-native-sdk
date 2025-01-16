@@ -7,9 +7,10 @@ import {FastCommentsRNConfig, UserNotificationTranslations} from "../types";
 import {ThreeDot} from "./three-dot";
 import {Dispatch, SetStateAction, useState} from "react";
 import {getNotificationDisplayHTML, markNotificationOptedOut, markNotificationRead} from "../services/notifications";
+import {ImmutableObject} from "@hookstate/core";
 
 export interface NotificationListItemProps extends Pick<FastCommentsCallbacks, 'onNotificationSelected'> {
-    config: FastCommentsRNConfig
+    config: ImmutableObject<FastCommentsRNConfig>
     defaultAvatar: ImageURISource
     imageAssets: ImageAssetConfig
     notification: UserNotification

@@ -1,33 +1,33 @@
 import {FastCommentsRNConfig, GetTranslationsResponse, GetUserUnreadNotificationsCountResponse, UserNotificationTranslations} from "../types";
 import {CommonHTTPResponse, createURLQueryString, getAPIHost, makeRequest} from "./http";
-import {mergeSimpleSSO} from "./sso";
 import {GetUserNotificationsResponse, UserNotification} from "../types";
 import {NotificationType} from "fastcomments-typescript";
+import {ImmutableObject} from "@hookstate/core";
 
 export interface GetUserNotificationsRequest {
-    config: FastCommentsRNConfig
+    config: ImmutableObject<FastCommentsRNConfig>
     unreadOnly?: boolean
     afterId?: string
 }
 
 export interface GetUserUnreadNotificationCountRequest {
-    config: FastCommentsRNConfig
+    config: ImmutableObject<FastCommentsRNConfig>
 }
 
 export interface MarkNotificationReadRequest {
-    config: FastCommentsRNConfig
+    config: ImmutableObject<FastCommentsRNConfig>
     notificationId: string
     isRead: boolean
 }
 
 export interface MarkNotificationOptedOutRequest {
-    config: FastCommentsRNConfig
+    config: ImmutableObject<FastCommentsRNConfig>
     notificationId: string
     isOptedOut: boolean
 }
 
 interface SubscriptionStateChangeRequest {
-    config: FastCommentsRNConfig
+    config: ImmutableObject<FastCommentsRNConfig>
     isSubscribed: boolean
 }
 
@@ -35,9 +35,6 @@ interface SubscriptionStateChangeRequest {
  * Gets a page of last 20 user notifications. Optionally can return only unread notifications.
  */
 export async function getUserNotifications(request: GetUserNotificationsRequest): Promise<GetUserNotificationsResponse> {
-    if (request.config.sso) {
-        mergeSimpleSSO(request.config);
-    }
     return await makeRequest<GetUserNotificationsResponse>({
         apiHost: getAPIHost(request.config),
         method: 'GET',
@@ -52,9 +49,6 @@ export async function getUserNotifications(request: GetUserNotificationsRequest)
 }
 
 export async function getUserUnreadNotificationCount(request: GetUserUnreadNotificationCountRequest): Promise<GetUserUnreadNotificationsCountResponse> {
-    if (request.config.sso) {
-        mergeSimpleSSO(request.config);
-    }
     return await makeRequest<GetUserUnreadNotificationsCountResponse>({
         apiHost: getAPIHost(request.config),
         method: 'GET',
@@ -67,9 +61,6 @@ export async function getUserUnreadNotificationCount(request: GetUserUnreadNotif
 }
 
 export async function markNotificationRead(request: MarkNotificationReadRequest): Promise<CommonHTTPResponse> {
-    if (request.config.sso) {
-        mergeSimpleSSO(request.config);
-    }
     return await makeRequest({
         apiHost: getAPIHost(request.config),
         method: 'POST',
@@ -81,9 +72,6 @@ export async function markNotificationRead(request: MarkNotificationReadRequest)
 }
 
 export async function markNotificationOptedOut(request: MarkNotificationOptedOutRequest): Promise<CommonHTTPResponse> {
-    if (request.config.sso) {
-        mergeSimpleSSO(request.config);
-    }
     return await makeRequest({
         apiHost: getAPIHost(request.config),
         method: 'POST',
@@ -94,7 +82,7 @@ export async function markNotificationOptedOut(request: MarkNotificationOptedOut
     });
 }
 
-export async function getNotificationTranslations(config: FastCommentsRNConfig): Promise<GetTranslationsResponse<UserNotificationTranslations>> {
+export async function getNotificationTranslations(config: ImmutableObject<FastCommentsRNConfig>): Promise<GetTranslationsResponse<UserNotificationTranslations>> {
     let url = '/translations/widgets/comment-ui-notifications-list?useFullTranslationIds=true';
     if (config.locale) {
         url += '&locale=' + config.locale;
@@ -132,9 +120,6 @@ export function getNotificationDisplayHTML(notification: UserNotification, notif
 }
 
 export async function changePageSubscriptionStateForUser(request: SubscriptionStateChangeRequest): Promise<CommonHTTPResponse> {
-    if (request.config.sso) {
-        mergeSimpleSSO(request.config);
-    }
     return await makeRequest<CommonHTTPResponse>({
         apiHost: getAPIHost(request.config),
         method: 'POST',

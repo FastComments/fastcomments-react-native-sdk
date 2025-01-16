@@ -80,6 +80,7 @@ export class FastCommentsLiveCommentingService {
     async fetchRemoteState(isPrev: boolean): Promise<void> {
         const state = this.state;
         const internalState = this.internalState;
+        const configState = this.state.config;
         const config = this.state.config.get();
         config.onInit && config.onInit();
         if (config.urlId === undefined || config.urlId === null) {
@@ -220,7 +221,7 @@ export class FastCommentsLiveCommentingService {
             state.commentsTree.set(result.comments);
 
             if (config.jumpToId) {
-                ensureRepliesOpenToComment(state.commentsById.get(), config.jumpToId);
+                ensureRepliesOpenToComment(state.commentsById, config.jumpToId);
             }
 
             state.isSiteAdmin.set(!!response.isSiteAdmin);
@@ -234,7 +235,7 @@ export class FastCommentsLiveCommentingService {
 
             if (config.jumpToId) {
                 // scrollToComment(config.instanceId, config.jumpToId, 200); // TODO how?
-                delete config.jumpToId; // don't jump next render
+                configState.jumpToId.set(undefined); // don't jump next render
                 if (typeof response.pageNumber === 'number') {
                     state.page.set(response.pageNumber);
                 }

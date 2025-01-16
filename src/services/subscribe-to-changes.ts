@@ -2,6 +2,7 @@ import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
 import {createURLQueryString, makeRequest} from "./http";
 import {WebsocketLiveEvent, WebsocketLiveNewOrUpdatedCommentEvent} from "../types/dto/websocket-live-event";
 import {EventLogEntryData, GetEventLogResponse} from "../types/dto/get-event-log";
+import {ImmutableObject} from "@hookstate/core";
 
 function extractCommentIdFromEvent(liveEvent: WebsocketLiveNewOrUpdatedCommentEvent) {
     if (liveEvent.type === 'new-comment') {
@@ -15,7 +16,7 @@ export interface SubscriberInstance {
 }
 
 export function subscribeToChanges(
-    config: FastCommentsCommentWidgetConfig,
+    config: ImmutableObject<FastCommentsCommentWidgetConfig>,
     wsHost: string,
     tenantIdWS: string,
     urlId: string,

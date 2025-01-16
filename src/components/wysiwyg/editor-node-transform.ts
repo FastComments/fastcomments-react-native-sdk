@@ -1,4 +1,4 @@
-import {none, State} from "@hookstate/core";
+import {ImmutableArray, ImmutableObject, none, State} from "@hookstate/core";
 import {getNextNodeId} from "./node-id";
 import {EditorNodeNewLine, EditorNodeType, EditorNodeWithoutChildren} from "./node-types";
 import {graphToListStateWithoutNewlines, graphToListWithNewlines} from "./node-navigate";
@@ -12,7 +12,7 @@ export interface EditorFormatConfiguration {
     /** How many characters does an emoticon take up? Set to zero to disable validation. **/
     emoticonLength?: number
     tokenize: (input: string) => (EditorNodeNewLine)[]
-    formatters: Record<EditorNodeType, (node: EditorNodeWithoutChildren | EditorNodeNewLine, trimToLength?: number) => string>
+    formatters: Record<EditorNodeType, (node: ImmutableObject<EditorNodeWithoutChildren | EditorNodeNewLine>, trimToLength?: number) => string>
 }
 
 export interface SupportedNodeDefinition {
@@ -52,7 +52,7 @@ export function deleteNodeState(nodes: State<EditorNodeNewLine[]>, id: number) {
 /**
  * Note: length is based on the content the user sees, not the resulting representation. You should handle this validation server-side.
  */
-export function graphToString(graph: EditorNodeNewLine[] | null, formatConfig: Pick<EditorFormatConfiguration, 'formatters' | 'imageLength' | 'emoticonLength'>, maxLength?: number | null): string {
+export function graphToString(graph: ImmutableArray<EditorNodeNewLine> | null, formatConfig: Pick<EditorFormatConfiguration, 'formatters' | 'imageLength' | 'emoticonLength'>, maxLength?: number | null): string {
     let content = '';
     if (!graph) {
         return content;
@@ -182,7 +182,7 @@ export function enforceMaxLength(graph: State<EditorNodeNewLine[]>, formatConfig
     return isEmpty;
 }
 
-export function hasContent(graph: EditorNodeNewLine[]) {
+export function hasContent(graph: ImmutableArray<EditorNodeNewLine>) {
     for (const newline of graph) {
         if (newline.children) {
             for (const child of newline.children) {
@@ -302,7 +302,7 @@ export function defaultTokenizer(input: string, SupportedNodes: SupportedNodesTo
     return result;
 }
 
-export function toTextTrimmed(node: EditorNodeNewLine | Pick<EditorNodeWithoutChildren, 'content'>, startToken?: string | null, endToken?: string | null, trimToLength?: number) {
+export function toTextTrimmed(node: ImmutableObject<EditorNodeNewLine | Pick<EditorNodeWithoutChildren, 'content'>>, startToken?: string | null, endToken?: string | null, trimToLength?: number) {
     if (!('content' in node)) {
         return '';
     }

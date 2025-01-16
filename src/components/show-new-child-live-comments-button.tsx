@@ -1,6 +1,6 @@
 import {IFastCommentsStyles, RNComment} from "../types";
 import {Text, TouchableOpacity} from "react-native";
-import {iterateCommentsTree} from "../services/comment-trees";
+import {iterateCommentsTreeMut} from "../services/comment-trees";
 import {incChangeCounter} from "../services/comment-render-determination";
 
 export interface ShowNewChildLiveCommentsButtonProps {
@@ -10,7 +10,7 @@ export interface ShowNewChildLiveCommentsButtonProps {
 }
 
 function showHiddenComments(comment: RNComment) {
-    iterateCommentsTree([comment], (comment) => {
+    iterateCommentsTreeMut([comment], (comment) => {
         if (comment.hidden) {
             comment.hidden = false;
             incChangeCounter(comment);

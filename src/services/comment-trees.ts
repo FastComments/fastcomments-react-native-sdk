@@ -1,5 +1,5 @@
 import {FastCommentsWidgetComment} from "fastcomments-typescript";
-import {none, State} from "@hookstate/core";
+import {ImmutableArray, ImmutableObject, none, State} from "@hookstate/core";
 import {RNComment} from "../types";
 
 export function getCommentsTreeAndCommentsById(collapseRepliesByDefault: boolean, rawComments: RNComment[]) {
@@ -52,15 +52,15 @@ export function getCommentsTreeAndCommentsById(collapseRepliesByDefault: boolean
     };
 }
 
-export function ensureRepliesOpenToComment(commentsById: Record<string, RNComment>, commentId: string) {
+export function ensureRepliesOpenToComment(commentsById: State<Record<string, RNComment>>, commentId: string) {
     let parentId: string | null | undefined = commentId;
     let iterations = 0;
     while (parentId && iterations < 100) {
         iterations++;
-        const parent: RNComment = commentsById[parentId];
+        const parent: State<RNComment> = commentsById.nested(parentId);
         if (parent) {
-            parent.repliesHidden = true;
-            parentId = parent.parentId;
+            parent.repliesHidden.set(true);
+            parentId = parent.parentId.get();
         } else {
             break;
         }
@@ -130,7 +130,7 @@ export function addCommentToTree(allComments: State<FastCommentsWidgetComment[]>
     updateNestedChildrenCountInTree(commentsById, comment.parentId, 1);
 }
 
-export function removeCommentFromTree(allComments: State<FastCommentsWidgetComment[]>, commentsTree: State<FastCommentsWidgetComment[]>, commentsById: State<Record<string, FastCommentsWidgetComment>>, comment: FastCommentsWidgetComment) {
+export function removeCommentFromTree(allComments: State<FastCommentsWidgetComment[]>, commentsTree: State<FastCommentsWidgetComment[]>, commentsById: State<Record<string, FastCommentsWidgetComment>>, comment: ImmutableObject<FastCommentsWidgetComment>) {
     const commentBeforeRemoval = JSON.parse(JSON.stringify(comment));
     const allCommentsIndex = allComments.get().findIndex((otherComment) => otherComment._id === commentBeforeRemoval._id);
     if (allCommentsIndex > -1) {
@@ -182,7 +182,7 @@ export function updateNestedChildrenCountInTree(commentsById: State<Record<strin
     }
 }
 
-export function iterateCommentsTree(nodes: FastCommentsWidgetComment[], cb: (comment: FastCommentsWidgetComment) => boolean | 'delete' | undefined | void) {
+export function iterateCommentsTree(nodes: ImmutableArray<FastCommentsWidgetComment>, cb: (comment: ImmutableObject<FastCommentsWidgetComment>) => boolean | 'delete' | undefined | void) {
     for (const comment of nodes) {
         const result = cb(comment);
         if (result === false) {
@@ -190,6 +190,18 @@ export function iterateCommentsTree(nodes: FastCommentsWidgetComment[], cb: (com
         }
         if (comment.children) {
             iterateCommentsTree(comment.children, cb);
+        }
+    }
+}
+
+export function iterateCommentsTreeMut(nodes: FastCommentsWidgetComment[], cb: (comment: FastCommentsWidgetComment) => boolean | 'delete' | undefined | void) {
+    for (const comment of nodes) {
+        const result = cb(comment);
+        if (result === false) {
+            break;
+        }
+        if (comment.children) {
+            iterateCommentsTreeMut(comment.children, cb);
         }
     }
 }

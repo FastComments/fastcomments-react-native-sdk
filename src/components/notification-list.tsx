@@ -15,10 +15,11 @@ import {getDefaultAvatarSrc} from "../services/default-avatar";
 import {CheckBox} from "./checkbox";
 import {changePageSubscriptionStateForUser, getNotificationTranslations, getUserNotifications} from "../services/notifications";
 import {getMergedTranslations} from "../services/translations";
+import {ImmutableObject} from "@hookstate/core";
 
 export interface NotificationListProps extends Pick<FastCommentsCallbacks, 'onNotificationSelected'> {
     imageAssets: ImageAssetConfig
-    state: FastCommentsState
+    state: ImmutableObject<FastCommentsState>
     styles: IFastCommentsStyles
     translations: Record<string, string>
 }
