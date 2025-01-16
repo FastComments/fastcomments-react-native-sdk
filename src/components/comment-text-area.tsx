@@ -81,7 +81,7 @@ export function CommentTextArea({
         uploadImage: async (_node, photoData) => {
             console.log('BEGIN UPLOAD IMAGE', photoData);
             const formData = new FormData();
-            formData.append('file', photoData);
+            formData.append('file', photoData as string);
             const xhr = new XMLHttpRequest();
             xhr.open('POST', state.apiHost + '/upload-image/' + state.config.tenantId);
             xhr.onprogress = function (progressEvent) {
