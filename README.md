@@ -1,5 +1,7 @@
 # fastcomments-react-native-sdk
 
+[![NPM](https://img.shields.io/npm/v/fastcomments-react-native-sdk.svg)](https://www.npmjs.com/package/fastcomments-react-native-sdk)
+
 ## Installation
 
 ```sh
