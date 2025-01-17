@@ -148,7 +148,7 @@ async function submit({
         urlId: urlIdToUse,
         url: state.config.url.get(),
         pageTitle: state.config.pageTitle.get(),
-        commenterName: currentUserBeforeSubmit ? currentUserBeforeSubmit.username : commentReplyState.username.get(),
+        commenterName: currentUserBeforeSubmit && 'username' in currentUserBeforeSubmit ? currentUserBeforeSubmit.username : commentReplyState.username.get(),
         commenterEmail: currentUserBeforeSubmit && 'email' in currentUserBeforeSubmit ? currentUserBeforeSubmit.email : commentReplyState.email.get(),
         commenterLink: currentUserBeforeSubmit && 'websiteUrl' in currentUserBeforeSubmit ? currentUserBeforeSubmit.websiteUrl : commentReplyState.websiteUrl.get(),
         avatarSrc: currentUserBeforeSubmit && state.config.simpleSSO.get() ? currentUserBeforeSubmit.avatarSrc : undefined,
@@ -167,6 +167,9 @@ async function submit({
     const broadcastId = newBroadcastId();
 
     try {
+        // console.log('Submitting for current user', currentUserBeforeSubmit);
+        // console.log('Submitting for reply state', commentReplyState);
+        console.log('Submitting', newComment);
         const response = await makeRequest<SaveCommentResponse>({
             apiHost: state.apiHost.get(),
             method: 'POST',
