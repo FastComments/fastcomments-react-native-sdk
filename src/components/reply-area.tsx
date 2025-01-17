@@ -489,7 +489,9 @@ export function ReplyArea(props: ReplyAreaProps) {
                     multiline={false}
                     maxLength={70}
                     placeholder={translations.EMAIL_FOR_VERIFICATION}
-                    autoComplete='email'
+                    textContentType="emailAddress"
+                    keyboardType="email-address"
+                    autoComplete="email"
                     value={commentReplyState.email.get()}
                     returnKeyType={state.config.enableCommenterLinks.get() ? 'next' : 'send'}
                     onChangeText={(value) => commentReplyState.email.set(value)}/>}
@@ -498,7 +500,8 @@ export function ReplyArea(props: ReplyAreaProps) {
                     multiline={false}
                     maxLength={70}
                     placeholder={translations.PUBLICLY_DISPLAYED_USERNAME}
-                    autoComplete={'username'}
+                    textContentType='username'
+                    autoComplete='username'
                     value={commentReplyState.username.get()}
                     returnKeyType={state.config.enableCommenterLinks.get() ? 'next' : 'send'}
                     onChangeText={(value) => commentReplyState.username.set(value)}/>
