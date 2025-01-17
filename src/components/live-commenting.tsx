@@ -5,7 +5,7 @@ import {ActivityIndicator, Alert, BackHandler, View} from "react-native";
 import {FastCommentsLiveCommentingService} from "../services/fastcomments-live-commenting";
 // @ts-ignore
 import React, {useEffect, useRef, useState} from 'react';
-import {Downgraded, useHookstate, useHookstateEffect} from "@hookstate/core";
+import {useHookstate, useHookstateEffect} from "@hookstate/core";
 import {IFastCommentsStyles, FastCommentsCallbacks, RNComment, ImageAssetConfig, FastCommentsImageAsset} from "../types";
 import {CallbackObserver, LiveCommentingBottomArea} from "./live-commenting-bottom-area";
 import {getDefaultFastCommentsStyles} from "../resources";
@@ -18,6 +18,7 @@ import {makeRequest} from "../services/http";
 import {GetTranslationsResponse} from "../types/dto/get-translations-response";
 import {CommentCancelTranslations} from "../types/comment-cancel-translations";
 import {addTranslationsToState} from "../services/translations";
+import {mergeSimpleSSO} from "../services/sso";
 
 export interface FastCommentsLiveCommentingProps {
     config: FastCommentsRNConfig
@@ -30,10 +31,14 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
     if (!styles) {
         styles = getDefaultFastCommentsStyles();
     }
+
+    if (config.sso) {
+        mergeSimpleSSO(config);
+    }
+
     const serviceInitialState = FastCommentsLiveCommentingService.createFastCommentsStateFromConfig({...config}, assets); // shallow clone is important to prevent extra re-renders
     const imageAssets = serviceInitialState.imageAssets;
     const state = useHookstate(serviceInitialState);
-    state.commentsById.attach(Downgraded);
     const service = useRef<FastCommentsLiveCommentingService>();
     useEffect(() => {
         service.current = new FastCommentsLiveCommentingService(state, callbacks);

@@ -1,6 +1,7 @@
 import {RNComment} from "./react-native-comment";
 import {FastCommentsSessionUser} from "./user";
 import {UserNotification} from "./user-notification";
+import {ImmutableArray} from "@hookstate/core";
 
 export interface FastCommentsCallbacks {
     /** Invoked when voting is successful. **/
@@ -12,7 +13,7 @@ export interface FastCommentsCallbacks {
     /** Invoked when the user signs in, or SSO is initialized, etc. **/
     onAuthenticationChange?: (status: 'user-set' | 'session-id-set' | 'authentication-failed' | 'logout', currentUser: FastCommentsSessionUser, comment: RNComment | null) => void
     /** Invoked when library renders comments. **/
-    onCommentsRendered?: (comment: RNComment[]) => void,
+    onCommentsRendered?: (comment: ImmutableArray<RNComment>) => void,
     /** Invoked when the user selects a notification. **/
     onNotificationSelected?: (notification: UserNotification) => void,
     /** Invoked when a user blocks or unblocks another user. userId is the user doing the blocking, and comment is the comment that was blocked/unblocked. To get the blocked user id, look at the comment. **/

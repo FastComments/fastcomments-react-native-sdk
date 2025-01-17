@@ -1,5 +1,5 @@
 import {FastCommentsState} from "src/types/fastcomments-state";
-import {FastCommentsCommentPositions} from "../types/dto/websocket-live-event";
+import {FastCommentsCommentPositions, RNComment} from "../types";
 import {State} from "@hookstate/core";
 
 export function repositionComment(id: string, commentPositions: FastCommentsCommentPositions, state: State<FastCommentsState>) {
@@ -40,7 +40,8 @@ export function repositionComment(id: string, commentPositions: FastCommentsComm
         // noproxy is important here because otherwise we put a state object into the tree where only raw objects should be, inside a parent state object.
         // this will cause things to blow up on re-render and trying to modify the comment object (like pinning again), since we have no run-time
         // type checking. :)
-        commentsTree.splice(newIndex!, 0, state.commentsById[id].get({stealth: true, noproxy: true}));
+        // cast is needed as even with noproxy
+        commentsTree.splice(newIndex!, 0, state.commentsById[id].get({stealth: true, noproxy: true}) as RNComment);
         return commentsTree;
     });
 }

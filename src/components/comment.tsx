@@ -13,9 +13,9 @@ import {
     RNComment,
     IFastCommentsStyles,
     FastCommentsCallbacks, ImageAssetConfig,
+    FastCommentsRNConfig,
 } from "../types";
 import {CommentVote} from "./comment-vote";
-import {FastCommentsRNConfig} from "../types/react-native-config";
 import {ShowNewChildLiveCommentsButton} from "./show-new-child-live-comments-button";
 import {memo} from "react";
 

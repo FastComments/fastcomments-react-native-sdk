@@ -1,6 +1,6 @@
 import RenderHtml, {defaultHTMLElementModels, HTMLContentModel, RenderHTMLConfigProvider, TRenderEngineProvider} from "react-native-render-html";
 import {ActivityIndicator, FlatList, ListRenderItemInfo, useWindowDimensions, View, Text} from "react-native";
-import {Downgraded, State, useHookstate, useHookstateEffect} from "@hookstate/core";
+import {State, useHookstate, useHookstateEffect} from "@hookstate/core";
 import {FastCommentsCallbacks, FastCommentsState, IFastCommentsStyles, ImageAssetConfig, RNComment} from "../types";
 import React, {MutableRefObject, useState} from 'react';
 import {PaginationNext} from "./pagination-next";
@@ -53,7 +53,6 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
         service
     } = props;
     const state = useHookstate(props.state); // OPTIMIZATION creating local state
-    state.commentsById.attach(Downgraded);
     const [isFetchingNextPage, setFetchingNextPage] = useState(false);
     const {width} = useWindowDimensions();
 
@@ -66,7 +65,7 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
         const start = Date.now();
         // Re-creating the whole list generally takes 1-2ms.
         console.log('...Re-creating view list from tree...');
-        iterateCommentsTreeWithDepth(state.commentsTree.get({stealth: true, noproxy: true}), 0, (comment, depth) => {
+        iterateCommentsTreeWithDepth(state.commentsTree.get({noproxy: true, stealth: true}) as RNComment[], 0, (comment, depth) => {
             if (!comment) {
                 return;
             }

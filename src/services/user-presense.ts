@@ -3,7 +3,7 @@ import {FastCommentsState, UserPresenceState} from "../types";
 import {iterateCommentsTree} from "./comment-trees";
 import {createURLQueryString, makeRequest} from "./http";
 import {GetUserPresenceStatusesResponse} from "../types";
-import {State} from "@hookstate/core";
+import {ImmutableObject, State} from "@hookstate/core";
 
 /**
  * @typedef {number} UserPresencePollState
@@ -76,7 +76,7 @@ async function getAndUpdateUserStatuses(apiHost: string, tenantId: string, ssoCo
 }
 
 // TODO OPTIMIZE don't take whole config object due to required get() call in callers
-export async function handleNewRemoteUser(config: FastCommentsCommentWidgetConfig, urlIdWS: string, state: State<UserPresenceState>, userIds: string[]) {
+export async function handleNewRemoteUser(config: ImmutableObject<FastCommentsCommentWidgetConfig>, urlIdWS: string, state: State<UserPresenceState>, userIds: string[]) {
     const response = await makeRequest<GetUserPresenceStatusesResponse>({
         apiHost: config.apiHost!,
         method: 'GET',
@@ -102,7 +102,7 @@ export async function handleNewRemoteUser(config: FastCommentsCommentWidgetConfi
  * @param {comment} comment
  * @param {Object.<string, boolean>} [changes]
  */
-export function addCommentToUserPresenceState(state: State<UserPresenceState>, comment: FastCommentsWidgetComment, changes: Record<string, boolean>) {
+export function addCommentToUserPresenceState(state: State<UserPresenceState>, comment: ImmutableObject<FastCommentsWidgetComment>, changes: Record<string, boolean>) {
     if (comment.userId || comment.anonUserId) { // OPTIMIZATION
         state.userIdsToCommentIds.set((userIdsToCommentIds) => {
             if (comment.userId) {

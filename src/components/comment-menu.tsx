@@ -102,7 +102,7 @@ async function setCommentBlockedStatus({state, comment}: Pick<FastCommentsCommen
                 const newValue = response.commentStatuses[otherCommentId];
                 if (existing !== newValue) {
                     state.commentsById[otherCommentId].isBlocked.set(newValue);
-                    incChangeCounter(state.commentsById[otherCommentId].get({stealth: true}));
+                    incChangeCounterState(state.commentsById.nested(otherCommentId));
                 }
             }
         }

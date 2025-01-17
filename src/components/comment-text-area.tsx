@@ -1,5 +1,5 @@
 import {FastCommentsState, FastCommentsImageAsset, IFastCommentsStyles, FastCommentsCallbacks} from "../types";
-import {State} from "@hookstate/core";
+import {ImmutableObject, State} from "@hookstate/core";
 import {Text, Image, View, ActivityIndicator} from "react-native";
 import {Editor, UpdateNodesObserver} from "./wysiwyg/wysiwyg-editor";
 import {useEffect, useRef, useState} from "react";
@@ -22,7 +22,7 @@ export interface FocusObserver {
 export interface CommentTextAreaProps extends Pick<FastCommentsCallbacks, 'pickImage' | 'pickGIF'> {
     emoticonBarConfig?: EmoticonBarConfig
     focusObserver?: FocusObserver
-    state: FastCommentsState
+    state: ImmutableObject<FastCommentsState>
     styles: IFastCommentsStyles
     output: ValueObserver
     onFocus?: () => void
