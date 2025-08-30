@@ -9,7 +9,7 @@ export * from './comment-dispay-date';
 export * from './comment-menu';
 export * from './comment-notices';
 export * from './comment-reply-toggle';
-export * from './comment-text-area';
+export * from './comment-text-area-10tap';
 export * from './comment-user-activity-icon';
 export * from './comment-user-badge';
 export * from './comment-user-info';
