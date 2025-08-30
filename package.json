@@ -66,6 +66,7 @@
     "typescript": "^4.7.4"
   },
   "dependencies": {
+    "@10play/tentap-editor": "^0.7.4",
     "@hookstate/core": "^4.0.1",
     "@types/lodash": "^4.14.184",
     "lodash": "^4.17.21",

@@ -6,12 +6,11 @@ import {createURLQueryString, makeRequest} from "../services/http";
 import {getActionTenantId} from "../services/tenants";
 import {UpdateCommentTextResponse} from "../types";
 import {newBroadcastId} from "../services/broadcast-id";
-import {CommentTextArea, ValueObserver} from "./comment-text-area";
+import {CommentTextArea10Tap as CommentTextArea, ValueObserver, EmoticonBarConfig} from "./comment-text-area-10tap";
 import {FastCommentsState, IFastCommentsStyles, RNComment} from "../types";
 import {State} from "@hookstate/core";
 import {incChangeCounter} from "../services/comment-render-determination";
 import {getMergedTranslations} from "../services/translations";
-import {EmoticonBar, EmoticonBarConfig} from "./wysiwyg/emoticon-bar";
 
 export interface DirtyRef {
     current?: () => boolean
@@ -83,16 +82,13 @@ export function CommentActionEdit({
     };
     const inlineReactImages = state.config.inlineReactImages.get();
     let emoticonBarConfig: EmoticonBarConfig = {};
-    let reactsBar;
     if (inlineReactImages) {
         emoticonBarConfig.emoticons = inlineReactImages.map(function (src) {
             return [src, <Image source={{uri: src}} style={styles.commentTextAreaEmoticonBar?.icon}/>]
         })
-        reactsBar = <EmoticonBar config={emoticonBarConfig} styles={styles.commentTextAreaEmoticonBar}/>
     }
     return <View style={styles.commentEditModal?.centeredView}>
         <View style={styles.commentEditModal?.modalView}>
-            {reactsBar}
             <CommentTextArea
                 emoticonBarConfig={emoticonBarConfig}
                 styles={styles}

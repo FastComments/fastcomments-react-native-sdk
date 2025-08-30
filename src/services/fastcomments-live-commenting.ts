@@ -257,7 +257,7 @@ export class FastCommentsLiveCommentingService {
             }
             Alert.alert(
                 ":(",
-                translations.ERROR_MESSAGE,
+                translations.ERROR_MESSAGE ?? 'Whoops! Something went wrong. Please try again later.' ,
                 [
                     {
                         text: translations.DISMISS
