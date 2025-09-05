@@ -5,7 +5,7 @@ import {
     FastCommentsCallbacks 
 } from "../types";
 import { ImmutableObject } from "@hookstate/core";
-import { Text, View, ActivityIndicator, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform } from "react-native";
+import { Text, View, ActivityIndicator, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Image } from "react-native";
 import React, { useEffect, useState } from "react";
 import { 
     RichText, 

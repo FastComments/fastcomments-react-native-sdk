@@ -205,7 +205,7 @@ export class FastCommentsLiveCommentingService {
 
             if (response.user) {
                 state.currentUser.set(response.user);
-                this.callbacks?.onAuthenticationChange && this.callbacks.onAuthenticationChange('user-set', state.currentUser.get(), null);
+                this.callbacks?.onAuthenticationChange && this.callbacks.onAuthenticationChange('user-set', response.user, null);
             }
 
             if (state.commentsVisible.get() === undefined) {
