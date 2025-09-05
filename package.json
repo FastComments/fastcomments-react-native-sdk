@@ -70,7 +70,8 @@
     "@hookstate/core": "^4.0.1",
     "@types/lodash": "^4.14.184",
     "lodash": "^4.17.21",
-    "react-native-render-html": "^6.3.4"
+    "react-native-render-html": "^6.3.4",
+    "react-native-webview": "^13.16.0"
   },
   "peerDependencies": {
     "react": "*",

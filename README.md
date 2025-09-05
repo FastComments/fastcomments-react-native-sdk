@@ -10,10 +10,10 @@ npm install fastcomments-react-native-sdk --save
 
 ## About
 
-This library is a complete webview-free react-native implementation of [FastComments](https://fastcomments.com).
+This library is a complete react-native implementation of [FastComments](https://fastcomments.com).
 
 It supports live commenting, chat, threads, emoticons, notifications, SSO, skins, and full customization by passing in a stylesheet object. All assets
-can also be customized, and it supports toggling different assets based on dark mode. It only has three direct dependencies (`react`, `hookstate`, and a library to render HTML).
+can also be customized, and it supports toggling different assets based on dark mode.
 
 It all runs on the FastComments backend, so you only have to incorporate the UI:
 
@@ -34,9 +34,9 @@ Add live chat to your existing React Native application, or even build a social 
 #### Native WYSIWYG Editor with Image Support!
 ![Native WYSIWYG Editor with Image Support](./example/screenshots/native-wysiwyg.PNG)
 
-### No WebViews!
+### Rich Text Editor
 
-This library incorporates its own WYSIWYG editor written in native React, so that we do not depend on loading a WebView to type text.
+This library uses the 10tap editor for rich text editing functionality, which provides a powerful WYSIWYG editing experience.
 
 ### Configuration Options
 
