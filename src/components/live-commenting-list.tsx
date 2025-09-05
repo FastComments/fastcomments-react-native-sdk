@@ -177,6 +177,7 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
         <RenderHTMLConfigProvider>
             <FlatList
                 style={styles.commentsWrapper}
+                contentContainerStyle={styles.commentsListContent}
                 data={viewableComments}
                 keyExtractor={item => item && item._id !== undefined ? item._id : '???'}
                 maxToRenderPerBatch={state.PAGE_SIZE.get()}

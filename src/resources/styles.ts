@@ -59,8 +59,8 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
         topArea: {
             replyArea: {
                 marginTop: 15,
-                marginRight: 15,
-                marginLeft: 15
+                marginRight: 7.5,
+                marginLeft: 7.5
             },
             separator: {
                 flexDirection: 'row',
@@ -81,8 +81,8 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
         bottomArea: {
             replyArea: {
                 marginTop: 15,
-                marginRight: 15,
-                marginLeft: 15
+                marginRight: 7.5,
+                marginLeft: 7.5
             },
             separator: {
                 flexDirection: 'row',
@@ -96,8 +96,11 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
         },
         commentsWrapper: {
             paddingTop: 5,
-            paddingLeft: 15,
-            paddingRight: 15,
+            paddingLeft: 0,
+            paddingRight: 0,
+        },
+        commentsListContent: {
+            paddingHorizontal: 7.5,
         },
         comment: {
             root: {

@@ -8,7 +8,7 @@ import {Dispatch, SetStateAction, useEffect} from 'react';
 import {ThreeDot} from "./three-dot";
 import {NotificationBell} from "./notification-bell";
 import {CommentAreaMessage} from "./comment-area-message";
-import {CommentTextArea, FocusObserver, ValueObserver} from "./comment-text-area";
+import {CommentTextArea10Tap as CommentTextArea, FocusObserver, ValueObserver, EmoticonBarConfig} from "./comment-text-area-10tap";
 import {SaveCommentResponse} from "../types";
 import {getActionTenantId, getActionURLID} from "../services/tenants";
 import {newBroadcastId} from "../services/broadcast-id";
@@ -20,7 +20,6 @@ import {setupUserPresenceState} from "../services/user-presense";
 import {persistSubscriberState} from "../services/live";
 import RenderHtml from 'react-native-render-html';
 import {RNComment, IFastCommentsStyles, FastCommentsCallbacks} from "../types";
-import {EmoticonBar, EmoticonBarConfig} from './wysiwyg/emoticon-bar';
 
 // TODO replace with translatedError response which would reduce initial bundle size
 const SignUpErrorsTranslationIds: Record<string, string> = {
@@ -344,7 +343,6 @@ export function ReplyArea(props: ReplyAreaProps) {
 
     const ssoConfig = state.config.sso?.get() || state.config.simpleSSO?.get();
     let ssoLoginWrapper;
-    let reactsBar;
     let topBar;
     let commentInputArea;
     let commentSubmitButton;
@@ -419,7 +417,6 @@ export function ReplyArea(props: ReplyAreaProps) {
                 emoticonBarConfig.emoticons = inlineReactImages.map(function (src) {
                     return [src, <Image source={{uri: src}} style={styles.commentTextAreaEmoticonBar?.icon}/>]
                 })
-                reactsBar = <EmoticonBar config={emoticonBarConfig} styles={styles.commentTextAreaEmoticonBar}/>
             }
             commentInputAreaContent = <CommentTextArea
                 emoticonBarConfig={emoticonBarConfig}
@@ -594,7 +591,6 @@ export function ReplyArea(props: ReplyAreaProps) {
         </View>}
         {ssoLoginWrapper}
         {displayError}
-        {reactsBar}
         {topBarInputAreaAndSubmit}
         {commentReplyState.isReplySaving.get() && <View style={styles.replyArea?.loadingView}>
             <ActivityIndicator size="large"/>

@@ -21,6 +21,7 @@ export interface IFastCommentsStyles {
         separator?: ViewStyle,
     },
     commentsWrapper?: ViewStyle
+    commentsListContent?: ViewStyle
     comment?: {
         root?: ViewStyle
         subRoot?: ViewStyle

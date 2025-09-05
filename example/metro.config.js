@@ -27,6 +27,9 @@ module.exports = {
       acc[name] = path.join(__dirname, 'node_modules', name);
       return acc;
     }, {}),
+    
+    // Handle extensions for tiptap and 10tap-editor modules
+    sourceExts: ['tsx', 'ts', 'jsx', 'js', 'json', 'cjs'],
   },
 
   transformer: {

@@ -22,5 +22,8 @@
     "metro-resolver": "^0.66.2",
     "react": "18.0.0",
     "react-native": "^0.69.4"
+  },
+  "dependencies": {
+    "react-native-webview": "^13.16.0"
   }
 }
