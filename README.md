@@ -15,6 +15,8 @@ This library is a complete react-native implementation of [FastComments](https:/
 It supports live commenting, chat, threads, emoticons, notifications, SSO, skins, and full customization by passing in a stylesheet object. All assets
 can also be customized, and it supports toggling different assets based on dark mode.
 
+The benefit of this library is that it is more flexible, and does not require a webview, like the `fastcomments-react-native` wrapper.
+
 It all runs on the FastComments backend, so you only have to incorporate the UI:
 
 ```tsx
@@ -66,57 +68,3 @@ to support image and gif uploads. There is a Gif Browser that anonymizes searche
 
 Please open a ticket with an example to reproduce, including device used, if you identify any performance problems. Performance is a first-class citizen
 of all FastComments libraries.
-
-### Contributing
-
-Contributions are welcome. Please open a GitHub issue first and tag `@winrid` to confirm it is not something we are already working on (or not able to accept).
-Keep in mind that most features should be opt-in by default to maximize flexibility and performance.
-
-### Feature/Development Checklist - v1
-
-- [x] WYSIWYG editing existing text
-- [x] WYSIWYG functional for basic use cases.
-- [x] Secure & Simple SSO Examples
-- [x] WYSIWYG editor (supports images etc)
-- [x] Reply Area Toolbar (similar to vanillajs widget)
-- [x] Child Comments & Replies
-- [x] Read Native SDK able to login when posting comment
-- [x] Can Log Out
-- [x] Can post a comment + show errors.
-- [x] Flagging
-- [x] Blocking
-- [x] Pinning Comments
-- [x] Render new live comments
-- [x] Switch to useHookState
-- [x] Deleting comments
-- [x] Editing comments
-- [x] All comment menu styling.
-- [x] Fetching and Rendering Comments
-- [x] WYSIWYG Performance Update #1 - Recalculate content on demand vs on change event.
-- [x] BUG: New comments should go to top of or bottom of list based on configuration.
-- [x] Emoticon Support
-- [x] Voting
-- [x] Ability to hide replies
-- [x] Show/Hide Comments Toggle
-- [x] Pagination (Buttons)
-- [x] Pagination (Infinite Scroll)
-- [x] Custom Styles (as typed stylesheet)
-- [x] Callbacks (similar to vanillajs widget)
-- [x] Dark mode skin
-- [x] Social-media like skin
-- [x] Improved Comment Styling
-- [x] Notifications List (shows when clicking bell). Supports subscriptions.
-- [x] Chat Reactions
-- [x] Support for showLiveRightAway = false
-- [x] User activity indicators
-- [x] Native WYSIWYG Multiline Support
-- [x] Media Selection & Uploads
-- [x] Gif Browser - With default trending + search capability. Images and searching anonymized by proxy.
-- [x] Release to NPM
-- [x] Switch Pressable usage to Button or TouchableOpacity where possible
-- [x] WYSIWYG Editor Optimizations (ideally 60fps while typing)
-- [x] Notification Service (get user's unread notifications in the background to push to them, etc)
-- [x] Better WYSIWYG bar icons (web ones don't look good in native)
-- [x] Complete all TODOs
-- [x] Profile & ensure 40 FPS minimum during writing comments, submitting, voting, and opening reply menu.
-- [x] Add @username to text box when replying and using useSingleReplyField = true
