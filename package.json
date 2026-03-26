@@ -54,7 +54,6 @@
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@types/react-native": "^0.69.4",
-    "fastcomments-typescript": "^3.0.0",
     "jest": "^29.0.3",
     "pod-install": "^0.1.0",
     "prettier": "^2.0.5",
@@ -69,6 +68,7 @@
     "@10play/tentap-editor": "^0.7.4",
     "@hookstate/core": "^4.0.1",
     "@types/lodash": "^4.14.184",
+    "fastcomments-typescript": "^3.0.0",
     "lodash": "^4.17.21",
     "react-native-render-html": "^6.3.4",
     "react-native-webview": "^13.16.0"

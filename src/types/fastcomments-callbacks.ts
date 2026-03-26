@@ -32,6 +32,8 @@ export interface FastCommentsCallbacks {
     pickImage?: () => Promise<FastCommentsFromDiskAsset | string>,
     /** Invoked when the comment count changes. **/
     commentCountUpdated?: (newCount: number) => void
+    /** Invoked when an error occurs. If provided, replaces the default Alert.alert behavior for error display. **/
+    onError?: (title: string, message: string) => void
 }
 
 export interface FastCommentsFromDiskAsset {

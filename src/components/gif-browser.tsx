@@ -1,5 +1,5 @@
 import {
-    ActivityIndicator, Alert,
+    ActivityIndicator,
     BackHandler,
     FlatList,
     Image,
@@ -17,11 +17,13 @@ import {FastCommentsRNConfig} from "../types/react-native-config";
 import {GetTranslationsResponse} from "../types/dto/get-translations-response";
 import {GetGifLargeResponse} from "../types/dto/get-gif-large";
 import {getMergedTranslations} from "../services/translations";
+import {showError} from "../services/show-error";
 
 export interface GifBrowserProps {
     cancelled: () => void
     config: FastCommentsRNConfig
     imageAssets: ImageAssetConfig
+    onError?: (title: string, message: string) => void
     pickedGIF: (gifPath: string) => void
     styles: IFastCommentsStyles
 }
@@ -37,6 +39,7 @@ export function GifBrowser({
     cancelled,
     config,
     imageAssets,
+    onError,
     pickedGIF,
     styles
 }: GifBrowserProps) {
@@ -97,15 +100,7 @@ export function GifBrowser({
             }
         } else {
             const mergedTranslations = getMergedTranslations(translations, response);
-            Alert.alert(
-                ":(",
-                mergedTranslations.ERROR_MESSAGE,
-                [
-                    {
-                        text: mergedTranslations.DISMISS
-                    }
-                ]
-            );
+            showError(':(', mergedTranslations.ERROR_MESSAGE, mergedTranslations.DISMISS, onError);
         }
     }
 

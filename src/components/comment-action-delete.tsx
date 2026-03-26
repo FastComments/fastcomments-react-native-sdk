@@ -8,14 +8,16 @@ import {DeleteCommentResponse, FastCommentsState, RNComment} from "../types";
 import {State} from "@hookstate/core";
 import {incChangeCounter} from "../services/comment-render-determination";
 import {getMergedTranslations} from "../services/translations";
+import {showError} from "../services/show-error";
 
 export interface CommentActionDeleteProps {
     close: () => void;
     comment: RNComment
+    onError?: (title: string, message: string) => void
     state: State<FastCommentsState>
 }
 
-async function deleteComment({comment, state}: Pick<FastCommentsCommentWithState, 'comment' | 'state'>) {
+async function deleteComment({comment, state}: Pick<FastCommentsCommentWithState, 'comment' | 'state'>, onError?: (title: string, message: string) => void) {
     const tenantId = getActionTenantId({state, tenantId: comment.tenantId});
     const broadcastId = newBroadcastId();
     const response = await makeRequest<DeleteCommentResponse>({
@@ -42,19 +44,11 @@ async function deleteComment({comment, state}: Pick<FastCommentsCommentWithState
     } else {
         const translations = getMergedTranslations(state.translations.get({stealth: true}), response);
         const message = response.code === 'edit-key-invalid' ? translations.LOGIN_TO_DELETE : translations.DELETE_FAILURE;
-        Alert.alert(
-            ":(",
-            message,
-            [
-                {
-                    text: translations.DISMISS
-                }
-            ]
-        );
+        showError(':(', message, translations.DISMISS, onError);
     }
 }
 
-export async function CommentPromptDelete({comment, state, close}: CommentActionDeleteProps) {
+export async function CommentPromptDelete({comment, state, onError, close}: CommentActionDeleteProps) {
     Alert.alert(
         state.translations.DELETE_CONFIRM.get(),
         state.translations.DELETE_CONFIRMATION_MESSAGE.get(),
@@ -68,17 +62,9 @@ export async function CommentPromptDelete({comment, state, close}: CommentAction
                 text: state.translations.DELETE_CONFIRM.get(),
                 onPress: async () => {
                     try {
-                        await deleteComment({comment, state});
+                        await deleteComment({comment, state}, onError);
                     } catch (e) {
-                        Alert.alert(
-                            ":(",
-                            state.translations.DELETE_FAILURE.get(),
-                            [
-                                {
-                                    text: state.translations.DISMISS.get()
-                                }
-                            ]
-                        );
+                        showError(':(', state.translations.DELETE_FAILURE.get(), state.translations.DISMISS.get(), onError);
                     }
                     close();
                 }

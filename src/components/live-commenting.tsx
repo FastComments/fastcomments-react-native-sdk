@@ -3,10 +3,9 @@
 import {CommentAreaMessage} from "./comment-area-message";
 import {ActivityIndicator, Alert, BackHandler, View} from "react-native";
 import {FastCommentsLiveCommentingService} from "../services/fastcomments-live-commenting";
-// @ts-ignore
-import React, {useEffect, useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {useHookstate, useHookstateEffect} from "@hookstate/core";
-import {IFastCommentsStyles, FastCommentsCallbacks, RNComment, ImageAssetConfig, FastCommentsImageAsset} from "../types";
+import {IFastCommentsStyles, FastCommentsCallbacks, RNComment, ImageAssetConfig, FastCommentsImageAsset, FastCommentsState} from "../types";
 import {CallbackObserver, LiveCommentingBottomArea} from "./live-commenting-bottom-area";
 import {getDefaultFastCommentsStyles} from "../resources";
 import {FastCommentsRNConfig} from "../types/react-native-config";
@@ -18,7 +17,6 @@ import {makeRequest} from "../services/http";
 import {GetTranslationsResponse} from "../types/dto/get-translations-response";
 import {CommentCancelTranslations} from "../types/comment-cancel-translations";
 import {addTranslationsToState} from "../services/translations";
-import {mergeSimpleSSO} from "../services/sso";
 
 export interface FastCommentsLiveCommentingProps {
     config: FastCommentsRNConfig
@@ -32,16 +30,19 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
         styles = getDefaultFastCommentsStyles();
     }
 
-    if (config.sso) {
-        mergeSimpleSSO(config);
+    // Lazy initialization — only compute initial state once
+    const serviceInitialStateRef = useRef<FastCommentsState | null>(null);
+    if (serviceInitialStateRef.current === null) {
+        serviceInitialStateRef.current = FastCommentsLiveCommentingService.createFastCommentsStateFromConfig({...config}, assets);
     }
-
-    const serviceInitialState = FastCommentsLiveCommentingService.createFastCommentsStateFromConfig({...config}, assets); // shallow clone is important to prevent extra re-renders
-    const imageAssets = serviceInitialState.imageAssets;
-    const state = useHookstate(serviceInitialState);
+    const imageAssets = serviceInitialStateRef.current.imageAssets;
+    const state = useHookstate(serviceInitialStateRef.current);
     const service = useRef<FastCommentsLiveCommentingService>();
     useEffect(() => {
         service.current = new FastCommentsLiveCommentingService(state, callbacks);
+        return () => {
+            service.current?.destroy();
+        };
     }, []);
     const [isLoading, setLoading] = useState(true);
     const [isLoaded, setIsLoaded] = useState(false);
@@ -49,6 +50,8 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
     const [commentMenuRequest, setCommentMenuRequest] = useState<OpenCommentMenuRequest>();
     const callbackObserver: CallbackObserver = {};
     const callbackObserverRef = useRef(callbackObserver);
+    const prevUrlIdRef = useRef(config.urlId);
+    const prevTenantIdRef = useRef(config.tenantId);
 
     const loadAsync = async () => {
         if (service.current) {
@@ -60,9 +63,28 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
         }
     }
     useEffect(() => {
+        const urlIdChanged = prevUrlIdRef.current !== config.urlId;
+        const tenantIdChanged = prevTenantIdRef.current !== config.tenantId;
+
+        if (urlIdChanged || tenantIdChanged) {
+            prevUrlIdRef.current = config.urlId;
+            prevTenantIdRef.current = config.tenantId;
+            // Reset state for new thread/tenant context
+            state.commentsTree.set([]);
+            state.commentsById.set({});
+            state.allComments.set([]);
+            state.page.set(0);
+            state.pagesLoaded.set([]);
+            state.commentCountOnClient.set(0);
+            state.commentCountOnServer.set(0);
+            state.newRootCommentCount.set(0);
+            state.config.urlId.set(config.urlId);
+            state.config.tenantId.set(config.tenantId);
+            service.current?.resetForNewContext();
+        }
         // noinspection JSIgnoredPromiseFromCall
         loadAsync();
-    }, [config.sso?.userDataJSONBase64, config.simpleSSO?.username]); // watching whole config object causes duplicate renders.
+    }, [config.sso?.userDataJSONBase64, config.simpleSSO?.username, config.urlId, config.tenantId]);
     useHookstateEffect(() => {
         if (isLoaded) {
             // noinspection JSIgnoredPromiseFromCall
@@ -155,8 +177,6 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
             return <View style={[styles.root, styles.loadingOverlay]}><ActivityIndicator size="large"/></View>
         }
 
-        console.log('!!!! ************** root re-rendered ************** !!!!');
-
         return <View style={styles.root}>
             {state.commentsVisible.get() && <LiveCommentingList
                 callbacks={callbacks}
@@ -178,6 +198,7 @@ export function FastCommentsLiveCommenting({config, styles, callbacks, assets}: 
                     styles={styles} items={getCommentMenuItems({
                         comment: commentMenuRequest.comment,
                         onCommentFlagged: callbacks?.onCommentFlagged,
+                        onError: callbacks?.onError,
                         onUserBlocked: callbacks?.onUserBlocked,
                         pickGIF: callbacks?.pickGIF,
                         pickImage: callbacks?.pickImage,

@@ -6,9 +6,9 @@ import {SubscriberInstance} from "./subscribe-to-changes";
 import {mergeSimpleSSO} from "./sso";
 import {State} from "@hookstate/core";
 import {handleNewCustomConfig} from "./custom-config";
-import {persistSubscriberState} from "./live";
+import {cleanupSubscriber, persistSubscriberState} from "./live";
 import {getDefaultImageAssets} from "../resources";
-import {Alert} from "react-native";
+import {showError} from "./show-error";
 
 interface FastCommentsInternalState {
     isFirstRequest: boolean;
@@ -31,6 +31,16 @@ export class FastCommentsLiveCommentingService {
             lastComments: [],
             lastSubscriberInstance: undefined,
         };
+    }
+
+    destroy() {
+        cleanupSubscriber(this.state.instanceId.get());
+    }
+
+    resetForNewContext() {
+        this.internalState.isFirstRequest = true;
+        this.internalState.lastGenDate = undefined;
+        this.internalState.lastComments = [];
     }
 
     static createFastCommentsStateFromConfig(config: FastCommentsCommentWidgetConfig, assets?: ImageAssetConfig): FastCommentsState {
@@ -253,17 +263,10 @@ export class FastCommentsLiveCommentingService {
             console.error(e);
             const translations = this.state.translations.get({stealth: true}) ? this.state.translations.get({stealth: true}) : {
                 DISMISS: 'Dismiss',
-                ERROR_MESSAGE: 'Whoops! Something went wrong. Please try again later.' // pre-fill, in case we need to show this before translations are loaded.
+                ERROR_MESSAGE: 'Whoops! Something went wrong. Please try again later.'
             }
-            Alert.alert(
-                ":(",
-                translations.ERROR_MESSAGE ?? 'Whoops! Something went wrong. Please try again later.' ,
-                [
-                    {
-                        text: translations.DISMISS
-                    }
-                ]
-            );
+            const message = translations.ERROR_MESSAGE ?? 'Whoops! Something went wrong. Please try again later.';
+            showError(':(', message, translations.DISMISS, this.callbacks?.onError);
         }
     }
 }

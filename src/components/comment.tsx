@@ -50,8 +50,6 @@ const CommentHTMLRenderMemo = memo<HTMLRenderMemoProps>(
 export interface CommentViewProps extends FastCommentsCommentWithState, Pick<FastCommentsCallbacks, 'onVoteSuccess' | 'onAuthenticationChange' | 'pickGIF' | 'pickImage'> {
 }
 
-const RenderCount: Record<string, number> = {};
-
 export function FastCommentsCommentView(props: CommentViewProps) {
     const {
         styles,
@@ -69,14 +67,6 @@ export function FastCommentsCommentView(props: CommentViewProps) {
         imageAssets,
         width,
     } = props;
-
-    const id = comment._id;
-    if (RenderCount[id] === undefined) {
-        RenderCount[id] = 1;
-    } else {
-        RenderCount[id]++;
-    }
-    console.log('comment render count', RenderCount[id]);
 
     const state = useHookstate(props.state); // OPTIMIZATION: creating scoped state
 

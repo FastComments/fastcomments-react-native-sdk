@@ -126,12 +126,12 @@ export function subscribeToChanges(
             }
         } else {
             if (lastLiveEventTime) {
-                console.log('FastComments: Detected potentially missed events, fetching log...');
+                if (__DEV__) console.log('FastComments: Detected potentially missed events, fetching log...');
                 // noinspection JSIgnoredPromiseFromCall
                 fetchEventLog(lastLiveEventTime, Date.now());
             }
 
-            console.log('FastComments: connecting...');
+            if (__DEV__) console.log('FastComments: connecting...');
             const socket = new WebSocket(wsHost + '/sub' + createURLQueryString({
                 urlId: urlIdWS,
                 userIdWS, // this will be used to validate the SSO session
@@ -142,7 +142,7 @@ export function subscribeToChanges(
                 if (isIntentionallyClosed) {
                     return;
                 }
-                console.log('FastComments: connected.');
+                if (__DEV__) console.log('FastComments: connected.');
                 if (lastLiveEventTime) {
                     // noinspection ES6MissingAwait
                     fetchEventLog(lastLiveEventTime, Date.now());
@@ -151,7 +151,7 @@ export function subscribeToChanges(
             };
 
             socket.onclose = function () {
-                console.log('FastComments: disconnected.');
+                if (__DEV__) console.log('FastComments: disconnected.');
                 if (!lastLiveEventTime) {
                     lastLiveEventTime = Date.now();
                 }

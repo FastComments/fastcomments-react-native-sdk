@@ -1,5 +1,5 @@
 import {FastCommentsCommentWithState} from "./comment";
-import {View, Text, ActivityIndicator, Image, TouchableOpacity, Alert} from "react-native";
+import {View, Text, ActivityIndicator, Image, TouchableOpacity} from "react-native";
 import {FastCommentsCallbacks, FastCommentsImageAsset} from "../types";
 import {useState} from "react";
 import {createURLQueryString, makeRequest} from "../services/http";
@@ -11,12 +11,13 @@ import {FastCommentsState, IFastCommentsStyles, RNComment} from "../types";
 import {State} from "@hookstate/core";
 import {incChangeCounter} from "../services/comment-render-determination";
 import {getMergedTranslations} from "../services/translations";
+import {showError} from "../services/show-error";
 
 export interface DirtyRef {
     current?: () => boolean
 }
 
-export interface CommentActionEditProps extends Pick<FastCommentsCallbacks, 'pickGIF' | 'pickImage'> {
+export interface CommentActionEditProps extends Pick<FastCommentsCallbacks, 'pickGIF' | 'pickImage' | 'onError'> {
     close: (safe: boolean) => void
     comment: RNComment
     isDirtyRef: DirtyRef
@@ -24,7 +25,7 @@ export interface CommentActionEditProps extends Pick<FastCommentsCallbacks, 'pic
     styles: IFastCommentsStyles
 }
 
-async function saveCommentText({comment, state}: Pick<FastCommentsCommentWithState, 'comment' | 'state'>, newValue: string) {
+async function saveCommentText({comment, state}: Pick<FastCommentsCommentWithState, 'comment' | 'state'>, newValue: string, onError?: (title: string, message: string) => void) {
     const tenantId = getActionTenantId({state, tenantId: comment.tenantId});
     const broadcastId = newBroadcastId();
     const response = await makeRequest<UpdateCommentTextResponse>({
@@ -51,21 +52,14 @@ async function saveCommentText({comment, state}: Pick<FastCommentsCommentWithSta
     } else {
         const translations = getMergedTranslations(state.translations.get({stealth: true}), response);
         const message = response.code === 'edit-key-invalid' ? translations.LOGIN_TO_EDIT : translations.ERROR_MESSAGE;
-        Alert.alert(
-            ":(",
-            message,
-            [
-                {
-                    text: translations.DISMISS
-                }
-            ]
-        );
+        showError(':(', message, translations.DISMISS, onError);
     }
 }
 
 export function CommentActionEdit({
     comment,
     isDirtyRef,
+    onError,
     pickGIF,
     pickImage,
     state,
@@ -106,21 +100,13 @@ export function CommentActionEdit({
                         if (valueGetter.getValue) {
                             comment.comment = valueGetter.getValue();
                         }
-                        await saveCommentText({comment, state}, comment.comment!);
+                        await saveCommentText({comment, state}, comment.comment!, onError);
                         setLoading(false);
                         close(true);
                     } catch (e) {
                         console.error(e);
                         setLoading(false);
-                        Alert.alert(
-                            ":(",
-                            state.translations.FAILED_TO_SAVE_EDIT.get(),
-                            [
-                                {
-                                    text: state.translations.DISMISS.get()
-                                }
-                            ]
-                        );
+                        showError(':(', state.translations.FAILED_TO_SAVE_EDIT.get(), state.translations.DISMISS.get(), onError);
                     }
                 }}
             >

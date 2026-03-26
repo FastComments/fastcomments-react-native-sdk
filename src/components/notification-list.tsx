@@ -1,6 +1,6 @@
 import {memo} from 'react';
 import {useEffect, useState} from 'react';
-import {ActivityIndicator, Alert, FlatList, ListRenderItemInfo, useWindowDimensions, View} from "react-native";
+import {ActivityIndicator, FlatList, ListRenderItemInfo, useWindowDimensions, View} from "react-native";
 import {RenderHTMLConfigProvider, TRenderEngineProvider} from "react-native-render-html";
 import {
     FastCommentsCallbacks,
@@ -15,9 +15,10 @@ import {getDefaultAvatarSrc} from "../services/default-avatar";
 import {CheckBox} from "./checkbox";
 import {changePageSubscriptionStateForUser, getNotificationTranslations, getUserNotifications} from "../services/notifications";
 import {getMergedTranslations} from "../services/translations";
+import {showError} from "../services/show-error";
 import {ImmutableObject} from "@hookstate/core";
 
-export interface NotificationListProps extends Pick<FastCommentsCallbacks, 'onNotificationSelected'> {
+export interface NotificationListProps extends Pick<FastCommentsCallbacks, 'onNotificationSelected' | 'onError'> {
     imageAssets: ImageAssetConfig
     state: ImmutableObject<FastCommentsState>
     styles: IFastCommentsStyles
@@ -37,7 +38,7 @@ const NotificationListItemMemo = memo<NotificationListItemProps>(
     }
 );
 
-export function NotificationList({imageAssets, onNotificationSelected, state, styles, translations}: NotificationListProps) {
+export function NotificationList({imageAssets, onError, onNotificationSelected, state, styles, translations}: NotificationListProps) {
     const [isLoading, setLoading] = useState(true);
     const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
     const [notificationTranslations, setNotificationTranslations] = useState<Record<UserNotificationTranslations, string>>();
@@ -80,15 +81,7 @@ export function NotificationList({imageAssets, onNotificationSelected, state, st
                         setIsSubscribed(value);
                     } else {
                         const mergedTranslations = getMergedTranslations(translations, response);
-                        Alert.alert(
-                            ":(",
-                            mergedTranslations.ERROR_MESSAGE,
-                            [
-                                {
-                                    text: mergedTranslations.DISMISS
-                                }
-                            ]
-                        );
+                        showError(':(', mergedTranslations.ERROR_MESSAGE, mergedTranslations.DISMISS, onError);
                     }
                 })();
             }}

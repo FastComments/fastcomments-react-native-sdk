@@ -62,9 +62,6 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
     function createList() {
         const list: RNComment[] = [];
         const byId = state.commentsById.get({noproxy: true});
-        const start = Date.now();
-        // Re-creating the whole list generally takes 1-2ms.
-        console.log('...Re-creating view list from tree...');
         iterateCommentsTreeWithDepth(state.commentsTree.get({noproxy: true, stealth: true}) as RNComment[], 0, (comment, depth) => {
             if (!comment) {
                 return;
@@ -81,7 +78,6 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
                 list.push(comment);
             }
         });
-        console.log('...Re-created view list from tree with', list.length, 'comments.', Number(Date.now() - start).toLocaleString() + 'ms');
         setViewableComments(list);
     }
 
@@ -166,8 +162,6 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
         />
         {paginationBeforeComments}
     </View>;
-
-    console.log('!!!! ************** list re-rendered ************** !!!!')
 
     return <TRenderEngineProvider
         baseStyle={styles.comment?.text}

@@ -166,9 +166,6 @@ async function submit({
     const broadcastId = newBroadcastId();
 
     try {
-        // console.log('Submitting for current user', currentUserBeforeSubmit);
-        // console.log('Submitting for reply state', commentReplyState);
-        console.log('Submitting', newComment);
         const response = await makeRequest<SaveCommentResponse>({
             apiHost: state.apiHost.get(),
             method: 'POST',

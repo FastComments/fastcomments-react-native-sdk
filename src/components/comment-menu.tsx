@@ -4,6 +4,7 @@ import {FastCommentsCommentWithState} from "./comment";
 import {FastCommentsCallbacks, FastCommentsImageAsset} from "../types";
 import {Alert, Image} from "react-native";
 import {createURLQueryString, makeRequest} from "../services/http";
+import {showError} from "../services/show-error";
 import {GetCommentTextResponse} from "../types";
 import {CommentActionEdit, DirtyRef} from './comment-action-edit';
 import {CommentPromptDelete} from "./comment-action-delete";
@@ -22,7 +23,7 @@ import {CommentCancelTranslations} from "../types";
 async function startEditingComment({
     state,
     comment
-}: Pick<FastCommentsCommentWithState, 'state' | 'comment'>, setModalId: Dispatch<SetStateAction<string | null>>) {
+}: Pick<FastCommentsCommentWithState, 'state' | 'comment'>, setModalId: Dispatch<SetStateAction<string | null>>, onError?: (title: string, message: string) => void) {
     const response = await makeRequest<GetCommentTextResponse>({
         apiHost: state.apiHost.get(),
         method: 'GET',
@@ -37,19 +38,11 @@ async function startEditingComment({
     } else {
         const translations = getMergedTranslations(state.translations.get({stealth: true}), response);
         const message = response.code === 'edit-key-invalid' ? translations.LOGIN_TO_EDIT : translations.FAILED_TO_SAVE_EDIT;
-        Alert.alert(
-            ":(",
-            message,
-            [
-                {
-                    text: translations.DISMISS
-                }
-            ]
-        );
+        showError(':(', message, translations.DISMISS, onError);
     }
 }
 
-async function setCommentPinStatus({state, comment}: Pick<FastCommentsCommentWithState, 'state' | 'comment'>, doPin: boolean) {
+async function setCommentPinStatus({state, comment}: Pick<FastCommentsCommentWithState, 'state' | 'comment'>, doPin: boolean, onError?: (title: string, message: string) => void) {
     const response = await makeRequest<PinCommentResponse>({
         apiHost: state.apiHost.get(),
         method: 'POST',
@@ -66,19 +59,11 @@ async function setCommentPinStatus({state, comment}: Pick<FastCommentsCommentWit
         incChangeCounterState(state.commentsById[comment._id]);
     } else {
         const translations = getMergedTranslations(state.translations.get({stealth: true}), response);
-        Alert.alert(
-            ":(",
-            translations.ERROR_MESSAGE,
-            [
-                {
-                    text: translations.DISMISS
-                }
-            ]
-        );
+        showError(':(', translations.ERROR_MESSAGE, translations.DISMISS, onError);
     }
 }
 
-async function setCommentBlockedStatus({state, comment}: Pick<FastCommentsCommentWithState, 'state' | 'comment'>, doBlock: boolean) {
+async function setCommentBlockedStatus({state, comment}: Pick<FastCommentsCommentWithState, 'state' | 'comment'>, doBlock: boolean, onError?: (title: string, message: string) => void) {
     const response = await makeRequest<BlockCommentResponse>({
         apiHost: state.apiHost.get(),
         method: doBlock ? 'POST' : 'DELETE',
@@ -108,19 +93,11 @@ async function setCommentBlockedStatus({state, comment}: Pick<FastCommentsCommen
         }
     } else {
         const translations = getMergedTranslations(state.translations.get({stealth: true}), response);
-        Alert.alert(
-            ":(",
-            translations.ERROR_MESSAGE,
-            [
-                {
-                    text: translations.DISMISS
-                }
-            ]
-        );
+        showError(':(', translations.ERROR_MESSAGE, translations.DISMISS, onError);
     }
 }
 
-async function setCommentFlaggedStatus({state, comment}: Pick<FastCommentsCommentWithState, 'state' | 'comment'>, doFlag: boolean) {
+async function setCommentFlaggedStatus({state, comment}: Pick<FastCommentsCommentWithState, 'state' | 'comment'>, doFlag: boolean, onError?: (title: string, message: string) => void) {
     const response = await makeRequest<BlockCommentResponse>({
         apiHost: state.apiHost.get(),
         method: 'POST',
@@ -137,17 +114,8 @@ async function setCommentFlaggedStatus({state, comment}: Pick<FastCommentsCommen
         state.commentsById[comment._id].isFlagged.set(doFlag);
         incChangeCounter(comment);
     } else {
-        // response.translatedError is supported here
         const translations = getMergedTranslations(state.translations.get({stealth: true}), response);
-        Alert.alert(
-            ":(",
-            response.translatedError ? response.translatedError : translations.ERROR_MESSAGE,
-            [
-                {
-                    text: translations.DISMISS
-                }
-            ]
-        );
+        showError(':(', response.translatedError ? response.translatedError : translations.ERROR_MESSAGE, translations.DISMISS, onError);
     }
 }
 
@@ -170,7 +138,7 @@ export function getCommentMenuState(state: State<FastCommentsState>, comment: RN
     }
 }
 
-export interface GetCommentMenuItemsProps extends Pick<FastCommentsCallbacks, 'pickGIF' | 'pickImage' | 'onUserBlocked' | 'onCommentFlagged'> {
+export interface GetCommentMenuItemsProps extends Pick<FastCommentsCallbacks, 'pickGIF' | 'pickImage' | 'onUserBlocked' | 'onCommentFlagged' | 'onError'> {
     comment: RNComment
     state: State<FastCommentsState>
     styles: IFastCommentsStyles,
@@ -184,6 +152,7 @@ export interface OpenCommentMenuRequest {
 export function getCommentMenuItems({
     comment,
     onCommentFlagged,
+    onError,
     onUserBlocked,
     pickGIF,
     pickImage,
@@ -207,11 +176,12 @@ export function getCommentMenuItems({
                 source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_EDIT_BIG_WHITE : FastCommentsImageAsset.ICON_EDIT_BIG].get()}
                 style={styles.commentMenu?.itemIcon}/>,
             handler: async (setModalId: Dispatch<SetStateAction<string | null>>) => {
-                await startEditingComment({comment, state}, setModalId);
+                await startEditingComment({comment, state}, setModalId, onError);
             },
             subModalContent: (close: (safe: boolean) => void) => <CommentActionEdit
                 comment={comment}
                 isDirtyRef={isDirtyRef}
+                onError={onError}
                 pickGIF={pickGIF}
                 pickImage={pickImage}
                 state={state}
@@ -274,7 +244,7 @@ export function getCommentMenuItems({
                     source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_UNPIN_BIG_WHITE : FastCommentsImageAsset.ICON_UNPIN_BIG].get()}
                     style={styles.commentMenu?.itemIcon}/>,
                 handler: async () => {
-                    await setCommentPinStatus({comment, state}, false);
+                    await setCommentPinStatus({comment, state}, false, onError);
                 }
             });
         } else {
@@ -285,7 +255,7 @@ export function getCommentMenuItems({
                     source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_PIN_BIG_WHITE : FastCommentsImageAsset.ICON_PIN_BIG].get()}
                     style={styles.commentMenu?.itemIcon}/>,
                 handler: async () => {
-                    await setCommentPinStatus({comment, state}, true);
+                    await setCommentPinStatus({comment, state}, true, onError);
                 }
             });
         }
@@ -302,6 +272,7 @@ export function getCommentMenuItems({
                 await CommentPromptDelete({
                     comment,
                     state,
+                    onError,
                     close: () => setModalId(null)
                 });
             }
@@ -317,7 +288,7 @@ export function getCommentMenuItems({
                     source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_BLOCK_WHITE : FastCommentsImageAsset.ICON_BLOCK].get()}
                     style={styles.commentMenu?.itemIcon}/>,
                 handler: async () => {
-                    await setCommentBlockedStatus({comment, state}, false);
+                    await setCommentBlockedStatus({comment, state}, false, onError);
                     if (onUserBlocked) {
                         const currentUser = state.currentUser.get();
                         if (currentUser && 'id' in currentUser) {
@@ -334,7 +305,7 @@ export function getCommentMenuItems({
                     source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_BLOCK_WHITE : FastCommentsImageAsset.ICON_BLOCK].get()}
                     style={styles.commentMenu?.itemIcon}/>,
                 handler: async () => {
-                    await setCommentBlockedStatus({comment, state}, true);
+                    await setCommentBlockedStatus({comment, state}, true, onError);
                     if (onUserBlocked) {
                         const currentUser = state.currentUser.get();
                         if (currentUser && 'id' in currentUser) {
@@ -355,7 +326,7 @@ export function getCommentMenuItems({
                     source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_BLOCK_WHITE : FastCommentsImageAsset.ICON_BLOCK].get()}
                     style={styles.commentMenu?.itemIcon}/>,
                 handler: async () => {
-                    await setCommentFlaggedStatus({comment, state}, false);
+                    await setCommentFlaggedStatus({comment, state}, false, onError);
                     if (onCommentFlagged) {
                         const currentUser = state.currentUser.get();
                         if (currentUser && 'id' in currentUser) {
@@ -372,7 +343,7 @@ export function getCommentMenuItems({
                     source={state.imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_BLOCK_WHITE : FastCommentsImageAsset.ICON_BLOCK].get()}
                     style={styles.commentMenu?.itemIcon}/>,
                 handler: async () => {
-                    await setCommentFlaggedStatus({comment, state}, true);
+                    await setCommentFlaggedStatus({comment, state}, true, onError);
                     if (onCommentFlagged) {
                         const currentUser = state.currentUser.get();
                         if (currentUser && 'id' in currentUser) {
