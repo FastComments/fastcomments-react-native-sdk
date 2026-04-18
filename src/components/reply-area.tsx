@@ -6,7 +6,7 @@ import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { ThreeDot } from './three-dot';
 import { NotificationBell } from './notification-bell';
 import { CommentAreaMessage } from './comment-area-message';
-import { CommentTextArea10Tap as CommentTextArea, FocusObserver, ValueObserver, EmoticonBarConfig } from './comment-text-area-10tap';
+import { CommentTextArea, FocusObserver, ValueObserver, EmoticonBarConfig } from './comment-text-area';
 import { SaveCommentResponse } from '../types';
 import { getActionTenantId, getActionURLID } from '../services/tenants';
 import { newBroadcastId } from '../services/broadcast-id';

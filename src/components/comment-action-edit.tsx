@@ -6,10 +6,10 @@ import { getActionTenantId } from '../services/tenants';
 import { UpdateCommentTextResponse } from '../types';
 import { newBroadcastId } from '../services/broadcast-id';
 import {
-    CommentTextArea10Tap as CommentTextArea,
+    CommentTextArea,
     ValueObserver,
     EmoticonBarConfig,
-} from './comment-text-area-10tap';
+} from './comment-text-area';
 import { IFastCommentsStyles, RNComment } from '../types';
 import { getMergedTranslations } from '../services/translations';
 import { showError } from '../services/show-error';
