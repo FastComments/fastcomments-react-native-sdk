@@ -1,21 +1,22 @@
-import {State} from "@hookstate/core";
-import {FastCommentsState} from "../types/fastcomments-state";
+import type { FastCommentsStore } from '../store/types';
 
 export interface GetActionTenantIdProps {
-    state: State<FastCommentsState>;
+    store: FastCommentsStore;
     tenantId?: string;
 }
 
 export interface GetActionURLIDProps {
-    state: State<FastCommentsState>;
+    store: FastCommentsStore;
     urlId?: string;
 }
 
-// auth middleware needs to know what tenant and url id the request is for - so can't determine all params like pageTitle on reply.
-export function getActionTenantId({state, tenantId}: GetActionTenantIdProps): string {
-    return state.config.tenantId.get() === 'all' && state.config.userId.get() && tenantId ? tenantId : state.config.tenantId.get()!;
+// Auth middleware needs to know the tenant and url id for the request.
+export function getActionTenantId({ store, tenantId }: GetActionTenantIdProps): string {
+    const { config } = store.getState();
+    return config.tenantId === 'all' && config.userId && tenantId ? tenantId : config.tenantId!;
 }
 
-export function getActionURLID({state, urlId}: GetActionURLIDProps): string {
-    return state.config.tenantId.get() === 'all' && state.config.userId.get() && urlId && urlId ? urlId! : state.config.urlId.get()!;
+export function getActionURLID({ store, urlId }: GetActionURLIDProps): string {
+    const { config } = store.getState();
+    return config.tenantId === 'all' && config.userId && urlId ? urlId : config.urlId!;
 }

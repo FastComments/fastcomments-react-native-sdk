@@ -1,40 +1,42 @@
-import {FastCommentsCommentWidgetConfig, FastCommentsWidgetComment} from "fastcomments-typescript";
-import {FastCommentsState, GetCommentsResponse, FastCommentsCallbacks, ImageAssetConfig} from "../types";
-import {createURLQueryString, getAPIHost, makeRequest} from "./http";
-import {ensureRepliesOpenToComment, getCommentsTreeAndCommentsById} from "./comment-trees";
-import {SubscriberInstance} from "./subscribe-to-changes";
-import {mergeSimpleSSO} from "./sso";
-import {State} from "@hookstate/core";
-import {handleNewCustomConfig} from "./custom-config";
-import {cleanupSubscriber, persistSubscriberState} from "./live";
-import {getDefaultImageAssets} from "../resources";
-import {showError} from "./show-error";
+import { FastCommentsCommentWidgetConfig } from 'fastcomments-typescript';
+import {
+    GetCommentsResponse,
+    FastCommentsCallbacks,
+    ImageAssetConfig,
+    RNComment,
+} from '../types';
+import { createURLQueryString, getAPIHost, makeRequest } from './http';
+import { mergeSimpleSSO } from './sso';
+import { handleNewCustomConfig } from './custom-config';
+import { cleanupSubscriber, persistSubscriberState } from './live';
+import { getDefaultImageAssets } from '../resources';
+import { showError } from './show-error';
+import { createFastCommentsStore } from '../store/create-store';
+import type { FastCommentsStore } from '../store/types';
 
 interface FastCommentsInternalState {
     isFirstRequest: boolean;
     lastGenDate?: number;
-    lastComments: FastCommentsWidgetComment[];
-    lastSubscriberInstance?: SubscriberInstance | void;
+    lastComments: RNComment[];
 }
 
 export class FastCommentsLiveCommentingService {
-    private readonly state: State<FastCommentsState>;
+    private readonly store: FastCommentsStore;
     private readonly internalState: FastCommentsInternalState;
     private readonly callbacks?: FastCommentsCallbacks;
 
-    constructor(state: State<FastCommentsState>, callbacks?: FastCommentsCallbacks) {
-        this.state = state;
+    constructor(store: FastCommentsStore, callbacks?: FastCommentsCallbacks) {
+        this.store = store;
         this.callbacks = callbacks;
         this.internalState = {
             isFirstRequest: true,
             lastGenDate: undefined,
             lastComments: [],
-            lastSubscriberInstance: undefined,
         };
     }
 
     destroy() {
-        cleanupSubscriber(this.state.instanceId.get());
+        cleanupSubscriber(this.store.getState().instanceId);
     }
 
     resetForNewContext() {
@@ -43,229 +45,201 @@ export class FastCommentsLiveCommentingService {
         this.internalState.lastComments = [];
     }
 
-    static createFastCommentsStateFromConfig(config: FastCommentsCommentWidgetConfig, assets?: ImageAssetConfig): FastCommentsState {
+    static createStoreFromConfig(
+        config: FastCommentsCommentWidgetConfig,
+        assets?: ImageAssetConfig
+    ): FastCommentsStore {
         mergeSimpleSSO(config);
-        return {
+        const store = createFastCommentsStore({
             apiHost: getAPIHost(config),
-            wsHost: config.wsHost ? config.wsHost : (config.region === 'eu' ? 'wss://ws-eu.fastcomments.com' : 'wss://ws.fastcomments.com'),
-            PAGE_SIZE: 30,
-            blockingErrorMessage: undefined,
-            commentCountOnClient: 0,
-            commentCountOnServer: 0,
-            commentsById: {},
-            commentsTree: [],
-            allComments: [],
-            commentsVisible: undefined,
-            currentUser: !config.sso && config.simpleSSO && config.simpleSSO.username ? config.simpleSSO : undefined,
-            hasBillingIssue: false,
-            hasMore: false,
-            instanceId: Math.random() + '.' + Date.now(),
-            imageAssets: assets ? assets : getDefaultImageAssets(),
+            wsHost:
+                config.wsHost ??
+                (config.region === 'eu'
+                    ? 'wss://ws-eu.fastcomments.com'
+                    : 'wss://ws.fastcomments.com'),
+            config: config as any,
+            currentUser:
+                !config.sso && config.simpleSSO && config.simpleSSO.username
+                    ? (config.simpleSSO as any)
+                    : (undefined as any),
+            imageAssets: assets ?? getDefaultImageAssets(),
             isDemo: false,
-            isSiteAdmin: false,
-            newRootCommentCount: 0,
-            page: typeof config.startingPage === 'number' ? config.startingPage : 0,
-            pagesLoaded: [],
-            sortDirection: config.defaultSortDirection || 'MR',
+            instanceId: Math.random() + '.' + Date.now(),
             translations: {},
-            userPresenceState: {
-                heartbeatActive: false,
-                presencePollState: undefined,
-                usersOnlineMap: {},
-                userIdsToCommentIds: {}
-            },
-            userNotificationState: {
-                isOpen: false,
-                isLoading: false,
-                count: 0,
-                notifications: [],
-                isPaginationInProgress: false,
-                isSubscribed: false,
-            },
-            config,
-            ssoConfigString: config.sso ? JSON.stringify(config.sso) : undefined
-        };
+        });
+        const state = store.getState();
+        state.setSortDirection(config.defaultSortDirection ?? 'MR');
+        state.setPage(typeof config.startingPage === 'number' ? config.startingPage : 0);
+        if (config.sso) {
+            state.setSSOConfigString(JSON.stringify(config.sso));
+        }
+        return store;
     }
 
     async fetchRemoteState(isPrev: boolean): Promise<void> {
-        const state = this.state;
+        const store = this.store;
         const internalState = this.internalState;
-        const configState = this.state.config;
-        const config = this.state.config.get();
+        const config = store.getState().config;
         config.onInit && config.onInit();
         if (config.urlId === undefined || config.urlId === null) {
-            throw new Error('FastComments initialization failure: Configuration parameter "urlId" must be defined!');
+            throw new Error(
+                'FastComments initialization failure: Configuration parameter "urlId" must be defined!'
+            );
         }
+
         const queryParams: Record<string, string | number | undefined> = {
             urlId: config.urlId,
-            page: state.page.get(),
-            lastGenDate: internalState.lastGenDate
+            page: store.getState().page,
+            lastGenDate: internalState.lastGenDate,
         };
 
         if (internalState.lastComments.length === 0) {
-            // We only send these on the initial request (when lastComments is empty).
             queryParams.includei10n = 'true';
             queryParams.useFullTranslationIds = 'true';
-
-            if (config.locale) {
-                queryParams.locale = config.locale;
-            }
+            if (config.locale) queryParams.locale = config.locale;
         }
 
-        if (config.countAll) {
-            queryParams.countAll = 'true';
-        }
+        if (config.countAll) queryParams.countAll = 'true';
 
         if (internalState.isFirstRequest) {
             queryParams.includeConfig = 'true';
             queryParams.includeNotificationCount = 'true';
         }
 
-        if (state.ssoConfigString) {
-            queryParams.sso = state.ssoConfigString.get();
-        }
+        const ssoConfigString = store.getState().ssoConfigString;
+        if (ssoConfigString) queryParams.sso = ssoConfigString;
 
-        queryParams.direction = state.sortDirection.get();
+        queryParams.direction = store.getState().sortDirection;
 
-        if (config.jumpToId) {
-            queryParams.fetchPageForCommentId = config.jumpToId;
-        }
+        if (config.jumpToId) queryParams.fetchPageForCommentId = config.jumpToId;
 
         const isActivityFeed = config.tenantId === 'all' && config.userId;
-
         if (isActivityFeed) {
             queryParams.userId = config.userId;
-
-            if (config.sso) {
-                queryParams.tenantId = config.ssoTenantId;
-            }
+            if (config.sso) queryParams.tenantId = (config as any).ssoTenantId;
         }
 
         const url = isActivityFeed ? '/comments-for-user' : '/comments/' + config.tenantId + '/';
 
         try {
             const response = await makeRequest<GetCommentsResponse>({
-                apiHost: this.state.apiHost.get(),
+                apiHost: store.getState().apiHost,
                 method: 'GET',
                 url: url + createURLQueryString(queryParams),
             });
-            // console.log('got', response);
+
             const isRateLimited = response.code === 'rate-limited';
 
-            handleNewCustomConfig(this.state, response.customConfig);
+            handleNewCustomConfig(store, response.customConfig);
 
+            const state = store.getState();
             if (isRateLimited) {
-                state.blockingErrorMessage.set(state.translations.EXCEEDED_QUOTA.get());
+                state.setBlockingErrorMessage(state.translations.EXCEEDED_QUOTA);
             } else if (response.code === 'domain-unauthorized') {
-                state.blockingErrorMessage.set(state.translations.DOMAIN_NOT_AUTHORIZED.get());
+                state.setBlockingErrorMessage(state.translations.DOMAIN_NOT_AUTHORIZED);
             } else if (response.code === 'unauthorized-page') {
-                state.blockingErrorMessage.set(state.translations.UNAUTHORIZED_VIEW_THIS_PAGE.get());
+                state.setBlockingErrorMessage(state.translations.UNAUTHORIZED_VIEW_THIS_PAGE);
             } else if (response.code === 'invalid-tenant') {
-                state.blockingErrorMessage.set(state.translations.INVALID_TENANT.get());
+                state.setBlockingErrorMessage(state.translations.INVALID_TENANT);
             } else if (response.code === 'malformed-sso') {
-                state.blockingErrorMessage.set(state.translations.MALFORMED_SSO.get());
+                let msg = state.translations.MALFORMED_SSO;
                 if (response.reason && response.reason !== 'SSO Request Malformed') {
-                    state.blockingErrorMessage.set(state.blockingErrorMessage.get() + ' ' + response.reason);
+                    msg += ' ' + response.reason;
                 }
+                state.setBlockingErrorMessage(msg);
             } else if (response.isCommentsHidden) {
-                state.blockingErrorMessage.set(state.translations.BILLING_INFO_INV_60_DAYS.get());
+                state.setBlockingErrorMessage(state.translations.BILLING_INFO_INV_60_DAYS);
             }
 
             if (typeof response.pageNumber === 'number') {
-                state.page.set(response.pageNumber);
-                if (!state.pagesLoaded.get().includes(state.page.get())) {
-                    state.pagesLoaded.merge([state.page.get()]);
-                }
+                state.setPage(response.pageNumber);
+                state.addPageLoaded(response.pageNumber);
             }
 
             if (typeof response.notificationCount === 'number') {
-                state.userNotificationState.count.set(response.notificationCount);
+                state.setNotificationsCount(response.notificationCount);
             }
 
-            const responseComments = response.comments || [];
+            const responseComments = (response.comments || []) as RNComment[];
             const isLiveChatStyle = config.defaultSortDirection === 'NF' && config.newCommentsToBottom;
-            if (isLiveChatStyle) {
-                responseComments.reverse();
-            }
-            if (typeof response.hasMore === 'boolean') {
-                state.hasMore.set(response.hasMore);
-            }
+            if (isLiveChatStyle) responseComments.reverse();
 
+            if (typeof response.hasMore === 'boolean') state.setHasMore(response.hasMore);
+
+            let mergedComments: RNComment[];
             if (!response.includesPastPages) {
                 if (isPrev) {
-                    state.allComments.set(responseComments.concat(internalState.lastComments));
-                } else if (state.page.get() > 0) { // for example for changing sort direction
-                    if (isLiveChatStyle) {
-                        state.allComments.set(responseComments.concat(internalState.lastComments));
-                    } else {
-                        state.allComments.set(internalState.lastComments.concat(responseComments));
-                    }
+                    mergedComments = responseComments.concat(internalState.lastComments);
+                } else if (state.page > 0) {
+                    mergedComments = isLiveChatStyle
+                        ? responseComments.concat(internalState.lastComments)
+                        : internalState.lastComments.concat(responseComments);
                 } else {
-                    state.allComments.set(responseComments);
+                    mergedComments = responseComments;
                 }
             } else {
-                state.allComments.set(responseComments);
+                mergedComments = responseComments;
             }
-            internalState.lastComments = JSON.parse(JSON.stringify(state.allComments.get())); // TODO optimize away
-            state.commentCountOnClient.set(state.allComments.length);
+
+            internalState.lastComments = mergedComments;
+            state.replaceAll(mergedComments, !!config.collapseReplies);
+            state.setCommentCountOnClient(mergedComments.length);
 
             if (response.moderatingTenantIds) {
-                state.moderatingTenantIds.set(response.moderatingTenantIds);
+                state.setModeratingTenantIds(response.moderatingTenantIds);
             }
 
             if (response.user) {
-                state.currentUser.set(response.user);
-                this.callbacks?.onAuthenticationChange && this.callbacks.onAuthenticationChange('user-set', response.user, null);
+                state.setCurrentUser(response.user as any);
+                this.callbacks?.onAuthenticationChange &&
+                    this.callbacks.onAuthenticationChange('user-set', response.user as any, null);
             }
 
-            if (state.commentsVisible.get() === undefined) {
-                state.commentsVisible.set(!(config.hideCommentsUnderCountTextFormat || config.useShowCommentsToggle));
+            if (!state.commentsVisible) {
+                state.setCommentsVisible(
+                    !(config.hideCommentsUnderCountTextFormat || config.useShowCommentsToggle)
+                );
             }
-
-            // TODO OPTIMIZE away JSON.parse(JSON.stringify()).
-            //  We can do this by moving allComments outside of state and into internalState.
-            //  Without the deref of the child objects in allComments, deleting comments live breaks.
-            const result = getCommentsTreeAndCommentsById(!!config.collapseReplies, JSON.parse(JSON.stringify(state.allComments.get())));
-            // Doing two sets() here is faster than doing a million of them in getCommentsTreeAndCommentsById.
-            state.commentsById.set(result.commentsById);
-            state.commentsTree.set(result.comments);
 
             if (config.jumpToId) {
-                ensureRepliesOpenToComment(state.commentsById, config.jumpToId);
+                state.ensureRepliesOpenTo(config.jumpToId);
             }
 
-            state.isSiteAdmin.set(!!response.isSiteAdmin);
-            state.hasBillingIssue.set(!!response.hasBillingIssue);
+            state.setIsSiteAdmin(!!response.isSiteAdmin);
+            state.setHasBillingIssue(!!response.hasBillingIssue);
             internalState.lastGenDate = response.lastGenDate;
-            state.isDemo.set(!!response.isDemo);
             if (response.commentCount !== undefined && Number.isFinite(response.commentCount)) {
-                state.commentCountOnServer.set(response.commentCount);
-                this.callbacks?.commentCountUpdated && this.callbacks?.commentCountUpdated(response.commentCount);
+                state.setCommentCountOnServer(response.commentCount);
+                this.callbacks?.commentCountUpdated &&
+                    this.callbacks.commentCountUpdated(response.commentCount);
             }
 
             if (config.jumpToId) {
-                // scrollToComment(config.instanceId, config.jumpToId, 200); // TODO how?
-                configState.jumpToId.set(undefined); // don't jump next render
-                if (typeof response.pageNumber === 'number') {
-                    state.page.set(response.pageNumber);
-                }
+                state.mergeConfig({ jumpToId: undefined });
+                if (typeof response.pageNumber === 'number') state.setPage(response.pageNumber);
             }
 
-            // Don't create websocket connections if they're overloading us.
-            // also, urlIdClean is not available at this point.
-            if (!isRateLimited && internalState.isFirstRequest && response.urlIdWS && response.tenantIdWS && response.userIdWS) {
-                state.userPresenceState.presencePollState.set(response.presencePollState);
-                persistSubscriberState(state, response.urlIdWS, response.tenantIdWS, response.userIdWS);
+            if (
+                !isRateLimited &&
+                internalState.isFirstRequest &&
+                response.urlIdWS &&
+                response.tenantIdWS &&
+                response.userIdWS
+            ) {
+                state.setPresencePollState(response.presencePollState);
+                persistSubscriberState(store, response.urlIdWS, response.tenantIdWS, response.userIdWS);
             }
             internalState.isFirstRequest = false;
-            config.onCommentsRendered && config.onCommentsRendered(response.comments || []);
+            config.onCommentsRendered && config.onCommentsRendered((response.comments || []) as any);
         } catch (e) {
             console.error(e);
-            const translations = this.state.translations.get({stealth: true}) ? this.state.translations.get({stealth: true}) : {
+            const translations = store.getState().translations ?? {
                 DISMISS: 'Dismiss',
-                ERROR_MESSAGE: 'Whoops! Something went wrong. Please try again later.'
-            }
-            const message = translations.ERROR_MESSAGE ?? 'Whoops! Something went wrong. Please try again later.';
+                ERROR_MESSAGE: 'Whoops! Something went wrong. Please try again later.',
+            };
+            const message =
+                translations.ERROR_MESSAGE ??
+                'Whoops! Something went wrong. Please try again later.';
             showError(':(', message, translations.DISMISS, this.callbacks?.onError);
         }
     }

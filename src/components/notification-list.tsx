@@ -4,7 +4,6 @@ import {ActivityIndicator, FlatList, ListRenderItemInfo, useWindowDimensions, Vi
 import {RenderHTMLConfigProvider, TRenderEngineProvider} from "react-native-render-html";
 import {
     FastCommentsCallbacks,
-    FastCommentsState,
     IFastCommentsStyles,
     ImageAssetConfig,
     UserNotification,
@@ -16,11 +15,12 @@ import {CheckBox} from "./checkbox";
 import {changePageSubscriptionStateForUser, getNotificationTranslations, getUserNotifications} from "../services/notifications";
 import {getMergedTranslations} from "../services/translations";
 import {showError} from "../services/show-error";
-import {ImmutableObject} from "@hookstate/core";
+import type { FastCommentsStore } from "../store/types";
+import { useStoreValue } from "../store/hooks";
 
 export interface NotificationListProps extends Pick<FastCommentsCallbacks, 'onNotificationSelected' | 'onError'> {
     imageAssets: ImageAssetConfig
-    state: ImmutableObject<FastCommentsState>
+    store: FastCommentsStore
     styles: IFastCommentsStyles
     translations: Record<string, string>
 }
@@ -38,7 +38,8 @@ const NotificationListItemMemo = memo<NotificationListItemProps>(
     }
 );
 
-export function NotificationList({imageAssets, onError, onNotificationSelected, state, styles, translations}: NotificationListProps) {
+export function NotificationList({imageAssets, onError, onNotificationSelected, store, styles, translations}: NotificationListProps) {
+    const config = useStoreValue(store, (s) => s.config);
     const [isLoading, setLoading] = useState(true);
     const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
     const [notificationTranslations, setNotificationTranslations] = useState<Record<UserNotificationTranslations, string>>();
@@ -49,9 +50,9 @@ export function NotificationList({imageAssets, onError, onNotificationSelected, 
     const loadAsync = async () => {
         setLoading(true);
         const [notificationTranslationsResponse, notificationsState] = await Promise.all([
-            getNotificationTranslations(state.config),
+            getNotificationTranslations(config),
             getUserNotifications({
-                config: state.config
+                config: config
             }),
         ]);
         setNotificationTranslations(notificationTranslationsResponse.translations!);
@@ -74,7 +75,7 @@ export function NotificationList({imageAssets, onError, onNotificationSelected, 
             onValueChange={(value: boolean) => {
                 (async function () {
                     const response = await changePageSubscriptionStateForUser({
-                        config: state.config,
+                        config: config,
                         isSubscribed: value
                     });
                     if (response.status === 'success') {
@@ -106,7 +107,7 @@ export function NotificationList({imageAssets, onError, onNotificationSelected, 
         }
         setIsFetchingNextPage(true);
         const notificationsState = await getUserNotifications({
-            config: state.config,
+            config: config,
             afterId: notifications[notifications.length - 1]?._id
         });
         setNotifications([
@@ -119,7 +120,7 @@ export function NotificationList({imageAssets, onError, onNotificationSelected, 
 
     const renderItem = (info: ListRenderItemInfo<UserNotification>) =>
         <NotificationListItemMemo
-            config={state.config}
+            config={config}
             defaultAvatar={getDefaultAvatarSrc(imageAssets)}
             imageAssets={imageAssets}
             notification={info.item}

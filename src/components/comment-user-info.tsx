@@ -2,9 +2,9 @@ import {CommentUserActivityIcon} from "./comment-user-activity-icon";
 import {CommentUserBadge} from "./comment-user-badge";
 import {View, Text, Linking, Image, TouchableOpacity} from "react-native";
 import {getDefaultAvatarSrc} from "../services/default-avatar";
-import {State} from "@hookstate/core";
-import {IFastCommentsStyles, ImageAssetConfig, RNComment, UserPresenceState} from "../types";
+import {IFastCommentsStyles, ImageAssetConfig, RNComment} from "../types";
 import {FastCommentsRNConfig} from "../types/react-native-config";
+import type {FastCommentsStore} from "../store/types";
 
 export interface CommentUserInfoProps {
     comment: RNComment // things here don't change much, so just take the raw comment object
@@ -12,10 +12,10 @@ export interface CommentUserInfoProps {
     imageAssets: ImageAssetConfig
     styles: IFastCommentsStyles
     translations: Record<string, string>
-    userPresenceState: State<UserPresenceState>
+    store: FastCommentsStore
 }
 
-export function getCommentUserInfoHTML({comment, config, imageAssets, translations, styles}: Omit<CommentUserInfoProps, 'userPresenceState'>): string {
+export function getCommentUserInfoHTML({comment, config, imageAssets, translations, styles}: Omit<CommentUserInfoProps, 'store'>): string {
     // let displayLabel = null;
     // if (comment.displayLabel) {
     //     displayLabel = `<div style="${styles.commentUserInfoAsHTML?.label}">${comment.displayLabel}</div>`;
@@ -59,13 +59,13 @@ export function CommentUserInfo(props: CommentUserInfoProps) {
         imageAssets,
         styles,
         translations,
-        userPresenceState
+        store
     } = props;
     const activityIcon = CommentUserActivityIcon({
         disableLiveCommenting: config.disableLiveCommenting,
         userId: comment.userId,
         anonUserId: comment.anonUserId,
-        userPresenceState,
+        store,
         styles
     });
 

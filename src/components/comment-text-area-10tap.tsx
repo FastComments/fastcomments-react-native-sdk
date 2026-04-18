@@ -1,10 +1,10 @@
-import { 
-    FastCommentsState, 
-    FastCommentsImageAsset, 
-    IFastCommentsStyles, 
-    FastCommentsCallbacks 
+import {
+    FastCommentsImageAsset,
+    IFastCommentsStyles,
+    FastCommentsCallbacks
 } from "../types";
-import { ImmutableObject } from "@hookstate/core";
+import type { FastCommentsStore } from "../store/types";
+import { useStoreValue } from "../store/hooks";
 import { Text, View, ActivityIndicator, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Image } from "react-native";
 import React, { useEffect, useState } from "react";
 import { 
@@ -41,7 +41,7 @@ export interface ToolbarButtonConfig {
 export interface CommentTextArea10TapProps extends Pick<FastCommentsCallbacks, 'pickImage' | 'pickGIF'> {
     emoticonBarConfig?: EmoticonBarConfig
     focusObserver?: FocusObserver
-    state: ImmutableObject<FastCommentsState>
+    store: FastCommentsStore
     styles: IFastCommentsStyles
     output: ValueObserver
     onFocus?: () => void
@@ -52,7 +52,7 @@ export interface CommentTextArea10TapProps extends Pick<FastCommentsCallbacks, '
 export function CommentTextArea10Tap({
     emoticonBarConfig,
     focusObserver,
-    state,
+    store,
     styles,
     output,
     onFocus: _onFocus,
@@ -61,8 +61,12 @@ export function CommentTextArea10Tap({
     value,
     toolbarButtons,
 }: CommentTextArea10TapProps) {
-    const maxLength = state.config.maxCommentCharacterLength || 2000;
-    const hasDarkBackground = state.config.hasDarkBackground;
+    const maxLength = useStoreValue(store, (s) => s.config.maxCommentCharacterLength) || 2000;
+    const hasDarkBackground = useStoreValue(store, (s) => !!s.config.hasDarkBackground);
+    const apiHost = useStoreValue(store, (s) => s.apiHost);
+    const tenantId = useStoreValue(store, (s) => s.config.tenantId);
+    const imageAssets = useStoreValue(store, (s) => s.imageAssets);
+    const useSingleLineCommentInput = useStoreValue(store, (s) => !!s.config.useSingleLineCommentInput);
     const [imageUploadProgress, setImageUploadProgress] = useState<number | null>(null);
     
     // Default toolbar button configuration - code disabled by default
@@ -130,7 +134,7 @@ export function CommentTextArea10Tap({
                 formData.append('file', photoData as string);
                 
                 const xhr = new XMLHttpRequest();
-                xhr.open('POST', state.apiHost + '/upload-image/' + state.config.tenantId);
+                xhr.open('POST', apiHost + '/upload-image/' + tenantId);
                 
                 xhr.upload.onprogress = (progressEvent) => {
                     if (progressEvent.lengthComputable) {
@@ -187,7 +191,7 @@ export function CommentTextArea10Tap({
             },
             disabled: () => false,
             active: () => false,
-            image: () => state.imageAssets[
+            image: () => imageAssets[
                 hasDarkBackground 
                     ? FastCommentsImageAsset.ICON_IMAGE_UPLOAD_WHITE 
                     : FastCommentsImageAsset.ICON_IMAGE_UPLOAD
@@ -203,7 +207,7 @@ export function CommentTextArea10Tap({
             },
             disabled: () => false,
             active: () => false,
-            image: () => state.imageAssets[
+            image: () => imageAssets[
                 hasDarkBackground 
                     ? FastCommentsImageAsset.ICON_GIF 
                     : FastCommentsImageAsset.ICON_GIF
@@ -237,7 +241,7 @@ export function CommentTextArea10Tap({
             <View style={[
                 styles.commentTextArea?.textarea,
                 { 
-                    minHeight: state.config.useSingleLineCommentInput ? 40 : 100,
+                    minHeight: useSingleLineCommentInput ? 40 : 100,
                     borderRadius: styles.commentTextArea?.textarea?.borderRadius || 11,
                     overflow: 'hidden',
                     paddingHorizontal: 8, // Only horizontal padding
@@ -248,7 +252,7 @@ export function CommentTextArea10Tap({
                 <RichText
                     editor={editor}
                     style={{
-                        minHeight: state.config.useSingleLineCommentInput ? 32 : 92, // Adjust for less padding
+                        minHeight: useSingleLineCommentInput ? 32 : 92, // Adjust for less padding
                         flex: 1,
                         backgroundColor: 'transparent', // Ensure RichText itself is transparent
                     }}
@@ -362,7 +366,7 @@ export function CommentTextArea10Tap({
                         activeOpacity={0.7}
                     >
                         <Image
-                            source={state.imageAssets[
+                            source={imageAssets[
                                 hasDarkBackground 
                                     ? FastCommentsImageAsset.ICON_IMAGE_UPLOAD_WHITE 
                                     : FastCommentsImageAsset.ICON_IMAGE_UPLOAD
@@ -380,7 +384,7 @@ export function CommentTextArea10Tap({
                         activeOpacity={0.7}
                     >
                         <Image
-                            source={state.imageAssets[FastCommentsImageAsset.ICON_GIF]}
+                            source={imageAssets[FastCommentsImageAsset.ICON_GIF]}
                             style={{ width: 16, height: 16 }}
                         />
                     </TouchableOpacity>

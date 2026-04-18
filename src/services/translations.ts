@@ -1,22 +1,17 @@
-import {CommonHTTPResponse} from "./http";
-import {State} from "@hookstate/core";
+import { CommonHTTPResponse } from './http';
+import type { FastCommentsStore } from '../store/types';
 
-export function getMergedTranslations(sourceTranslations: Record<string, string>, response: CommonHTTPResponse): Record<string, string> {
-    let translations = sourceTranslations;
-    if (response.translations) { // we will move some of these error messages to only be sent to client on error (LOGIN_TO_DELETE)
-        translations = {
-            ...translations,
-            ...response.translations
-        }
+export function getMergedTranslations(
+    sourceTranslations: Record<string, string>,
+    response: CommonHTTPResponse
+): Record<string, string> {
+    if (response.translations) {
+        return { ...sourceTranslations, ...response.translations };
     }
-    return translations;
+    return sourceTranslations;
 }
 
-export function addTranslationsToState(stateTranslations: State<Record<string, string>>, translations: Record<string, string>) {
-    stateTranslations.set((stateTranslations) => {
-        for (const translationId in translations) {
-            stateTranslations[translationId] = translations[translationId];
-        }
-        return stateTranslations;
-    });
+export function addTranslationsToStore(store: FastCommentsStore, translations: Record<string, string>) {
+    const state = store.getState();
+    state.setTranslations({ ...state.translations, ...translations });
 }

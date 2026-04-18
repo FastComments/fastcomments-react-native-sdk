@@ -1,6 +1,6 @@
 {
   "name": "fastcomments-react-native-sdk",
-  "version": "3.0.1",
+  "version": "4.0.0",
   "description": "React Native FastComments Components. Add live commenting to any React Native application.",
   "main": "index.ts",
   "react-native": "index.ts",
@@ -66,12 +66,12 @@
   },
   "dependencies": {
     "@10play/tentap-editor": "^0.7.4",
-    "@hookstate/core": "^4.0.1",
     "@types/lodash": "^4.14.184",
     "fastcomments-typescript": "^3.0.0",
     "lodash": "^4.17.21",
     "react-native-render-html": "^6.3.4",
-    "react-native-webview": "^13.16.0"
+    "react-native-webview": "^13.16.0",
+    "zustand": "^5.0.12"
   },
   "peerDependencies": {
     "react": "*",

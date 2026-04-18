@@ -1,34 +1,44 @@
-import { FastCommentsCommentWidgetConfig } from "fastcomments-typescript";
-import {FastCommentsState} from "../types/fastcomments-state";
-import {State} from "@hookstate/core";
+import { FastCommentsCommentWidgetConfig } from 'fastcomments-typescript';
+import type { FastCommentsStore } from '../store/types';
 
-export function handleNewCustomConfig(state: State<FastCommentsState>, customConfig: FastCommentsCommentWidgetConfig | null | undefined, overwrite?: boolean) {
-    const config = state.config;
+export function handleNewCustomConfig(
+    store: FastCommentsStore,
+    customConfig: FastCommentsCommentWidgetConfig | null | undefined,
+    overwrite?: boolean
+) {
+    const state = store.getState();
     if (customConfig) {
+        const nextConfig = { ...state.config };
         for (const key in customConfig) {
-            // for the customization page (css is sent from server, but newer version from client)
-            // if the custom config has translations, merge them with what the client specified
+            const k = key as keyof FastCommentsCommentWidgetConfig;
             if (key === 'translations') {
-                if (config[key].get()) {
-                    config[key].set(Object.assign({}, customConfig[key], config[key].get()));
-                } else {
-                    config[key].set(customConfig[key]);
-                }
-            } else if ((config[key as keyof FastCommentsCommentWidgetConfig] === undefined || overwrite) || key === 'wrap' || key === 'hasDarkBackground') { // undefined is important here (test comment thread viewer w/ customizations like hideCommentsUnderCountTextFormat/useShowCommentsToggle
-                // @ts-ignore
-                config[key].set(customConfig[key]);
+                const existing = (nextConfig as any).translations;
+                (nextConfig as any).translations = existing
+                    ? Object.assign({}, (customConfig as any)[key], existing)
+                    : (customConfig as any)[key];
+            } else if (
+                nextConfig[k] === undefined ||
+                overwrite ||
+                key === 'wrap' ||
+                key === 'hasDarkBackground'
+            ) {
+                (nextConfig as any)[k] = (customConfig as any)[k];
             }
         }
-        if (!state.sortDirection.get()) {
-            const defaultSortDirection = config.defaultSortDirection.get();
+        state.setConfig(nextConfig as typeof state.config);
+        if (!state.sortDirection) {
+            const defaultSortDirection = nextConfig.defaultSortDirection;
             if (typeof defaultSortDirection === 'string') {
-                state.sortDirection.set(defaultSortDirection);
+                state.setSortDirection(defaultSortDirection);
             }
         }
     }
 
-    const configTranslations = config.translations.get();
+    const configTranslations = store.getState().config.translations;
     if (configTranslations) {
-        state.translations.merge(configTranslations);
+        store.getState().setTranslations({
+            ...store.getState().translations,
+            ...configTranslations,
+        });
     }
 }

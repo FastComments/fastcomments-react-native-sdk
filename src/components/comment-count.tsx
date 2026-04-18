@@ -1,18 +1,20 @@
-import {Text, TextStyle} from 'react-native';
-import {FastCommentsState} from "../types";
-import {State} from "@hookstate/core";
+import { Text, TextStyle } from 'react-native';
+import type { FastCommentsStore } from '../store/types';
+import { useStoreValue } from '../store/hooks';
 
 export interface LiveCommentingCommentCountProps {
-    state: State<FastCommentsState>
-    style?: TextStyle
-    count: number
+    store: FastCommentsStore;
+    style?: TextStyle;
+    count: number;
 }
 
-export function CommentCount({state, style, count}: LiveCommentingCommentCountProps) {
-    const configFormat = state.config.commentCountFormat.get();
+export function CommentCount({ store, style, count }: LiveCommentingCommentCountProps) {
+    const configFormat = useStoreValue(store, (s) => s.config.commentCountFormat);
+    const translations = useStoreValue(store, (s) => s.translations);
+
     if (configFormat) {
         return <Text style={style}>{configFormat.replace('[count]', Number(count).toLocaleString())}</Text>;
-    } else {
-        return <Text style={style}>{Number(count).toLocaleString() + (count === 1 ? state.translations.COMMENT_THIS_PAGE.get() : state.translations.COMMENTS_THIS_PAGE.get())}</Text>;
     }
+    const suffix = count === 1 ? translations.COMMENT_THIS_PAGE : translations.COMMENTS_THIS_PAGE;
+    return <Text style={style}>{Number(count).toLocaleString() + suffix}</Text>;
 }

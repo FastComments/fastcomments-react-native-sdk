@@ -1,271 +1,151 @@
-import {FastCommentsState} from "../types";
-import {SubscriberInstance, subscribeToChanges} from "./subscribe-to-changes";
-import {checkBlockedComments} from "./blocking";
-import {addCommentToUserPresenceState, handleNewRemoteUser, setupUserPresenceState} from "./user-presense";
-import {WebsocketLiveEvent} from "../types";
-import {none, State} from "@hookstate/core";
-import {broadcastIdsSent} from "./broadcast-id";
-import {removeCommentOnClient} from "./remove-comment-on-client";
-import {repositionComment} from "./comment-positioning";
-import {addCommentToTree} from "./comment-trees";
-import {incOverallCommentCount} from "./comment-count";
-import {handleNewCustomConfig} from "./custom-config";
+import { SubscriberInstance, subscribeToChanges } from './subscribe-to-changes';
+import { checkBlockedComments } from './blocking';
+import { addCommentToPresenceIndex, handleNewRemoteUser, setupUserPresenceState } from './user-presense';
+import { RNComment, WebsocketLiveEvent } from '../types';
+import { broadcastIdsSent } from './broadcast-id';
+import { removeCommentOnClient } from './remove-comment-on-client';
+import { repositionComment } from './comment-positioning';
+import { incOverallCommentCount } from './comment-count';
+import { handleNewCustomConfig } from './custom-config';
+import type { FastCommentsStore } from '../store/types';
 
 const SubscriberInstanceById: Record<string, SubscriberInstance | void> = {};
 
-export function handleLiveEvent(state: State<FastCommentsState>, dataJSON: WebsocketLiveEvent) {
-    // console.log('handleLiveEvent', dataJSON);
+export function handleLiveEvent(store: FastCommentsStore, dataJSON: WebsocketLiveEvent) {
     if ('broadcastId' in dataJSON && broadcastIdsSent.includes(dataJSON.broadcastId)) {
         return;
     }
     if ('bId' in dataJSON && broadcastIdsSent.includes(dataJSON.bId)) {
         return;
     }
+
+    const state = store.getState();
+
     switch (dataJSON.type) {
         case 'new-badge':
-            for (const comment of state.allComments) {
-                if (comment.userId.get() === dataJSON.badge.userId) {
-                    if (!comment.badges.get()) {
-                        comment.badges.merge([dataJSON.badge]);
-                    } else if (!comment.badges.get()!.some(function (badge) { // handle race conditions
-                        return badge.id === dataJSON.badge.id;
-                    })) {
-                        comment.badges.merge([dataJSON.badge]);
-                    }
-                }
-            }
+            if (dataJSON.badge.userId) state.applyBadge(dataJSON.badge.userId, dataJSON.badge, false);
             broadcastIdsSent.push(dataJSON.broadcastId);
             break;
+
         case 'removed-badge':
-            for (const comment of state.allComments) {
-                if (comment.userId.get() === dataJSON.badge.userId && comment.badges.get()) {
-                    const newBadges = [];
-                    for (const badge of comment.badges.get()!) {
-                        if (badge.id !== dataJSON.badge.id) {
-                            newBadges.push(badge);
-                        }
-                    }
-                    comment.badges.merge(newBadges);
-                }
-            }
+            if (dataJSON.badge.userId) state.applyBadge(dataJSON.badge.userId, dataJSON.badge, true);
             broadcastIdsSent.push(dataJSON.broadcastId);
             break;
+
         case 'notification':
-            state.userNotificationState.count.set((count) => {
-                if (count) {
-                    count++;
-                } else {
-                    count = 1;
-                }
-                return count;
-            });
-            if (state.userNotificationState.notifications.get()) {
-                state.userNotificationState.notifications.set((notifications) => {
-                    notifications.unshift(dataJSON.notification);
-                    return notifications;
-                });
+            state.incNotificationCount(1);
+            if (state.userNotificationState.notifications.length > 0) {
+                state.prependNotification(dataJSON.notification);
             }
             break;
-        case 'presence-update':
-            if (dataJSON.uj) {
-                for (const userJoined of dataJSON.uj) {
-                    state.userPresenceState.usersOnlineMap[userJoined].set(true);
-                }
+
+        case 'presence-update': {
+            if (dataJSON.uj && dataJSON.uj.length > 0) {
+                state.setUsersOnline(dataJSON.uj, true);
             }
-            if (dataJSON.ul) {
-                for (const userLeft of dataJSON.ul) {
-                    state.userPresenceState.usersOnlineMap[userLeft].set(false);
-                }
+            if (dataJSON.ul && dataJSON.ul.length > 0) {
+                state.setUsersOnline(dataJSON.ul, false);
             }
             break;
-        case 'new-vote':
-            const newVoteComment = state.commentsById[dataJSON.vote.commentId];
-            if (newVoteComment.get()) {
-                newVoteComment.votes.set((votes) => {
-                    if (votes === null || votes === undefined) {
-                        votes = 0;
-                    } else {
-                        votes += dataJSON.vote.direction;
-                    }
-                    return votes;
-                })
-                if (dataJSON.vote.direction > 0) {
-                    newVoteComment.votesUp.set((votesUp) => {
-                        if (votesUp === null || votesUp === undefined) {
-                            votesUp = 0;
-                        } else {
-                            votesUp++;
-                        }
-                        return votesUp;
-                    });
-                    if (state.currentUser && 'id' in state.currentUser && state.currentUser.id && dataJSON.vote.userId === state.currentUser.id.get()) {
-                        newVoteComment.isVotedUp.set(true);
-                    }
-                } else {
-                    newVoteComment.votesDown.set((votesDown) => {
-                        if (votesDown === null || votesDown === undefined) {
-                            votesDown = 0;
-                        } else {
-                            votesDown++;
-                        }
-                        return votesDown;
-                    });
-                    if (state.currentUser && 'id' in state.currentUser && state.currentUser.id && dataJSON.vote.userId === state.currentUser.id.get()) {
-                        newVoteComment.isVotedDown.set(true);
-                    }
-                }
-            }
+        }
+
+        case 'new-vote': {
+            const currentUser = state.currentUser;
+            const userId = currentUser && 'id' in currentUser ? currentUser.id : undefined;
+            const isByCurrentUser = !!userId && dataJSON.vote.userId === userId;
+            state.applyVoteDelta(dataJSON.vote.commentId, dataJSON.vote.direction, false, isByCurrentUser);
             break;
-        case 'deleted-vote':
-            const deletedVoteComment = state.commentsById[dataJSON.vote.commentId];
-            if (deletedVoteComment.get()) {
-                deletedVoteComment.votes.set((votes) => {
-                    // votes always set as vote was originally populated for it to be deleted
-                    votes! += (dataJSON.vote.direction * -1);
-                    return votes;
-                });
-                if (dataJSON.vote.direction > 0) {
-                    deletedVoteComment.votesUp.set((votesUp) => {
-                        if (votesUp) {
-                            votesUp--;
-                        }
-                        return votesUp;
-                    });
-                    if (state.currentUser && 'id' in state.currentUser && state.currentUser.id && deletedVoteComment.isVotedUp && dataJSON.vote.userId === state.currentUser.id.get()) {
-                        deletedVoteComment.isVotedUp.set(none);
-                    }
-                } else {
-                    deletedVoteComment.votesDown.set((votesDown) => {
-                        if (votesDown) {
-                            votesDown--;
-                        }
-                        return votesDown;
-                    });
-                    if (state.currentUser && 'id' in state.currentUser && state.currentUser.id && deletedVoteComment.isVotedDown && dataJSON.vote.userId === state.currentUser.id.get()) {
-                        deletedVoteComment.isVotedDown.set(none);
-                    }
-                }
-            }
+        }
+
+        case 'deleted-vote': {
+            const currentUser = state.currentUser;
+            const userId = currentUser && 'id' in currentUser ? currentUser.id : undefined;
+            const isByCurrentUser = !!userId && dataJSON.vote.userId === userId;
+            state.applyVoteDelta(dataJSON.vote.commentId, dataJSON.vote.direction, true, isByCurrentUser);
             break;
+        }
+
         case 'deleted-comment':
-            removeCommentOnClient(state, state.commentsById[dataJSON.comment._id]);
+            removeCommentOnClient(store, dataJSON.comment._id);
             break;
+
         case 'new-comment':
-        case 'updated-comment':
+        case 'updated-comment': {
             const dataJSONComment = dataJSON.comment;
             const dataJSONExtraInfo = dataJSON.extraInfo;
-            const showLiveRightAway = state.config.showLiveRightAway.get();
-            const commentsById = state.commentsById;
-            // the hidden check here is for approving, un-approving, and then re-approving a comment
-            if (dataJSON.type === 'new-comment' && commentsById[dataJSONComment._id].get()) {
-                if (!commentsById[dataJSONComment._id].approved.get() && dataJSONComment.approved) {
-                    dataJSON.type = 'updated-comment'; // we'll just set the comment as approved
+            const showLiveRightAway = !!state.config.showLiveRightAway;
+            const existing = state.byId[dataJSONComment._id];
+
+            // Approval flip: approving a previously-unapproved comment is treated as an update, not a new insert.
+            if (dataJSON.type === 'new-comment' && existing) {
+                if (!existing.approved && dataJSONComment.approved) {
+                    dataJSON.type = 'updated-comment';
                 } else {
                     return;
                 }
             }
 
-            /*
-                What we want to do is show a count on the first visible parent comment like:
-                "8 New Comments - Click to show"
-                This means that if you could have:
-                Visible Comment (2 new comments, click to show)
-                    - Hidden New Comment
-                        - Hidden New Comment
-                So we need to walk the tree to find the first visible parent comment, and also
-                calculate how many hidden comments are under that parent.
-
-                If parentId is null - like when replying to a page instead of a parent comment - we can just
-                treat the page as the root and don't have to walk any tree.
-
-                ASSUMPTION: We should always receive the comments in order so that we can just walk
-                the tree backwards.
-
-                Then we just need to render that text/button. Clicking it then goes and changes the hidden
-                flag on said comments and re-renders that part of the tree.
-             */
-
-            const isNew = !(commentsById[dataJSONComment._id].get({stealth: true}));
+            const isNew = !existing;
             if (isNew) {
-                commentsById.merge({
-                    [dataJSONComment._id]: dataJSONComment
-                })
-            } else {
-                commentsById[dataJSONComment._id].merge(dataJSONComment);
-            }
+                const newCommentHidden = state.commentsVisible && !showLiveRightAway;
+                const commentWithFlags = {
+                    ...dataJSONComment,
+                    isLive: true,
+                    hidden: newCommentHidden,
+                } as typeof dataJSONComment;
 
-            if (!isNew) {
-                if (dataJSONExtraInfo) {
-                    if (dataJSONExtraInfo.commentPositions) {
-                        repositionComment(dataJSONComment._id, dataJSONExtraInfo.commentPositions, state);
-                    }
-                }
-            } else {
-                const presenceChanges = {};
-                addCommentToUserPresenceState(state.userPresenceState, dataJSONComment, presenceChanges);
-                dataJSONComment.isLive = true; // so we can animate the background color
-                // commentsVisible check is here because if comments are hidden, we want this comment to show as soon as comments are un-hidden.
-                const newCommentHidden = state.commentsVisible.get({stealth: true}) && !showLiveRightAway;
-                dataJSONComment.hidden = newCommentHidden; // don't irritate the user with content popping in and out.
-
-                let updateRoot = false, currentParent = null;
+                // Find the first visible parent (for the "8 new comments" counter).
+                let updateRoot = false;
+                let visibleParentId: string | undefined;
                 if (!dataJSONComment.parentId) {
                     updateRoot = true;
                 } else {
-                    currentParent = commentsById[dataJSONComment.parentId];
-                    let iteratedCount = 0;
-                    while (
-                        (
-                            (!currentParent || !currentParent.get({stealth: true}))
-                            || currentParent.hidden.get({stealth: true}) === true
-                        )
-                        && iteratedCount < 5000
-                        ) {
-                        const nextParentId: string | undefined | null = currentParent ? currentParent.parentId.get({stealth: true}) : null;
-                        if (currentParent && currentParent.get({stealth: true}) && !nextParentId) {
-                            updateRoot = true;
-                            break; // reached top of page
+                    let cursorId: string | null | undefined = dataJSONComment.parentId;
+                    let iterations = 0;
+                    while (cursorId && iterations < 5000) {
+                        iterations++;
+                        const parent: RNComment | undefined = state.byId[cursorId];
+                        if (!parent) break;
+                        if (parent.hidden !== true) {
+                            visibleParentId = cursorId;
+                            break;
                         }
-                        currentParent = nextParentId ? commentsById[nextParentId] : null;
-                        iteratedCount++;
+                        cursorId = parent.parentId;
                     }
-                    if (iteratedCount >= 4998) {
-                        console.warn('FC - iteration hit limit', iteratedCount);
+                    if (!visibleParentId) {
+                        updateRoot = true;
                     }
                 }
 
-                addCommentToTree(state.allComments, state.commentsTree, commentsById, dataJSONComment, !!state.config.newCommentsToBottom.get());
-                incOverallCommentCount(state.config.countAll.get(), state, dataJSONComment.parentId);
+                state.upsertComment(commentWithFlags, !!state.config.newCommentsToBottom);
+                addCommentToPresenceIndex(store, commentWithFlags);
+                incOverallCommentCount(state.config.countAll, store, dataJSONComment.parentId);
 
                 if (updateRoot) {
                     if (newCommentHidden) {
-                        state.newRootCommentCount.set((newRootCommentCount) => {
-                            newRootCommentCount++;
-                            return newRootCommentCount;
-                        });
+                        state.incNewRootCommentCount(1);
                     }
-                } else if (currentParent && currentParent?.get()) {
-                    if (newCommentHidden) {
-                        currentParent.hiddenChildrenCount.set((hiddenChildrenCount) => {
-                            if (!hiddenChildrenCount) {
-                                hiddenChildrenCount = 1;
-                            } else {
-                                hiddenChildrenCount++;
-                            }
-                            return hiddenChildrenCount;
-                        });
-                    }
+                } else if (visibleParentId && newCommentHidden) {
+                    state.incHiddenChildrenCount(visibleParentId, 1);
                 }
 
-                const userIdsChanged = Object.keys(presenceChanges);
-                if (userIdsChanged.length > 0) {
-                    // noinspection JSIgnoredPromiseFromCall - fire and forget
-                    handleNewRemoteUser(state.config.get(), state.urlIdWS.get()!, state.userPresenceState, userIdsChanged);
+                const presenceUserIds = [dataJSONComment.userId, dataJSONComment.anonUserId].filter(
+                    Boolean
+                ) as string[];
+                if (presenceUserIds.length > 0 && state.urlIdWS) {
+                    void handleNewRemoteUser(state.config, state.urlIdWS, store, presenceUserIds);
+                }
+            } else {
+                state.mergeCommentFields(dataJSONComment._id, dataJSONComment);
+                if (dataJSONExtraInfo?.commentPositions) {
+                    repositionComment(dataJSONComment._id, dataJSONExtraInfo.commentPositions, store);
                 }
             }
             break;
+        }
+
         case 'new-config':
-            handleNewCustomConfig(state, dataJSON.config, true);
+            handleNewCustomConfig(store, dataJSON.config, true);
             break;
     }
 }
@@ -278,40 +158,48 @@ export function cleanupSubscriber(instanceId: string) {
     }
 }
 
-export function persistSubscriberState(state: State<FastCommentsState>, newUrlIdWS: string, newTenantIdWS: string, newUserIdWS: string | null) {
-    const didChange = state.urlIdWS.get() !== newUrlIdWS || state.tenantIdWS.get() !== newTenantIdWS || state.userIdWS.get() !== newUserIdWS;
-    if (!didChange) {
-        return;
-    }
-    state.urlIdWS.set(newUrlIdWS);
-    state.tenantIdWS.set(newTenantIdWS);
-    state.userIdWS.set(newUserIdWS);
+export function persistSubscriberState(
+    store: FastCommentsStore,
+    newUrlIdWS: string,
+    newTenantIdWS: string,
+    newUserIdWS: string | null
+) {
+    const state = store.getState();
+    const didChange =
+        state.urlIdWS !== newUrlIdWS ||
+        state.tenantIdWS !== newTenantIdWS ||
+        state.userIdWS !== newUserIdWS;
+    if (!didChange) return;
 
-    const instanceId = state.instanceId.get();
+    state.setWSIds(newUrlIdWS, newTenantIdWS, newUserIdWS);
+
+    const instanceId = state.instanceId;
     const prevInstance = SubscriberInstanceById[instanceId];
-    if (prevInstance) {
-        prevInstance.close();
-    }
+    if (prevInstance) prevInstance.close();
 
-    SubscriberInstanceById[instanceId] = subscribeToChanges(state.config.get(), state.wsHost.get(), state.tenantIdWS.get()!, state.config.urlId.get()!, state.urlIdWS.get()!, state.userIdWS.get()!, async (commentIds: string[]) => {
-        return await checkBlockedComments(state.get(), commentIds);
-    }, (dataJSON: WebsocketLiveEvent) => {
-        handleLiveEvent(state, dataJSON);
-    }, function connectionStatusChange(isConnected, lastEventTime) {
-        // if we have a current user, update the status icon on their comments!
-        if (state.currentUser && 'id' in state.currentUser) {
-            state.userPresenceState.usersOnlineMap[state.currentUser.id.get()].set(isConnected);
-        }
-        // if we are reconnecting, re-fetch all user statuses and render them
-        if (isConnected) {
-            const isReconnect = !!lastEventTime;
-            if (isReconnect) {
-                // reset user presence state because we know nothing since we disconnected
-                state.userPresenceState.userIdsToCommentIds.set({});
-                state.userPresenceState.usersOnlineMap.set({});
+    SubscriberInstanceById[instanceId] = subscribeToChanges(
+        state.config,
+        state.wsHost,
+        newTenantIdWS,
+        state.config.urlId!,
+        newUrlIdWS,
+        newUserIdWS!,
+        async (commentIds: string[]) => checkBlockedComments(store, commentIds),
+        (dataJSON: WebsocketLiveEvent) => handleLiveEvent(store, dataJSON),
+        (isConnected, lastEventTime) => {
+            const s = store.getState();
+            const currentUser = s.currentUser;
+            if (currentUser && 'id' in currentUser) {
+                s.setUsersOnline([currentUser.id], isConnected);
             }
-            // noinspection JSIgnoredPromiseFromCall
-            setupUserPresenceState(state, newUrlIdWS); // TODO can cause exception if handled event after component unmounted, how to detect?
+            if (isConnected) {
+                const isReconnect = !!lastEventTime;
+                if (isReconnect) {
+                    s.setUserIdsToCommentIds({});
+                    s.replaceUsersOnlineMap({});
+                }
+                void setupUserPresenceState(store, newUrlIdWS);
+            }
         }
-    });
+    );
 }
