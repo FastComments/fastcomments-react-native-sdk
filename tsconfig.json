@@ -15,6 +15,7 @@
     "types": ["jest", "react-native"],
     "module": "esnext",
     "moduleResolution": "node",
+    "moduleSuffixes": [".native", ""],
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
     "noImplicitUseStrict": false,

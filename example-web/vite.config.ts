@@ -6,10 +6,6 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const sdkRoot = path.resolve(__dirname, '..');
 
-const stubHtml = path.join(__dirname, 'src', 'empty.js');
-const stubCodegenComp = path.join(__dirname, 'src', 'stubs', 'codegenNativeComponent.js');
-const stubCodegenCmds = path.join(__dirname, 'src', 'stubs', 'codegenNativeCommands.js');
-
 // React Native uses metro's `require('./image.png')` convention for assets.
 // Browsers don't have `require`, so transform those calls into ESM static
 // imports that Vite knows how to serve as URL strings.
@@ -25,8 +21,7 @@ function transformRequireAssets(): Plugin {
       const out = code.replace(/require\(\s*(['"])(\.\.?\/[^'"\)]+\.(?:png|jpg|jpeg|gif|webp|svg))\1\s*\)/g, (_m, _q, p) => {
         const name = `__rnwAsset${counter++}`;
         imports.push(`import ${name} from ${JSON.stringify(p)};`);
-        // react-native-web's <Image source> accepts `{ uri }` or string;
-        // wrap so consumers that read .uri also work.
+        // react-native-web's <Image source> accepts `{ uri }` or string.
         return `({uri:${name}})`;
       });
       if (counter === 0) return null;
@@ -35,28 +30,17 @@ function transformRequireAssets(): Plugin {
   };
 }
 
-// Custom resolver that swaps native packages for their web equivalents BEFORE
-// Vite resolves them. Returning a bare specifier (rather than an absolute path)
-// keeps Vite's normal node_module resolution + dep-optimization in play, so
-// CJS deps inside react-native-web get correctly wrapped.
+// Swap native packages for web equivalents at resolve time. Returning a bare
+// specifier (rather than an absolute path) keeps Vite's normal node_module
+// resolution + optimizeDeps in play so CJS interop wraps correctly.
 function reactNativeWebAlias(): Plugin {
   const map: Record<string, string> = {
     'react-native': 'react-native-web',
-    'react-native-webview': 'react-native-web-webview',
   };
-  const stubs: Array<[RegExp, string]> = [
-    [/^react-native\/Libraries\/Utilities\/codegenNativeComponent$/, stubCodegenComp],
-    [/^react-native\/Libraries\/Utilities\/codegenNativeCommands$/, stubCodegenCmds],
-    [/^react-native\/Libraries\//, stubHtml],
-    [/react-native-web-webview\/dist\/postMock\.html$/, stubHtml],
-  ];
   return {
     name: 'react-native-web-alias',
     enforce: 'pre',
     async resolveId(source, importer, opts) {
-      for (const [re, target] of stubs) {
-        if (re.test(source)) return this.resolve(target, importer, opts);
-      }
       if (map[source]) {
         return this.resolve(map[source], importer, { ...opts, skipSelf: true });
       }
@@ -81,17 +65,15 @@ export default defineConfig({
   },
   optimizeDeps: {
     esbuildOptions: {
-      loader: { '.js': 'jsx', '.html': 'empty' },
+      loader: { '.js': 'jsx' },
       resolveExtensions: ['.web.tsx', '.web.ts', '.web.jsx', '.web.js', '.tsx', '.ts', '.jsx', '.js', '.json'],
       mainFields: ['module', 'browser', 'main'],
       alias: {
         'react-native': path.dirname(require.resolve('react-native-web/package.json')),
-        'react-native-webview': path.dirname(require.resolve('react-native-web-webview/package.json')),
       },
     },
     include: [
       'react-native-web',
-      'react-native-web-webview',
       'react-native-web > @react-native/normalize-colors',
       'react-native-web > inline-style-prefixer',
       'react-native-web > fbjs',
@@ -101,8 +83,10 @@ export default defineConfig({
       'react-native-web > postcss-value-parser',
       'lodash',
       'fastcomments-typescript',
+      'react-quill-new',
+      'quill',
     ],
-    exclude: ['react-native', 'react-native-webview'],
+    exclude: ['react-native'],
   },
   server: {
     port: 5173,
