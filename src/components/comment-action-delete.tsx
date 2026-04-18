@@ -1,74 +1,83 @@
-import {FastCommentsCommentWithState} from "./comment";
-import {Alert} from "react-native";
-import {getActionTenantId} from "../services/tenants";
-import {newBroadcastId} from "../services/broadcast-id";
-import {createURLQueryString, makeRequest} from "../services/http";
-import {removeCommentOnClient} from "../services/remove-comment-on-client";
-import {DeleteCommentResponse, FastCommentsState, RNComment} from "../types";
-import {State} from "@hookstate/core";
-import {incChangeCounter} from "../services/comment-render-determination";
-import {getMergedTranslations} from "../services/translations";
-import {showError} from "../services/show-error";
+import { Alert } from 'react-native';
+import { getActionTenantId } from '../services/tenants';
+import { newBroadcastId } from '../services/broadcast-id';
+import { createURLQueryString, makeRequest } from '../services/http';
+import { removeCommentOnClient } from '../services/remove-comment-on-client';
+import { DeleteCommentResponse, RNComment } from '../types';
+import { getMergedTranslations } from '../services/translations';
+import { showError } from '../services/show-error';
+import type { FastCommentsStore } from '../store/types';
 
 export interface CommentActionDeleteProps {
     close: () => void;
-    comment: RNComment
-    onError?: (title: string, message: string) => void
-    state: State<FastCommentsState>
+    comment: RNComment;
+    onError?: (title: string, message: string) => void;
+    store: FastCommentsStore;
 }
 
-async function deleteComment({comment, state}: Pick<FastCommentsCommentWithState, 'comment' | 'state'>, onError?: (title: string, message: string) => void) {
-    const tenantId = getActionTenantId({state, tenantId: comment.tenantId});
+async function deleteComment(
+    comment: RNComment,
+    store: FastCommentsStore,
+    onError?: (title: string, message: string) => void
+) {
+    const state = store.getState();
+    const tenantId = getActionTenantId({ store, tenantId: comment.tenantId });
     const broadcastId = newBroadcastId();
     const response = await makeRequest<DeleteCommentResponse>({
-        apiHost: state.apiHost.get(),
+        apiHost: state.apiHost,
         method: 'DELETE',
-        url: '/comments/' + tenantId + '/' + comment._id + '/' + createURLQueryString({
-            urlId: state.config.urlId.get(),
-            editKey: comment.editKey,
-            sso: state.ssoConfigString.get(),
-            broadcastId
-        })
+        url:
+            '/comments/' +
+            tenantId +
+            '/' +
+            comment._id +
+            '/' +
+            createURLQueryString({
+                urlId: state.config.urlId,
+                editKey: comment.editKey,
+                sso: state.ssoConfigString,
+                broadcastId,
+            }),
     });
     if (response.status === 'success') {
         if (response.hardRemoved) {
-            removeCommentOnClient(state, state.commentsById[comment._id]);
+            removeCommentOnClient(store, comment._id);
         } else {
-            comment.isDeleted = response.comment.isDeleted;
-            comment.comment = response.comment.comment;
-            comment.commentHTML = response.comment.commentHTML;
-            comment.commenterName = response.comment.commenterName;
-            comment.userId = response.comment.userId;
-            incChangeCounter(comment);
+            store.getState().mergeCommentFields(comment._id, {
+                isDeleted: response.comment.isDeleted,
+                comment: response.comment.comment,
+                commentHTML: response.comment.commentHTML,
+                commenterName: response.comment.commenterName,
+                userId: response.comment.userId,
+            });
         }
     } else {
-        const translations = getMergedTranslations(state.translations.get({stealth: true}), response);
-        const message = response.code === 'edit-key-invalid' ? translations.LOGIN_TO_DELETE : translations.DELETE_FAILURE;
+        const translations = getMergedTranslations(state.translations, response);
+        const message =
+            response.code === 'edit-key-invalid' ? translations.LOGIN_TO_DELETE : translations.DELETE_FAILURE;
         showError(':(', message, translations.DISMISS, onError);
     }
 }
 
-export async function CommentPromptDelete({comment, state, onError, close}: CommentActionDeleteProps) {
-    Alert.alert(
-        state.translations.DELETE_CONFIRM.get(),
-        state.translations.DELETE_CONFIRMATION_MESSAGE.get(),
-        [
-            {
-                text: state.translations.CANCEL.get(),
-                onPress: close,
-                style: 'cancel'
-            },
-            {
-                text: state.translations.DELETE_CONFIRM.get(),
-                onPress: async () => {
-                    try {
-                        await deleteComment({comment, state}, onError);
-                    } catch (e) {
-                        showError(':(', state.translations.DELETE_FAILURE.get(), state.translations.DISMISS.get(), onError);
-                    }
-                    close();
+export async function CommentPromptDelete({ comment, store, onError, close }: CommentActionDeleteProps) {
+    const translations = store.getState().translations;
+    Alert.alert(translations.DELETE_CONFIRM, translations.DELETE_CONFIRMATION_MESSAGE, [
+        {
+            text: translations.CANCEL,
+            onPress: close,
+            style: 'cancel',
+        },
+        {
+            text: translations.DELETE_CONFIRM,
+            onPress: async () => {
+                try {
+                    await deleteComment(comment, store, onError);
+                } catch (e) {
+                    const t = store.getState().translations;
+                    showError(':(', t.DELETE_FAILURE, t.DISMISS, onError);
                 }
-            }
-        ]
-    );
+                close();
+            },
+        },
+    ]);
 }

@@ -1,57 +1,71 @@
-import {FastCommentsCommentWithState} from "./comment";
-import {View, Text, ActivityIndicator, Image, TouchableOpacity} from "react-native";
-import {FastCommentsCallbacks, FastCommentsImageAsset} from "../types";
-import {useState} from "react";
-import {createURLQueryString, makeRequest} from "../services/http";
-import {getActionTenantId} from "../services/tenants";
-import {UpdateCommentTextResponse} from "../types";
-import {newBroadcastId} from "../services/broadcast-id";
-import {CommentTextArea10Tap as CommentTextArea, ValueObserver, EmoticonBarConfig} from "./comment-text-area-10tap";
-import {FastCommentsState, IFastCommentsStyles, RNComment} from "../types";
-import {State} from "@hookstate/core";
-import {incChangeCounter} from "../services/comment-render-determination";
-import {getMergedTranslations} from "../services/translations";
-import {showError} from "../services/show-error";
+import { View, Text, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
+import { FastCommentsCallbacks, FastCommentsImageAsset } from '../types';
+import { useState } from 'react';
+import { createURLQueryString, makeRequest } from '../services/http';
+import { getActionTenantId } from '../services/tenants';
+import { UpdateCommentTextResponse } from '../types';
+import { newBroadcastId } from '../services/broadcast-id';
+import {
+    CommentTextArea10Tap as CommentTextArea,
+    ValueObserver,
+    EmoticonBarConfig,
+} from './comment-text-area-10tap';
+import { IFastCommentsStyles, RNComment } from '../types';
+import { getMergedTranslations } from '../services/translations';
+import { showError } from '../services/show-error';
+import type { FastCommentsStore } from '../store/types';
+import { useStoreValue } from '../store/hooks';
 
 export interface DirtyRef {
-    current?: () => boolean
+    current?: () => boolean;
 }
 
 export interface CommentActionEditProps extends Pick<FastCommentsCallbacks, 'pickGIF' | 'pickImage' | 'onError'> {
-    close: (safe: boolean) => void
-    comment: RNComment
-    isDirtyRef: DirtyRef
-    state: State<FastCommentsState>
-    styles: IFastCommentsStyles
+    close: (safe: boolean) => void;
+    comment: RNComment;
+    isDirtyRef: DirtyRef;
+    store: FastCommentsStore;
+    styles: IFastCommentsStyles;
 }
 
-async function saveCommentText({comment, state}: Pick<FastCommentsCommentWithState, 'comment' | 'state'>, newValue: string, onError?: (title: string, message: string) => void) {
-    const tenantId = getActionTenantId({state, tenantId: comment.tenantId});
+async function saveCommentText(
+    comment: RNComment,
+    store: FastCommentsStore,
+    newValue: string,
+    onError?: (title: string, message: string) => void
+) {
+    const state = store.getState();
+    const tenantId = getActionTenantId({ store, tenantId: comment.tenantId });
     const broadcastId = newBroadcastId();
     const response = await makeRequest<UpdateCommentTextResponse>({
-        apiHost: state.apiHost.get(),
+        apiHost: state.apiHost,
         method: 'POST',
-        url: '/comments/' + tenantId + '/' + comment._id + '/update-text/' + createURLQueryString({
-            urlId: state.config.urlId.get(),
-            editKey: comment.editKey,
-            sso: state.ssoConfigString.get(),
-            broadcastId
-        }),
+        url:
+            '/comments/' +
+            tenantId +
+            '/' +
+            comment._id +
+            '/update-text/' +
+            createURLQueryString({
+                urlId: state.config.urlId,
+                editKey: comment.editKey,
+                sso: state.ssoConfigString,
+                broadcastId,
+            }),
         body: {
             comment: newValue,
-            // TODO
-            // mentions: ???
-            // hashTags: ???
-        }
+        },
     });
     if (response.status === 'success') {
-        comment.approved = response.comment.approved;
-        comment.comment = response.comment.comment;
-        comment.commentHTML = response.comment.commentHTML;
-        incChangeCounter(comment);
+        store.getState().mergeCommentFields(comment._id, {
+            approved: response.comment.approved,
+            comment: response.comment.comment,
+            commentHTML: response.comment.commentHTML,
+        });
     } else {
-        const translations = getMergedTranslations(state.translations.get({stealth: true}), response);
-        const message = response.code === 'edit-key-invalid' ? translations.LOGIN_TO_EDIT : translations.ERROR_MESSAGE;
+        const translations = getMergedTranslations(state.translations, response);
+        const message =
+            response.code === 'edit-key-invalid' ? translations.LOGIN_TO_EDIT : translations.ERROR_MESSAGE;
         showError(':(', message, translations.DISMISS, onError);
     }
 }
@@ -62,9 +76,9 @@ export function CommentActionEdit({
     onError,
     pickGIF,
     pickImage,
-    state,
+    store,
     styles,
-    close
+    close,
 }: CommentActionEditProps) {
     const [isLoading, setLoading] = useState(false);
     const valueGetter: ValueObserver = {};
@@ -74,57 +88,66 @@ export function CommentActionEdit({
         }
         return false;
     };
-    const inlineReactImages = state.config.inlineReactImages.get();
-    let emoticonBarConfig: EmoticonBarConfig = {};
+    const inlineReactImages = useStoreValue(store, (s) => s.config.inlineReactImages);
+    const translations = useStoreValue(store, (s) => s.translations);
+    const imageAssets = useStoreValue(store, (s) => s.imageAssets);
+    const hasDarkBackground = useStoreValue(store, (s) => !!s.config.hasDarkBackground);
+
+    const emoticonBarConfig: EmoticonBarConfig = {};
     if (inlineReactImages) {
-        emoticonBarConfig.emoticons = inlineReactImages.map(function (src) {
-            return [src, <Image source={{uri: src}} style={styles.commentTextAreaEmoticonBar?.icon}/>]
-        })
+        emoticonBarConfig.emoticons = inlineReactImages.map((src: string) => [
+            src,
+            <Image source={{ uri: src }} style={styles.commentTextAreaEmoticonBar?.icon} />,
+        ]);
     }
-    return <View style={styles.commentEditModal?.centeredView}>
-        <View style={styles.commentEditModal?.modalView}>
-            <CommentTextArea
-                emoticonBarConfig={emoticonBarConfig}
-                styles={styles}
-                state={state.get()}
-                value={comment.comment}
-                output={valueGetter}
-                pickImage={pickImage}
-                pickGIF={pickGIF}
-            />
-            <TouchableOpacity
-                style={styles.commentEditModal?.saveButton}
-                onPress={async () => {
-                    setLoading(true);
-                    try {
-                        if (valueGetter.getValue) {
-                            comment.comment = valueGetter.getValue();
+    return (
+        <View style={styles.commentEditModal?.centeredView}>
+            <View style={styles.commentEditModal?.modalView}>
+                <CommentTextArea
+                    emoticonBarConfig={emoticonBarConfig}
+                    styles={styles}
+                    store={store}
+                    value={comment.comment}
+                    output={valueGetter}
+                    pickImage={pickImage}
+                    pickGIF={pickGIF}
+                />
+                <TouchableOpacity
+                    style={styles.commentEditModal?.saveButton}
+                    onPress={async () => {
+                        setLoading(true);
+                        try {
+                            if (valueGetter.getValue) comment.comment = valueGetter.getValue();
+                            await saveCommentText(comment, store, comment.comment!, onError);
+                            setLoading(false);
+                            close(true);
+                        } catch (e) {
+                            console.error(e);
+                            setLoading(false);
+                            showError(':(', translations.FAILED_TO_SAVE_EDIT, translations.DISMISS, onError);
                         }
-                        await saveCommentText({comment, state}, comment.comment!, onError);
-                        setLoading(false);
-                        close(true);
-                    } catch (e) {
-                        console.error(e);
-                        setLoading(false);
-                        showError(':(', state.translations.FAILED_TO_SAVE_EDIT.get(), state.translations.DISMISS.get(), onError);
-                    }
-                }}
-            >
-                <Text style={styles.commentEditModal?.saveButtonText}>{state.translations.SAVE.get()}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-                style={styles.commentEditModal?.modalCancel}
-                onPress={() => close(false)}
-            >
-                {<Image
-                    source={state.imageAssets.get()[state.config.hasDarkBackground.get() ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]}
-                    style={{width: 16, height: 16}}/>}
-            </TouchableOpacity>
-            {
-                isLoading && <View style={styles.commentEditModal?.loadingView}>
-                    <ActivityIndicator size="large"/>
-                </View>
-            }
+                    }}
+                >
+                    <Text style={styles.commentEditModal?.saveButtonText}>{translations.SAVE}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.commentEditModal?.modalCancel} onPress={() => close(false)}>
+                    <Image
+                        source={
+                            imageAssets[
+                                hasDarkBackground
+                                    ? FastCommentsImageAsset.ICON_CROSS_WHITE
+                                    : FastCommentsImageAsset.ICON_CROSS
+                            ]
+                        }
+                        style={{ width: 16, height: 16 }}
+                    />
+                </TouchableOpacity>
+                {isLoading && (
+                    <View style={styles.commentEditModal?.loadingView}>
+                        <ActivityIndicator size="large" />
+                    </View>
+                )}
+            </View>
         </View>
-    </View>;
+    );
 }

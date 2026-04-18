@@ -1,24 +1,52 @@
-import {FastCommentsState, IFastCommentsStyles} from "../types";
-import {TouchableOpacity, useWindowDimensions, View} from "react-native";
-import {State} from "@hookstate/core";
+import { IFastCommentsStyles } from '../types';
+import { TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import RenderHtml from 'react-native-render-html';
-import {canPaginateNext} from "../services/pagination";
+import { canPaginateNext } from '../services/pagination';
+import type { FastCommentsStore } from '../store/types';
+import { useStoreValue } from '../store/hooks';
 
-export function PaginationNext({state, styles, doPaginate}: { state: State<FastCommentsState>, styles: IFastCommentsStyles, doPaginate: (isAll: boolean) => void }) {
-    if (canPaginateNext(state)) {
-        const {width} = useWindowDimensions();
-        // These translations contain HTML.
-        return <View style={styles.paginationNext?.root}>
-            <TouchableOpacity onPress={() => doPaginate(false)}><RenderHtml source={{
-                html: state.translations.NEXT.get()
-            }} contentWidth={width} baseStyle={styles.paginationNext?.next} tagsStyles={styles.paginationNext?.nextHTMLStyles}/></TouchableOpacity>
-            {
-                state.commentCountOnServer.get() < 2000 &&
-                <TouchableOpacity onPress={() => doPaginate(true)}><RenderHtml source={{
-                    html: state.translations.LOAD_ALL.get().replace('[count]', '(' + Number(state.commentCountOnServer.get()).toLocaleString() + ')')
-                }} contentWidth={width} baseStyle={styles.paginationNext?.all} tagsStyles={styles.paginationNext?.allHTMLStyles}/></TouchableOpacity>
-            }
-        </View>;
-    }
-    return null;
+export function PaginationNext({
+    store,
+    styles,
+    doPaginate,
+}: {
+    store: FastCommentsStore;
+    styles: IFastCommentsStyles;
+    doPaginate: (isAll: boolean) => void;
+}) {
+    const hasMore = useStoreValue(store, (s) => s.hasMore);
+    const translations = useStoreValue(store, (s) => s.translations);
+    const commentCountOnServer = useStoreValue(store, (s) => s.commentCountOnServer);
+    const { width } = useWindowDimensions();
+
+    if (!canPaginateNext(store)) return null;
+    void hasMore;
+
+    return (
+        <View style={styles.paginationNext?.root}>
+            <TouchableOpacity onPress={() => doPaginate(false)}>
+                <RenderHtml
+                    source={{ html: translations.NEXT }}
+                    contentWidth={width}
+                    baseStyle={styles.paginationNext?.next}
+                    tagsStyles={styles.paginationNext?.nextHTMLStyles}
+                />
+            </TouchableOpacity>
+            {commentCountOnServer < 2000 && (
+                <TouchableOpacity onPress={() => doPaginate(true)}>
+                    <RenderHtml
+                        source={{
+                            html: translations.LOAD_ALL.replace(
+                                '[count]',
+                                '(' + Number(commentCountOnServer).toLocaleString() + ')'
+                            ),
+                        }}
+                        contentWidth={width}
+                        baseStyle={styles.paginationNext?.all}
+                        tagsStyles={styles.paginationNext?.allHTMLStyles}
+                    />
+                </TouchableOpacity>
+            )}
+        </View>
+    );
 }

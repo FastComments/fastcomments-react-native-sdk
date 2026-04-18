@@ -2,32 +2,30 @@ import {FastCommentsRNConfig, GetTranslationsResponse, GetUserUnreadNotification
 import {CommonHTTPResponse, createURLQueryString, getAPIHost, makeRequest} from "./http";
 import {GetUserNotificationsResponse, UserNotification} from "../types";
 import {NotificationType} from "fastcomments-typescript";
-import {ImmutableObject} from "@hookstate/core";
-
 export interface GetUserNotificationsRequest {
-    config: ImmutableObject<FastCommentsRNConfig>
+    config: FastCommentsRNConfig
     unreadOnly?: boolean
     afterId?: string
 }
 
 export interface GetUserUnreadNotificationCountRequest {
-    config: ImmutableObject<FastCommentsRNConfig>
+    config: FastCommentsRNConfig
 }
 
 export interface MarkNotificationReadRequest {
-    config: ImmutableObject<FastCommentsRNConfig>
+    config: FastCommentsRNConfig
     notificationId: string
     isRead: boolean
 }
 
 export interface MarkNotificationOptedOutRequest {
-    config: ImmutableObject<FastCommentsRNConfig>
+    config: FastCommentsRNConfig
     notificationId: string
     isOptedOut: boolean
 }
 
 interface SubscriptionStateChangeRequest {
-    config: ImmutableObject<FastCommentsRNConfig>
+    config: FastCommentsRNConfig
     isSubscribed: boolean
 }
 
@@ -82,7 +80,7 @@ export async function markNotificationOptedOut(request: MarkNotificationOptedOut
     });
 }
 
-export async function getNotificationTranslations(config: ImmutableObject<FastCommentsRNConfig>): Promise<GetTranslationsResponse<UserNotificationTranslations>> {
+export async function getNotificationTranslations(config: FastCommentsRNConfig): Promise<GetTranslationsResponse<UserNotificationTranslations>> {
     let url = '/translations/widgets/comment-ui-notifications-list?useFullTranslationIds=true';
     if (config.locale) {
         url += '&locale=' + config.locale;

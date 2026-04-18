@@ -1,175 +1,192 @@
-import {FastCommentsCommentWidgetConfig, FastCommentsWidgetComment} from 'fastcomments-typescript';
-import {FastCommentsState, UserPresenceState} from "../types";
-import {iterateCommentsTree} from "./comment-trees";
-import {createURLQueryString, makeRequest} from "./http";
-import {GetUserPresenceStatusesResponse} from "../types";
-import {ImmutableObject, State} from "@hookstate/core";
+import { FastCommentsCommentWidgetConfig, FastCommentsWidgetComment } from 'fastcomments-typescript';
+import { UserPresencePollStateEnum } from '../types/fastcomments-state';
+import { createURLQueryString, makeRequest } from './http';
+import { GetUserPresenceStatusesResponse } from '../types';
+import type { FastCommentsStore } from '../store/types';
 
-/**
- * @typedef {number} UserPresencePollState
- **/
-
-
-/**
- * @enum {UserPresencePollState}
- */
-const UserPresencePollStateEnum = {
-    Disabled: 0,
-    Poll: 1
-};
-
-const STEALTH = {stealth: true};
-
-/**
- * @typedef {Object} UserPresenceState
- * @property {boolean} [heartbeatActive]
- * @property {UserPresencePollStateEnum} [presencePollState]
- * @property {Object.<string, boolean>} usersOnlineMap
- * @property {Object.<string, Array.<string>>} userIdsToCommentIds
- */
-
-export async function setupUserPresenceState(state: State<FastCommentsState>, urlIdWS: string) {
-    if (state.config.disableLiveCommenting.get() || state.userPresenceState.presencePollState.get() === UserPresencePollStateEnum.Disabled) {
+export async function setupUserPresenceState(store: FastCommentsStore, urlIdWS: string) {
+    const state = store.getState();
+    if (
+        state.config.disableLiveCommenting ||
+        state.userPresenceState.presencePollState === UserPresencePollStateEnum.Disabled
+    ) {
         return;
     }
-    const userIdsToCheck = {};
 
-    // TODO add optimization back - remove these two lines
-    state.userPresenceState.userIdsToCommentIds.set({});
-    state.userPresenceState.usersOnlineMap.set({});
-    iterateCommentsTree(state.commentsTree.get(), function (comment) {
-        addCommentToUserPresenceState(state.userPresenceState, comment, userIdsToCheck);
-    });
-    const userIds = Object.keys(userIdsToCheck);
+    state.replaceUsersOnlineMap({});
+    state.setUserIdsToCommentIds({});
+
+    const changes: Record<string, boolean> = {};
+    for (const id in state.byId) {
+        addCommentToPresenceIndex(store, state.byId[id], changes);
+    }
+    const userIds = Object.keys(changes);
     if (userIds.length > 0) {
-        await getAndUpdateUserStatuses(state.apiHost.get(STEALTH), state.config.tenantId.get(STEALTH), state.ssoConfigString.get(STEALTH), urlIdWS, state.userPresenceState, userIds);
-    } else if (!state.userPresenceState.heartbeatActive.get()) {
-        setupUserPresenceHeartbeat(state.apiHost.get(STEALTH), state.config.tenantId.get(STEALTH), state.ssoConfigString.get(STEALTH),  urlIdWS);
-        setupUserPresencePolling(state.apiHost.get(STEALTH), state.config.tenantId.get(STEALTH), state.ssoConfigString.get(STEALTH),  urlIdWS, state.userPresenceState, userIds);
-        state.userPresenceState.heartbeatActive.set(true);
+        await getAndUpdateUserStatuses(
+            state.apiHost,
+            state.config.tenantId,
+            state.ssoConfigString,
+            urlIdWS,
+            store,
+            userIds
+        );
+    } else if (!state.userPresenceState.heartbeatActive) {
+        setupUserPresenceHeartbeat(state.apiHost, state.config.tenantId, state.ssoConfigString, urlIdWS);
+        setupUserPresencePolling(
+            state.apiHost,
+            state.config.tenantId,
+            state.ssoConfigString,
+            urlIdWS,
+            store,
+            userIds
+        );
+        state.setHeartbeatActive(true);
     }
 }
 
-async function getAndUpdateUserStatuses(apiHost: string, tenantId: string, ssoConfigString: string | undefined, urlIdWS: string, userPresenceState: State<UserPresenceState>, userIds: string[]) {
+async function getAndUpdateUserStatuses(
+    apiHost: string,
+    tenantId: string | undefined,
+    ssoConfigString: string | undefined,
+    urlIdWS: string,
+    store: FastCommentsStore,
+    userIds: string[]
+) {
     const response = await makeRequest<GetUserPresenceStatusesResponse>({
         apiHost,
         method: 'GET',
-        url: '/user-presence-status' + createURLQueryString({
-            tenantId,
-            urlIdWS: urlIdWS,
-            userIds: userIds.join(',')
-        })
+        url:
+            '/user-presence-status' +
+            createURLQueryString({
+                tenantId,
+                urlIdWS,
+                userIds: userIds.join(','),
+            }),
     });
     if (response.status === 'success' && response.userIdsOnline) {
+        const state = store.getState();
+        const onlineMap = state.userPresenceState.usersOnlineMap;
+        const becameOnline: string[] = [];
+        const becameOffline: string[] = [];
         for (const userId in response.userIdsOnline) {
             const isOnline = response.userIdsOnline[userId];
-            if (userPresenceState.usersOnlineMap[userId].get() !== isOnline) {
-                userPresenceState.usersOnlineMap[userId].set(isOnline);
-            }
+            if (!!onlineMap[userId] === isOnline) continue;
+            (isOnline ? becameOnline : becameOffline).push(userId);
         }
+        if (becameOnline.length > 0) state.setUsersOnline(becameOnline, true);
+        if (becameOffline.length > 0) state.setUsersOnline(becameOffline, false);
     }
-    if (!userPresenceState.heartbeatActive.get()) {
+    const state = store.getState();
+    if (!state.userPresenceState.heartbeatActive) {
         setupUserPresenceHeartbeat(apiHost, tenantId, ssoConfigString, urlIdWS);
-        setupUserPresencePolling(apiHost, tenantId, ssoConfigString, urlIdWS, userPresenceState, userIds);
-        userPresenceState.heartbeatActive.set(true);
+        setupUserPresencePolling(apiHost, tenantId, ssoConfigString, urlIdWS, store, userIds);
+        state.setHeartbeatActive(true);
     }
 }
 
-// TODO OPTIMIZE don't take whole config object due to required get() call in callers
-export async function handleNewRemoteUser(config: ImmutableObject<FastCommentsCommentWidgetConfig>, urlIdWS: string, state: State<UserPresenceState>, userIds: string[]) {
+export async function handleNewRemoteUser(
+    config: FastCommentsCommentWidgetConfig,
+    urlIdWS: string,
+    store: FastCommentsStore,
+    userIds: string[]
+) {
     const response = await makeRequest<GetUserPresenceStatusesResponse>({
         apiHost: config.apiHost!,
         method: 'GET',
-        url: '/user-presence-status' + createURLQueryString({
-            tenantId: config.tenantId,
-            urlIdWS: urlIdWS,
-            userIds: userIds
-        })
+        url:
+            '/user-presence-status' +
+            createURLQueryString({
+                tenantId: config.tenantId,
+                urlIdWS,
+                userIds,
+            }),
     });
     if (response.status === 'success' && response.userIdsOnline) {
+        const state = store.getState();
+        const onlineMap = state.userPresenceState.usersOnlineMap;
+        const becameOnline: string[] = [];
+        const becameOffline: string[] = [];
         for (const userId in response.userIdsOnline) {
             const isOnline = response.userIdsOnline[userId];
-            if (state.usersOnlineMap[userId].get() !== isOnline) {
-                state.usersOnlineMap[userId].set(isOnline);
+            if (!!onlineMap[userId] === isOnline) continue;
+            (isOnline ? becameOnline : becameOffline).push(userId);
+        }
+        if (becameOnline.length > 0) state.setUsersOnline(becameOnline, true);
+        if (becameOffline.length > 0) state.setUsersOnline(becameOffline, false);
+    }
+}
+
+export function addCommentToPresenceIndex(
+    store: FastCommentsStore,
+    comment: FastCommentsWidgetComment,
+    changes?: Record<string, boolean>
+) {
+    const state = store.getState();
+    const userIdsToCommentIds = state.userPresenceState.userIdsToCommentIds;
+    if (comment.userId) {
+        if (!userIdsToCommentIds[comment.userId]) {
+            if (changes && state.userPresenceState.usersOnlineMap[comment.userId] === undefined) {
+                changes[comment.userId] = true;
             }
         }
+        state.addCommentIdForUser(comment.userId, comment._id);
+    }
+    if (comment.anonUserId) {
+        if (!userIdsToCommentIds[comment.anonUserId]) {
+            if (changes && state.userPresenceState.usersOnlineMap[comment.anonUserId] === undefined) {
+                changes[comment.anonUserId] = true;
+            }
+        }
+        state.addCommentIdForUser(comment.anonUserId, comment._id);
     }
 }
 
-/**
- *
- * @param {UserPresenceState} state
- * @param {comment} comment
- * @param {Object.<string, boolean>} [changes]
- */
-export function addCommentToUserPresenceState(state: State<UserPresenceState>, comment: ImmutableObject<FastCommentsWidgetComment>, changes: Record<string, boolean>) {
-    if (comment.userId || comment.anonUserId) { // OPTIMIZATION
-        state.userIdsToCommentIds.set((userIdsToCommentIds) => {
-            if (comment.userId) {
-                if (!userIdsToCommentIds[comment.userId]) {
-                    userIdsToCommentIds[comment.userId] = [];
-                    if (changes && state.usersOnlineMap[comment.userId] === undefined) {
-                        changes[comment.userId] = true;
-                    }
-                }
-                if (!userIdsToCommentIds[comment.userId].includes(comment._id)) {
-                    userIdsToCommentIds[comment.userId].push(comment._id);
-                }
-            }
-            if (comment.anonUserId) {
-                if (!userIdsToCommentIds[comment.anonUserId]) {
-                    userIdsToCommentIds[comment.anonUserId] = [];
-                    if (changes && state.usersOnlineMap[comment.anonUserId] === undefined) {
-                        changes[comment.anonUserId] = true;
-                    }
-                }
-                if (!userIdsToCommentIds[comment.anonUserId].includes(comment._id)) {
-                    userIdsToCommentIds[comment.anonUserId].push(comment._id);
-                }
-            }
-            return userIdsToCommentIds;
-        });
-    }
-}
-
-function setupUserPresenceHeartbeat(apiHost: string, tenantId: string, ssoConfigString: string | undefined, urlIdWS: string) {
+function setupUserPresenceHeartbeat(
+    apiHost: string,
+    tenantId: string | undefined,
+    ssoConfigString: string | undefined,
+    urlIdWS: string
+) {
     async function next() {
         try {
             await makeRequest({
                 apiHost,
                 method: 'PUT',
-                url: '/user-presence-heartbeat' + createURLQueryString({
-                    tenantId,
-                    urlIdWS: urlIdWS,
-                    sso: ssoConfigString
-                })
+                url:
+                    '/user-presence-heartbeat' +
+                    createURLQueryString({
+                        tenantId,
+                        urlIdWS,
+                        sso: ssoConfigString,
+                    }),
             });
         } catch (e) {
+            // swallow
         }
-        setTimeout(next, 1800000); // every 30 minutes on success or failure
+        setTimeout(next, 1800000);
     }
-
-    setTimeout(next, 1800000); // every 30 minutes
+    setTimeout(next, 1800000);
 }
 
-function setupUserPresencePolling(apiHost: string, tenantId: string, ssoConfigString: string | undefined, urlIdWS: string, userPresenceState: State<UserPresenceState>, userIds: string[]) {
-    if (userPresenceState.presencePollState?.get() === UserPresencePollStateEnum.Poll) {
+function setupUserPresencePolling(
+    apiHost: string,
+    tenantId: string | undefined,
+    ssoConfigString: string | undefined,
+    urlIdWS: string,
+    store: FastCommentsStore,
+    userIds: string[]
+) {
+    if (store.getState().userPresenceState.presencePollState === UserPresencePollStateEnum.Poll) {
         const offset = Math.ceil(10000 * Math.random());
-        const timeout = 30000 + offset; // every 30 seconds + a random offset
+        const timeout = 30000 + offset;
         async function next() {
-            await getAndUpdateUserStatuses(apiHost, tenantId, ssoConfigString, urlIdWS, userPresenceState, userIds);
+            await getAndUpdateUserStatuses(apiHost, tenantId, ssoConfigString, urlIdWS, store, userIds);
             setTimeout(next, timeout);
         }
-
         setTimeout(next, timeout);
     }
 }
 
-// export function updateUserActivityMonitors(config: FastCommentsCommentWidgetConfig, state: FastCommentsState, userId: string, isOnline: boolean) {
-//     if (config.disableLiveCommenting) {
-//         return;
-//     }
-//     if (typeof isOnline === 'boolean') {
-//         state.usersOnlineMap[userId] = isOnline;
-//     }
-// }
+// Legacy export kept for the live.ts migration. Same-signature version of
+// addCommentToPresenceIndex that older callers expect.
+export const addCommentToUserPresenceState = addCommentToPresenceIndex;

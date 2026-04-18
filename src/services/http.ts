@@ -1,5 +1,4 @@
 import {FastCommentsRNConfig} from "../types/react-native-config";
-import {ImmutableObject} from "@hookstate/core";
 
 export interface HTTPRequest {
     apiHost: string,
@@ -75,6 +74,6 @@ export function createURLQueryString(obj: Record<string, string | string[] | num
     return '?' + result.join('&');
 }
 
-export function getAPIHost(config: ImmutableObject<FastCommentsRNConfig>) {
+export function getAPIHost(config: Pick<FastCommentsRNConfig, 'apiHost' | 'region'>) {
     return config.apiHost ? config.apiHost : (config.region === 'eu' ? 'https://eu.fastcomments.com' : 'https://fastcomments.com');
 }

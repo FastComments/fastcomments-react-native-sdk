@@ -1,23 +1,31 @@
-import {View} from "react-native";
-import {IFastCommentsStyles, UserPresenceState} from "../types";
-import {State} from "@hookstate/core";
+import { View } from 'react-native';
+import { IFastCommentsStyles } from '../types';
+import type { FastCommentsStore } from '../store/types';
+import { useStoreValue } from '../store/hooks';
 
 export interface CommentUserActivityIconProps {
-    disableLiveCommenting?: boolean
-    userId?: string
-    anonUserId?: string
-    userPresenceState: State<UserPresenceState>
-    styles: IFastCommentsStyles
+    disableLiveCommenting?: boolean;
+    userId?: string;
+    anonUserId?: string;
+    store: FastCommentsStore;
+    styles: IFastCommentsStyles;
 }
 
-export function CommentUserActivityIcon({disableLiveCommenting, userId, anonUserId, userPresenceState, styles}: CommentUserActivityIconProps) {
-    if (disableLiveCommenting) {
-        return null;
-    }
-    const isUserOnline = (userId && userPresenceState.usersOnlineMap[userId!].get()) || (anonUserId && userPresenceState.usersOnlineMap[anonUserId!].get());
+export function CommentUserActivityIcon({
+    disableLiveCommenting,
+    userId,
+    anonUserId,
+    store,
+    styles,
+}: CommentUserActivityIconProps) {
+    const usersOnlineMap = useStoreValue(store, (s) => s.userPresenceState.usersOnlineMap);
+
+    if (disableLiveCommenting) return null;
+
+    const isUserOnline =
+        (userId && usersOnlineMap[userId]) || (anonUserId && usersOnlineMap[anonUserId]);
     if (isUserOnline) {
-        return <View style={styles.commentUserActivityIcon?.online}/>;
-    } else {
-        return <View style={styles.commentUserActivityIcon?.offline}/>;
+        return <View style={styles.commentUserActivityIcon?.online} />;
     }
+    return <View style={styles.commentUserActivityIcon?.offline} />;
 }
