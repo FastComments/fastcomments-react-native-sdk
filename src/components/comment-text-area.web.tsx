@@ -21,6 +21,28 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
+// Quill's snow theme sizes `.quill` to content (display:block, flex:0 1 auto)
+// so the editor never fills its parent RN View. Also the snow theme draws a
+// border on `.ql-container` that fights the outer View's border. Inject once
+// to make .quill/.ql-container flex-fill and drop the redundant border.
+// We target Quill globally because react-native-web's View strips className,
+// so we can't scope to a wrapper. The SDK renders at most one editor at a
+// time and Quill's classes are specific enough that collisions are unlikely.
+const quillFillStyleId = 'fc-rn-sdk-quill-fill';
+function ensureQuillFillStyles() {
+    if (typeof document === 'undefined') return;
+    if (document.getElementById(quillFillStyleId)) return;
+    const el = document.createElement('style');
+    el.id = quillFillStyleId;
+    el.textContent = `
+        .quill { display: flex; flex-direction: column; flex: 1; width: 100%; min-height: 0; }
+        .ql-container.ql-snow { border: 0; flex: 1; display: flex; flex-direction: column; font-size: inherit; font-family: inherit; min-height: 0; }
+        .ql-editor { flex: 1; padding: 8px; overflow: auto; }
+        .ql-editor.ql-blank::before { left: 8px; right: 8px; font-style: normal; color: #9a9a9a; }
+    `;
+    document.head.appendChild(el);
+}
+
 export interface ValueObserver {
     getValue?: () => string
 }
@@ -99,6 +121,7 @@ export function CommentTextArea({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const quillRef = useRef<any>(null);
     const [html, setHtml] = useState<string>(value || '');
+    useEffect(() => { ensureQuillFillStyles(); }, []);
     const [imageUploadProgress, setImageUploadProgress] = useState<number | null>(null);
     const [active, setActive] = useState<ActiveFormats>({ bold: false, italic: false, underline: false, strike: false, code: false });
 
@@ -223,16 +246,18 @@ export function CommentTextArea({
 
     return (
         <View style={{ width: '100%', flex: 1 }}>
-            <View style={[
-                styles.commentTextArea?.textarea,
-                {
-                    minHeight: useSingleLineCommentInput ? 40 : 100,
-                    borderRadius: styles.commentTextArea?.textarea?.borderRadius || 11,
-                    overflow: 'hidden',
-                    paddingHorizontal: 8,
-                    paddingVertical: 4,
-                }
-            ]}>
+            <View
+                style={[
+                    styles.commentTextArea?.textarea,
+                    {
+                        minHeight: useSingleLineCommentInput ? 40 : 100,
+                        borderRadius: styles.commentTextArea?.textarea?.borderRadius || 11,
+                        overflow: 'hidden',
+                        paddingHorizontal: 0,
+                        paddingVertical: 0,
+                    }
+                ]}
+            >
                 <ReactQuill
                     ref={quillRef}
                     theme="snow"
@@ -245,11 +270,6 @@ export function CommentTextArea({
                     onFocus={onFocus as any}
                     modules={quillModules}
                     formats={allowedFormats}
-                    style={{
-                        minHeight: useSingleLineCommentInput ? 32 : 92,
-                        height: '100%',
-                        backgroundColor: 'transparent',
-                    }}
                 />
             </View>
 
