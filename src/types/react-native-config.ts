@@ -14,4 +14,6 @@ export interface FastCommentsRNConfig extends FastCommentsCommentWidgetConfig {
     renderDateBelowComment?: boolean
     /** Show the chat-style "Live" + user-count header strip above comments. **/
     showLiveStatus?: boolean
+    /** When true (default), the FastCommentsFeed remembers its FlatList scroll offset across unmount/remount, keyed by tenantId + urlId. **/
+    preserveFeedScrollPosition?: boolean
 }

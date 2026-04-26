@@ -1,10 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, ListRenderItemInfo, Text, View } from 'react-native';
+import {
+    ActivityIndicator,
+    FlatList,
+    ListRenderItemInfo,
+    NativeScrollEvent,
+    NativeSyntheticEvent,
+    Text,
+    View,
+} from 'react-native';
 import { FastCommentsLiveCommentingService } from '../services/fastcomments-live-commenting';
 import { getDefaultFastCommentsStyles } from '../resources';
 import { addTranslationsToStore } from '../services/translations';
 import { createFeedPost, loadFeedPosts } from '../services/feed';
 import { teardownFeedLive } from '../services/feed-live';
+import {
+    getFeedScrollOffset,
+    saveFeedScrollOffset,
+} from '../services/feed-scroll-memory';
 import { makeRequest } from '../services/http';
 import { FeedNewPostsBanner } from './feed-new-posts-banner';
 import { FeedPostComposer } from './feed-post-composer';
@@ -48,6 +60,12 @@ export function FastCommentsFeed({ config, styles, assets, customToolbarButtons 
     const [isLoading, setIsLoading] = useState(true);
     const [isPaging, setIsPaging] = useState(false);
     const listRef = useRef<FlatList<FeedPost>>(null);
+    const lastScrollOffsetRef = useRef<number>(0);
+    const preserveScroll = config.preserveFeedScrollPosition !== false;
+    const scrollKeyRef = useRef<{ tenantId: string | undefined; urlId: string | undefined }>({
+        tenantId: config.tenantId,
+        urlId: config.urlId,
+    });
 
     useEffect(() => {
         let cancelled = false;
@@ -73,11 +91,41 @@ export function FastCommentsFeed({ config, styles, assets, customToolbarButtons 
             }
 
             await loadFeedPosts(store);
-            if (!cancelled) setIsLoading(false);
+            if (!cancelled) {
+                setIsLoading(false);
+                // Restore the saved scroll offset for this (tenantId, urlId)
+                // after the data has populated. We schedule via setTimeout so
+                // the FlatList has rendered the rows before we ask it to
+                // scroll - on RN, scrollToOffset before layout is a no-op.
+                if (preserveScroll) {
+                    const saved = getFeedScrollOffset(scrollKeyRef.current.tenantId, scrollKeyRef.current.urlId);
+                    if (saved !== undefined && saved > 0) {
+                        const target = saved;
+                        lastScrollOffsetRef.current = target;
+                        setTimeout(() => {
+                            if (cancelled) return;
+                            const list = listRef.current;
+                            if (!list) return;
+                            try {
+                                list.scrollToOffset({ offset: target, animated: false });
+                            } catch (e) {
+                                // ignore - jest's FlatList mock may not implement scrollToOffset.
+                            }
+                        }, 0);
+                    }
+                }
+            }
         }
         void init();
         return () => {
             cancelled = true;
+            if (preserveScroll) {
+                saveFeedScrollOffset(
+                    scrollKeyRef.current.tenantId,
+                    scrollKeyRef.current.urlId,
+                    lastScrollOffsetRef.current
+                );
+            }
             teardownFeedLive(store);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -117,6 +165,13 @@ export function FastCommentsFeed({ config, styles, assets, customToolbarButtons 
             await loadFeedPosts(store, { afterId: feedAfterId });
         } finally {
             setIsPaging(false);
+        }
+    };
+
+    const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const y = e?.nativeEvent?.contentOffset?.y;
+        if (typeof y === 'number' && Number.isFinite(y) && y >= 0) {
+            lastScrollOffsetRef.current = y;
         }
     };
 
@@ -174,6 +229,8 @@ export function FastCommentsFeed({ config, styles, assets, customToolbarButtons 
                 maxToRenderPerBatch={PAGE_SIZE}
                 onEndReachedThreshold={0.3}
                 onEndReached={onEndReached}
+                onScroll={onScroll}
+                scrollEventThrottle={16}
                 ListFooterComponent={isPaging ? <ActivityIndicator size="small" /> : null}
             />
             <FeedPostComposer
