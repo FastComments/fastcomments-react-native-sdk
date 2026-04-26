@@ -14,6 +14,7 @@ import { getDefaultFastCommentsStyles } from '../resources';
 import { FastCommentsRNConfig } from '../types/react-native-config';
 import { ShowHideCommentsToggle } from './show-hide-comments-toggle';
 import { LiveCommentingList } from './live-commenting-list';
+import { LiveStatusBar } from './live-status-bar';
 import { CAN_CLOSE, CAN_NOT_CLOSE, ModalMenu } from './modal-menu';
 import { getCommentMenuItems, OpenCommentMenuRequest } from './comment-menu';
 import { makeRequest } from '../services/http';
@@ -48,6 +49,7 @@ export function FastCommentsLiveCommenting({ config, styles, callbacks, assets }
     const readonlyConfig = useStoreValue(store, (s) => !!s.config.readonly);
     const rootOrderLength = useStoreValue(store, (s) => s.rootOrder.length);
     const sortDirection = useStoreValue(store, (s) => s.sortDirection);
+    const showLiveStatus = useStoreValue(store, (s) => !!s.config.showLiveStatus);
 
     const service = useRef<FastCommentsLiveCommentingService>();
     useEffect(() => {
@@ -181,6 +183,7 @@ export function FastCommentsLiveCommenting({ config, styles, callbacks, assets }
 
         return (
             <View style={styles.root}>
+                {showLiveStatus && <LiveStatusBar store={store} styles={styles} />}
                 {commentsVisible && (
                     <LiveCommentingList
                         callbacks={callbacks}

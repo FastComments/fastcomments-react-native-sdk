@@ -3107,6 +3107,11 @@ fast-json-stable-stringify@^2.1.0, fast-json-stable-stringify@2.x:
   resolved "https://registry.npmjs.org/fast-json-stable-stringify/-/fast-json-stable-stringify-2.1.0.tgz"
   integrity sha512-lhd/wF+Lk98HZoTCtlVraHtfh5XYijIjalXck7saUtuanSDyLMxnHhSXEDJqHxD7msR8D0uCmqlkwjCV8xvwHw==
 
+fastcomments-sdk@^3.2.1:
+  version "3.2.1"
+  resolved "https://registry.npmjs.org/fastcomments-sdk/-/fastcomments-sdk-3.2.1.tgz"
+  integrity sha512-5SWCLLe51VCGQZbuKLZH4t8Bfpx22NF2rI2tzFWuXenORPG3IRsZn3knX+ZrrAQCMHdQHm/xTyRmykIeiiZi5g==
+
 fastcomments-typescript@^3.0.0:
   version "3.0.0"
   resolved "https://registry.npmjs.org/fastcomments-typescript/-/fastcomments-typescript-3.0.0.tgz"

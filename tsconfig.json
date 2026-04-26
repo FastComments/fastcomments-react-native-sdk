@@ -2,7 +2,8 @@
   "compilerOptions": {
     "baseUrl": "./",
     "paths": {
-      "fastcomments-react-native-sdk": ["./src/index"]
+      "fastcomments-react-native-sdk": ["./src/index"],
+      "fastcomments-sdk/server": ["./node_modules/fastcomments-sdk/dist/server"]
     },
     "typeRoots": ["./node_modules/@types"],
     "allowUnreachableCode": false,

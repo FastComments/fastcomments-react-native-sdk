@@ -1,5 +1,6 @@
 import {FastCommentsBadge, FastCommentsCommentWidgetConfig, FastCommentsWidgetComment } from "fastcomments-typescript";
 import {UserNotification} from "../user-notification";
+import {FeedPost} from "../feed-post";
 
 export interface FastCommentsUserBadge extends FastCommentsBadge {
     userId?: string;
@@ -25,11 +26,14 @@ export interface WebsocketLiveNotificationEvent {
 
 export interface WebsocketLivePresenceUpdate {
     bId: string; // shortened to save bandwidth because these are frequent
-    type: 'presence-update';
+    /** Wire format is 'p-u' (shortened from 'presence-update' to save bandwidth). **/
+    type: 'p-u';
     /** User ids joined. **/
     uj?: string[];
     /** User ids left. **/
     ul?: string[];
+    /** Total connected subscriber count for this thread. **/
+    sc?: number;
 }
 
 export interface WebsocketLiveVote {
@@ -84,6 +88,37 @@ export interface WebsocketLiveNewConfigEvent {
     config: FastCommentsCommentWidgetConfig;
 }
 
+/**
+ * Wire-format feed post: backend sends MongoDB-style `_id`. Both `id` and
+ * `_id` are tolerated since we normalize at the consumer.
+ */
+export interface WireFeedPostEvent extends Omit<FeedPost, 'id'> {
+    _id?: string;
+    id?: string;
+}
+
+export interface WebsocketLiveNewFeedPostEvent {
+    broadcastId: string;
+    type: 'new-feed-post';
+    timestamp: number;
+    feedPost: WireFeedPostEvent;
+}
+
+export interface WebsocketLiveUpdatedFeedPostEvent {
+    broadcastId: string;
+    type: 'updated-feed-post';
+    timestamp: number;
+    feedPost: WireFeedPostEvent;
+}
+
+export interface WebsocketLiveDeletedFeedPostEvent {
+    broadcastId: string;
+    type: 'deleted-feed-post';
+    timestamp: number;
+    /** Server emits `postId`, not a full feedPost. */
+    postId: string;
+}
+
 export type WebsocketLiveEvent = WebsocketLiveNewBadgeEvent
     | WebsocketLiveRemovedBadgeEvent
     | WebsocketLiveNotificationEvent
@@ -92,4 +127,7 @@ export type WebsocketLiveEvent = WebsocketLiveNewBadgeEvent
     | WebsocketLiveDeletedVoteEvent
     | WebsocketLiveDeletedCommentEvent
     | WebsocketLiveNewOrUpdatedCommentEvent
-    | WebsocketLiveNewConfigEvent;
+    | WebsocketLiveNewConfigEvent
+    | WebsocketLiveNewFeedPostEvent
+    | WebsocketLiveUpdatedFeedPostEvent
+    | WebsocketLiveDeletedFeedPostEvent;

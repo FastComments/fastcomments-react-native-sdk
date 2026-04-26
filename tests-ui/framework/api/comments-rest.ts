@@ -1,3 +1,5 @@
+import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
+import type { CommentData } from 'fastcomments-sdk';
 import { FC_HOST, logHttp } from './host';
 import { TestTenant } from './tenant';
 
@@ -7,11 +9,6 @@ export interface SeedCommentParams {
     text: string;
     ssoToken: string;
     parentId?: string;
-}
-
-interface SaveCommentResponse {
-    status: string;
-    comment?: { _id: string; id?: string };
 }
 
 function newBroadcastId(): string {
@@ -24,31 +21,27 @@ function newBroadcastId(): string {
  */
 export async function seedComment(params: SeedCommentParams): Promise<string> {
     const { tenant, urlId, text, ssoToken, parentId } = params;
-    const url =
-        `${FC_HOST}/comments/${tenant.tenantId}/?` +
-        `broadcastId=${encodeURIComponent(newBroadcastId())}&` +
-        `urlId=${encodeURIComponent(urlId)}&` +
-        `sso=${encodeURIComponent(ssoToken)}`;
-    logHttp('POST', url);
-    const body: Record<string, unknown> = {
+    const sdk = new FastCommentsServerSDK({ basePath: FC_HOST });
+    const commentData: CommentData = {
         comment: text,
         commenterName: 'Tester',
         commenterEmail: 'tester@fctest.com',
         url: urlId,
         urlId,
+        parentId: parentId ?? null,
     };
-    if (parentId) body.parentId = parentId;
-
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+    logHttp('SDK', 'createCommentPublic', { tenantId: tenant.tenantId, urlId });
+    const json = await sdk.publicApi.createCommentPublic({
+        tenantId: tenant.tenantId,
+        urlId,
+        broadcastId: newBroadcastId(),
+        commentData,
+        sso: ssoToken,
     });
-    const json = (await res.json().catch(() => ({}))) as SaveCommentResponse;
-    if (json.status !== 'success' || !json.comment?._id) {
+    if (json.status !== 'success' || !json.comment?.id) {
         throw new Error(`seedComment failed: status=${json.status} body=${JSON.stringify(json).slice(0, 400)}`);
     }
-    return json.comment._id;
+    return json.comment.id;
 }
 
 /**
@@ -56,15 +49,16 @@ export async function seedComment(params: SeedCommentParams): Promise<string> {
  * 500ms gaps to absorb the eventual-consistency window.
  */
 export async function fetchLatestCommentId(tenant: TestTenant, urlId: string): Promise<string | null> {
-    const url = `${FC_HOST}/api/v1/comments?tenantId=${encodeURIComponent(tenant.tenantId)}&urlId=${encodeURIComponent(urlId)}&limit=1`;
+    const sdk = new FastCommentsServerSDK({ basePath: FC_HOST, apiKey: tenant.apiKey });
     for (let attempt = 0; attempt < 3; attempt++) {
         try {
-            logHttp('GET', url);
-            const res = await fetch(url, { method: 'GET', headers: { 'x-api-key': tenant.apiKey } });
-            if (res.ok) {
-                const json = (await res.json()) as { comments?: Array<{ _id: string }> };
-                if (json.comments && json.comments[0]) return json.comments[0]._id;
-            }
+            logHttp('SDK', 'getComments', { tenantId: tenant.tenantId, urlId, limit: 1 });
+            const json = await sdk.defaultApi.getComments({
+                tenantId: tenant.tenantId,
+                urlId,
+                limit: 1,
+            });
+            if (json.comments && json.comments[0]) return json.comments[0].id;
         } catch (e) {
             logHttp('fetchLatestCommentId attempt failed:', (e as Error).message);
         }

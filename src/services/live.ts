@@ -37,12 +37,15 @@ export function handleLiveEvent(store: FastCommentsStore, dataJSON: WebsocketLiv
             }
             break;
 
-        case 'presence-update': {
+        case 'p-u': {
             if (dataJSON.uj && dataJSON.uj.length > 0) {
                 state.setUsersOnline(dataJSON.uj, true);
             }
             if (dataJSON.ul && dataJSON.ul.length > 0) {
                 state.setUsersOnline(dataJSON.ul, false);
+            }
+            if (typeof dataJSON.sc === 'number') {
+                state.setSubscriberCount(Math.max(dataJSON.sc, 1));
             }
             break;
         }
@@ -145,6 +148,28 @@ export function handleLiveEvent(store: FastCommentsStore, dataJSON: WebsocketLiv
         case 'new-config':
             handleNewCustomConfig(store, dataJSON.config, true);
             break;
+
+        case 'new-feed-post':
+            // Banner-only mechanic: do NOT insert the post into the visible
+            // list. We just bump the counter so the host can render a
+            // "Show N new posts" banner. On banner tap the host reloads the
+            // head of the feed and we replace the in-memory list.
+            if (dataJSON.feedPost) state.incFeedNewPostsCount(1);
+            break;
+
+        case 'updated-feed-post': {
+            const fp = dataJSON.feedPost;
+            const id = fp?.id ?? fp?._id;
+            if (fp && id) {
+                const { _id, ...rest } = fp;
+                state.updateFeedPost({ ...rest, id });
+            }
+            break;
+        }
+
+        case 'deleted-feed-post':
+            if (dataJSON.postId) state.removeFeedPost(dataJSON.postId);
+            break;
     }
 }
 
@@ -186,17 +211,22 @@ export function persistSubscriberState(
         (dataJSON: WebsocketLiveEvent) => handleLiveEvent(store, dataJSON),
         (isConnected, lastEventTime) => {
             const s = store.getState();
+            s.setWsConnected(isConnected);
             const currentUser = s.currentUser;
             if (currentUser && 'id' in currentUser) {
                 s.setUsersOnline([currentUser.id], isConnected);
             }
             if (isConnected) {
+                // Seed subscriber count to 1 (self) until the next presence-update lands.
+                if (s.subscriberCount < 1) s.setSubscriberCount(1);
                 const isReconnect = !!lastEventTime;
                 if (isReconnect) {
                     s.setUserIdsToCommentIds({});
                     s.replaceUsersOnlineMap({});
                 }
                 void setupUserPresenceState(store, newUrlIdWS);
+            } else {
+                s.setSubscriberCount(0);
             }
         }
     );

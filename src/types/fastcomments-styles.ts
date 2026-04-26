@@ -15,6 +15,18 @@ export interface IFastCommentsStyles {
         separator?: ViewStyle,
         commentCount?: TextStyle,
     },
+    liveStatusBar?: {
+        root?: ViewStyle
+        connectionChip?: ViewStyle
+        connectionChipConnected?: ViewStyle
+        connectionChipDisconnected?: ViewStyle
+        connectionDot?: ViewStyle
+        connectionDotConnected?: ViewStyle
+        connectionDotDisconnected?: ViewStyle
+        connectionText?: TextStyle
+        userCountChip?: ViewStyle
+        userCountText?: TextStyle
+    },
     bottomArea?: {
         root?: ViewStyle,
         replyArea?: ViewStyle,
@@ -84,6 +96,16 @@ export interface IFastCommentsStyles {
         imageUploadModalProgressSpinnerSize?: number
         imageUploadModalProgressText?: TextStyle
     }
+    mentionPopup?: {
+        root?: ViewStyle
+        item?: ViewStyle
+        itemText?: TextStyle
+        avatar?: ImageStyle
+        loadingRow?: ViewStyle
+        loadingText?: TextStyle
+        emptyRow?: ViewStyle
+        emptyText?: TextStyle
+    }
     commentTextAreaEmoticonBar?: {
         root?: ViewStyle
         button?: ViewStyle
@@ -106,6 +128,10 @@ export interface IFastCommentsStyles {
         avatarWrapperDefault?: ViewStyle
         avatarWrapper?: ViewStyle
         avatarImage?: ImageStyle
+        /** Online presence badge overlaid on the bottom-right of the avatar. */
+        avatarOnlineBadge?: ViewStyle
+        /** Offline presence badge overlaid on the bottom-right of the avatar. */
+        avatarOfflineBadge?: ViewStyle
         root?: ViewStyle
         infoLeft?: ViewStyle
         infoRight?: ViewStyle
@@ -242,5 +268,26 @@ export interface IFastCommentsStyles {
         button?: ViewStyle,
         count?: TextStyle,
         text?: TextStyle
+    }
+    feed?: {
+        root?: ViewStyle
+        listContent?: ViewStyle
+        emptyState?: ViewStyle
+        emptyStateText?: TextStyle
+        loadFailed?: ViewStyle
+        loadFailedText?: TextStyle
+        newPostsBanner?: ViewStyle
+        newPostsBannerText?: TextStyle
+        post?: ViewStyle
+        postTitle?: TextStyle
+        postAuthor?: TextStyle
+        postContent?: TextStyle
+        postDate?: TextStyle
+        composer?: ViewStyle
+        composerInputTitle?: TextStyle
+        composerInput?: TextStyle
+        composerSubmit?: ViewStyle
+        composerSubmitText?: TextStyle
+        composerSubmitDisabled?: ViewStyle
     }
 }

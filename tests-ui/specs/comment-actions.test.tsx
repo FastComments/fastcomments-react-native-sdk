@@ -150,11 +150,7 @@ maybe('Comment actions UI tests', () => {
             label: 'menuItem-block visible',
         });
         fireEvent.press(queryByTestId('menuItem-block')!);
-
-        // NOTE: The RN SDK's block menu item runs `setCommentBlockedStatus`
-        // immediately - it does NOT show an Alert.alert confirmation that the
-        // Android SDK shows. Tracked as an SDK gap; for the test we just verify
-        // the block takes effect.
+        pressLatestAlertButton('destructive');
 
         // After block, the original text should be replaced by the
         // YOU_BLOCKED_THIS_USER translation and the original text should be gone.
@@ -170,6 +166,7 @@ maybe('Comment actions UI tests', () => {
             label: 'menuItem-unblock visible',
         });
         fireEvent.press(queryByTestId('menuItem-unblock')!);
+        pressLatestAlertButton('default');
 
         await pollUntil(() => !!queryByText('Original from A'), {
             timeoutMs: 15000,

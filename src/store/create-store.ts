@@ -5,6 +5,7 @@ import { createCommentsSlice } from './slices/comments';
 import { createConfigSlice, ConfigSliceInitial } from './slices/config';
 import { createPresenceSlice } from './slices/presence';
 import { createNotificationsSlice } from './slices/notifications';
+import { createFeedSlice } from './slices/feed';
 
 export function createFastCommentsStore(initial: ConfigSliceInitial): FastCommentsStore {
     return create<FastCommentsStoreState>()(
@@ -13,6 +14,7 @@ export function createFastCommentsStore(initial: ConfigSliceInitial): FastCommen
             ...createConfigSlice(initial)(set, get, api),
             ...createPresenceSlice(set, get, api),
             ...createNotificationsSlice(set, get, api),
+            ...createFeedSlice(set, get, api),
         }))
     ) as FastCommentsStore;
 }

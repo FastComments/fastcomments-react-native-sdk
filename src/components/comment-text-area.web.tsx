@@ -20,6 +20,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+// TODO(@mention popup, web): port the native MentionPopup to Quill. Requires a
+// Quill keyboard handler that fires on `@`, listens to text-change for the
+// active query, and inserts a Mention blot on selection. The native popup
+// covers iOS/Android; web users currently can paste `@username` but won't see
+// a typeahead. Tracked alongside the native MentionPopup feature.
 
 // Quill's snow theme sizes `.quill` to content (display:block, flex:0 1 auto)
 // so the editor never fills its parent RN View. Also the snow theme draws a

@@ -20,6 +20,8 @@ import {
     type OnChangeStateEvent,
 } from 'react-native-enriched';
 import type { NativeSyntheticEvent } from 'react-native';
+import { MentionPopup } from './mention-popup';
+import { MentionUser } from '../services/mentions';
 
 // Library's own event types follow snake->camelCase with `strikeThrough`.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -76,6 +78,45 @@ const defaultToolbarButtons: ToolbarButtonConfig = {
     gif: true,
 };
 
+/**
+ * Strip simple HTML tags / decode common entities so we can detect `@...` triggers
+ * in rich-text HTML the editor emits. Comment editors typically wrap text in
+ * <p>/<div> with breaks; we just need readable text for the trigger regex.
+ */
+function htmlToPlainText(html: string): string {
+    if (!html) return '';
+    const stripped = html
+        .replace(/<br\s*\/?>(\n)?/gi, '\n')
+        .replace(/<\/(p|div|li)>/gi, '\n')
+        .replace(/<[^>]+>/g, '');
+    return stripped
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+}
+
+/**
+ * Returns the active mention query (text after the most recent `@` that starts
+ * a token) or undefined when no mention is active. A trailing space terminates
+ * the mention.
+ */
+export function detectMentionQuery(value: string): string | undefined {
+    const text = htmlToPlainText(value);
+    const atIdx = text.lastIndexOf('@');
+    if (atIdx === -1) return undefined;
+    if (atIdx > 0) {
+        const prev = text.charAt(atIdx - 1);
+        if (!/\s/.test(prev)) return undefined;
+    }
+    const after = text.substring(atIdx + 1);
+    if (/\n/.test(after)) return undefined;
+    if (after.length > 0 && /\s$/.test(after)) return undefined;
+    return after;
+}
+
 export function CommentTextArea({
     emoticonBarConfig,
     focusObserver,
@@ -99,6 +140,7 @@ export function CommentTextArea({
     const htmlRef = useRef<string>(value || '');
     const [imageUploadProgress, setImageUploadProgress] = useState<number | null>(null);
     const [active, setActive] = useState<ActiveFormats>({ bold: false, italic: false, underline: false, strikethrough: false });
+    const [mentionQuery, setMentionQuery] = useState<string | undefined>(undefined);
 
     const buttons = { ...defaultToolbarButtons, ...toolbarButtons };
 
@@ -106,6 +148,7 @@ export function CommentTextArea({
         if (value !== undefined && value !== htmlRef.current) {
             htmlRef.current = value;
             editorRef.current?.setValue(value);
+            setMentionQuery(detectMentionQuery(value));
         }
     }, [value]);
 
@@ -120,7 +163,33 @@ export function CommentTextArea({
     output.getValue = () => htmlRef.current.substring(0, maxLength);
 
     const onChangeHtml = useCallback((e: NativeSyntheticEvent<OnChangeHtmlEvent>) => {
-        htmlRef.current = e.nativeEvent.value;
+        const next = e.nativeEvent.value;
+        htmlRef.current = next;
+        setMentionQuery(detectMentionQuery(next));
+    }, []);
+
+    const handleMentionSelect = useCallback((user: MentionUser) => {
+        const label = user.displayName || user.name;
+        const current = htmlRef.current || '';
+        const plain = htmlToPlainText(current);
+        const atIdx = plain.lastIndexOf('@');
+        // Only safely rewrite when the editor's value is plain text (no HTML
+        // markup difference). When the editor has rich HTML, we replace the
+        // raw current value with a plain-text-friendly mention insert; the
+        // editor will re-render via setValue.
+        let nextValue: string;
+        if (current === plain) {
+            nextValue = current.substring(0, atIdx) + `@${label} `;
+        } else {
+            nextValue = current.replace(/@[^@<>\n]*$/, `@${label} `);
+            if (nextValue === current) {
+                // Fallback: append.
+                nextValue = current + `@${label} `;
+            }
+        }
+        htmlRef.current = nextValue;
+        editorRef.current?.setValue(nextValue);
+        setMentionQuery(undefined);
     }, []);
 
     const onChangeState = useCallback((e: NativeSyntheticEvent<OnChangeStateEvent>) => {
@@ -225,6 +294,13 @@ export function CommentTextArea({
                     }}
                 />
             </View>
+
+            <MentionPopup
+                store={store}
+                styles={styles}
+                query={mentionQuery}
+                onSelect={handleMentionSelect}
+            />
 
             {emoticonBarConfig?.emoticons && (
                 <ScrollView horizontal style={styles.commentTextAreaEmoticonBar?.root}>

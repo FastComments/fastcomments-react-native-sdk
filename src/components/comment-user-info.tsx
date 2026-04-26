@@ -61,12 +61,16 @@ export function CommentUserInfo(props: CommentUserInfoProps) {
         translations,
         store
     } = props;
+    // Activity icon renders as a positioned-absolute badge inside the avatar wrapper.
+    // The wrapper already has position: 'relative' from styles.commentUserInfo.avatarWrapper(Default).
     const activityIcon = CommentUserActivityIcon({
         disableLiveCommenting: config.disableLiveCommenting,
         userId: comment.userId,
         anonUserId: comment.anonUserId,
         store,
-        styles
+        styles,
+        onlineStyle: styles.commentUserInfo?.avatarOnlineBadge,
+        offlineStyle: styles.commentUserInfo?.avatarOfflineBadge
     });
 
     const commenterLeftLink = !comment.isBlocked && comment.commenterLink;
@@ -91,7 +95,6 @@ export function CommentUserInfo(props: CommentUserInfoProps) {
     }
 
     const usernameElement = <View>
-        {config.hideAvatars && activityIcon}
         {commenterLeftLink ? <TouchableOpacity onPress={() => Linking.openURL(comment.commenterLink!)}>
             {
                 <Text style={styles.commentUserInfo?.usernameWithLink}>{commenterName}</Text>

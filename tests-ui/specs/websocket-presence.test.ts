@@ -2,6 +2,7 @@
  * Ports SDK-level WebSocket / presence integration tests.
  * These tests do NOT mount UI - they exercise subscribeToChanges() directly.
  */
+import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import { setupTestContext, teardownTestContext, TestContext } from '../framework/harness/test-context';
 import { subscribeToChanges } from '../../src/services/subscribe-to-changes';
 import { FC_HOST, FC_WS_HOST } from '../framework/api/host';
@@ -23,13 +24,14 @@ async function fetchWSParams(
 ): Promise<WSParams> {
     // Hit the public /comments endpoint, which returns tenantIdWS/urlIdWS/userIdWS
     // for the SSO-authenticated user.
-    const url =
-        `${FC_HOST}/comments/${tenantId}/?` +
-        `urlId=${encodeURIComponent(urlId)}` +
-        `&direction=NF&count=5&includeConfig=true&sso=${encodeURIComponent(ssoToken)}`;
-    const res = await fetch(url, { method: 'GET' });
-    if (!res.ok) throw new Error(`fetchWSParams failed: ${res.status}`);
-    const json = (await res.json()) as { tenantIdWS?: string; urlIdWS?: string; userIdWS?: string };
+    const sdk = new FastCommentsServerSDK({ basePath: FC_HOST });
+    const json = await sdk.publicApi.getCommentsPublic({
+        tenantId,
+        urlId,
+        limit: 5,
+        includeConfig: true,
+        sso: ssoToken,
+    });
     if (!json.tenantIdWS || !json.urlIdWS || !json.userIdWS) {
         throw new Error(`fetchWSParams missing fields: ${JSON.stringify(json).slice(0, 300)}`);
     }

@@ -78,6 +78,63 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 fontSize: 12
             }
         },
+        liveStatusBar: {
+            root: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingTop: 8,
+                paddingBottom: 8,
+                paddingLeft: 10,
+                paddingRight: 10
+            },
+            connectionChip: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingTop: 4,
+                paddingBottom: 4,
+                paddingLeft: 8,
+                paddingRight: 10,
+                borderRadius: 12,
+                backgroundColor: '#eef3ef'
+            },
+            connectionChipConnected: {
+                backgroundColor: '#e6f5ec'
+            },
+            connectionChipDisconnected: {
+                backgroundColor: '#f5e6e6'
+            },
+            connectionDot: {
+                width: 8,
+                height: 8,
+                borderRadius: 4,
+                marginRight: 6
+            },
+            connectionDotConnected: {
+                backgroundColor: '#3aa55c'
+            },
+            connectionDotDisconnected: {
+                backgroundColor: '#c0392b'
+            },
+            connectionText: {
+                fontSize: 12,
+                fontWeight: '600',
+                color: '#1f2d24'
+            },
+            userCountChip: {
+                marginLeft: 8,
+                paddingTop: 4,
+                paddingBottom: 4,
+                paddingLeft: 8,
+                paddingRight: 8,
+                borderRadius: 12,
+                backgroundColor: '#eef0f3'
+            },
+            userCountText: {
+                fontSize: 12,
+                fontWeight: '600',
+                color: '#1f242d'
+            }
+        },
         bottomArea: {
             replyArea: {
                 marginTop: 15,
@@ -446,7 +503,6 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 position: "relative",
                 width: 36,
                 height: 36,
-                overflow: "hidden",
                 borderRadius: 36,
                 shadowRadius: 5,
                 shadowColor: '#000',
@@ -461,7 +517,6 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 position: "relative",
                 width: 36,
                 height: 36,
-                overflow: "hidden",
                 borderRadius: 36,
                 borderWidth: 1,
                 borderColor: "#3f3f3f",
@@ -480,6 +535,29 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             avatarImage: {
                 width: 36,
                 height: 36,
+                borderRadius: 36,
+            },
+            avatarOnlineBadge: {
+                position: "absolute",
+                bottom: 0,
+                right: 0,
+                width: 10,
+                height: 10,
+                borderRadius: 10,
+                borderWidth: 2,
+                borderColor: "#fff",
+                backgroundColor: "#3ddc84"
+            },
+            avatarOfflineBadge: {
+                position: "absolute",
+                bottom: 0,
+                right: 0,
+                width: 10,
+                height: 10,
+                borderRadius: 10,
+                borderWidth: 2,
+                borderColor: "#fff",
+                backgroundColor: "transparent"
             }
         },
         commentUserInfoAsHTML: {},
@@ -1077,6 +1155,108 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 borderBottomColor: '#a3a3a3',
                 fontWeight: '500',
                 fontSize: 12
+            }
+        },
+        feed: {
+            root: {
+                flex: 1,
+                backgroundColor: '#fff'
+            },
+            listContent: {
+                paddingHorizontal: 0,
+                paddingBottom: 16
+            },
+            emptyState: {
+                padding: 24,
+                alignItems: 'center'
+            },
+            emptyStateText: {
+                color: '#888',
+                fontSize: 14
+            },
+            loadFailed: {
+                padding: 16,
+                alignItems: 'center'
+            },
+            loadFailedText: {
+                color: '#b00',
+                fontSize: 14
+            },
+            newPostsBanner: {
+                paddingVertical: 10,
+                paddingHorizontal: 16,
+                backgroundColor: '#1f6feb',
+                alignItems: 'center'
+            },
+            newPostsBannerText: {
+                color: '#fff',
+                fontSize: 14,
+                fontWeight: '600'
+            },
+            post: {
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                borderBottomWidth: 1,
+                borderBottomColor: '#eee'
+            },
+            postTitle: {
+                fontSize: 16,
+                fontWeight: '600',
+                marginBottom: 4
+            },
+            postAuthor: {
+                fontSize: 13,
+                color: '#666',
+                marginBottom: 6
+            },
+            postContent: {
+                fontSize: 14,
+                color: '#222',
+                marginBottom: 6
+            },
+            postDate: {
+                fontSize: 12,
+                color: '#999'
+            },
+            composer: {
+                padding: 12,
+                borderTopWidth: 1,
+                borderTopColor: '#eee',
+                backgroundColor: '#fafafa'
+            },
+            composerInputTitle: {
+                borderWidth: 1,
+                borderColor: '#ddd',
+                borderRadius: 4,
+                padding: 8,
+                marginBottom: 8,
+                fontSize: 14,
+                color: '#222'
+            },
+            composerInput: {
+                borderWidth: 1,
+                borderColor: '#ddd',
+                borderRadius: 4,
+                padding: 8,
+                minHeight: 60,
+                marginBottom: 8,
+                fontSize: 14,
+                color: '#222'
+            },
+            composerSubmit: {
+                alignSelf: 'flex-end',
+                paddingVertical: 8,
+                paddingHorizontal: 16,
+                backgroundColor: '#1f6feb',
+                borderRadius: 4
+            },
+            composerSubmitText: {
+                color: '#fff',
+                fontWeight: '600',
+                fontSize: 14
+            },
+            composerSubmitDisabled: {
+                backgroundColor: '#9ab5dd'
             }
         }
     };

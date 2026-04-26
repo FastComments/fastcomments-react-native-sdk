@@ -144,7 +144,15 @@ export function setupDarkModeSkin(config: FastCommentsRNConfig, styles: IFastCom
                 "borderColor": "#3f3f3f",
                 shadowColor: '#333',
             },
-            avatarImage: {}
+            avatarImage: {},
+            avatarOnlineBadge: {
+                borderColor: "#14181f",
+                backgroundColor: "#3ddc84"
+            },
+            avatarOfflineBadge: {
+                borderColor: "#14181f",
+                backgroundColor: "transparent"
+            }
         },
         commentVote: {
             commentVoteOptions: {},

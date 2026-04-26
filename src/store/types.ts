@@ -5,6 +5,7 @@ import type { FastCommentsSessionUser } from '../types/user';
 import type { ImageAssetConfig } from '../types/image-asset';
 import type { UserNotification } from '../types/user-notification';
 import type { RNComment } from '../types/react-native-comment';
+import type { FeedPost } from '../types/feed-post';
 import type {
     FastCommentsSortDirection,
     UserNotificationState,
@@ -108,6 +109,17 @@ export interface ConfigSlice {
 
 export interface PresenceSlice {
     userPresenceState: UserPresenceState;
+    /**
+     * Tracks the live WebSocket connection state. Flipped from
+     * subscribe-to-changes via `onConnectionStatusChange`. Surfaced by the
+     * optional live-status header bar (`config.showLiveStatus`).
+     */
+    wsConnected: boolean;
+    /**
+     * Total connected subscriber count for this thread, sourced from
+     * presence-update events (`sc` field). Surfaced by the live-status bar.
+     */
+    subscriberCount: number;
 
     setUsersOnline: (userIds: string[], online: boolean) => void;
     replaceUsersOnlineMap: (map: Record<string, boolean>) => void;
@@ -115,6 +127,8 @@ export interface PresenceSlice {
     addCommentIdForUser: (userId: string, commentId: string) => void;
     setHeartbeatActive: (active: boolean) => void;
     setPresencePollState: (state: UserPresenceState['presencePollState']) => void;
+    setWsConnected: (connected: boolean) => void;
+    setSubscriberCount: (count: number) => void;
 }
 
 export interface NotificationsSlice {
@@ -131,10 +145,33 @@ export interface NotificationsSlice {
     prependNotification: (notification: UserNotification) => void;
 }
 
+export interface FeedSlice {
+    feedPostsById: Record<string, FeedPost>;
+    feedPostOrder: string[];
+    feedHasMore: boolean;
+    feedNewPostsCount: number;
+    /** Last loaded post id, used as `afterId` cursor on the next page request. */
+    feedAfterId: string | undefined;
+    feedLoadFailed: boolean;
+
+    replaceFeedPosts: (posts: FeedPost[]) => void;
+    appendFeedPosts: (posts: FeedPost[]) => void;
+    prependFeedPost: (post: FeedPost) => void;
+    updateFeedPost: (post: FeedPost) => void;
+    removeFeedPost: (id: string) => void;
+    incFeedNewPostsCount: (delta: number) => void;
+    clearFeedNewPostsCount: () => void;
+    setFeedHasMore: (hasMore: boolean) => void;
+    setFeedAfterId: (id: string | undefined) => void;
+    setFeedLoadFailed: (failed: boolean) => void;
+    resetFeedForNewContext: () => void;
+}
+
 export type FastCommentsStoreState = CommentsSlice &
     ConfigSlice &
     PresenceSlice &
-    NotificationsSlice;
+    NotificationsSlice &
+    FeedSlice;
 
 export type FastCommentsStore = UseBoundStore<StoreApi<FastCommentsStoreState>>;
 

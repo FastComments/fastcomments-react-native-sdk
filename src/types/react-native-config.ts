@@ -12,4 +12,6 @@ export interface FastCommentsRNConfig extends FastCommentsCommentWidgetConfig {
     renderLikesToRight?: boolean
     /** Puts the like/voting area to below each comment. **/
     renderDateBelowComment?: boolean
+    /** Show the chat-style "Live" + user-count header strip above comments. **/
+    showLiveStatus?: boolean
 }

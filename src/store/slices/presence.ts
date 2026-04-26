@@ -14,6 +14,8 @@ export const createPresenceSlice: StateCreator<
         usersOnlineMap: {},
         userIdsToCommentIds: {},
     },
+    wsConnected: false,
+    subscriberCount: 0,
 
     setUsersOnline: (userIds, online) =>
         set((state) => {
@@ -65,4 +67,8 @@ export const createPresenceSlice: StateCreator<
         set((state) => ({
             userPresenceState: { ...state.userPresenceState, presencePollState },
         })),
+
+    setWsConnected: (connected) => set({ wsConnected: connected }),
+
+    setSubscriberCount: (count) => set({ subscriberCount: count }),
 });

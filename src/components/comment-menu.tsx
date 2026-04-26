@@ -336,6 +336,32 @@ export function getCommentMenuItems(
     }
 
     if (canBlockOrFlag) {
+        const promptBlock = async (doBlock: boolean) => {
+            const t = store.getState().translations;
+            const title = doBlock ? t.BLOCK_CONFIRM_TITLE : t.UNBLOCK_CONFIRM_TITLE;
+            const message = doBlock ? t.BLOCK_CONFIRM_MESSAGE : t.UNBLOCK_CONFIRM_MESSAGE;
+            const confirmLabel = doBlock ? t.BLOCK : t.UNBLOCK;
+            Alert.alert(title, message, [
+                {
+                    text: t.CANCEL,
+                    style: 'cancel',
+                },
+                {
+                    text: confirmLabel,
+                    style: doBlock ? 'destructive' : 'default',
+                    onPress: async () => {
+                        await setCommentBlockedStatus(comment, store, doBlock, onError);
+                        if (onUserBlocked) {
+                            const currentUser = store.getState().currentUser;
+                            if (currentUser && 'id' in currentUser) {
+                                onUserBlocked(currentUser.id, comment, doBlock);
+                            }
+                        }
+                    },
+                },
+            ]);
+        };
+
         menuItems.push(
             comment.isBlocked
                 ? {
@@ -354,13 +380,7 @@ export function getCommentMenuItems(
                           />
                       ),
                       handler: async () => {
-                          await setCommentBlockedStatus(comment, store, false, onError);
-                          if (onUserBlocked) {
-                              const currentUser = store.getState().currentUser;
-                              if (currentUser && 'id' in currentUser) {
-                                  onUserBlocked(currentUser.id, comment, false);
-                              }
-                          }
+                          await promptBlock(false);
                       },
                   }
                 : {
@@ -379,13 +399,7 @@ export function getCommentMenuItems(
                           />
                       ),
                       handler: async () => {
-                          await setCommentBlockedStatus(comment, store, true, onError);
-                          if (onUserBlocked) {
-                              const currentUser = store.getState().currentUser;
-                              if (currentUser && 'id' in currentUser) {
-                                  onUserBlocked(currentUser.id, comment, true);
-                              }
-                          }
+                          await promptBlock(true);
                       },
                   }
         );
