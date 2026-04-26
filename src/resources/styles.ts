@@ -1391,6 +1391,73 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 marginRight: 8,
                 borderRadius: 4,
                 resizeMode: 'cover'
+            },
+            reactionsRow: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                marginTop: 8
+            },
+            reactionChip: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: 4,
+                paddingHorizontal: 10,
+                borderRadius: 14,
+                backgroundColor: '#f0f2f5',
+                marginRight: 6,
+                marginBottom: 6
+            },
+            reactionChipActive: {
+                backgroundColor: '#dbeafe'
+            },
+            reactionChipGlyph: {
+                fontSize: 14,
+                marginRight: 4
+            },
+            reactionChipCount: {
+                fontSize: 12,
+                color: '#222',
+                fontWeight: '500'
+            },
+            reactionPickerButton: {
+                paddingVertical: 4,
+                paddingHorizontal: 10,
+                borderRadius: 14,
+                backgroundColor: '#eef2ff',
+                marginRight: 6,
+                marginBottom: 6
+            },
+            reactionPickerButtonText: {
+                fontSize: 12,
+                color: '#1f3a93',
+                fontWeight: '600'
+            },
+            reactionPickerOverlay: {
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: '#00000055'
+            },
+            reactionPickerSheet: {
+                flexDirection: 'row',
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                backgroundColor: '#fff',
+                borderRadius: 16,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 6,
+                elevation: 4
+            },
+            reactionPickerItem: {
+                paddingVertical: 6,
+                paddingHorizontal: 8,
+                marginHorizontal: 2
+            },
+            reactionPickerItemGlyph: {
+                fontSize: 26
             }
         }
     };

@@ -170,6 +170,20 @@ export function handleLiveEvent(store: FastCommentsStore, dataJSON: WebsocketLiv
         case 'deleted-feed-post':
             if (dataJSON.postId) state.removeFeedPost(dataJSON.postId);
             break;
+
+        case 'fr':
+        case 'dfr': {
+            // Remote reactions: we know +1/-1 but the server doesn't tell us
+            // who reacted, so we never touch the local user's `myReacts`
+            // (third arg undefined). Local writes are filtered out earlier by
+            // the `broadcastIdsSent` check.
+            const r = dataJSON.feedPostReact;
+            if (r?.postId && r.reactType) {
+                const delta = dataJSON.type === 'fr' ? 1 : -1;
+                state.applyFeedPostReactDelta(r.postId, r.reactType, delta);
+            }
+            break;
+        }
     }
 }
 

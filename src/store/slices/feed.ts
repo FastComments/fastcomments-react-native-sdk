@@ -117,6 +117,47 @@ export const createFeedSlice: StateCreator<FastCommentsStoreState, [], [], FeedS
     setFeedLoadFailed: (failed) => set({ feedLoadFailed: failed }),
     setFeedStatsTimerId: (id) => set({ feedStatsTimerId: id }),
 
+    applyFeedPostReactDelta: (postId, reactType, delta, myReactsValue) => {
+        const state = get();
+        const existing = state.feedPostsById[postId];
+        if (!existing) return;
+        const reacts: Record<string, number> = { ...(existing.reacts ?? {}) };
+        const next = (reacts[reactType] ?? 0) + delta;
+        if (next > 0) {
+            reacts[reactType] = next;
+        } else {
+            delete reacts[reactType];
+        }
+        let myReacts: Record<string, boolean> | undefined = existing.myReacts;
+        if (myReactsValue !== undefined) {
+            const updated: Record<string, boolean> = { ...(existing.myReacts ?? {}) };
+            if (myReactsValue) {
+                updated[reactType] = true;
+            } else {
+                delete updated[reactType];
+            }
+            myReacts = updated;
+        }
+        set({
+            feedPostsById: {
+                ...state.feedPostsById,
+                [postId]: { ...existing, reacts, myReacts },
+            },
+        });
+    },
+
+    setFeedPostReacts: (postId, reacts, myReacts) => {
+        const state = get();
+        const existing = state.feedPostsById[postId];
+        if (!existing) return;
+        set({
+            feedPostsById: {
+                ...state.feedPostsById,
+                [postId]: { ...existing, reacts, myReacts },
+            },
+        });
+    },
+
     resetFeedForNewContext: () =>
         set({
             feedPostsById: {},

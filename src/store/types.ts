@@ -198,6 +198,27 @@ export interface FeedSlice {
     resetFeedForNewContext: () => void;
     setFollowingUser: (userId: string, following: boolean) => void;
     setFollowPending: (userId: string, pending: boolean) => void;
+    /**
+     * Apply a reaction count delta and (optionally) update the current user's
+     * `myReacts` membership. `delta` is +1 or -1; `myReactsValue` is `true` when
+     * the local user just reacted, `false` when they undid, and `undefined`
+     * when the change came from a remote user.
+     */
+    applyFeedPostReactDelta: (
+        postId: string,
+        reactType: string,
+        delta: number,
+        myReactsValue?: boolean
+    ) => void;
+    /**
+     * Replace a post's full reactions/myReacts maps. Used by the reactions
+     * service when the server confirms an authoritative count and for revert-on-failure.
+     */
+    setFeedPostReacts: (
+        postId: string,
+        reacts: Record<string, number> | undefined,
+        myReacts: Record<string, boolean> | undefined
+    ) => void;
 }
 
 export type FastCommentsStoreState = CommentsSlice &

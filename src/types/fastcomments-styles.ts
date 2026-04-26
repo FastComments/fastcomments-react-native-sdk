@@ -313,5 +313,16 @@ export interface IFastCommentsStyles {
         composerMediaToolbar?: ViewStyle
         postMediaGallery?: ViewStyle
         postMediaImage?: ImageStyle
+        reactionsRow?: ViewStyle
+        reactionChip?: ViewStyle
+        reactionChipActive?: ViewStyle
+        reactionChipGlyph?: TextStyle
+        reactionChipCount?: TextStyle
+        reactionPickerButton?: ViewStyle
+        reactionPickerButtonText?: TextStyle
+        reactionPickerOverlay?: ViewStyle
+        reactionPickerSheet?: ViewStyle
+        reactionPickerItem?: ViewStyle
+        reactionPickerItemGlyph?: TextStyle
     }
 }

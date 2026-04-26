@@ -119,6 +119,33 @@ export interface WebsocketLiveDeletedFeedPostEvent {
     postId: string;
 }
 
+/**
+ * Server-side payload pushed by `publishFeedPostReactionUpdate` for a feed
+ * reaction (add or undo). The wire `type` discriminator is `'fr'` for new
+ * and `'dfr'` for deleted, matching `LiveEventType.NewFeedPostReact` and
+ * `LiveEventType.DeletedFeedPostReact` from the core.
+ */
+export interface WebsocketLiveFeedPostReact {
+    tenantId: string;
+    postId: string;
+    reactType: string;
+    count: number;
+}
+
+export interface WebsocketLiveNewFeedPostReactEvent {
+    broadcastId: string;
+    type: 'fr';
+    timestamp: number;
+    feedPostReact: WebsocketLiveFeedPostReact;
+}
+
+export interface WebsocketLiveDeletedFeedPostReactEvent {
+    broadcastId: string;
+    type: 'dfr';
+    timestamp: number;
+    feedPostReact: WebsocketLiveFeedPostReact;
+}
+
 export type WebsocketLiveEvent = WebsocketLiveNewBadgeEvent
     | WebsocketLiveRemovedBadgeEvent
     | WebsocketLiveNotificationEvent
@@ -130,4 +157,6 @@ export type WebsocketLiveEvent = WebsocketLiveNewBadgeEvent
     | WebsocketLiveNewConfigEvent
     | WebsocketLiveNewFeedPostEvent
     | WebsocketLiveUpdatedFeedPostEvent
-    | WebsocketLiveDeletedFeedPostEvent;
+    | WebsocketLiveDeletedFeedPostEvent
+    | WebsocketLiveNewFeedPostReactEvent
+    | WebsocketLiveDeletedFeedPostReactEvent;

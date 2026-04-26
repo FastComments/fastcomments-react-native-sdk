@@ -8,6 +8,7 @@ import { getPrettyDate } from '../services/pretty-date';
 import { FeedCustomToolbarButtonView } from './feed-custom-toolbar-button';
 import { FeedFollowPill } from './feed-follow-pill';
 import { FeedPostMediaGallery } from './feed-post-media-gallery';
+import { FeedPostReactions } from './feed-post-reactions';
 
 export interface FeedPostRowProps {
     post: FeedPost;
@@ -15,7 +16,8 @@ export interface FeedPostRowProps {
     styles: IFastCommentsStyles;
     customToolbarButtons?: FeedCustomToolbarButton[];
     /**
-     * Optional store reference. When omitted the follow pill is not rendered.
+     * Store reference. Required for reactions; if absent the follow pill and
+     * reactions strip are suppressed.
      */
     store?: FastCommentsStore;
     /**
@@ -97,6 +99,14 @@ export function FeedPostRow({ post, translations, styles, customToolbarButtons, 
                 <FeedPostMediaGallery postId={post.id} media={post.media} styles={styles} />
             ) : null}
             {date ? <Text style={styles.feed?.postDate}>{date}</Text> : null}
+            {store ? (
+                <FeedPostReactions
+                    post={post}
+                    store={store}
+                    translations={translations}
+                    styles={styles}
+                />
+            ) : null}
             {visibleButtons.length > 0 ? (
                 <View
                     testID={`feedCustomToolbar-${post.id}`}
