@@ -19,6 +19,8 @@ export * from './feed-custom-toolbar-button';
 export * from './feed-follow-pill';
 export * from './feed-new-posts-banner';
 export * from './feed-post-composer';
+export * from './feed-post-media-attach';
+export * from './feed-post-media-gallery';
 export * from './feed-post-row';
 export * from './gif-browser';
 export * from './live-commenting';

@@ -1,5 +1,10 @@
 import type { FastCommentsStore } from '../store/types';
-import type { FeedPost, CreateFeedPostParams } from '../types/feed-post';
+import type {
+    FeedPost,
+    CreateFeedPostParams,
+    FeedPostMediaItem,
+    FeedPostMediaItemAsset,
+} from '../types/feed-post';
 import { CommonHTTPResponse, createURLQueryString, makeRequest } from './http';
 import { newBroadcastId } from './broadcast-id';
 import { persistSubscriberState } from './live';
@@ -52,6 +57,7 @@ function normalize(post: WireFeedPost): FeedPost | undefined {
         createdAt: post.createdAt,
         reacts: post.reacts,
         commentCount: post.commentCount,
+        media: post.media,
     };
 }
 
@@ -187,6 +193,86 @@ export async function createFeedPost(
     } catch (e) {
         return { error: (e as Error).message };
     }
+}
+
+interface UploadImageWireResponse {
+    status: 'success' | 'failed';
+    url?: string;
+    media?: FeedPostMediaItemAsset[];
+    code?: string;
+    reason?: string;
+}
+
+export interface UploadFeedMediaProgress {
+    (loaded: number, total: number): void;
+}
+
+/**
+ * Uploads a single image (file path or remote URL) to the existing
+ * `/upload-image/{tenantId}` endpoint with `sizePreset=CrossPlatform` and
+ * returns a `FeedPostMediaItem` ready to attach to a feed post. If the input
+ * already starts with `http`, we wrap it as a single-asset media item without
+ * uploading (matches the Android `addImageUri` remote shortcut).
+ */
+export async function uploadFeedMediaItem(
+    store: FastCommentsStore,
+    fileOrUrl: string,
+    onProgress?: UploadFeedMediaProgress
+): Promise<{ item: FeedPostMediaItem } | { error: string }> {
+    const state = store.getState();
+    const tenantId = state.config.tenantId;
+    if (!tenantId) return { error: 'no-tenant-id' };
+
+    if (fileOrUrl.startsWith('http')) {
+        const item: FeedPostMediaItem = {
+            sizes: [{ src: fileOrUrl, w: 400, h: 300 }],
+        };
+        return { item };
+    }
+
+    return new Promise((resolve) => {
+        try {
+            const formData = new FormData();
+            formData.append('file', fileOrUrl);
+            const xhr = new XMLHttpRequest();
+            xhr.open(
+                'POST',
+                state.apiHost + '/upload-image/' + encodeURIComponent(tenantId) + '?sizePreset=CrossPlatform&urlId=FEEDS'
+            );
+            xhr.upload.onprogress = (ev) => {
+                if (ev.lengthComputable && onProgress) onProgress(ev.loaded, ev.total);
+            };
+            xhr.onload = () => {
+                if (xhr.status !== 200) {
+                    resolve({ error: xhr.response || 'upload-failed' });
+                    return;
+                }
+                try {
+                    const parsed = JSON.parse(xhr.response) as UploadImageWireResponse;
+                    if (parsed.status !== 'success') {
+                        resolve({ error: parsed.code ?? parsed.reason ?? 'upload-failed' });
+                        return;
+                    }
+                    const sizes: FeedPostMediaItemAsset[] = parsed.media
+                        ? parsed.media
+                        : parsed.url
+                          ? [{ src: parsed.url, w: 1000, h: 1000 }]
+                          : [];
+                    if (sizes.length === 0) {
+                        resolve({ error: 'no-sizes' });
+                        return;
+                    }
+                    resolve({ item: { sizes } });
+                } catch (e) {
+                    resolve({ error: (e as Error).message });
+                }
+            };
+            xhr.onerror = () => resolve({ error: 'upload-network-error' });
+            xhr.send(formData);
+        } catch (e) {
+            resolve({ error: (e as Error).message });
+        }
+    });
 }
 
 export async function deleteFeedPost(

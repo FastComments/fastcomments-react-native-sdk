@@ -300,5 +300,18 @@ export interface IFastCommentsStyles {
         /** Outlined / neutral background while already following. */
         followPillFollowing?: ViewStyle
         followPillFollowingText?: TextStyle
+        composerMediaAttachButton?: ViewStyle
+        composerMediaAttachButtonText?: TextStyle
+        composerMediaPreviewStrip?: ViewStyle
+        composerMediaPreviewItem?: ViewStyle
+        composerMediaPreviewImage?: ImageStyle
+        composerMediaPreviewRemoveButton?: ViewStyle
+        composerMediaPreviewRemoveText?: TextStyle
+        composerMediaPreviewProgress?: ViewStyle
+        composerMediaPreviewProgressText?: TextStyle
+        composerMediaPreviewError?: TextStyle
+        composerMediaToolbar?: ViewStyle
+        postMediaGallery?: ViewStyle
+        postMediaImage?: ImageStyle
     }
 }

@@ -7,6 +7,7 @@ import type { FastCommentsSessionUser } from '../types/user';
 import { getPrettyDate } from '../services/pretty-date';
 import { FeedCustomToolbarButtonView } from './feed-custom-toolbar-button';
 import { FeedFollowPill } from './feed-follow-pill';
+import { FeedPostMediaGallery } from './feed-post-media-gallery';
 
 export interface FeedPostRowProps {
     post: FeedPost;
@@ -92,6 +93,9 @@ export function FeedPostRow({ post, translations, styles, customToolbarButtons, 
             </View>
             {post.title ? <Text style={styles.feed?.postTitle}>{post.title}</Text> : null}
             {content ? <Text style={styles.feed?.postContent}>{content}</Text> : null}
+            {post.media && post.media.length > 0 ? (
+                <FeedPostMediaGallery postId={post.id} media={post.media} styles={styles} />
+            ) : null}
             {date ? <Text style={styles.feed?.postDate}>{date}</Text> : null}
             {visibleButtons.length > 0 ? (
                 <View

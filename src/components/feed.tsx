@@ -26,6 +26,7 @@ import type { FastCommentsRNConfig } from '../types/react-native-config';
 import type { CreateFeedPostParams, FeedPost } from '../types/feed-post';
 import type { FeedCustomToolbarButton } from '../types/feed-custom-toolbar-button';
 import type {
+    FastCommentsCallbacks,
     GetTranslationsResponse,
     IFastCommentsStyles,
     ImageAssetConfig,
@@ -38,6 +39,7 @@ export interface FastCommentsFeedProps {
     styles?: IFastCommentsStyles;
     assets?: ImageAssetConfig;
     customToolbarButtons?: FeedCustomToolbarButton[];
+    callbacks?: FastCommentsCallbacks;
     /**
      * Override the default 30s stats-poll cadence. Primarily for tests so the
      * polling loop ticks within a reasonable jest timeout. When omitted the
@@ -46,13 +48,12 @@ export interface FastCommentsFeedProps {
     statsPollIntervalMs?: number;
     /**
      * Test hook: invoked once on mount with the per-instance store so tests
-     * can inspect feed state (e.g. assert that polled stats merged into
-     * `feedPostsById`). Not part of the public API.
+     * can inspect feed state. Not part of the public API.
      */
     onStoreReady?: (store: FastCommentsStore) => void;
 }
 
-export function FastCommentsFeed({ config, styles, assets, customToolbarButtons, statsPollIntervalMs, onStoreReady }: FastCommentsFeedProps) {
+export function FastCommentsFeed({ config, styles, assets, customToolbarButtons, callbacks, statsPollIntervalMs, onStoreReady }: FastCommentsFeedProps) {
     const effectiveStyles = styles ?? getDefaultFastCommentsStyles();
 
     const storeRef = useRef<FastCommentsStore | null>(null);
@@ -274,6 +275,8 @@ export function FastCommentsFeed({ config, styles, assets, customToolbarButtons,
                 translations={translations}
                 styles={effectiveStyles}
                 submit={onSubmit}
+                store={store}
+                pickImage={callbacks?.pickImage}
             />
         </View>
     );
