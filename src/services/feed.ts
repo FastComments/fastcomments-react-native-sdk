@@ -42,6 +42,7 @@ function normalize(post: WireFeedPost): FeedPost | undefined {
         contentHTML: post.contentHTML,
         createdAt: post.createdAt,
         reacts: post.reacts,
+        myReacts: post.myReacts,
         commentCount: post.commentCount,
     };
 }

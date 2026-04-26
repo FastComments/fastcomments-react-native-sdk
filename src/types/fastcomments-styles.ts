@@ -289,5 +289,16 @@ export interface IFastCommentsStyles {
         composerSubmit?: ViewStyle
         composerSubmitText?: TextStyle
         composerSubmitDisabled?: ViewStyle
+        reactionsRow?: ViewStyle
+        reactionChip?: ViewStyle
+        reactionChipActive?: ViewStyle
+        reactionChipGlyph?: TextStyle
+        reactionChipCount?: TextStyle
+        reactionPickerButton?: ViewStyle
+        reactionPickerButtonText?: TextStyle
+        reactionPickerOverlay?: ViewStyle
+        reactionPickerSheet?: ViewStyle
+        reactionPickerItem?: ViewStyle
+        reactionPickerItemGlyph?: TextStyle
     }
 }

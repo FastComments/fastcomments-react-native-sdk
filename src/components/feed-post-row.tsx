@@ -1,12 +1,15 @@
 import { Text, View } from 'react-native';
 import type { FeedPost } from '../types/feed-post';
 import type { IFastCommentsStyles } from '../types';
+import type { FastCommentsStore } from '../store/types';
 import { getPrettyDate } from '../services/pretty-date';
+import { FeedPostReactions } from './feed-post-reactions';
 
 export interface FeedPostRowProps {
     post: FeedPost;
     translations: Record<string, string>;
     styles: IFastCommentsStyles;
+    store: FastCommentsStore;
 }
 
 function decodeEntities(input: string): string {
@@ -35,7 +38,7 @@ function toEpoch(value: FeedPost['createdAt']): number {
     return Date.now();
 }
 
-export function FeedPostRow({ post, translations, styles }: FeedPostRowProps) {
+export function FeedPostRow({ post, translations, styles, store }: FeedPostRowProps) {
     const author = post.fromUserDisplayName ?? '';
     const content = stripHtml(post.contentHTML);
     const ts = toEpoch(post.createdAt);
@@ -50,6 +53,12 @@ export function FeedPostRow({ post, translations, styles }: FeedPostRowProps) {
             {author ? <Text style={styles.feed?.postAuthor}>{author}</Text> : null}
             {content ? <Text style={styles.feed?.postContent}>{content}</Text> : null}
             {date ? <Text style={styles.feed?.postDate}>{date}</Text> : null}
+            <FeedPostReactions
+                post={post}
+                store={store}
+                translations={translations}
+                styles={styles}
+            />
         </View>
     );
 }

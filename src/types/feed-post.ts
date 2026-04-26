@@ -15,6 +15,14 @@ export interface FeedPost {
     contentHTML?: string;
     createdAt: string | number | Date;
     reacts?: Record<string, number>;
+    /**
+     * Per-user reaction map: present (true) when the current user has reacted
+     * with that reactType. Hydrated client-side via the optimistic reaction
+     * flow and live `fr`/`dfr` events. Not on the wire shape from the feed
+     * list endpoint - that's tracked on a separate `user-reacts` call which
+     * the MVP doesn't make yet, so this is empty until the user reacts in-app.
+     */
+    myReacts?: Record<string, boolean>;
     commentCount?: number | null;
 }
 

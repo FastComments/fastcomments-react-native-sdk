@@ -119,7 +119,12 @@ export function FastCommentsFeed({ config, styles, assets }: FastCommentsFeedPro
     };
 
     const renderItem = (info: ListRenderItemInfo<FeedPost>) => (
-        <FeedPostRow post={info.item} translations={translations} styles={effectiveStyles} />
+        <FeedPostRow
+            post={info.item}
+            translations={translations}
+            styles={effectiveStyles}
+            store={store}
+        />
     );
 
     const empty = (
