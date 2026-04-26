@@ -41,6 +41,7 @@ export function FastCommentsFeed({ config, styles, assets }: FastCommentsFeedPro
     const feedHasMore = useStoreValue(store, (s) => s.feedHasMore);
     const feedAfterId = useStoreValue(store, (s) => s.feedAfterId);
     const feedLoadFailed = useStoreValue(store, (s) => s.feedLoadFailed);
+    const currentUser = useStoreValue(store, (s) => s.currentUser);
     const PAGE_SIZE = useStoreValue(store, (s) => s.PAGE_SIZE);
 
     const [isLoading, setIsLoading] = useState(true);
@@ -119,7 +120,13 @@ export function FastCommentsFeed({ config, styles, assets }: FastCommentsFeedPro
     };
 
     const renderItem = (info: ListRenderItemInfo<FeedPost>) => (
-        <FeedPostRow post={info.item} translations={translations} styles={effectiveStyles} />
+        <FeedPostRow
+            post={info.item}
+            translations={translations}
+            styles={effectiveStyles}
+            store={store}
+            currentUser={currentUser}
+        />
     );
 
     const empty = (

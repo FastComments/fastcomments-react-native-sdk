@@ -19,7 +19,16 @@ export interface GetFeedPostsResponse extends CommonHTTPResponse {
     urlIdWS?: string;
     userIdWS?: string;
     tenantIdWS?: string;
-    user?: { id?: string } | null;
+    user?: FeedResponseUser | null;
+}
+
+interface FeedResponseUser {
+    id?: string;
+    username?: string;
+    avatarSrc?: string | null;
+    displayLabel?: string;
+    email?: string;
+    authorized?: boolean;
 }
 
 export interface CreateFeedPostResponse extends CommonHTTPResponse {
@@ -83,9 +92,11 @@ export async function loadFeedPosts(
     const queryParams: Record<string, string | number | undefined> = {
         afterId: options.afterId,
         limit: options.limit ?? state.PAGE_SIZE,
-        // includeUserInfo is only set on the head request so the server can build
-        // the WebSocket routing identifiers (urlIdWS/tenantIdWS/userIdWS).
-        includeUserInfo: !options.afterId ? 1 : undefined,
+        // includeUserInfo is only set on the head request so the server can
+        // build the WebSocket routing identifiers AND populate `response.user`.
+        // Must be the literal string `true` because tsoa's boolean query
+        // parser only coerces `true` / `false`, not `1` / `0`.
+        includeUserInfo: !options.afterId ? 'true' : undefined,
     };
     if (options.tags && options.tags.length > 0) {
         queryParams.tags = options.tags.join(',');
@@ -117,6 +128,23 @@ export async function loadFeedPosts(
 
         if (response.urlIdWS && response.tenantIdWS && response.userIdWS) {
             persistSubscriberState(store, response.urlIdWS, response.tenantIdWS, response.userIdWS);
+        }
+
+        // Persist the resolved viewer so per-row UI (e.g. the follow pill) can
+        // skip the user's own posts. The wire `user` shape is a subset of
+        // FastCommentsLoggedInUser; map only the fields we know exist.
+        const respUser = response.user;
+        const respUserId = respUser?.id;
+        if (isHeadLoad && respUser && respUserId) {
+            fresh.setCurrentUser({
+                id: respUserId,
+                username: respUser.username ?? '',
+                email: respUser.email,
+                displayLabel: respUser.displayLabel,
+                authorized: respUser.authorized ?? true,
+                avatarSrc: respUser.avatarSrc ?? null,
+                hasBlockedUsers: false,
+            });
         }
 
         return { posts };

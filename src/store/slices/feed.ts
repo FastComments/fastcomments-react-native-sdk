@@ -12,6 +12,8 @@ export const createFeedSlice: StateCreator<FastCommentsStoreState, [], [], FeedS
     feedNewPostsCount: 0,
     feedAfterId: undefined,
     feedLoadFailed: false,
+    followingUserIds: new Set<string>(),
+    followPendingUserIds: new Set<string>(),
 
     replaceFeedPosts: (posts) => {
         const feedPostsById: Record<string, FeedPost> = {};
@@ -102,5 +104,23 @@ export const createFeedSlice: StateCreator<FastCommentsStoreState, [], [], FeedS
             feedNewPostsCount: 0,
             feedAfterId: undefined,
             feedLoadFailed: false,
+            followingUserIds: new Set<string>(),
+            followPendingUserIds: new Set<string>(),
         }),
+
+    setFollowingUser: (userId, following) => {
+        const state = get();
+        const next = new Set(state.followingUserIds);
+        if (following) next.add(userId);
+        else next.delete(userId);
+        set({ followingUserIds: next });
+    },
+
+    setFollowPending: (userId, pending) => {
+        const state = get();
+        const next = new Set(state.followPendingUserIds);
+        if (pending) next.add(userId);
+        else next.delete(userId);
+        set({ followPendingUserIds: next });
+    },
 });

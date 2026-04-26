@@ -279,6 +279,7 @@ export interface IFastCommentsStyles {
         newPostsBanner?: ViewStyle
         newPostsBannerText?: TextStyle
         post?: ViewStyle
+        postHeader?: ViewStyle
         postTitle?: TextStyle
         postAuthor?: TextStyle
         postContent?: TextStyle
@@ -289,5 +290,11 @@ export interface IFastCommentsStyles {
         composerSubmit?: ViewStyle
         composerSubmitText?: TextStyle
         composerSubmitDisabled?: ViewStyle
+        /** Filled / accent background while not following. */
+        followPill?: ViewStyle
+        followPillText?: TextStyle
+        /** Outlined / neutral background while already following. */
+        followPillFollowing?: ViewStyle
+        followPillFollowingText?: TextStyle
     }
 }
