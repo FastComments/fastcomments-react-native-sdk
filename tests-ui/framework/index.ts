@@ -3,6 +3,7 @@ export * from './api/tenant';
 export * from './api/sso';
 export * from './api/comments-rest';
 export * from './api/admin-rest';
+export * from './api/feed-rest';
 export * from './harness/alert-helper';
 export * from './harness/build-config';
 export * from './harness/poll';

@@ -289,5 +289,9 @@ export interface IFastCommentsStyles {
         composerSubmit?: ViewStyle
         composerSubmitText?: TextStyle
         composerSubmitDisabled?: ViewStyle
+        customToolbar?: ViewStyle
+        customToolbarButton?: ViewStyle
+        customToolbarButtonIcon?: ImageStyle
+        customToolbarButtonLabel?: TextStyle
     }
 }
