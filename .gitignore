@@ -68,3 +68,4 @@ example/index.js
 example/src/**/*.js
 index.js
 src/**/*.js
+.claude/

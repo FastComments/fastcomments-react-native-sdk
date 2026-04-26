@@ -1199,6 +1199,12 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 borderBottomWidth: 1,
                 borderBottomColor: '#eee'
             },
+            postHeader: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 6
+            },
             postTitle: {
                 fontSize: 16,
                 fontWeight: '600',
@@ -1207,7 +1213,33 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             postAuthor: {
                 fontSize: 13,
                 color: '#666',
-                marginBottom: 6
+                flexShrink: 1
+            },
+            followPill: {
+                paddingVertical: 4,
+                paddingHorizontal: 12,
+                borderRadius: 16,
+                backgroundColor: '#1f6feb',
+                marginLeft: 8
+            },
+            followPillText: {
+                color: '#fff',
+                fontSize: 12,
+                fontWeight: '600'
+            },
+            followPillFollowing: {
+                paddingVertical: 4,
+                paddingHorizontal: 12,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: '#c4c4c4',
+                backgroundColor: 'transparent',
+                marginLeft: 8
+            },
+            followPillFollowingText: {
+                color: '#444',
+                fontSize: 12,
+                fontWeight: '600'
             },
             postContent: {
                 fontSize: 14,

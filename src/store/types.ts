@@ -165,6 +165,19 @@ export interface FeedSlice {
      * in the same process).
      */
     feedStatsTimerId?: ReturnType<typeof setInterval>;
+    /**
+     * Per-store set of user ids the viewer is currently following. Scoped to
+     * this SDK instance (not module-global) so two SDK instances in one JS
+     * process - e.g. two users in the dual-instance test harness - keep
+     * independent follow state.
+     */
+    followingUserIds: Set<string>;
+    /**
+     * User ids whose follow state is currently mid-flight (request issued, no
+     * response yet). The pill disables itself while pending so the viewer
+     * can't double-tap and race the optimistic update.
+     */
+    followPendingUserIds: Set<string>;
 
     replaceFeedPosts: (posts: FeedPost[]) => void;
     appendFeedPosts: (posts: FeedPost[]) => void;
@@ -183,6 +196,8 @@ export interface FeedSlice {
     setFeedLoadFailed: (failed: boolean) => void;
     setFeedStatsTimerId: (id: ReturnType<typeof setInterval> | undefined) => void;
     resetFeedForNewContext: () => void;
+    setFollowingUser: (userId: string, following: boolean) => void;
+    setFollowPending: (userId: string, pending: boolean) => void;
 }
 
 export type FastCommentsStoreState = CommentsSlice &

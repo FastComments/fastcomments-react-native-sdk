@@ -69,6 +69,7 @@ export function FastCommentsFeed({ config, styles, assets, customToolbarButtons,
     const feedAfterId = useStoreValue(store, (s) => s.feedAfterId);
     const feedLoadFailed = useStoreValue(store, (s) => s.feedLoadFailed);
     const wsConnected = useStoreValue(store, (s) => s.wsConnected);
+    const currentUser = useStoreValue(store, (s) => s.currentUser);
     const PAGE_SIZE = useStoreValue(store, (s) => s.PAGE_SIZE);
 
     const [isLoading, setIsLoading] = useState(true);
@@ -215,6 +216,8 @@ export function FastCommentsFeed({ config, styles, assets, customToolbarButtons,
             translations={translations}
             styles={effectiveStyles}
             customToolbarButtons={customToolbarButtons}
+            store={store}
+            currentUser={currentUser}
         />
     );
 
