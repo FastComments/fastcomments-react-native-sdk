@@ -1,12 +1,15 @@
 import { Text, View } from 'react-native';
 import type { FeedPost } from '../types/feed-post';
+import type { FeedCustomToolbarButton } from '../types/feed-custom-toolbar-button';
 import type { IFastCommentsStyles } from '../types';
 import { getPrettyDate } from '../services/pretty-date';
+import { FeedCustomToolbarButtonView } from './feed-custom-toolbar-button';
 
 export interface FeedPostRowProps {
     post: FeedPost;
     translations: Record<string, string>;
     styles: IFastCommentsStyles;
+    customToolbarButtons?: FeedCustomToolbarButton[];
 }
 
 function decodeEntities(input: string): string {
@@ -35,11 +38,14 @@ function toEpoch(value: FeedPost['createdAt']): number {
     return Date.now();
 }
 
-export function FeedPostRow({ post, translations, styles }: FeedPostRowProps) {
+export function FeedPostRow({ post, translations, styles, customToolbarButtons }: FeedPostRowProps) {
     const author = post.fromUserDisplayName ?? '';
     const content = stripHtml(post.contentHTML);
     const ts = toEpoch(post.createdAt);
     const date = getPrettyDate(translations, ts);
+    const visibleButtons = (customToolbarButtons ?? []).filter(
+        (button) => !button.visible || button.visible(post)
+    );
     return (
         <View
             testID={`feedPostRow-${post.id}`}
@@ -50,6 +56,22 @@ export function FeedPostRow({ post, translations, styles }: FeedPostRowProps) {
             {author ? <Text style={styles.feed?.postAuthor}>{author}</Text> : null}
             {content ? <Text style={styles.feed?.postContent}>{content}</Text> : null}
             {date ? <Text style={styles.feed?.postDate}>{date}</Text> : null}
+            {visibleButtons.length > 0 ? (
+                <View
+                    testID={`feedCustomToolbar-${post.id}`}
+                    accessibilityLabel={`feedCustomToolbar-${post.id}`}
+                    style={styles.feed?.customToolbar}
+                >
+                    {visibleButtons.map((button) => (
+                        <FeedCustomToolbarButtonView
+                            key={button.id}
+                            button={button}
+                            post={post}
+                            styles={styles}
+                        />
+                    ))}
+                </View>
+            ) : null}
         </View>
     );
 }

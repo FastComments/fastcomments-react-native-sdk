@@ -11,6 +11,7 @@ import { FeedPostComposer } from './feed-post-composer';
 import { FeedPostRow } from './feed-post-row';
 import type { FastCommentsRNConfig } from '../types/react-native-config';
 import type { CreateFeedPostParams, FeedPost } from '../types/feed-post';
+import type { FeedCustomToolbarButton } from '../types/feed-custom-toolbar-button';
 import type {
     GetTranslationsResponse,
     IFastCommentsStyles,
@@ -23,9 +24,10 @@ export interface FastCommentsFeedProps {
     config: FastCommentsRNConfig;
     styles?: IFastCommentsStyles;
     assets?: ImageAssetConfig;
+    customToolbarButtons?: FeedCustomToolbarButton[];
 }
 
-export function FastCommentsFeed({ config, styles, assets }: FastCommentsFeedProps) {
+export function FastCommentsFeed({ config, styles, assets, customToolbarButtons }: FastCommentsFeedProps) {
     const effectiveStyles = styles ?? getDefaultFastCommentsStyles();
 
     const storeRef = useRef<FastCommentsStore | null>(null);
@@ -119,7 +121,12 @@ export function FastCommentsFeed({ config, styles, assets }: FastCommentsFeedPro
     };
 
     const renderItem = (info: ListRenderItemInfo<FeedPost>) => (
-        <FeedPostRow post={info.item} translations={translations} styles={effectiveStyles} />
+        <FeedPostRow
+            post={info.item}
+            translations={translations}
+            styles={effectiveStyles}
+            customToolbarButtons={customToolbarButtons}
+        />
     );
 
     const empty = (

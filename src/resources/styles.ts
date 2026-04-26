@@ -1257,6 +1257,31 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             },
             composerSubmitDisabled: {
                 backgroundColor: '#9ab5dd'
+            },
+            customToolbar: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginTop: 8,
+                flexWrap: 'wrap'
+            },
+            customToolbarButton: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: 6,
+                paddingHorizontal: 10,
+                marginRight: 8,
+                borderRadius: 4,
+                backgroundColor: '#f2f2f2'
+            },
+            customToolbarButtonIcon: {
+                width: 16,
+                height: 16,
+                marginRight: 6,
+                resizeMode: 'contain'
+            },
+            customToolbarButtonLabel: {
+                fontSize: 12,
+                color: '#222'
             }
         }
     };
