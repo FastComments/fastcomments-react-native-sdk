@@ -131,9 +131,9 @@ maybe('Feed media-attach (dual-instance)', () => {
         await pollUntil(
             () => {
                 const nodes = a.UNSAFE_root.findAll(
-                    (n) =>
-                        typeof (n.props as { testID?: string }).testID === 'string' &&
-                        ((n.props as { testID?: string }).testID as string).startsWith('feedPostMedia-')
+                    (n: { props: { testID?: string } }) =>
+                        typeof n.props.testID === 'string' &&
+                        n.props.testID.startsWith('feedPostMedia-')
                 );
                 return nodes.length > 0;
             },

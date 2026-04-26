@@ -105,9 +105,9 @@ maybe('Feed reactions (dual-instance)', () => {
         // wraps a testID `feedPostReactions-{postId}`; we walk from the matching
         // post row up via the testID prefix.
         const reactionsWrappers = b.UNSAFE_root.findAll(
-            (n) =>
-                typeof (n.props as { testID?: unknown }).testID === 'string' &&
-                ((n.props as { testID: string }).testID).startsWith('feedPostReactions-')
+            (n: { props: { testID?: unknown } }) =>
+                typeof n.props.testID === 'string' &&
+                (n.props.testID as string).startsWith('feedPostReactions-')
         );
         if (reactionsWrappers.length === 0) {
             throw new Error('No feedPostReactions wrapper rendered');
