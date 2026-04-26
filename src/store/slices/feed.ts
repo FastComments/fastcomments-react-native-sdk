@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
 import type { FeedPost } from '../../types/feed-post';
-import type { FeedSlice, FastCommentsStoreState } from '../types';
+import type { FeedSlice, FastCommentsStoreState, FeedPostStatsPatch } from '../types';
 
 export const createFeedSlice: StateCreator<FastCommentsStoreState, [], [], FeedSlice> = (
     set,
@@ -87,12 +87,33 @@ export const createFeedSlice: StateCreator<FastCommentsStoreState, [], [], FeedS
         set({ feedPostsById, feedPostOrder });
     },
 
+    mergeFeedPostStats: (statsById: Record<string, FeedPostStatsPatch>) => {
+        const state = get();
+        let mutated = false;
+        const next: Record<string, FeedPost> = state.feedPostsById;
+        const draft: Record<string, FeedPost> = { ...next };
+        for (const id in statsById) {
+            const existing = next[id];
+            if (!existing) continue;
+            const patch = statsById[id];
+            // Skip if the patch is empty.
+            if (patch.commentCount === undefined && !patch.reacts) continue;
+            const merged: FeedPost = { ...existing };
+            if (patch.commentCount !== undefined) merged.commentCount = patch.commentCount;
+            if (patch.reacts) merged.reacts = patch.reacts;
+            draft[id] = merged;
+            mutated = true;
+        }
+        if (mutated) set({ feedPostsById: draft });
+    },
+
     incFeedNewPostsCount: (delta) =>
         set((s) => ({ feedNewPostsCount: Math.max(0, s.feedNewPostsCount + delta) })),
     clearFeedNewPostsCount: () => set({ feedNewPostsCount: 0 }),
     setFeedHasMore: (hasMore) => set({ feedHasMore: hasMore }),
     setFeedAfterId: (id) => set({ feedAfterId: id }),
     setFeedLoadFailed: (failed) => set({ feedLoadFailed: failed }),
+    setFeedStatsTimerId: (id) => set({ feedStatsTimerId: id }),
 
     resetFeedForNewContext: () =>
         set({

@@ -145,6 +145,11 @@ export interface NotificationsSlice {
     prependNotification: (notification: UserNotification) => void;
 }
 
+export interface FeedPostStatsPatch {
+    commentCount?: number | null;
+    reacts?: Record<string, number>;
+}
+
 export interface FeedSlice {
     feedPostsById: Record<string, FeedPost>;
     feedPostOrder: string[];
@@ -153,17 +158,30 @@ export interface FeedSlice {
     /** Last loaded post id, used as `afterId` cursor on the next page request. */
     feedAfterId: string | undefined;
     feedLoadFailed: boolean;
+    /**
+     * Active 30s stats-poll timer id. Set when `startFeedStatsPoll` mounts and
+     * cleared by `stopFeedStatsPoll`. Stored on the slice so the lifecycle can
+     * be tracked without module-global state (tests run multiple SDK instances
+     * in the same process).
+     */
+    feedStatsTimerId?: ReturnType<typeof setInterval>;
 
     replaceFeedPosts: (posts: FeedPost[]) => void;
     appendFeedPosts: (posts: FeedPost[]) => void;
     prependFeedPost: (post: FeedPost) => void;
     updateFeedPost: (post: FeedPost) => void;
     removeFeedPost: (id: string) => void;
+    /**
+     * Merge fresh stats (comment count + reaction counts) into existing
+     * `feedPostsById` entries. Posts not currently in the store are skipped.
+     */
+    mergeFeedPostStats: (statsById: Record<string, FeedPostStatsPatch>) => void;
     incFeedNewPostsCount: (delta: number) => void;
     clearFeedNewPostsCount: () => void;
     setFeedHasMore: (hasMore: boolean) => void;
     setFeedAfterId: (id: string | undefined) => void;
     setFeedLoadFailed: (failed: boolean) => void;
+    setFeedStatsTimerId: (id: ReturnType<typeof setInterval> | undefined) => void;
     resetFeedForNewContext: () => void;
 }
 
