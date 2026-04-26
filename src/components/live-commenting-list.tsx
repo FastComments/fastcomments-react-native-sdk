@@ -182,6 +182,8 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
         >
             <RenderHTMLConfigProvider>
                 <FlatList
+                    testID="recyclerViewComments"
+                    accessibilityLabel="recyclerViewComments"
                     style={styles.commentsWrapper}
                     contentContainerStyle={styles.commentsListContent}
                     data={viewableComments}
@@ -191,6 +193,17 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
                     onEndReached={onEndReached}
                     renderItem={renderItem}
                     ListHeaderComponent={header}
+                    ListEmptyComponent={
+                        <View
+                            testID="emptyStateView"
+                            accessibilityLabel="emptyStateView"
+                            style={styles.comment?.emptyState}
+                        >
+                            <Text style={styles.comment?.emptyStateText}>
+                                {translations.NO_COMMENTS || 'No comments yet'}
+                            </Text>
+                        </View>
+                    }
                     ListFooterComponent={
                         <View>
                             {isFetchingNextPage ? <ActivityIndicator size="small" /> : paginationAfterComments}

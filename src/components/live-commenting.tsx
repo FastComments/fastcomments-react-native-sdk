@@ -1,5 +1,5 @@
 import { CommentAreaMessage } from './comment-area-message';
-import { ActivityIndicator, Alert, BackHandler, View } from 'react-native';
+import { ActivityIndicator, Alert, BackHandler, Text, View } from 'react-native';
 import { FastCommentsLiveCommentingService } from '../services/fastcomments-live-commenting';
 import { useEffect, useRef, useState } from 'react';
 import {

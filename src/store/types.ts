@@ -95,6 +95,15 @@ export interface ConfigSlice {
     setWSIds: (urlIdWS?: string, tenantIdWS?: string, userIdWS?: string | null) => void;
     setLastSubscriberInstance: (instance: SubscriberInstance | undefined) => void;
     setSSOConfigString: (s: string | undefined) => void;
+    /**
+     * Broadcast ids of writes (comments, votes, pins, etc) originated by THIS
+     * store instance. The live-event handler uses this set to filter out
+     * echoes of the user's own actions. Must be per-store, not module-global,
+     * so multiple SDK instances (e.g. two users in tests, or a multi-tenant
+     * dashboard) don't suppress each other's events.
+     */
+    broadcastIdsSent: Set<string>;
+    rememberBroadcastId: (id: string) => void;
 }
 
 export interface PresenceSlice {

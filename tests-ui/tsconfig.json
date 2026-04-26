@@ -1,0 +1,16 @@
+{
+    "extends": "../tsconfig.json",
+    "compilerOptions": {
+        "rootDir": "./",
+        "types": ["jest", "react-native", "node"],
+        "moduleSuffixes": [".native", ""],
+        "noUnusedLocals": false,
+        "noUnusedParameters": false
+    },
+    "include": [
+        "./**/*.ts",
+        "./**/*.tsx",
+        "../src/**/*.ts",
+        "../src/**/*.tsx"
+    ]
+}

@@ -57,7 +57,7 @@ async function setCommentPinStatus(
         url: `/comments/${state.config.tenantId}/${comment._id}/${doPin ? 'pin' : 'unpin'}${createURLQueryString({
             sso: state.ssoConfigString,
             editKey: comment.editKey,
-            broadcastId: newBroadcastId(),
+            broadcastId: newBroadcastId(store),
         })}`,
     });
     if (response.status === 'success') {
@@ -86,7 +86,7 @@ async function setCommentBlockedStatus(
             urlId: state.config.urlId,
             sso: state.ssoConfigString,
             editKey: comment.editKey,
-            broadcastId: newBroadcastId(),
+            broadcastId: newBroadcastId(store),
         })}`,
         body: { commentIds: Object.keys(state.byId) },
     });
@@ -122,7 +122,7 @@ async function setCommentFlaggedStatus(
             urlId: state.config.urlId,
             sso: state.ssoConfigString,
             isFlagged: doFlag,
-            broadcastId: newBroadcastId(),
+            broadcastId: newBroadcastId(store),
         })}`,
     });
     if (response.status === 'success') {

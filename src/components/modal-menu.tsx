@@ -66,6 +66,8 @@ export function ModalMenu({
                         {items.map((item) =>
                             <TouchableOpacity
                                 key={item.id}
+                                testID={`menuItem-${item.id}`}
+                                accessibilityLabel={`menuItem-${item.id}`}
                                 style={styles.modalMenu?.menuOptionButton} onPress={async () => {
                                 setLoading(true);
                                 await item.handler((newModalId) => {

@@ -37,6 +37,7 @@ export const createConfigSlice =
         userIdWS: undefined,
         lastSubscriberInstance: undefined,
         ssoConfigString: undefined,
+        broadcastIdsSent: new Set<string>(),
 
         setConfig: (config) => set({ config }),
         mergeConfig: (partial) =>
@@ -52,4 +53,17 @@ export const createConfigSlice =
         setLastSubscriberInstance: (instance: SubscriberInstance | undefined) =>
             set({ lastSubscriberInstance: instance }),
         setSSOConfigString: (s) => set({ ssoConfigString: s }),
+        rememberBroadcastId: (id) =>
+            set((state) => {
+                const next = new Set(state.broadcastIdsSent);
+                next.add(id);
+                // Bound the set so it can't grow unbounded for very-long-lived
+                // sessions. The first-in entry is the oldest, so dropping the
+                // first element when over a threshold approximates an LRU.
+                if (next.size > 5000) {
+                    const firstKey = next.values().next().value;
+                    if (firstKey) next.delete(firstKey);
+                }
+                return { broadcastIdsSent: next };
+            }),
     });

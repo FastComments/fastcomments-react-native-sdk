@@ -77,6 +77,8 @@ export function CommentBottom(props: CommentBottomProps) {
                     />
                 )}
                 <TouchableOpacity
+                    testID={`replyButton-${comment._id}`}
+                    accessibilityLabel="replyButton"
                     style={styles.commentBottom?.commentBottomToolbarReply}
                     onPress={async () => {
                         const canClose = await requestSetReplyingTo!(isReplyBoxOpen ? null : comment);
@@ -97,7 +99,11 @@ export function CommentBottom(props: CommentBottomProps) {
                 </TouchableOpacity>
             </View>
             {isReplyBoxOpen && !config.useSingleReplyField && (
-                <View style={styles.commentBottom?.replyAreaRoot}>
+                <View
+                    testID={`replyIndicator-${comment._id}`}
+                    accessibilityLabel="replyIndicator"
+                    style={styles.commentBottom?.replyAreaRoot}
+                >
                     <ReplyArea
                         imageAssets={imageAssets}
                         onAuthenticationChange={onAuthenticationChange}

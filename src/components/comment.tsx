@@ -106,6 +106,8 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                 )}
                 {comment.isPinned && (
                     <Image
+                        testID={`pinIcon-${comment._id}`}
+                        accessibilityLabel="pinIcon"
                         source={
                             imageAssets[
                                 config.hasDarkBackground
@@ -116,8 +118,17 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                         style={styles.comment?.pin}
                     />
                 )}
+                {comment.isLocked && (
+                    <View
+                        testID={`lockIcon-${comment._id}`}
+                        accessibilityLabel="lockIcon"
+                        style={styles.comment?.lock}
+                    />
+                )}
                 {!usePressableEditTrigger && shouldShowMenu && (
                     <TouchableOpacity
+                        testID={`commentMenuButton-${comment._id}`}
+                        accessibilityLabel="commentMenuButton"
                         style={{ padding: 5 }}
                         onPress={() => openCommentMenu(comment, menuState!)}
                     >
@@ -199,5 +210,13 @@ export function FastCommentsCommentView(props: CommentViewProps) {
     const indentStyles = comment.depth
         ? { marginLeft: comment.depth * (styles.comment?.childIndent || 20) }
         : null;
-    return <View style={[styles.comment?.root, indentStyles]}>{contentWrapped}</View>;
+    return (
+        <View
+            testID={`commentRow-${comment._id}`}
+            accessibilityLabel="commentRow"
+            style={[styles.comment?.root, indentStyles]}
+        >
+            {contentWrapped}
+        </View>
+    );
 }

@@ -24,8 +24,21 @@ export function CommentUserActivityIcon({
 
     const isUserOnline =
         (userId && usersOnlineMap[userId]) || (anonUserId && usersOnlineMap[anonUserId]);
+    const idForTest = userId || anonUserId || 'unknown';
     if (isUserOnline) {
-        return <View style={styles.commentUserActivityIcon?.online} />;
+        return (
+            <View
+                testID={`onlineIndicator-${idForTest}`}
+                accessibilityLabel="onlineIndicator"
+                style={styles.commentUserActivityIcon?.online}
+            />
+        );
     }
-    return <View style={styles.commentUserActivityIcon?.offline} />;
+    return (
+        <View
+            testID={`offlineIndicator-${idForTest}`}
+            accessibilityLabel="offlineIndicator"
+            style={styles.commentUserActivityIcon?.offline}
+        />
+    );
 }

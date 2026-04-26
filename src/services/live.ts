@@ -2,7 +2,6 @@ import { SubscriberInstance, subscribeToChanges } from './subscribe-to-changes';
 import { checkBlockedComments } from './blocking';
 import { addCommentToPresenceIndex, handleNewRemoteUser, setupUserPresenceState } from './user-presense';
 import { RNComment, WebsocketLiveEvent } from '../types';
-import { broadcastIdsSent } from './broadcast-id';
 import { removeCommentOnClient } from './remove-comment-on-client';
 import { repositionComment } from './comment-positioning';
 import { incOverallCommentCount } from './comment-count';
@@ -12,24 +11,23 @@ import type { FastCommentsStore } from '../store/types';
 const SubscriberInstanceById: Record<string, SubscriberInstance | void> = {};
 
 export function handleLiveEvent(store: FastCommentsStore, dataJSON: WebsocketLiveEvent) {
-    if ('broadcastId' in dataJSON && broadcastIdsSent.includes(dataJSON.broadcastId)) {
-        return;
-    }
-    if ('bId' in dataJSON && broadcastIdsSent.includes(dataJSON.bId)) {
-        return;
-    }
-
     const state = store.getState();
+    if ('broadcastId' in dataJSON && state.broadcastIdsSent.has(dataJSON.broadcastId)) {
+        return;
+    }
+    if ('bId' in dataJSON && state.broadcastIdsSent.has(dataJSON.bId)) {
+        return;
+    }
 
     switch (dataJSON.type) {
         case 'new-badge':
             if (dataJSON.badge.userId) state.applyBadge(dataJSON.badge.userId, dataJSON.badge, false);
-            broadcastIdsSent.push(dataJSON.broadcastId);
+            state.rememberBroadcastId(dataJSON.broadcastId);
             break;
 
         case 'removed-badge':
             if (dataJSON.badge.userId) state.applyBadge(dataJSON.badge.userId, dataJSON.badge, true);
-            broadcastIdsSent.push(dataJSON.broadcastId);
+            state.rememberBroadcastId(dataJSON.broadcastId);
             break;
 
         case 'notification':

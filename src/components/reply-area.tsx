@@ -178,7 +178,7 @@ async function submit(
         moderationGroupIds: state.config.moderationGroupIds,
         isFromMyAccountPage: state.config.tenantId === 'all',
     };
-    const broadcastId = newBroadcastId();
+    const broadcastId = newBroadcastId(store);
 
     try {
         const response = await makeRequest<SaveCommentResponse>({
@@ -480,13 +480,21 @@ export function ReplyArea(props: ReplyAreaProps) {
         );
 
         const handleSubmit = async () => {
-            getLatestInputValue();
+            const latestValue = valueGetter.getValue ? valueGetter.getValue() : '';
+            setCommentReplyState({ comment: latestValue });
             if (commentReplyState.showSuccessMessage && !parentComment) {
                 setCommentReplyState({ showSuccessMessage: false });
             } else {
                 setCommentReplyState({ isReplySaving: true });
                 try {
-                    await submit({ store, parentComment, onReplySuccess, onAuthenticationChange }, commentReplyState, setCommentReplyState);
+                    // Pass the latest editor value directly: setCommentReplyState
+                    // above is queued, so commentReplyState still holds the prior
+                    // (empty) text on this tick.
+                    await submit(
+                        { store, parentComment, onReplySuccess, onAuthenticationChange },
+                        { ...commentReplyState, comment: latestValue },
+                        setCommentReplyState
+                    );
                 } catch (e) {
                     console.error('Failed to save a comment', e);
                 }
@@ -497,7 +505,12 @@ export function ReplyArea(props: ReplyAreaProps) {
         if (!commentReplyState.isReplySaving) {
             commentSubmitButton = (
                 <View style={styles.replyArea?.replyButtonWrapper}>
-                    <TouchableOpacity style={styles.replyArea?.replyButton} onPress={handleSubmit}>
+                    <TouchableOpacity
+                        testID="sendButton"
+                        accessibilityLabel="sendButton"
+                        style={styles.replyArea?.replyButton}
+                        onPress={handleSubmit}
+                    >
                         <Text style={styles.replyArea?.replyButtonText}>
                             {commentReplyState.showSuccessMessage ? translations.WRITE_ANOTHER_COMMENT : translations.SUBMIT_REPLY}
                         </Text>

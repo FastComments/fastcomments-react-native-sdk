@@ -23,8 +23,16 @@ export function PaginationNext({
     void hasMore;
 
     return (
-        <View style={styles.paginationNext?.root}>
-            <TouchableOpacity onPress={() => doPaginate(false)}>
+        <View
+            testID="paginationControls"
+            accessibilityLabel="paginationControls"
+            style={styles.paginationNext?.root}
+        >
+            <TouchableOpacity
+                testID="btnNextComments"
+                accessibilityLabel="btnNextComments"
+                onPress={() => doPaginate(false)}
+            >
                 <RenderHtml
                     source={{ html: translations.NEXT }}
                     contentWidth={width}
@@ -33,7 +41,11 @@ export function PaginationNext({
                 />
             </TouchableOpacity>
             {commentCountOnServer < 2000 && (
-                <TouchableOpacity onPress={() => doPaginate(true)}>
+                <TouchableOpacity
+                    testID="btnLoadAllComments"
+                    accessibilityLabel="btnLoadAllComments"
+                    onPress={() => doPaginate(true)}
+                >
                     <RenderHtml
                         source={{
                             html: translations.LOAD_ALL.replace(

@@ -81,7 +81,7 @@ async function doVote(
                     editKey: comment.editKey,
                     commentId: comment._id,
                     sso: state.ssoConfigString,
-                    broadcastId: newBroadcastId(),
+                    broadcastId: newBroadcastId(store),
                     urlId: state.config.urlId,
                 })}`,
             });
@@ -111,7 +111,7 @@ async function doVote(
                 url: `/comments/${tenantIdToUse}/${comment._id}/vote${createURLQueryString({
                     urlId: state.config.urlId,
                     sso: state.ssoConfigString,
-                    broadcastId: newBroadcastId(),
+                    broadcastId: newBroadcastId(store),
                     sessionId:
                         currentUser && 'sessionId' in currentUser ? (currentUser as any).sessionId : undefined,
                 })}`,
@@ -168,12 +168,21 @@ export function CommentVote(props: CommentVoteProps) {
 
     const showDownVoting = !config.disableDownVoting;
 
+    const upCount = Number(comment.votesUp || 0);
+    const downCount = Number(comment.votesDown || 0);
+
     const voteOptions = (
         <View style={styles.commentVote?.commentVoteOptions}>
-            {comment.votesUp ? (
-                <Text style={styles.commentVote?.votesUpText}>{Number(comment.votesUp).toLocaleString()}</Text>
-            ) : null}
+            <Text
+                testID={`upVoteCount-${comment._id}`}
+                accessibilityLabel="upVoteCount"
+                style={styles.commentVote?.votesUpText}
+            >
+                {upCount > 0 ? upCount.toLocaleString() : ''}
+            </Text>
             <Pressable
+                testID={`upVoteButton-${comment._id}`}
+                accessibilityLabel="upVoteButton"
                 style={styles.commentVote?.voteButton}
                 onPress={() => {
                     setVoteStateRaw((prev) => ({ ...prev, voteDir: 'up' }));
@@ -196,6 +205,8 @@ export function CommentVote(props: CommentVoteProps) {
             {showDownVoting && <View style={styles.commentVote?.voteDivider} />}
             {showDownVoting && (
                 <Pressable
+                    testID={`downVoteButton-${comment._id}`}
+                    accessibilityLabel="downVoteButton"
                     style={styles.commentVote?.voteButton}
                     onPress={() => {
                         setVoteStateRaw((prev) => ({ ...prev, voteDir: 'down' }));
@@ -216,11 +227,15 @@ export function CommentVote(props: CommentVoteProps) {
                     />
                 </Pressable>
             )}
-            {showDownVoting && comment.votesDown ? (
-                <Text style={styles.commentVote?.votesDownText}>
-                    {Number(comment.votesDown).toLocaleString()}
+            {showDownVoting && (
+                <Text
+                    testID={`downVoteCount-${comment._id}`}
+                    accessibilityLabel="downVoteCount"
+                    style={styles.commentVote?.votesDownText}
+                >
+                    {downCount > 0 ? downCount.toLocaleString() : ''}
                 </Text>
-            ) : null}
+            )}
         </View>
     );
 

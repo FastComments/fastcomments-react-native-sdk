@@ -22,7 +22,7 @@ async function deleteComment(
 ) {
     const state = store.getState();
     const tenantId = getActionTenantId({ store, tenantId: comment.tenantId });
-    const broadcastId = newBroadcastId();
+    const broadcastId = newBroadcastId(store);
     const response = await makeRequest<DeleteCommentResponse>({
         apiHost: state.apiHost,
         method: 'DELETE',
@@ -69,6 +69,7 @@ export async function CommentPromptDelete({ comment, store, onError, close }: Co
         },
         {
             text: translations.DELETE_CONFIRM,
+            style: 'destructive',
             onPress: async () => {
                 try {
                     await deleteComment(comment, store, onError);

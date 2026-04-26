@@ -36,7 +36,7 @@ async function saveCommentText(
 ) {
     const state = store.getState();
     const tenantId = getActionTenantId({ store, tenantId: comment.tenantId });
-    const broadcastId = newBroadcastId();
+    const broadcastId = newBroadcastId(store);
     const response = await makeRequest<UpdateCommentTextResponse>({
         apiHost: state.apiHost,
         method: 'POST',

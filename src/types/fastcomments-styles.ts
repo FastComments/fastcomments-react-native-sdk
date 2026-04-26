@@ -28,6 +28,9 @@ export interface IFastCommentsStyles {
         topRight?: ViewStyle
         displayDate?: TextStyle
         pin?: ImageStyle
+        lock?: ViewStyle
+        emptyState?: ViewStyle
+        emptyStateText?: TextStyle
         contentWrapper?: ViewStyle
         text?: MixedStyleDeclaration
         HTMLNodeStyleByClass?: MixedStyleRecord
