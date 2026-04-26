@@ -5,6 +5,7 @@ import { getDefaultFastCommentsStyles } from '../resources';
 import { addTranslationsToStore } from '../services/translations';
 import { createFeedPost, loadFeedPosts } from '../services/feed';
 import { teardownFeedLive } from '../services/feed-live';
+import { startFeedStatsPoll, stopFeedStatsPoll } from '../services/feed-stats';
 import { makeRequest } from '../services/http';
 import { FeedNewPostsBanner } from './feed-new-posts-banner';
 import { FeedPostComposer } from './feed-post-composer';
@@ -23,9 +24,21 @@ export interface FastCommentsFeedProps {
     config: FastCommentsRNConfig;
     styles?: IFastCommentsStyles;
     assets?: ImageAssetConfig;
+    /**
+     * Override the default 30s stats-poll cadence. Primarily for tests so the
+     * polling loop ticks within a reasonable jest timeout. When omitted the
+     * service falls back to its built-in default.
+     */
+    statsPollIntervalMs?: number;
+    /**
+     * Test hook: invoked once on mount with the per-instance store so tests
+     * can inspect feed state (e.g. assert that polled stats merged into
+     * `feedPostsById`). Not part of the public API.
+     */
+    onStoreReady?: (store: FastCommentsStore) => void;
 }
 
-export function FastCommentsFeed({ config, styles, assets }: FastCommentsFeedProps) {
+export function FastCommentsFeed({ config, styles, assets, statsPollIntervalMs, onStoreReady }: FastCommentsFeedProps) {
     const effectiveStyles = styles ?? getDefaultFastCommentsStyles();
 
     const storeRef = useRef<FastCommentsStore | null>(null);
@@ -41,6 +54,7 @@ export function FastCommentsFeed({ config, styles, assets }: FastCommentsFeedPro
     const feedHasMore = useStoreValue(store, (s) => s.feedHasMore);
     const feedAfterId = useStoreValue(store, (s) => s.feedAfterId);
     const feedLoadFailed = useStoreValue(store, (s) => s.feedLoadFailed);
+    const wsConnected = useStoreValue(store, (s) => s.wsConnected);
     const PAGE_SIZE = useStoreValue(store, (s) => s.PAGE_SIZE);
 
     const [isLoading, setIsLoading] = useState(true);
@@ -78,6 +92,26 @@ export function FastCommentsFeed({ config, styles, assets }: FastCommentsFeedPro
             cancelled = true;
             teardownFeedLive(store);
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Stats polling lifecycle. Run only while the WS is connected; flipping
+    // back to disconnected stops the timer, and a reconnect re-arms it.
+    useEffect(() => {
+        if (wsConnected) {
+            startFeedStatsPoll(store, statsPollIntervalMs);
+        } else {
+            stopFeedStatsPoll(store);
+        }
+        return () => {
+            stopFeedStatsPoll(store);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [wsConnected, statsPollIntervalMs]);
+
+    // Test-only hook: surface the per-instance store. Stable across renders.
+    useEffect(() => {
+        if (onStoreReady) onStoreReady(store);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
