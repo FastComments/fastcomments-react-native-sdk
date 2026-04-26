@@ -4,6 +4,18 @@
  * because the RN MVP only consumes a subset of fields).
  */
 
+export interface FeedPostMediaItemAsset {
+    w: number;
+    h: number;
+    src: string;
+}
+
+export interface FeedPostMediaItem {
+    title?: string;
+    linkUrl?: string;
+    sizes: FeedPostMediaItemAsset[];
+}
+
 export interface FeedPost {
     id: string;
     tenantId: string;
@@ -16,6 +28,7 @@ export interface FeedPost {
     createdAt: string | number | Date;
     reacts?: Record<string, number>;
     commentCount?: number | null;
+    media?: FeedPostMediaItem[];
 }
 
 export interface CreateFeedPostParams {
@@ -25,4 +38,5 @@ export interface CreateFeedPostParams {
     fromUserDisplayName?: string;
     tags?: string[];
     meta?: Record<string, string>;
+    media?: FeedPostMediaItem[];
 }

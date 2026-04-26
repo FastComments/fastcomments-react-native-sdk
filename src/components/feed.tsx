@@ -12,6 +12,7 @@ import { FeedPostRow } from './feed-post-row';
 import type { FastCommentsRNConfig } from '../types/react-native-config';
 import type { CreateFeedPostParams, FeedPost } from '../types/feed-post';
 import type {
+    FastCommentsCallbacks,
     GetTranslationsResponse,
     IFastCommentsStyles,
     ImageAssetConfig,
@@ -23,9 +24,10 @@ export interface FastCommentsFeedProps {
     config: FastCommentsRNConfig;
     styles?: IFastCommentsStyles;
     assets?: ImageAssetConfig;
+    callbacks?: FastCommentsCallbacks;
 }
 
-export function FastCommentsFeed({ config, styles, assets }: FastCommentsFeedProps) {
+export function FastCommentsFeed({ config, styles, assets, callbacks }: FastCommentsFeedProps) {
     const effectiveStyles = styles ?? getDefaultFastCommentsStyles();
 
     const storeRef = useRef<FastCommentsStore | null>(null);
@@ -173,6 +175,8 @@ export function FastCommentsFeed({ config, styles, assets }: FastCommentsFeedPro
                 translations={translations}
                 styles={effectiveStyles}
                 submit={onSubmit}
+                store={store}
+                pickImage={callbacks?.pickImage}
             />
         </View>
     );

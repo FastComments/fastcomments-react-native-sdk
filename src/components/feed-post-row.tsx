@@ -2,6 +2,7 @@ import { Text, View } from 'react-native';
 import type { FeedPost } from '../types/feed-post';
 import type { IFastCommentsStyles } from '../types';
 import { getPrettyDate } from '../services/pretty-date';
+import { FeedPostMediaGallery } from './feed-post-media-gallery';
 
 export interface FeedPostRowProps {
     post: FeedPost;
@@ -49,6 +50,9 @@ export function FeedPostRow({ post, translations, styles }: FeedPostRowProps) {
             {post.title ? <Text style={styles.feed?.postTitle}>{post.title}</Text> : null}
             {author ? <Text style={styles.feed?.postAuthor}>{author}</Text> : null}
             {content ? <Text style={styles.feed?.postContent}>{content}</Text> : null}
+            {post.media && post.media.length > 0 ? (
+                <FeedPostMediaGallery postId={post.id} media={post.media} styles={styles} />
+            ) : null}
             {date ? <Text style={styles.feed?.postDate}>{date}</Text> : null}
         </View>
     );

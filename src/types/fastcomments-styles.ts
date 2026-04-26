@@ -289,5 +289,18 @@ export interface IFastCommentsStyles {
         composerSubmit?: ViewStyle
         composerSubmitText?: TextStyle
         composerSubmitDisabled?: ViewStyle
+        composerMediaAttachButton?: ViewStyle
+        composerMediaAttachButtonText?: TextStyle
+        composerMediaPreviewStrip?: ViewStyle
+        composerMediaPreviewItem?: ViewStyle
+        composerMediaPreviewImage?: ImageStyle
+        composerMediaPreviewRemoveButton?: ViewStyle
+        composerMediaPreviewRemoveText?: TextStyle
+        composerMediaPreviewProgress?: ViewStyle
+        composerMediaPreviewProgressText?: TextStyle
+        composerMediaPreviewError?: TextStyle
+        composerMediaToolbar?: ViewStyle
+        postMediaGallery?: ViewStyle
+        postMediaImage?: ImageStyle
     }
 }

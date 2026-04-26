@@ -1257,6 +1257,83 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             },
             composerSubmitDisabled: {
                 backgroundColor: '#9ab5dd'
+            },
+            composerMediaToolbar: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                marginBottom: 8
+            },
+            composerMediaAttachButton: {
+                paddingVertical: 6,
+                paddingHorizontal: 12,
+                borderWidth: 1,
+                borderColor: '#a2a2a2',
+                borderRadius: 4,
+                backgroundColor: '#fbfbfb'
+            },
+            composerMediaAttachButtonText: {
+                fontSize: 13,
+                color: '#222'
+            },
+            composerMediaPreviewStrip: {
+                marginBottom: 8
+            },
+            composerMediaPreviewItem: {
+                width: 80,
+                height: 80,
+                marginRight: 8,
+                borderRadius: 4,
+                overflow: 'hidden',
+                backgroundColor: '#eee'
+            },
+            composerMediaPreviewImage: {
+                width: 80,
+                height: 80,
+                resizeMode: 'cover'
+            },
+            composerMediaPreviewRemoveButton: {
+                position: 'absolute',
+                top: 2,
+                right: 2,
+                paddingVertical: 2,
+                paddingHorizontal: 6,
+                backgroundColor: 'rgba(0,0,0,0.6)',
+                borderRadius: 10
+            },
+            composerMediaPreviewRemoveText: {
+                color: '#fff',
+                fontSize: 11,
+                fontWeight: '700'
+            },
+            composerMediaPreviewProgress: {
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                bottom: 0,
+                paddingVertical: 2,
+                backgroundColor: 'rgba(0,0,0,0.55)',
+                alignItems: 'center'
+            },
+            composerMediaPreviewProgressText: {
+                color: '#fff',
+                fontSize: 11
+            },
+            composerMediaPreviewError: {
+                fontSize: 11,
+                color: '#b00',
+                marginBottom: 4
+            },
+            postMediaGallery: {
+                marginTop: 6,
+                marginBottom: 6
+            },
+            postMediaImage: {
+                width: 200,
+                height: 200,
+                marginRight: 8,
+                borderRadius: 4,
+                resizeMode: 'cover'
             }
         }
     };

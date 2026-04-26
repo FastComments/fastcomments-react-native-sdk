@@ -17,6 +17,8 @@ export * from './comment-vote';
 export * from './feed';
 export * from './feed-new-posts-banner';
 export * from './feed-post-composer';
+export * from './feed-post-media-attach';
+export * from './feed-post-media-gallery';
 export * from './feed-post-row';
 export * from './gif-browser';
 export * from './live-commenting';
