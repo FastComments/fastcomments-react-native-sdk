@@ -5,48 +5,24 @@ import type {
     FeedPostMediaItem,
     FeedPostMediaItemAsset,
 } from '../types/feed-post';
-import { CommonHTTPResponse, createURLQueryString, makeRequest } from './http';
+import type { FeedPost as SDKFeedPost } from 'fastcomments-sdk';
+import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import { newBroadcastId } from './broadcast-id';
 import { persistSubscriberState } from './live';
 
 /**
- * Wire-format feed post: the backend sends MongoDB-style `_id`. We normalize
- * to `id` at the service boundary so all consumers (store, components, the
- * live-event handler) work with the OpenAPI shape.
+ * The typed SDK already maps the wire `_id` to `id` and parses `createdAt` to
+ * a Date during deserialization, so we only have to graft the per-post
+ * `myReacts` map (sent at the response root) onto each post before handing
+ * the local store the narrower `FeedPost` shape.
  */
-interface WireFeedPost extends Omit<FeedPost, 'id'> {
-    _id?: string;
-    id?: string;
-}
-
-export interface GetFeedPostsResponse extends CommonHTTPResponse {
-    feedPosts?: WireFeedPost[];
-    urlIdWS?: string;
-    userIdWS?: string;
-    tenantIdWS?: string;
-    user?: FeedResponseUser | null;
-}
-
-interface FeedResponseUser {
-    id?: string;
-    username?: string;
-    avatarSrc?: string | null;
-    displayLabel?: string;
-    email?: string;
-    authorized?: boolean;
-}
-
-export interface CreateFeedPostResponse extends CommonHTTPResponse {
-    feedPost?: WireFeedPost;
-}
-
-export interface DeleteFeedPostResponse extends CommonHTTPResponse {}
-
-function normalize(post: WireFeedPost): FeedPost | undefined {
-    const id = post.id ?? post._id;
-    if (!id) return undefined;
+function toFeedPost(
+    post: SDKFeedPost,
+    myReacts: Record<string, boolean> | undefined
+): FeedPost | undefined {
+    if (!post.id) return undefined;
     return {
-        id,
+        id: post.id,
         tenantId: post.tenantId,
         title: post.title,
         fromUserId: post.fromUserId,
@@ -56,17 +32,22 @@ function normalize(post: WireFeedPost): FeedPost | undefined {
         contentHTML: post.contentHTML,
         createdAt: post.createdAt,
         reacts: post.reacts,
-        myReacts: post.myReacts,
+        myReacts,
         commentCount: post.commentCount,
         media: post.media,
     };
 }
 
-function normalizeMany(posts: WireFeedPost[] | undefined): FeedPost[] {
+function toFeedPosts(
+    posts: SDKFeedPost[] | undefined,
+    myReactsByPost: { [postId: string]: { [reactType: string]: boolean } } | undefined
+): FeedPost[] {
     if (!posts) return [];
     const out: FeedPost[] = [];
     for (const p of posts) {
-        const n = normalize(p);
+        const pid = p.id;
+        const my = pid && myReactsByPost ? myReactsByPost[pid] : undefined;
+        const n = toFeedPost(p, my);
         if (n) out.push(n);
     }
     return out;
@@ -96,25 +77,19 @@ export async function loadFeedPosts(
         store.getState().setFeedLoadFailed(true);
         return { error: 'no-tenant-id' };
     }
-    const queryParams: Record<string, string | number | undefined> = {
-        afterId: options.afterId,
-        limit: options.limit ?? state.PAGE_SIZE,
-        // includeUserInfo is only set on the head request so the server can
-        // build the WebSocket routing identifiers AND populate `response.user`.
-        // Must be the literal string `true` because tsoa's boolean query
-        // parser only coerces `true` / `false`, not `1` / `0`.
-        includeUserInfo: !options.afterId ? 'true' : undefined,
-    };
-    if (options.tags && options.tags.length > 0) {
-        queryParams.tags = options.tags.join(',');
-    }
-    if (state.ssoConfigString) queryParams.sso = state.ssoConfigString;
+    const limit = options.limit ?? state.PAGE_SIZE;
 
     try {
-        const response = await makeRequest<GetFeedPostsResponse>({
-            apiHost: state.apiHost,
-            method: 'GET',
-            url: '/feed-posts/' + encodeURIComponent(tenantId) + createURLQueryString(queryParams),
+        const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+        const response = await sdk.publicApi.getFeedPostsPublic({
+            tenantId,
+            afterId: options.afterId,
+            limit,
+            tags: options.tags && options.tags.length > 0 ? options.tags : undefined,
+            sso: state.ssoConfigString || undefined,
+            // includeUserInfo is only set on the head request so the server can
+            // build the WebSocket routing identifiers AND populate `response.user`.
+            includeUserInfo: !options.afterId ? true : undefined,
         });
 
         if (response.status !== 'success') {
@@ -122,7 +97,7 @@ export async function loadFeedPosts(
             return { error: response.code ?? response.reason ?? 'load-failed' };
         }
 
-        const posts = normalizeMany(response.feedPosts);
+        const posts = toFeedPosts(response.feedPosts, response.myReacts);
         const isHeadLoad = !options.afterId;
         const fresh = store.getState();
         if (isHeadLoad) {
@@ -130,7 +105,7 @@ export async function loadFeedPosts(
         } else {
             fresh.appendFeedPosts(posts);
         }
-        fresh.setFeedHasMore(posts.length >= (queryParams.limit as number));
+        fresh.setFeedHasMore(posts.length >= limit);
         fresh.setFeedLoadFailed(false);
 
         if (response.urlIdWS && response.tenantIdWS && response.userIdWS) {
@@ -146,7 +121,7 @@ export async function loadFeedPosts(
             fresh.setCurrentUser({
                 id: respUserId,
                 username: respUser.username ?? '',
-                email: respUser.email,
+                email: respUser.email ?? undefined,
                 displayLabel: respUser.displayLabel,
                 authorized: respUser.authorized ?? true,
                 avatarSrc: respUser.avatarSrc ?? null,
@@ -169,23 +144,27 @@ export async function createFeedPost(
     const tenantId = state.config.tenantId;
     if (!tenantId) return { error: 'no-tenant-id' };
     const broadcastId = newBroadcastId(store);
-    const queryParams: Record<string, string | number | undefined> = { broadcastId };
-    if (state.ssoConfigString) queryParams.sso = state.ssoConfigString;
 
     try {
-        const response = await makeRequest<CreateFeedPostResponse>({
-            apiHost: state.apiHost,
-            method: 'POST',
-            url:
-                '/feed-posts/' +
-                encodeURIComponent(tenantId) +
-                createURLQueryString(queryParams),
-            body: params,
+        const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+        const response = await sdk.publicApi.createFeedPostPublic({
+            tenantId,
+            broadcastId,
+            sso: state.ssoConfigString || undefined,
+            createFeedPostParams: {
+                title: params.title,
+                contentHTML: params.contentHTML,
+                fromUserId: params.fromUserId,
+                fromUserDisplayName: params.fromUserDisplayName,
+                tags: params.tags,
+                meta: params.meta,
+                media: params.media,
+            },
         });
         if (response.status !== 'success' || !response.feedPost) {
             return { error: response.code ?? response.reason ?? 'create-failed' };
         }
-        const created = normalize(response.feedPost);
+        const created = toFeedPost(response.feedPost, undefined);
         if (!created) return { error: 'no-id' };
         // Locally insert at head; the live event echo will be filtered by
         // broadcastId so we don't double-insert.
@@ -284,19 +263,14 @@ export async function deleteFeedPost(
     const tenantId = state.config.tenantId;
     if (!tenantId) return { error: 'no-tenant-id' };
     const broadcastId = newBroadcastId(store);
-    const queryParams: Record<string, string | number | undefined> = { broadcastId };
-    if (state.ssoConfigString) queryParams.sso = state.ssoConfigString;
 
     try {
-        const response = await makeRequest<DeleteFeedPostResponse>({
-            apiHost: state.apiHost,
-            method: 'DELETE',
-            url:
-                '/feed-posts/' +
-                encodeURIComponent(tenantId) +
-                '/' +
-                encodeURIComponent(postId) +
-                createURLQueryString(queryParams),
+        const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+        const response = await sdk.publicApi.deleteFeedPostPublic({
+            tenantId,
+            postId,
+            broadcastId,
+            sso: state.ssoConfigString || undefined,
         });
         if (response.status !== 'success') {
             return { error: response.code ?? response.reason ?? 'delete-failed' };
