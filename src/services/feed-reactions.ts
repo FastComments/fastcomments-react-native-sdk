@@ -1,23 +1,14 @@
 /**
- * Feed reaction wrapper. The PublicApi binding `reactFeedPostPublic` is
- * route-level shared with the web frontend; we hand-roll the HTTP call here
- * because the SDK service layer (see `services/feed.ts`) routes everything
- * through `makeRequest` for SSO + `apiHost` consistency.
- *
- * Optimistic flow:
+ * Feed reaction wrapper. Optimistic flow:
  *   1. Mutate the store immediately (count delta + myReacts membership).
  *   2. POST to the server with `isUndo` flipped accordingly.
  *   3. On non-success status, revert the local mutation and surface a
  *      translated error via the supplied error handler.
  */
 import type { FastCommentsStore } from '../store/types';
-import { CommonHTTPResponse, createURLQueryString, makeRequest } from './http';
+import type { ReactBodyParams, ReactFeedPostPublic200Response } from 'fastcomments-sdk';
+import { createURLQueryString, makeRequest } from './http';
 import { newBroadcastId } from './broadcast-id';
-
-export interface ReactFeedPostResponse extends CommonHTTPResponse {
-    reactType?: string;
-    isUndo?: boolean;
-}
 
 export type FeedReactionResult = { ok: true; isUndo: boolean } | { error: string };
 
@@ -47,20 +38,26 @@ export async function reactToFeedPost(
     state.applyFeedPostReactDelta(postId, reactType, delta, myReactsValue);
 
     const broadcastId = newBroadcastId(store);
+    // TODO: switch to sdk.publicApi.reactFeedPostPublic once the OpenAPI spec
+    // exposes `urlId` on the route. Server reads `req.query.urlId` to populate
+    // `sessionDetails.urlId`, which is then used as the pubsub channel for
+    // the reaction event. The feed list/create/delete endpoints route their
+    // broadcasts via the literal 'FEEDS' channel, so we mirror that here so
+    // the live `fr` / `dfr` events land on the same channel A is subscribed
+    // to. The typed `ReactFeedPostPublicRequest` does not currently carry
+    // `urlId`, so we keep this single call on `makeRequest` until the spec is
+    // updated; everything else in this directory uses the typed SDK.
     const queryParams: Record<string, string | number | boolean | undefined> = {
         broadcastId,
         isUndo: isUndo ? true : undefined,
-        // Server reads `req.query.urlId` to populate `sessionDetails.urlId`,
-        // which is then used as the pubsub channel for the reaction event.
-        // The feed list/create/delete endpoints route their broadcasts via
-        // the literal 'FEEDS' channel, so we mirror that here so the live
-        // `fr` / `dfr` events land on the same channel A is subscribed to.
         urlId: 'FEEDS',
     };
     if (state.ssoConfigString) queryParams.sso = state.ssoConfigString;
 
+    const reactBody: ReactBodyParams = { reactType };
+
     try {
-        const response = await makeRequest<ReactFeedPostResponse>({
+        const response = await makeRequest<ReactFeedPostPublic200Response>({
             apiHost: state.apiHost,
             method: 'POST',
             url:
@@ -69,7 +66,7 @@ export async function reactToFeedPost(
                 '/react/' +
                 encodeURIComponent(postId) +
                 createURLQueryString(queryParams),
-            body: { reactType },
+            body: reactBody,
         });
         if (response.status !== 'success') {
             store.getState().setFeedPostReacts(postId, prevReacts, prevMyReacts);

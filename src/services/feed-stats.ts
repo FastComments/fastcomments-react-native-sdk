@@ -1,27 +1,16 @@
 /**
  * Periodic stats refresh for the Feed view. Mirrors the Android
  * `FastCommentsFeedView` polling loop (30s tick, GET /feed-posts/{tenantId}/stats,
- * merge `commentCount` + `reacts` into the existing posts cache).
- *
- * The transport is the same `makeRequest` helper used elsewhere in the SDK so
- * we don't pull a second HTTP path. Loop ownership lives on the store slice
- * (`feedStatsTimerId`) so multiple SDK instances in the same JS process
- * (typical in tests / multi-tenant dashboards) don't clobber each other.
+ * merge `commentCount` + `reacts` into the existing posts cache). Loop
+ * ownership lives on the store slice (`feedStatsTimerId`) so multiple SDK
+ * instances in the same JS process (typical in tests / multi-tenant
+ * dashboards) don't clobber each other.
  */
 import type { FastCommentsStore } from '../store/types';
 import type { FeedPostStatsPatch } from '../store/types';
-import { CommonHTTPResponse, createURLQueryString, makeRequest } from './http';
+import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 
 const DEFAULT_INTERVAL_MS = 30000;
-
-interface WireStats {
-    commentCount?: number | null;
-    reacts?: Record<string, number>;
-}
-
-export interface GetFeedPostsStatsResponse extends CommonHTTPResponse {
-    stats?: Record<string, WireStats>;
-}
 
 /**
  * One-shot fetch + merge. Skips when there are no posts loaded, the WS is
@@ -36,20 +25,12 @@ export async function refreshFeedStatsOnce(store: FastCommentsStore): Promise<vo
     const ids = state.feedPostOrder;
     if (ids.length === 0) return;
 
-    const queryParams: Record<string, string | string[] | number | undefined> = {
-        postIds: ids,
-    };
-    if (state.ssoConfigString) queryParams.sso = state.ssoConfigString;
-
     try {
-        const response = await makeRequest<GetFeedPostsStatsResponse>({
-            apiHost: state.apiHost,
-            method: 'GET',
-            url:
-                '/feed-posts/' +
-                encodeURIComponent(tenantId) +
-                '/stats' +
-                createURLQueryString(queryParams),
+        const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+        const response = await sdk.publicApi.getFeedPostsStats({
+            tenantId,
+            postIds: ids,
+            sso: state.ssoConfigString || undefined,
         });
         if (response.status !== 'success' || !response.stats) return;
         const patch: Record<string, FeedPostStatsPatch> = {};
