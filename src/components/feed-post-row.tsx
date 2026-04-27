@@ -4,6 +4,7 @@ import type { FeedCustomToolbarButton } from '../types/feed-custom-toolbar-butto
 import type { IFastCommentsStyles } from '../types';
 import type { FastCommentsStore } from '../store/types';
 import type { FastCommentsSessionUser } from '../types/user';
+import type { FollowStateProvider } from '../types/follow-state-provider';
 import { getPrettyDate } from '../services/pretty-date';
 import { FeedCustomToolbarButtonView } from './feed-custom-toolbar-button';
 import { FeedFollowPill } from './feed-follow-pill';
@@ -16,8 +17,8 @@ export interface FeedPostRowProps {
     styles: IFastCommentsStyles;
     customToolbarButtons?: FeedCustomToolbarButton[];
     /**
-     * Store reference. Required for reactions; if absent the follow pill and
-     * reactions strip are suppressed.
+     * Store reference. Required for reactions; if absent the reactions strip
+     * is suppressed.
      */
     store?: FastCommentsStore;
     /**
@@ -25,6 +26,15 @@ export interface FeedPostRowProps {
      * follow pill is suppressed.
      */
     currentUser?: FastCommentsSessionUser;
+    /**
+     * Host-supplied follow state. When absent, no follow pill is rendered.
+     */
+    followStateProvider?: FollowStateProvider;
+    /**
+     * Bumped by the parent feed when host follow state has changed externally
+     * so the pill rebinds via {@link FollowStateProvider#isFollowing}.
+     */
+    followStateRevision: number;
 }
 
 function getCurrentUserId(user: FastCommentsSessionUser | undefined): string | undefined {
@@ -61,7 +71,7 @@ function toEpoch(value: FeedPost['createdAt']): number {
     return Date.now();
 }
 
-export function FeedPostRow({ post, translations, styles, customToolbarButtons, store, currentUser }: FeedPostRowProps) {
+export function FeedPostRow({ post, translations, styles, customToolbarButtons, store, currentUser, followStateProvider, followStateRevision }: FeedPostRowProps) {
     const author = post.fromUserDisplayName ?? '';
     const content = stripHtml(post.contentHTML);
     const ts = toEpoch(post.createdAt);
@@ -71,7 +81,7 @@ export function FeedPostRow({ post, translations, styles, customToolbarButtons, 
     );
     const viewerId = getCurrentUserId(currentUser);
     const showFollowPill =
-        !!store &&
+        !!followStateProvider &&
         !!post.fromUserId &&
         !!viewerId &&
         post.fromUserId !== viewerId;
@@ -83,11 +93,12 @@ export function FeedPostRow({ post, translations, styles, customToolbarButtons, 
         >
             <View style={styles.feed?.postHeader}>
                 {author ? <Text style={styles.feed?.postAuthor}>{author}</Text> : null}
-                {showFollowPill && store !== undefined && post.fromUserId !== undefined ? (
+                {showFollowPill && followStateProvider !== undefined && post.fromUserId !== undefined ? (
                     <FeedFollowPill
-                        store={store}
+                        provider={followStateProvider}
+                        user={{ id: post.fromUserId, displayName: post.fromUserDisplayName ?? undefined }}
                         postId={post.id}
-                        targetUserId={post.fromUserId}
+                        revision={followStateRevision}
                         translations={translations}
                         styles={styles}
                     />

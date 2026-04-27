@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     FlatList,
@@ -25,6 +25,7 @@ import { FeedPostRow } from './feed-post-row';
 import type { FastCommentsRNConfig } from '../types/react-native-config';
 import type { CreateFeedPostParams, FeedPost } from '../types/feed-post';
 import type { FeedCustomToolbarButton } from '../types/feed-custom-toolbar-button';
+import type { FollowStateProvider } from '../types/follow-state-provider';
 import type {
     FastCommentsCallbacks,
     GetTranslationsResponse,
@@ -34,12 +35,26 @@ import type {
 import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
 
+export interface FastCommentsFeedHandle {
+    /**
+     * Re-read follow state from the registered {@link FollowStateProvider}.
+     * Pass a `userId` to limit re-binding to one row, or omit to invalidate
+     * every visible follow pill.
+     */
+    invalidateFollowState(userId?: string): void;
+}
+
 export interface FastCommentsFeedProps {
     config: FastCommentsRNConfig;
     styles?: IFastCommentsStyles;
     assets?: ImageAssetConfig;
     customToolbarButtons?: FeedCustomToolbarButton[];
     callbacks?: FastCommentsCallbacks;
+    /**
+     * Host-supplied follow state. When undefined no follow pill is rendered;
+     * mirrors Android's `FastCommentsFeedSDK.setFollowStateProvider`.
+     */
+    followStateProvider?: FollowStateProvider;
     /**
      * Override the default 30s stats-poll cadence. Primarily for tests so the
      * polling loop ticks within a reasonable jest timeout. When omitted the
@@ -53,7 +68,10 @@ export interface FastCommentsFeedProps {
     onStoreReady?: (store: FastCommentsStore) => void;
 }
 
-export function FastCommentsFeed({ config, styles, assets, customToolbarButtons, callbacks, statsPollIntervalMs, onStoreReady }: FastCommentsFeedProps) {
+export const FastCommentsFeed = forwardRef<FastCommentsFeedHandle, FastCommentsFeedProps>(function FastCommentsFeed(
+    { config, styles, assets, customToolbarButtons, callbacks, followStateProvider, statsPollIntervalMs, onStoreReady },
+    ref,
+) {
     const effectiveStyles = styles ?? getDefaultFastCommentsStyles();
 
     const storeRef = useRef<FastCommentsStore | null>(null);
@@ -75,6 +93,7 @@ export function FastCommentsFeed({ config, styles, assets, customToolbarButtons,
 
     const [isLoading, setIsLoading] = useState(true);
     const [isPaging, setIsPaging] = useState(false);
+    const [followStateRevision, setFollowStateRevision] = useState(0);
     const listRef = useRef<FlatList<FeedPost>>(null);
     const lastScrollOffsetRef = useRef<number>(0);
     const preserveScroll = config.preserveFeedScrollPosition !== false;
@@ -167,6 +186,12 @@ export function FastCommentsFeed({ config, styles, assets, customToolbarButtons,
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const invalidateFollowState = useCallback((_userId?: string) => {
+        setFollowStateRevision((n) => n + 1);
+    }, []);
+
+    useImperativeHandle(ref, () => ({ invalidateFollowState }), [invalidateFollowState]);
+
     const data: FeedPost[] = useMemo(
         () =>
             feedPostOrder
@@ -219,6 +244,8 @@ export function FastCommentsFeed({ config, styles, assets, customToolbarButtons,
             customToolbarButtons={customToolbarButtons}
             store={store}
             currentUser={currentUser}
+            followStateProvider={followStateProvider}
+            followStateRevision={followStateRevision}
         />
     );
 
@@ -280,4 +307,4 @@ export function FastCommentsFeed({ config, styles, assets, customToolbarButtons,
             />
         </View>
     );
-}
+});
