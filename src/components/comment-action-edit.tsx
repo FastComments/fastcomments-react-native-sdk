@@ -1,9 +1,9 @@
 import { View, Text, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
 import { FastCommentsCallbacks, FastCommentsImageAsset } from '../types';
 import { useState } from 'react';
-import { createURLQueryString, makeRequest } from '../services/http';
+import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
+import type { CommentTextUpdateRequest } from 'fastcomments-sdk';
 import { getActionTenantId } from '../services/tenants';
-import { UpdateCommentTextResponse } from '../types';
 import { newBroadcastId } from '../services/broadcast-id';
 import {
     CommentTextArea,
@@ -11,7 +11,6 @@ import {
     EmoticonBarConfig,
 } from './comment-text-area';
 import { IFastCommentsStyles, RNComment } from '../types';
-import { getMergedTranslations } from '../services/translations';
 import { showError } from '../services/show-error';
 import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
@@ -37,33 +36,24 @@ async function saveCommentText(
     const state = store.getState();
     const tenantId = getActionTenantId({ store, tenantId: comment.tenantId });
     const broadcastId = newBroadcastId(store);
-    const response = await makeRequest<UpdateCommentTextResponse>({
-        apiHost: state.apiHost,
-        method: 'POST',
-        url:
-            '/comments/' +
-            tenantId +
-            '/' +
-            comment._id +
-            '/update-text/' +
-            createURLQueryString({
-                urlId: state.config.urlId,
-                editKey: comment.editKey,
-                sso: state.ssoConfigString,
-                broadcastId,
-            }),
-        body: {
-            comment: newValue,
-        },
+    const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+    const commentTextUpdateRequest: CommentTextUpdateRequest = { comment: newValue };
+    const response = await sdk.publicApi.setCommentText({
+        tenantId,
+        commentId: comment._id,
+        broadcastId,
+        commentTextUpdateRequest,
+        editKey: comment.editKey,
+        sso: state.ssoConfigString,
     });
     if (response.status === 'success') {
         store.getState().mergeCommentFields(comment._id, {
             approved: response.comment.approved,
-            comment: response.comment.comment,
+            comment: newValue,
             commentHTML: response.comment.commentHTML,
         });
     } else {
-        const translations = getMergedTranslations(state.translations, response);
+        const translations = state.translations;
         const message =
             response.code === 'edit-key-invalid' ? translations.LOGIN_TO_EDIT : translations.ERROR_MESSAGE;
         showError(':(', message, translations.DISMISS, onError);

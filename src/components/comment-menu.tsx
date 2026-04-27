@@ -1,17 +1,17 @@
 import { Dispatch, SetStateAction } from 'react';
 import { FastCommentsCallbacks, FastCommentsImageAsset } from '../types';
 import { Alert, Image } from 'react-native';
-import { createURLQueryString, makeRequest } from '../services/http';
+import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
+import type { PublicBlockFromCommentParams } from 'fastcomments-sdk';
+import { makeRequest } from '../services/http';
 import { showError } from '../services/show-error';
-import { GetCommentTextResponse } from '../types';
 import { CommentActionEdit, DirtyRef } from './comment-action-edit';
 import { CommentPromptDelete } from './comment-action-delete';
 import { repositionComment } from '../services/comment-positioning';
-import { PinCommentResponse } from '../types';
-import { BlockCommentResponse } from '../types';
 import { CAN_CLOSE, CAN_NOT_CLOSE, ModalMenuItem } from './modal-menu';
 import { IFastCommentsStyles, RNComment } from '../types';
-import { addTranslationsToStore, getMergedTranslations } from '../services/translations';
+import type { FastCommentsCommentPositions } from '../types/dto/websocket-live-event';
+import { addTranslationsToStore } from '../services/translations';
 import { newBroadcastId } from '../services/broadcast-id';
 import { GetTranslationsResponse } from '../types';
 import { CommentCancelTranslations } from '../types';
@@ -24,20 +24,19 @@ async function startEditingComment(
     onError?: (title: string, message: string) => void
 ) {
     const state = store.getState();
-    const response = await makeRequest<GetCommentTextResponse>({
-        apiHost: state.apiHost,
-        method: 'GET',
-        url: `/comments/${state.config.tenantId}/${comment._id}/text${createURLQueryString({
-            sso: state.ssoConfigString,
-            editKey: comment.editKey,
-        })}`,
+    const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+    const response = await sdk.publicApi.getCommentText({
+        tenantId: state.config.tenantId!,
+        commentId: comment._id,
+        editKey: comment.editKey,
+        sso: state.ssoConfigString,
     });
     if (response.status === 'success') {
         comment.comment = response.commentText;
         store.getState().mergeCommentFields(comment._id, { comment: response.commentText });
         setModalId('edit');
     } else {
-        const translations = getMergedTranslations(state.translations, response);
+        const translations = state.translations;
         const message =
             response.code === 'edit-key-invalid' ? translations.LOGIN_TO_EDIT : translations.FAILED_TO_SAVE_EDIT;
         showError(':(', message, translations.DISMISS, onError);
@@ -51,22 +50,34 @@ async function setCommentPinStatus(
     onError?: (title: string, message: string) => void
 ) {
     const state = store.getState();
-    const response = await makeRequest<PinCommentResponse>({
-        apiHost: state.apiHost,
-        method: 'POST',
-        url: `/comments/${state.config.tenantId}/${comment._id}/${doPin ? 'pin' : 'unpin'}${createURLQueryString({
-            sso: state.ssoConfigString,
-            editKey: comment.editKey,
-            broadcastId: newBroadcastId(store),
-        })}`,
-    });
+    const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+    const tenantId = state.config.tenantId!;
+    const broadcastId = newBroadcastId(store);
+    const response = doPin
+        ? await sdk.publicApi.pinComment({
+              tenantId,
+              commentId: comment._id,
+              broadcastId,
+              sso: state.ssoConfigString,
+          })
+        : await sdk.publicApi.unPinComment({
+              tenantId,
+              commentId: comment._id,
+              broadcastId,
+              sso: state.ssoConfigString,
+          });
     if (response.status === 'success') {
         store.getState().mergeCommentFields(comment._id, { isPinned: doPin });
         if (response.commentPositions) {
-            repositionComment(comment._id, response.commentPositions, store);
+            const positions: FastCommentsCommentPositions = {
+                OF: response.commentPositions.OF ?? { before: null, after: null },
+                NF: response.commentPositions.NF ?? { before: null, after: null },
+                MR: response.commentPositions.MR ?? { before: null, after: null },
+            };
+            repositionComment(comment._id, positions, store);
         }
     } else {
-        const translations = getMergedTranslations(state.translations, response);
+        const translations = state.translations;
         showError(':(', translations.ERROR_MESSAGE, translations.DISMISS, onError);
     }
 }
@@ -78,18 +89,24 @@ async function setCommentBlockedStatus(
     onError?: (title: string, message: string) => void
 ) {
     const state = store.getState();
-    const response = await makeRequest<BlockCommentResponse>({
-        apiHost: state.apiHost,
-        method: doBlock ? 'POST' : 'DELETE',
-        url: `/block-from-comment/${comment._id}/${createURLQueryString({
-            tenantId: state.config.tenantId,
-            urlId: state.config.urlId,
-            sso: state.ssoConfigString,
-            editKey: comment.editKey,
-            broadcastId: newBroadcastId(store),
-        })}`,
-        body: { commentIds: Object.keys(state.byId) },
-    });
+    const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+    const tenantId = state.config.tenantId!;
+    const publicBlockFromCommentParams: PublicBlockFromCommentParams = {
+        commentIds: Object.keys(state.byId),
+    };
+    const response = doBlock
+        ? await sdk.publicApi.blockFromCommentPublic({
+              tenantId,
+              commentId: comment._id,
+              publicBlockFromCommentParams,
+              sso: state.ssoConfigString,
+          })
+        : await sdk.publicApi.unBlockCommentPublic({
+              tenantId,
+              commentId: comment._id,
+              publicBlockFromCommentParams,
+              sso: state.ssoConfigString,
+          });
     if (response.status === 'success') {
         store.getState().mergeCommentFields(comment._id, { isBlocked: doBlock });
         const latest = store.getState();
@@ -102,7 +119,7 @@ async function setCommentBlockedStatus(
             }
         }
     } else {
-        const translations = getMergedTranslations(state.translations, response);
+        const translations = state.translations;
         showError(':(', translations.ERROR_MESSAGE, translations.DISMISS, onError);
     }
 }
@@ -114,21 +131,17 @@ async function setCommentFlaggedStatus(
     onError?: (title: string, message: string) => void
 ) {
     const state = store.getState();
-    const response = await makeRequest<BlockCommentResponse>({
-        apiHost: state.apiHost,
-        method: 'POST',
-        url: `/flag-comment/${comment._id}/${createURLQueryString({
-            tenantId: state.config.tenantId,
-            urlId: state.config.urlId,
-            sso: state.ssoConfigString,
-            isFlagged: doFlag,
-            broadcastId: newBroadcastId(store),
-        })}`,
+    const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+    const response = await sdk.publicApi.flagCommentPublic({
+        tenantId: state.config.tenantId!,
+        commentId: comment._id,
+        isFlagged: doFlag,
+        sso: state.ssoConfigString,
     });
     if (response.status === 'success') {
         store.getState().mergeCommentFields(comment._id, { isFlagged: doFlag });
     } else {
-        const translations = getMergedTranslations(state.translations, response);
+        const translations = state.translations;
         showError(
             ':(',
             response.translatedError ? response.translatedError : translations.ERROR_MESSAGE,
@@ -238,6 +251,7 @@ export function getCommentMenuItems(
                     if (!freshState.translations.CONFIRM_CANCEL_EDIT) {
                         let url = '/translations/widgets/comment-ui-cancel?useFullTranslationIds=true';
                         if (freshState.config.locale) url += '&locale=' + freshState.config.locale;
+                        // TODO translations endpoint not in fastcomments-sdk yet; refactor when added
                         const translationsResponse = await makeRequest<GetTranslationsResponse<CommentCancelTranslations>>({
                             apiHost: freshState.apiHost,
                             method: 'GET',
