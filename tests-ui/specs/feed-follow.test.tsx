@@ -1,13 +1,16 @@
 /**
- * Feed follow pill (per-viewer state).
+ * Feed follow pill (host-supplied state via FollowStateProvider).
  *
- * Two SDK instances. A creates a post. B sees A's post via the new-feed-post
- * banner; B taps the follow pill twice to verify the label flips, then
- * verifies B does NOT see a follow pill on B's own posts.
+ * The SDK no longer makes any follow-REST calls. The host owns follow state
+ * and supplies it through a typed provider, mirroring Android. These tests
+ * stub the provider with an in-memory Set and verify the pill flips, hides
+ * on the viewer's own posts, and rebinds when the host calls
+ * `feedRef.current.invalidateFollowState()`.
  */
 import React from 'react';
 import { render, act } from '@testing-library/react-native';
-import { FastCommentsFeed } from '../../src/components/feed';
+import { FastCommentsFeed, FastCommentsFeedHandle } from '../../src/components/feed';
+import type { FollowStateProvider, FollowUser } from '../../src/types/follow-state-provider';
 import { setupTestContext, teardownTestContext, TestContext } from '../framework/harness/test-context';
 import { buildSDKConfig } from '../framework/harness/build-config';
 import { pollUntil, sleep } from '../framework/harness/poll';
@@ -52,18 +55,7 @@ interface LocalizationFile {
     [key: string]: string;
 }
 
-/**
- * Read FEED_FOLLOW / FEED_FOLLOWING from the source-of-truth en_us.json. The
- * production translation cache may not yet have these keys; the component
- * fetches them off the live server and falls back to undefined when missing.
- * This test installs an in-process fetch interceptor (see installTranslationStub
- * below) so the SDK sees the keys even when the upstream cache is stale.
- */
 function loadLocalEnUs(): LocalizationFile {
-    // CommonJS require() is the simplest path to read the en_us.json from the
-    // sibling fastcomments-localization repo without pulling in `fs`/`path`
-    // type declarations that aren't loaded into the tests-ui tsconfig. The
-    // worktree layout adds extra hops; try the layouts we ship in.
     const candidatePaths = [
         '../../../../../../fastcomments-localization/text/widgets/comment-ui/en_us.json',
         '../../../fastcomments-localization/text/widgets/comment-ui/en_us.json',
@@ -106,7 +98,6 @@ function installTranslationStub(localKeys: LocalizationFile): () => void {
             ...(body.translations ?? {}),
             FEED_FOLLOW: localKeys.FEED_FOLLOW,
             FEED_FOLLOWING: localKeys.FEED_FOLLOWING,
-            FEED_FOLLOW_FAILED: localKeys.FEED_FOLLOW_FAILED,
             FEED_EMPTY: localKeys.FEED_EMPTY ?? body.translations?.FEED_EMPTY ?? '',
             FEED_NEW_POST_BANNER: localKeys.FEED_NEW_POST_BANNER ?? body.translations?.FEED_NEW_POST_BANNER ?? '',
             FEED_NEW_POST_BANNER_PLURAL: localKeys.FEED_NEW_POST_BANNER_PLURAL ?? body.translations?.FEED_NEW_POST_BANNER_PLURAL ?? '',
@@ -139,6 +130,21 @@ function installTranslationStub(localKeys: LocalizationFile): () => void {
     return () => {
         globalThis.fetch = orig;
     };
+}
+
+class StubFollowProvider implements FollowStateProvider {
+    private readonly followed: Set<string> = new Set<string>();
+    isFollowing(user: FollowUser): boolean {
+        return this.followed.has(user.id);
+    }
+    async onFollowStateChangeRequested(
+        user: FollowUser,
+        desiredFollowing: boolean,
+    ): Promise<{ following: boolean }> {
+        if (desiredFollowing) this.followed.add(user.id);
+        else this.followed.delete(user.id);
+        return { following: desiredFollowing };
+    }
 }
 
 function findFollowPillTestIds(tree: ReturnType<typeof render>): string[] {
@@ -185,8 +191,10 @@ maybe('Feed follow pill', () => {
         const ssoB = ctx.ssoFor('userB');
         const cfgA = buildSDKConfig({ tenant: ctx.tenant, urlId: ctx.urlId, ssoToken: ssoA });
         const cfgB = buildSDKConfig({ tenant: ctx.tenant, urlId: ctx.urlId, ssoToken: ssoB });
-        const a = render(<FastCommentsFeed config={cfgA} />);
-        const b = render(<FastCommentsFeed config={cfgB} />);
+        const providerA = new StubFollowProvider();
+        const providerB = new StubFollowProvider();
+        const a = render(<FastCommentsFeed config={cfgA} followStateProvider={providerA} />);
+        const b = render(<FastCommentsFeed config={cfgB} followStateProvider={providerB} />);
         ctx.onTeardown(() => a.unmount());
         ctx.onTeardown(() => b.unmount());
 
@@ -200,7 +208,6 @@ maybe('Feed follow pill', () => {
         );
         await sleep(500);
 
-        // === A posts; B sees the post via banner tap. ===
         const aText = `Follow-test post from A ${Date.now()}`;
         changeTextViaProp(a.getByTestId('postContentEditText'), aText);
         pressViaProp(a.getByTestId('submitPostButton'));
@@ -220,8 +227,6 @@ maybe('Feed follow pill', () => {
             label: "B sees A's post text after banner tap",
         });
 
-        // Locate the follow pill on B's tree for A's post. We don't know the
-        // post id ahead of time, so scan all `feedFollowPill-*` nodes.
         await pollUntil(() => findFollowPillTestIds(b).length === 1, {
             timeoutMs: 5000,
             label: 'B sees exactly one follow pill (for A post)',
@@ -229,27 +234,23 @@ maybe('Feed follow pill', () => {
 
         const [pillId] = findFollowPillTestIds(b);
 
-        // Initial: pill shows translations.FEED_FOLLOW.
         await pollUntil(() => !!b.queryByText(followLabel), {
             timeoutMs: 5000,
             label: 'pill initially shows FEED_FOLLOW',
         });
 
-        // Tap to follow -> flip to translations.FEED_FOLLOWING.
         pressViaProp(b.getByTestId(pillId));
         await pollUntil(
             () => !!b.queryByText(followingLabel) && !b.queryByText(followLabel),
             { timeoutMs: 5000, label: 'pill flipped to FEED_FOLLOWING' }
         );
 
-        // Tap again -> revert to translations.FEED_FOLLOW.
         pressViaProp(b.getByTestId(pillId));
         await pollUntil(
             () => !!b.queryByText(followLabel) && !b.queryByText(followingLabel),
             { timeoutMs: 5000, label: 'pill reverted to FEED_FOLLOW' }
         );
 
-        // === B posts; B's tree must NOT show a follow pill on B's own post. ===
         await sleep(500);
         const bText = `Follow-test post from B ${Date.now()}`;
         changeTextViaProp(b.getByTestId('postContentEditText'), bText);
@@ -261,12 +262,88 @@ maybe('Feed follow pill', () => {
             label: "B sees its own post (locally inserted)",
         });
 
-        // After B's post lands at head, B's tree should still have only ONE
-        // follow pill (for A's post, not B's). Verifies "no pill on own posts".
         await sleep(300);
         const pillIdsAfter = findFollowPillTestIds(b);
         expect(pillIdsAfter.length).toBe(1);
         const rowIds = findFeedPostRowIds(b);
         expect(rowIds.length).toBe(2);
+    }, 180000);
+
+    it('invalidateFollowState() rebinds pill after external host state change', async () => {
+        const localKeys = loadLocalEnUs();
+        const followLabel = localKeys.FEED_FOLLOW;
+        const followingLabel = localKeys.FEED_FOLLOWING;
+
+        const restoreFetch = installTranslationStub(localKeys);
+        ctx = await setupTestContext({ emailPrefix: 'followinv', urlIdLabel: 'followinv' });
+        ctx.onTeardown(restoreFetch);
+
+        const ssoA = ctx.ssoFor('userA');
+        const ssoB = ctx.ssoFor('userB');
+        const cfgA = buildSDKConfig({ tenant: ctx.tenant, urlId: ctx.urlId, ssoToken: ssoA });
+        const cfgB = buildSDKConfig({ tenant: ctx.tenant, urlId: ctx.urlId, ssoToken: ssoB });
+        const providerB = new StubFollowProvider();
+        const feedRef = React.createRef<FastCommentsFeedHandle>();
+
+        const a = render(<FastCommentsFeed config={cfgA} />);
+        const b = render(
+            <FastCommentsFeed config={cfgB} followStateProvider={providerB} ref={feedRef} />,
+        );
+        ctx.onTeardown(() => a.unmount());
+        ctx.onTeardown(() => b.unmount());
+
+        await pollUntil(
+            () => !!a.queryByTestId('postContentEditText') && !!a.queryByTestId('recyclerViewFeed'),
+            { timeoutMs: 15000, label: 'A composer + recycler ready' }
+        );
+        await pollUntil(
+            () => !!b.queryByTestId('postContentEditText') && !!b.queryByTestId('recyclerViewFeed'),
+            { timeoutMs: 15000, label: 'B composer + recycler ready' }
+        );
+        await sleep(500);
+
+        const aText = `Follow-invalidate post from A ${Date.now()}`;
+        changeTextViaProp(a.getByTestId('postContentEditText'), aText);
+        pressViaProp(a.getByTestId('submitPostButton'));
+
+        await pollUntil(() => !!a.queryByText(aText), {
+            timeoutMs: 15000,
+            label: "A sees its own post (locally inserted)",
+        });
+
+        await pollUntil(() => !!b.queryByTestId('newPostsBanner'), {
+            timeoutMs: 15000,
+            label: "B sees newPostsBanner via WS",
+        });
+        pressViaProp(b.getByTestId('newPostsBanner'));
+        await pollUntil(() => !!b.queryByText(aText), {
+            timeoutMs: 15000,
+            label: "B sees A's post text after banner tap",
+        });
+
+        await pollUntil(() => findFollowPillTestIds(b).length === 1, {
+            timeoutMs: 5000,
+            label: 'B sees exactly one follow pill (for A post)',
+        });
+
+        await pollUntil(() => !!b.queryByText(followLabel), {
+            timeoutMs: 5000,
+            label: 'pill initially shows FEED_FOLLOW (host stub set is empty)',
+        });
+
+        // Host externally mutates its follow store (e.g. action from elsewhere
+        // in the app). Without an invalidate the pill won't notice. The pill
+        // testID is `feedFollowPill-{postId}`; the post's authorId is resolved
+        // by swapping isFollowing to a permissive predicate.
+        providerB.isFollowing = (_user: FollowUser) => true;
+
+        act(() => {
+            feedRef.current?.invalidateFollowState();
+        });
+
+        await pollUntil(
+            () => !!b.queryByText(followingLabel) && !b.queryByText(followLabel),
+            { timeoutMs: 5000, label: 'pill rebound to FEED_FOLLOWING after invalidateFollowState' }
+        );
     }, 180000);
 });
