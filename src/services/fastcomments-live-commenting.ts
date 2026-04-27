@@ -1,4 +1,6 @@
 import { FastCommentsCommentWidgetConfig } from 'fastcomments-typescript';
+import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
+import type { SortDirections } from 'fastcomments-sdk';
 import {
     GetCommentsResponse,
     FastCommentsCallbacks,
@@ -87,46 +89,58 @@ export class FastCommentsLiveCommentingService {
             );
         }
 
-        const queryParams: Record<string, string | number | undefined> = {
-            urlId: config.urlId,
-            page: store.getState().page,
-            lastGenDate: internalState.lastGenDate,
-        };
-
-        if (internalState.lastComments.length === 0) {
-            queryParams.includei10n = 'true';
-            queryParams.useFullTranslationIds = 'true';
-            if (config.locale) queryParams.locale = config.locale;
-        }
-
-        if (config.countAll) queryParams.countAll = 'true';
-
-        if (internalState.isFirstRequest) {
-            queryParams.includeConfig = 'true';
-            queryParams.includeNotificationCount = 'true';
-        }
-
-        const ssoConfigString = store.getState().ssoConfigString;
-        if (ssoConfigString) queryParams.sso = ssoConfigString;
-
-        queryParams.direction = store.getState().sortDirection;
-
-        if (config.jumpToId) queryParams.fetchPageForCommentId = config.jumpToId;
-
         const isActivityFeed = config.tenantId === 'all' && config.userId;
-        if (isActivityFeed) {
-            queryParams.userId = config.userId;
-            if (config.sso) queryParams.tenantId = (config as any).ssoTenantId;
-        }
-
-        const url = isActivityFeed ? '/comments-for-user' : '/comments/' + config.tenantId + '/';
 
         try {
-            const response = await makeRequest<GetCommentsResponse>({
-                apiHost: store.getState().apiHost,
-                method: 'GET',
-                url: url + createURLQueryString(queryParams),
-            });
+            let response: GetCommentsResponse;
+            if (isActivityFeed) {
+                // TODO comments-for-user (activity feed) endpoint not in fastcomments-sdk yet; refactor when added
+                const queryParams: Record<string, string | number | undefined> = {
+                    urlId: config.urlId,
+                    page: store.getState().page,
+                    lastGenDate: internalState.lastGenDate,
+                };
+                if (internalState.lastComments.length === 0) {
+                    queryParams.includei10n = 'true';
+                    queryParams.useFullTranslationIds = 'true';
+                    if (config.locale) queryParams.locale = config.locale;
+                }
+                if (config.countAll) queryParams.countAll = 'true';
+                if (internalState.isFirstRequest) {
+                    queryParams.includeConfig = 'true';
+                    queryParams.includeNotificationCount = 'true';
+                }
+                const ssoConfigString = store.getState().ssoConfigString;
+                if (ssoConfigString) queryParams.sso = ssoConfigString;
+                queryParams.direction = store.getState().sortDirection;
+                if (config.jumpToId) queryParams.fetchPageForCommentId = config.jumpToId;
+                queryParams.userId = config.userId;
+                if (config.sso) queryParams.tenantId = (config as any).ssoTenantId;
+                response = await makeRequest<GetCommentsResponse>({
+                    apiHost: store.getState().apiHost,
+                    method: 'GET',
+                    url: '/comments-for-user' + createURLQueryString(queryParams),
+                });
+            } else {
+                const sdk = new FastCommentsServerSDK({ basePath: store.getState().apiHost });
+                const ssoConfigString = store.getState().ssoConfigString;
+                const isFirstPageLoad = internalState.lastComments.length === 0;
+                const apiResponse = await sdk.publicApi.getCommentsPublicRaw({
+                    tenantId: config.tenantId!,
+                    urlId: config.urlId,
+                    page: store.getState().page,
+                    direction: store.getState().sortDirection as SortDirections,
+                    sso: ssoConfigString,
+                    includeConfig: internalState.isFirstRequest ? true : undefined,
+                    countAll: config.countAll ? true : undefined,
+                    includei10n: isFirstPageLoad ? true : undefined,
+                    locale: isFirstPageLoad ? config.locale : undefined,
+                    includeNotificationCount: internalState.isFirstRequest ? true : undefined,
+                    useFullTranslationIds: isFirstPageLoad ? true : undefined,
+                    fetchPageForCommentId: config.jumpToId,
+                });
+                response = (await apiResponse.raw.json()) as GetCommentsResponse;
+            }
 
             const isRateLimited = response.code === 'rate-limited';
 

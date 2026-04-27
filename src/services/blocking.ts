@@ -1,5 +1,4 @@
-import { createURLQueryString, makeRequest } from './http';
-import { CheckedBlockedCommentsResponse } from '../types';
+import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import type { FastCommentsStore } from '../store/types';
 
 // Used for handling live events since the pub-sub server is stateless.
@@ -10,16 +9,11 @@ export async function checkBlockedComments(
     const state = store.getState();
     if (state.currentUser && 'hasBlockedUsers' in state.currentUser && state.currentUser.hasBlockedUsers) {
         try {
-            const response = await makeRequest<CheckedBlockedCommentsResponse>({
-                apiHost: state.apiHost,
-                method: 'GET',
-                url:
-                    '/check-blocked-comments' +
-                    createURLQueryString({
-                        commentIds: commentIds.join(','),
-                        tenantId: state.config.tenantId,
-                        sso: state.ssoConfigString,
-                    }),
+            const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+            const response = await sdk.publicApi.checkedCommentsForBlocked({
+                tenantId: state.config.tenantId!,
+                commentIds: commentIds.join(','),
+                sso: state.ssoConfigString,
             });
             return response.commentStatuses;
         } catch (e) {

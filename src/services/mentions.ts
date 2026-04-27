@@ -1,4 +1,5 @@
-import { createURLQueryString, makeRequest } from './http';
+import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
+import type { SearchUsers200Response } from 'fastcomments-sdk';
 
 export interface MentionUser {
     id: string;
@@ -6,13 +7,6 @@ export interface MentionUser {
     displayName?: string;
     avatarSrc?: string | null;
     type: 'user' | 'sso';
-}
-
-export interface SearchUsersResponse {
-    status: 'success' | 'failed';
-    users?: MentionUser[];
-    code?: string;
-    reason?: string;
 }
 
 export interface SearchUsersParams {
@@ -32,16 +26,22 @@ export interface SearchUsersParams {
 export async function searchMentionUsers(params: SearchUsersParams): Promise<MentionUser[]> {
     const { apiHost, tenantId, urlId, usernameStartsWith, sso } = params;
     if (!usernameStartsWith.trim()) return [];
-    const query = createURLQueryString({
+    const sdk = new FastCommentsServerSDK({ basePath: apiHost });
+    const apiResponse = await sdk.publicApi.searchUsersRaw({
+        tenantId,
         urlId,
         usernameStartsWith,
         sso,
     });
-    const response = await makeRequest<SearchUsersResponse>({
-        apiHost,
-        method: 'GET',
-        url: `/user-search/${tenantId}${query}`,
-    });
+    // The SDK's typed parser requires a 'sections' field that the legacy
+    // (non-sectioned) endpoint omits, so parse the raw JSON instead.
+    const response = (await apiResponse.raw.json()) as Partial<SearchUsers200Response>;
     if (response.status !== 'success' || !response.users) return [];
-    return response.users;
+    return response.users.map((user) => ({
+        id: user.id,
+        name: user.name,
+        displayName: user.displayName,
+        avatarSrc: user.avatarSrc,
+        type: user.type === 'sso' ? 'sso' : 'user',
+    }));
 }
