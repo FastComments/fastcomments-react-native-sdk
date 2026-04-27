@@ -56,24 +56,40 @@ interface LocalizationFile {
 }
 
 function loadLocalEnUs(): LocalizationFile {
-    const candidatePaths = [
-        '../../../../../../fastcomments-localization/text/widgets/comment-ui/en_us.json',
-        '../../../fastcomments-localization/text/widgets/comment-ui/en_us.json',
-    ];
+    // Feed-specific keys (FEED_FOLLOW, FEED_FOLLOWING, etc.) live in their
+    // own widgets/feed-ui namespace; comment-ui still owns the cross-cutting
+    // keys (CANCEL etc.). We merge both so test-side lookups don't have to
+    // know which namespace a key lives in.
+    const namespaces = ['feed-ui', 'comment-ui'];
+    const merged: LocalizationFile = {};
+    let loadedAny = false;
     let lastErr: unknown;
-    for (const p of candidatePaths) {
-        try {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const json = require(p) as LocalizationFile;
-            if (json && typeof json === 'object') return json;
-        } catch (e) {
-            lastErr = e;
+    for (const ns of namespaces) {
+        const candidatePaths = [
+            `../../../../../../fastcomments-localization/text/widgets/${ns}/en_us.json`,
+            `../../../fastcomments-localization/text/widgets/${ns}/en_us.json`,
+        ];
+        for (const p of candidatePaths) {
+            try {
+                // eslint-disable-next-line @typescript-eslint/no-require-imports
+                const json = require(p) as LocalizationFile;
+                if (json && typeof json === 'object') {
+                    Object.assign(merged, json);
+                    loadedAny = true;
+                    break;
+                }
+            } catch (e) {
+                lastErr = e;
+            }
         }
     }
-    throw new Error(
-        'Could not locate fastcomments-localization en_us.json. Last error: ' +
-            (lastErr as Error)?.message
-    );
+    if (!loadedAny) {
+        throw new Error(
+            'Could not locate fastcomments-localization en_us.json. Last error: ' +
+                (lastErr as Error)?.message
+        );
+    }
+    return merged;
 }
 
 interface TranslationsBody {
@@ -82,31 +98,40 @@ interface TranslationsBody {
 }
 
 /**
- * Wrap global fetch so any GET to `/translations/widgets/comment-ui` returns a
- * payload that contains the local FEED_FOLLOW / FEED_FOLLOWING keys, merged on
- * top of whatever the upstream server returned. Restores the original fetch on
- * teardown.
+ * Wrap global fetch so any GET to `/translations/widgets/{comment-ui,feed-ui}`
+ * returns a payload that contains the local feed translation keys merged on
+ * top of whatever the upstream server returned. Falls back to fully
+ * synthesizing a 200 response when the upstream is non-OK (the feed-ui
+ * namespace may not be deployed to production yet, so we don't want a 500
+ * there to drop the keys the feed needs to render). Restores the original
+ * fetch on teardown.
  */
 function installTranslationStub(localKeys: LocalizationFile): () => void {
     const orig = globalThis.fetch.bind(globalThis);
+    const synthesizeMerged = (existing: Record<string, string>): Record<string, string> => ({
+        ...existing,
+        FEED_FOLLOW: localKeys.FEED_FOLLOW,
+        FEED_FOLLOWING: localKeys.FEED_FOLLOWING,
+        FEED_EMPTY: localKeys.FEED_EMPTY ?? existing.FEED_EMPTY ?? '',
+        FEED_NEW_POST_BANNER: localKeys.FEED_NEW_POST_BANNER ?? existing.FEED_NEW_POST_BANNER ?? '',
+        FEED_NEW_POST_BANNER_PLURAL: localKeys.FEED_NEW_POST_BANNER_PLURAL ?? existing.FEED_NEW_POST_BANNER_PLURAL ?? '',
+        FEED_COMPOSER_TITLE_PLACEHOLDER: localKeys.FEED_COMPOSER_TITLE_PLACEHOLDER ?? existing.FEED_COMPOSER_TITLE_PLACEHOLDER ?? '',
+        FEED_COMPOSER_CONTENT_PLACEHOLDER: localKeys.FEED_COMPOSER_CONTENT_PLACEHOLDER ?? existing.FEED_COMPOSER_CONTENT_PLACEHOLDER ?? '',
+        FEED_SUBMIT_POST: localKeys.FEED_SUBMIT_POST ?? existing.FEED_SUBMIT_POST ?? '',
+    });
     const augment = async (url: string, init?: RequestInit): Promise<Response> => {
-        const upstream = await orig(url, init);
-        if (!upstream.ok) return upstream;
-        const cloned = upstream.clone();
-        const body = (await cloned.json()) as TranslationsBody;
-        const merged: Record<string, string> = {
-            ...(body.translations ?? {}),
-            FEED_FOLLOW: localKeys.FEED_FOLLOW,
-            FEED_FOLLOWING: localKeys.FEED_FOLLOWING,
-            FEED_EMPTY: localKeys.FEED_EMPTY ?? body.translations?.FEED_EMPTY ?? '',
-            FEED_NEW_POST_BANNER: localKeys.FEED_NEW_POST_BANNER ?? body.translations?.FEED_NEW_POST_BANNER ?? '',
-            FEED_NEW_POST_BANNER_PLURAL: localKeys.FEED_NEW_POST_BANNER_PLURAL ?? body.translations?.FEED_NEW_POST_BANNER_PLURAL ?? '',
-            FEED_COMPOSER_TITLE_PLACEHOLDER: localKeys.FEED_COMPOSER_TITLE_PLACEHOLDER ?? body.translations?.FEED_COMPOSER_TITLE_PLACEHOLDER ?? '',
-            FEED_COMPOSER_CONTENT_PLACEHOLDER: localKeys.FEED_COMPOSER_CONTENT_PLACEHOLDER ?? body.translations?.FEED_COMPOSER_CONTENT_PLACEHOLDER ?? '',
-            FEED_SUBMIT_POST: localKeys.FEED_SUBMIT_POST ?? body.translations?.FEED_SUBMIT_POST ?? '',
-        };
+        let upstreamBody: TranslationsBody | undefined;
+        try {
+            const upstream = await orig(url, init);
+            if (upstream.ok) {
+                upstreamBody = (await upstream.clone().json()) as TranslationsBody;
+            }
+        } catch {
+            // upstream failed entirely (network error, bad port, etc.) - fall through
+        }
+        const merged = synthesizeMerged(upstreamBody?.translations ?? {});
         const responseBody: TranslationsBody = {
-            status: body.status ?? 'success',
+            status: upstreamBody?.status ?? 'success',
             translations: merged,
         };
         return new Response(JSON.stringify(responseBody), {
@@ -121,7 +146,10 @@ function installTranslationStub(localKeys: LocalizationFile): () => void {
                 : input instanceof URL
                     ? input.toString()
                     : (input as Request).url;
-        if (url.includes('/translations/widgets/comment-ui')) {
+        if (
+            url.includes('/translations/widgets/comment-ui') ||
+            url.includes('/translations/widgets/feed-ui')
+        ) {
             return augment(url, init);
         }
         return orig(input, init);

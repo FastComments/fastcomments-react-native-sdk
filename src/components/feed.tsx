@@ -108,19 +108,31 @@ export const FastCommentsFeed = forwardRef<FastCommentsFeedHandle, FastCommentsF
             // is rendered standalone so it doesn't piggyback on the comments
             // GET. We don't fail the feed load if this errors - the feed
             // simply renders with empty translation strings.
-            try {
-                const sdk = store.getState().sdk;
-                const response = await sdk.publicApi.getTranslations({
+            // comment-ui supplies shared keys (date phrasing for getPrettyDate,
+            // common error messages); feed-ui supplies feed-specific copy.
+            // allSettled so a missing namespace (e.g. server doesn't have the
+            // file yet) doesn't drop the other one.
+            const sdk = store.getState().sdk;
+            const results = await Promise.allSettled([
+                sdk.publicApi.getTranslations({
+                    namespace: 'widgets',
+                    component: 'comment-ui',
+                    useFullTranslationIds: true,
+                    locale: config.locale,
+                }),
+                sdk.publicApi.getTranslations({
                     namespace: 'widgets',
                     component: 'feed-ui',
                     useFullTranslationIds: true,
                     locale: config.locale,
-                });
-                if (!cancelled && response.translations) {
-                    addTranslationsToStore(store, response.translations);
+                }),
+            ]);
+            if (!cancelled) {
+                for (const r of results) {
+                    if (r.status === 'fulfilled' && r.value.translations) {
+                        addTranslationsToStore(store, r.value.translations);
+                    }
                 }
-            } catch (e) {
-                // Non-fatal.
             }
 
             await loadFeedPosts(store);

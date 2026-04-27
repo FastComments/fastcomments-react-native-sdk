@@ -348,15 +348,24 @@ export function getCommentMenuItems(
         const promptBlock = async (doBlock: boolean) => {
             const fresh = store.getState();
             if (!fresh.translations.BLOCK_CONFIRM_MESSAGE) {
-                const sdk = fresh.sdk;
-                const translationsResponse = await sdk.publicApi.getTranslations({
-                    namespace: 'widgets',
-                    component: 'block-confirm',
-                    useFullTranslationIds: true,
-                    locale: fresh.config.locale,
-                });
-                if (translationsResponse.status === 'success' && translationsResponse.translations) {
-                    addTranslationsToStore(store, translationsResponse.translations);
+                // The block-confirm namespace lives in its own bundle; if the
+                // server hasn't deployed it yet we get a 500 here. Swallow so
+                // the prompt still opens with whatever fallback strings are
+                // present in the store (the surrounding translations object
+                // still resolves the COMMENT_MENU_* titles via comment-ui).
+                try {
+                    const sdk = fresh.sdk;
+                    const translationsResponse = await sdk.publicApi.getTranslations({
+                        namespace: 'widgets',
+                        component: 'block-confirm',
+                        useFullTranslationIds: true,
+                        locale: fresh.config.locale,
+                    });
+                    if (translationsResponse.status === 'success' && translationsResponse.translations) {
+                        addTranslationsToStore(store, translationsResponse.translations);
+                    }
+                } catch (e) {
+                    // ignore - prompt still opens with whatever copy is available.
                 }
             }
             const t = store.getState().translations;

@@ -150,7 +150,17 @@ maybe('Comment actions UI tests', () => {
             label: 'menuItem-block visible',
         });
         fireEvent.press(queryByTestId('menuItem-block')!);
-        pressLatestAlertButton('destructive');
+        await pollUntil(
+            () => {
+                try {
+                    pressLatestAlertButton('destructive');
+                    return true;
+                } catch {
+                    return false;
+                }
+            },
+            { timeoutMs: 5000, label: 'block confirmation alert shown' }
+        );
 
         // After block, the original text should be replaced by the
         // YOU_BLOCKED_THIS_USER translation and the original text should be gone.
@@ -166,7 +176,17 @@ maybe('Comment actions UI tests', () => {
             label: 'menuItem-unblock visible',
         });
         fireEvent.press(queryByTestId('menuItem-unblock')!);
-        pressLatestAlertButton('default');
+        await pollUntil(
+            () => {
+                try {
+                    pressLatestAlertButton('default');
+                    return true;
+                } catch {
+                    return false;
+                }
+            },
+            { timeoutMs: 5000, label: 'unblock confirmation alert shown' }
+        );
 
         await pollUntil(() => !!queryByText('Original from A'), {
             timeoutMs: 15000,
