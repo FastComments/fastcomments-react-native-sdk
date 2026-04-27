@@ -1,7 +1,6 @@
 import { FastCommentsCommentWidgetConfig, FastCommentsWidgetComment } from 'fastcomments-typescript';
+import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import { UserPresencePollStateEnum } from '../types/fastcomments-state';
-import { createURLQueryString, makeRequest } from './http';
-import { GetUserPresenceStatusesResponse } from '../types';
 import type { FastCommentsStore } from '../store/types';
 
 export async function setupUserPresenceState(store: FastCommentsStore, urlIdWS: string) {
@@ -31,7 +30,6 @@ export async function setupUserPresenceState(store: FastCommentsStore, urlIdWS: 
             userIds
         );
     } else if (!state.userPresenceState.heartbeatActive) {
-        setupUserPresenceHeartbeat(state.apiHost, state.config.tenantId, state.ssoConfigString, urlIdWS);
         setupUserPresencePolling(
             state.apiHost,
             state.config.tenantId,
@@ -52,16 +50,11 @@ async function getAndUpdateUserStatuses(
     store: FastCommentsStore,
     userIds: string[]
 ) {
-    const response = await makeRequest<GetUserPresenceStatusesResponse>({
-        apiHost,
-        method: 'GET',
-        url:
-            '/user-presence-status' +
-            createURLQueryString({
-                tenantId,
-                urlIdWS,
-                userIds: userIds.join(','),
-            }),
+    const sdk = new FastCommentsServerSDK({ basePath: apiHost });
+    const response = await sdk.publicApi.getUserPresenceStatuses({
+        tenantId: tenantId!,
+        urlIdWS,
+        userIds: userIds.join(','),
     });
     if (response.status === 'success' && response.userIdsOnline) {
         const state = store.getState();
@@ -78,7 +71,6 @@ async function getAndUpdateUserStatuses(
     }
     const state = store.getState();
     if (!state.userPresenceState.heartbeatActive) {
-        setupUserPresenceHeartbeat(apiHost, tenantId, ssoConfigString, urlIdWS);
         setupUserPresencePolling(apiHost, tenantId, ssoConfigString, urlIdWS, store, userIds);
         state.setHeartbeatActive(true);
     }
@@ -90,16 +82,11 @@ export async function handleNewRemoteUser(
     store: FastCommentsStore,
     userIds: string[]
 ) {
-    const response = await makeRequest<GetUserPresenceStatusesResponse>({
-        apiHost: config.apiHost!,
-        method: 'GET',
-        url:
-            '/user-presence-status' +
-            createURLQueryString({
-                tenantId: config.tenantId,
-                urlIdWS,
-                userIds,
-            }),
+    const sdk = new FastCommentsServerSDK({ basePath: config.apiHost! });
+    const response = await sdk.publicApi.getUserPresenceStatuses({
+        tenantId: config.tenantId!,
+        urlIdWS,
+        userIds: userIds.join(','),
     });
     if (response.status === 'success' && response.userIdsOnline) {
         const state = store.getState();
@@ -139,33 +126,6 @@ export function addCommentToPresenceIndex(
         }
         state.addCommentIdForUser(comment.anonUserId, comment._id);
     }
-}
-
-function setupUserPresenceHeartbeat(
-    apiHost: string,
-    tenantId: string | undefined,
-    ssoConfigString: string | undefined,
-    urlIdWS: string
-) {
-    async function next() {
-        try {
-            await makeRequest({
-                apiHost,
-                method: 'PUT',
-                url:
-                    '/user-presence-heartbeat' +
-                    createURLQueryString({
-                        tenantId,
-                        urlIdWS,
-                        sso: ssoConfigString,
-                    }),
-            });
-        } catch (e) {
-            // swallow
-        }
-        setTimeout(next, 1800000);
-    }
-    setTimeout(next, 1800000);
 }
 
 function setupUserPresencePolling(

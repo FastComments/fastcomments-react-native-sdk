@@ -1,5 +1,6 @@
 import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
-import {createURLQueryString, makeRequest} from "./http";
+import {FastCommentsServerSDK} from "fastcomments-sdk/server";
+import {createURLQueryString} from "./http";
 import {WebsocketLiveEvent, WebsocketLiveNewOrUpdatedCommentEvent} from "../types/dto/websocket-live-event";
 import {EventLogEntryData, GetEventLogResponse} from "../types/dto/get-event-log";
 
@@ -39,14 +40,15 @@ export function subscribeToChanges(
         // it simply fetches any events in the log that it would have missed.
         async function fetchEventLog(startTime: number | undefined, endTime: number) {
             // console.log('FastComments: fetchEventLog.', startTime, endTime);
-            const response = await makeRequest<GetEventLogResponse>({
-                apiHost: config.apiHost!, method: 'GET', url: '/event-log/' + config.tenantId + '/' + createURLQueryString({
-                    urlId, // important this isn't urlIdWS. urlIdWS contains tenant id and is only meant for the pubsub server.
-                    startTime,
-                    endTime,
-                    userIdWS // this will be used to validate the SSO session
-                })
+            const sdk = new FastCommentsServerSDK({ basePath: config.apiHost! });
+            const apiResponse = await sdk.publicApi.getEventLogRaw({
+                tenantId: config.tenantId!,
+                urlId, // important this isn't urlIdWS. urlIdWS contains tenant id and is only meant for the pubsub server.
+                userIdWS, // this will be used to validate the SSO session
+                startTime: startTime ?? 0,
+                endTime,
             });
+            const response = (await apiResponse.raw.json()) as GetEventLogResponse;
 
             if (response && response.status === 'success') {
                 if (response.events) {
