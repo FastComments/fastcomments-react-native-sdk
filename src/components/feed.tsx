@@ -113,7 +113,7 @@ export const FastCommentsFeed = forwardRef<FastCommentsFeedHandle, FastCommentsF
                 const sdk = new FastCommentsServerSDK({ basePath: store.getState().apiHost });
                 const response = await sdk.publicApi.getTranslations({
                     namespace: 'widgets',
-                    component: 'comment-ui',
+                    component: 'feed-ui',
                     useFullTranslationIds: true,
                     locale: config.locale,
                 });

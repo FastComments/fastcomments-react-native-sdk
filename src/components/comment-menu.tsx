@@ -347,8 +347,21 @@ export function getCommentMenuItems(
 
     if (canBlockOrFlag) {
         const promptBlock = async (doBlock: boolean) => {
+            const fresh = store.getState();
+            if (!fresh.translations.BLOCK_CONFIRM_MESSAGE) {
+                const sdk = new FastCommentsServerSDK({ basePath: fresh.apiHost });
+                const translationsResponse = await sdk.publicApi.getTranslations({
+                    namespace: 'widgets',
+                    component: 'block-confirm',
+                    useFullTranslationIds: true,
+                    locale: fresh.config.locale,
+                });
+                if (translationsResponse.status === 'success' && translationsResponse.translations) {
+                    addTranslationsToStore(store, translationsResponse.translations);
+                }
+            }
             const t = store.getState().translations;
-            const title = doBlock ? t.BLOCK_CONFIRM_TITLE : t.UNBLOCK_CONFIRM_TITLE;
+            const title = doBlock ? t.COMMENT_MENU_BLOCK_USER : t.COMMENT_MENU_UNBLOCK_USER;
             const message = doBlock ? t.BLOCK_CONFIRM_MESSAGE : t.UNBLOCK_CONFIRM_MESSAGE;
             const confirmLabel = doBlock ? t.BLOCK : t.UNBLOCK;
             Alert.alert(title, message, [
