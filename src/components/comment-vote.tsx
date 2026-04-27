@@ -1,7 +1,5 @@
 import { View, Text, Image, TextInput, ActivityIndicator, Button, Linking } from 'react-native';
 import type {
-    CommentVoteResponse,
-    CommentVoteDeleteResponse,
     FastCommentsCallbacks,
     RNComment,
     IFastCommentsStyles,
@@ -9,8 +7,9 @@ import type {
 } from '../types';
 import { FastCommentsImageAsset } from '../types';
 import { useState } from 'react';
+import { FastCommentsServerSDK, VoteBodyParamsVoteDirEnum } from 'fastcomments-sdk/server';
+import type { VoteBodyParams, VoteComment200Response } from 'fastcomments-sdk';
 import { getActionTenantId } from '../services/tenants';
-import { createURLQueryString, makeRequest } from '../services/http';
 import { newBroadcastId } from '../services/broadcast-id';
 import { Pressable } from 'react-native';
 import { FastCommentsRNConfig } from '../types/react-native-config';
@@ -33,7 +32,7 @@ interface VoteState {
     isAwaitingVerification?: boolean;
     authEmail?: string;
     authUserName?: string;
-    voteResponse?: CommentVoteResponse;
+    voteResponse?: VoteComment200Response;
 }
 
 const ErrorCodesToMessageIds: Record<string, string> = {
@@ -71,21 +70,18 @@ async function doVote(
     setVoteState({ isLoading: true });
     try {
         const tenantIdToUse = getActionTenantId({ store, tenantId: comment.tenantId });
+        const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
 
         if (comment.isVotedUp || comment.isVotedDown) {
-            const response = await makeRequest<CommentVoteDeleteResponse>({
-                apiHost: state.apiHost,
-                method: 'DELETE',
-                url: `/comments/${tenantIdToUse}/${comment._id}/vote/${comment.myVoteId}${createURLQueryString({
-                    voteId: comment.myVoteId,
-                    editKey: comment.editKey,
-                    commentId: comment._id,
-                    sso: state.ssoConfigString,
-                    broadcastId: newBroadcastId(store),
-                    urlId: state.config.urlId,
-                })}`,
+            const response = await sdk.publicApi.deleteCommentVote({
+                tenantId: tenantIdToUse,
+                commentId: comment._id,
+                voteId: comment.myVoteId!,
+                urlId: state.config.urlId!,
+                broadcastId: newBroadcastId(store),
+                editKey: comment.editKey,
+                sso: state.ssoConfigString,
             });
-            setVoteState({ voteResponse: response });
             if (response.status === 'success') {
                 onVoteSuccess && onVoteSuccess(comment, comment.myVoteId!, 'deleted', response.status);
                 const patch: Partial<RNComment> = {};
@@ -105,25 +101,29 @@ async function doVote(
                 store.getState().mergeCommentFields(comment._id, patch);
             }
         } else {
-            const response = await makeRequest<CommentVoteResponse>({
-                apiHost: state.apiHost,
-                method: 'POST',
-                url: `/comments/${tenantIdToUse}/${comment._id}/vote${createURLQueryString({
-                    urlId: state.config.urlId,
-                    sso: state.ssoConfigString,
-                    broadcastId: newBroadcastId(store),
-                    sessionId:
-                        currentUser && 'sessionId' in currentUser ? (currentUser as any).sessionId : undefined,
-                })}`,
-                body: {
-                    voteDir: voteState.voteDir,
-                    commentId: comment._id,
-                    urlId: state.config.urlId,
-                    url: state.config.url,
-                    commenterName: currentUser ? (currentUser as any).username : voteState.authUserName,
-                    commenterEmail:
-                        currentUser && 'email' in currentUser ? (currentUser as any).email : voteState.authEmail,
-                },
+            const sessionId =
+                currentUser && 'sessionId' in currentUser
+                    ? (currentUser as { sessionId?: string }).sessionId
+                    : undefined;
+            const voteBodyParams: VoteBodyParams = {
+                voteDir: voteState.voteDir === 'up' ? VoteBodyParamsVoteDirEnum.up : VoteBodyParamsVoteDirEnum.down,
+                url: state.config.url ?? null,
+                commenterName: currentUser
+                    ? (currentUser as { username?: string }).username ?? null
+                    : voteState.authUserName ?? null,
+                commenterEmail:
+                    currentUser && 'email' in currentUser
+                        ? (currentUser as { email?: string }).email ?? null
+                        : voteState.authEmail ?? null,
+            };
+            const response = await sdk.publicApi.voteComment({
+                tenantId: tenantIdToUse,
+                commentId: comment._id,
+                urlId: state.config.urlId!,
+                broadcastId: newBroadcastId(store),
+                voteBodyParams,
+                sessionId,
+                sso: state.ssoConfigString,
             });
             setVoteState({ voteResponse: response });
             if (response.status === 'success') {
@@ -141,12 +141,12 @@ async function doVote(
                 store.getState().mergeCommentFields(comment._id, patch);
                 onVoteSuccess && onVoteSuccess(comment, response.voteId!, voteState.voteDir!, response.status);
                 setVoteState({ isAwaitingVerification: false });
-            } else if (response.status === 'pending-verification') {
+            } else if ((response.status as string) === 'pending-verification') {
                 const patch: Partial<RNComment> = { myVoteId: response.voteId, voteEditKey: response.editKey };
                 if (voteState.voteDir === 'up') patch.isVotedUp = true;
                 else patch.isVotedDown = true;
                 store.getState().mergeCommentFields(comment._id, patch);
-                onVoteSuccess && onVoteSuccess(comment, response.voteId!, voteState.voteDir!, response.status);
+                onVoteSuccess && onVoteSuccess(comment, response.voteId!, voteState.voteDir!, 'pending-verification');
                 setVoteState({ isAwaitingVerification: !response.isVerified });
             }
         }

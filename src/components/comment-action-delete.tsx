@@ -1,10 +1,9 @@
 import { Alert } from 'react-native';
+import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import { getActionTenantId } from '../services/tenants';
 import { newBroadcastId } from '../services/broadcast-id';
-import { createURLQueryString, makeRequest } from '../services/http';
 import { removeCommentOnClient } from '../services/remove-comment-on-client';
-import { DeleteCommentResponse, RNComment } from '../types';
-import { getMergedTranslations } from '../services/translations';
+import { RNComment } from '../types';
 import { showError } from '../services/show-error';
 import type { FastCommentsStore } from '../store/types';
 
@@ -23,36 +22,27 @@ async function deleteComment(
     const state = store.getState();
     const tenantId = getActionTenantId({ store, tenantId: comment.tenantId });
     const broadcastId = newBroadcastId(store);
-    const response = await makeRequest<DeleteCommentResponse>({
-        apiHost: state.apiHost,
-        method: 'DELETE',
-        url:
-            '/comments/' +
-            tenantId +
-            '/' +
-            comment._id +
-            '/' +
-            createURLQueryString({
-                urlId: state.config.urlId,
-                editKey: comment.editKey,
-                sso: state.ssoConfigString,
-                broadcastId,
-            }),
+    const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+    const response = await sdk.publicApi.deleteCommentPublic({
+        tenantId,
+        commentId: comment._id,
+        broadcastId,
+        editKey: comment.editKey,
+        sso: state.ssoConfigString,
     });
     if (response.status === 'success') {
         if (response.hardRemoved) {
             removeCommentOnClient(store, comment._id);
-        } else {
+        } else if (response.comment) {
             store.getState().mergeCommentFields(comment._id, {
                 isDeleted: response.comment.isDeleted,
-                comment: response.comment.comment,
                 commentHTML: response.comment.commentHTML,
                 commenterName: response.comment.commenterName,
-                userId: response.comment.userId,
+                userId: response.comment.userId ?? undefined,
             });
         }
     } else {
-        const translations = getMergedTranslations(state.translations, response);
+        const translations = state.translations;
         const message =
             response.code === 'edit-key-invalid' ? translations.LOGIN_TO_DELETE : translations.DELETE_FAILURE;
         showError(':(', message, translations.DISMISS, onError);

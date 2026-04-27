@@ -7,16 +7,18 @@ import { ThreeDot } from './three-dot';
 import { NotificationBell } from './notification-bell';
 import { CommentAreaMessage } from './comment-area-message';
 import { CommentTextArea, FocusObserver, ValueObserver, EmoticonBarConfig } from './comment-text-area';
-import { SaveCommentResponse } from '../types';
+import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
+import type { CommentData, CreateCommentPublic200Response, PublicComment } from 'fastcomments-sdk';
 import { getActionTenantId, getActionURLID } from '../services/tenants';
 import { newBroadcastId } from '../services/broadcast-id';
-import { createURLQueryString, makeRequest } from '../services/http';
+import { makeRequest } from '../services/http';
 import { handleNewCustomConfig } from '../services/custom-config';
 import { incOverallCommentCount } from '../services/comment-count';
 import { setupUserPresenceState } from '../services/user-presense';
 import { persistSubscriberState } from '../services/live';
 import RenderHtml from 'react-native-render-html';
 import { RNComment, IFastCommentsStyles, FastCommentsCallbacks } from '../types';
+import type { FastCommentsSessionUser } from '../types/user';
 import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
 
@@ -46,7 +48,7 @@ interface CommentReplyState {
     isReplySaving: boolean;
     showSuccessMessage: boolean;
     showAuthInputForm: boolean;
-    lastSaveResponse?: SaveCommentResponse;
+    lastSaveResponse?: CreateCommentPublic200Response;
 }
 
 async function logout(
@@ -63,6 +65,7 @@ async function logout(
             sso.logoutCallback('');
         }
     }
+    // TODO logout endpoint not in fastcomments-sdk yet; refactor when added
     await makeRequest({
         apiHost: state.apiHost,
         method: 'PUT',
@@ -108,6 +111,49 @@ async function logout(
     await setupUserPresenceState(store, latest.urlIdWS!);
 }
 
+function publicCommentToRNComment(
+    comment: PublicComment,
+    tenantId: string,
+    urlId: string
+): RNComment {
+    const dateString = comment.date instanceof Date ? comment.date.toISOString() : '';
+    return {
+        _id: comment.id,
+        tenantId,
+        urlId,
+        commentHTML: comment.commentHTML,
+        commenterName: comment.commenterName,
+        commenterLink: comment.commenterLink ?? undefined,
+        userId: comment.userId ?? undefined,
+        anonUserId: comment.anonUserId ?? undefined,
+        avatarSrc: comment.avatarSrc ?? undefined,
+        parentId: comment.parentId ?? undefined,
+        date: dateString,
+        verified: comment.verified,
+        votes: comment.votes ?? undefined,
+        votesUp: comment.votesUp ?? undefined,
+        votesDown: comment.votesDown ?? undefined,
+        hasImages: comment.hasImages,
+        isByAdmin: comment.isByAdmin,
+        isByModerator: comment.isByModerator,
+        isPinned: comment.isPinned ?? undefined,
+        isLocked: comment.isLocked ?? undefined,
+        displayLabel: comment.displayLabel ?? undefined,
+        isDeleted: comment.isDeleted,
+        isSpam: comment.isSpam,
+        isFlagged: comment.isFlagged,
+        isBlocked: comment.isBlocked,
+        isVotedDown: comment.isVotedDown,
+        isVotedUp: comment.isVotedUp,
+        isUnread: comment.isUnread,
+        myVoteId: comment.myVoteId,
+        approved: comment.approved,
+        editKey: comment.editKey,
+        requiresVerification: comment.requiresVerification,
+        nestedChildrenCount: comment.nestedChildrenCount ?? undefined,
+    };
+}
+
 async function submit(
     {
         store,
@@ -147,29 +193,40 @@ async function submit(
     const urlIdToUse = getActionURLID({ store, urlId: parentComment?.urlId });
 
     const date = new Date();
-    const newComment = {
-        tenantId: tenantIdToUse,
+    const userWithUsername = currentUserBeforeSubmit as { username?: string } | null;
+    const userWithEmail = currentUserBeforeSubmit as { email?: string } | null;
+    const userWithWebsite = currentUserBeforeSubmit as { websiteUrl?: string } | null;
+    const userWithAvatar = currentUserBeforeSubmit as { avatarSrc?: string } | null;
+    const userWithSessionId = currentUserBeforeSubmit as { sessionId?: string } | null;
+    const commenterName =
+        userWithUsername && 'username' in (userWithUsername as object)
+            ? userWithUsername.username
+            : replyState.username;
+    const commenterEmail =
+        userWithEmail && 'email' in (userWithEmail as object)
+            ? userWithEmail.email
+            : replyState.email;
+    const commenterLink =
+        userWithWebsite && 'websiteUrl' in (userWithWebsite as object)
+            ? userWithWebsite.websiteUrl
+            : replyState.websiteUrl;
+    const avatarSrc =
+        userWithAvatar && state.config.simpleSSO ? userWithAvatar.avatarSrc : undefined;
+    const sessionId =
+        userWithSessionId && 'sessionId' in (userWithSessionId as object)
+            ? userWithSessionId.sessionId
+            : undefined;
+
+    const commentData: CommentData = {
+        url: state.config.url ?? '',
         urlId: urlIdToUse,
-        url: state.config.url,
         pageTitle: state.config.pageTitle,
-        commenterName:
-            currentUserBeforeSubmit && 'username' in currentUserBeforeSubmit
-                ? (currentUserBeforeSubmit as any).username
-                : replyState.username,
-        commenterEmail:
-            currentUserBeforeSubmit && 'email' in currentUserBeforeSubmit
-                ? (currentUserBeforeSubmit as any).email
-                : replyState.email,
-        commenterLink:
-            currentUserBeforeSubmit && 'websiteUrl' in currentUserBeforeSubmit
-                ? (currentUserBeforeSubmit as any).websiteUrl
-                : replyState.websiteUrl,
-        avatarSrc:
-            currentUserBeforeSubmit && state.config.simpleSSO
-                ? (currentUserBeforeSubmit as any).avatarSrc
-                : undefined,
-        comment: replyState.comment,
-        parentId: replyingToId,
+        commenterName: commenterName ?? '',
+        commenterEmail: commenterEmail ?? null,
+        commenterLink: commenterLink ?? null,
+        avatarSrc: avatarSrc ?? null,
+        comment: replyState.comment ?? '',
+        parentId: replyingToId ?? null,
         date: date.valueOf(),
         localDateString: date.toString(),
         localDateHours: date.getHours(),
@@ -181,37 +238,42 @@ async function submit(
     const broadcastId = newBroadcastId(store);
 
     try {
-        const response = await makeRequest<SaveCommentResponse>({
-            apiHost: state.apiHost,
-            method: 'POST',
-            url: `/comments/${tenantIdToUse}/${createURLQueryString({
-                urlId: urlIdToUse,
-                sso: state.ssoConfigString,
-                broadcastId,
-                sessionId:
-                    currentUserBeforeSubmit && 'sessionId' in currentUserBeforeSubmit
-                        ? (currentUserBeforeSubmit as any).sessionId
-                        : undefined,
-            })}`,
-            body: newComment,
+        const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+        const response = await sdk.publicApi.createCommentPublic({
+            tenantId: tenantIdToUse,
+            urlId: urlIdToUse,
+            broadcastId,
+            commentData,
+            sessionId,
+            sso: state.ssoConfigString,
         });
 
         let showSuccessMessage = false;
-        if (response.customConfig) handleNewCustomConfig(store, response.customConfig);
-        const comment = response.comment as RNComment;
-        const wasSuccessful = response.status === 'success' && !!comment;
+        if (response.customConfig)
+            handleNewCustomConfig(
+                store,
+                response.customConfig as unknown as Parameters<typeof handleNewCustomConfig>[1]
+            );
+        const wasSuccessful = response.status === 'success' && !!response.comment;
+        const comment: RNComment | null = wasSuccessful
+            ? publicCommentToRNComment(response.comment, tenantIdToUse, urlIdToUse)
+            : null;
         const latest = store.getState();
-        if (wasSuccessful) {
+        if (wasSuccessful && comment) {
             comment.wasPostedCurrentSession = true;
             if (replyingToId) comment.repliesHidden = false;
             latest.upsertComment(comment, !!latest.config.newCommentsToBottom);
             incOverallCommentCount(latest.config.countAll, store, comment.parentId);
 
             if (response.user) {
+                const responseUser = response.user;
                 if (latest.config.simpleSSO) {
-                    latest.setCurrentUser({ ...(latest.currentUser as any), ...response.user } as any);
+                    latest.setCurrentUser({
+                        ...(latest.currentUser as object),
+                        ...responseUser,
+                    } as FastCommentsSessionUser);
                 } else {
-                    latest.setCurrentUser(response.user as any);
+                    latest.setCurrentUser(responseUser as FastCommentsSessionUser);
                 }
                 onAuthenticationChange &&
                     onAuthenticationChange('user-set', store.getState().currentUser, comment);
@@ -221,12 +283,12 @@ async function submit(
                 currentUserBeforeSubmit &&
                 response.user &&
                 'sessionId' in response.user &&
-                (response.user as any).sessionId
+                response.user.sessionId
             ) {
                 latest.setCurrentUser({
-                    ...(latest.currentUser as any),
-                    sessionId: (response.user as any).sessionId,
-                } as any);
+                    ...(latest.currentUser as object),
+                    sessionId: response.user.sessionId,
+                } as FastCommentsSessionUser);
                 onAuthenticationChange &&
                     onAuthenticationChange('session-id-set', store.getState().currentUser, comment);
             }
@@ -236,18 +298,13 @@ async function submit(
 
             if (newCurrentUserId !== lastCurrentUserId || response.userIdWS !== latest.userIdWS) {
                 // TODO: persistSubscriberState(store, urlIdWS, tenantIdWS, response.userIdWS);
-            } else {
-                void setupUserPresenceState(store, response.userIdWS!);
+            } else if (response.userIdWS) {
+                void setupUserPresenceState(store, response.userIdWS);
             }
         } else {
             if (isAuthenticating) {
-                latest.setCurrentUser(null as any);
+                latest.setCurrentUser(null);
                 onAuthenticationChange && onAuthenticationChange('authentication-failed', null, comment);
-            }
-            if (response.translations) {
-                latest.mergeConfig({
-                    translations: { ...(latest.config.translations ?? {}), ...response.translations },
-                } as any);
             }
         }
         if (response.maxCharacterLength && response.maxCharacterLength !== latest.config.maxCommentCharacterLength) {
@@ -268,21 +325,25 @@ async function submit(
         }
         setReplyState(patch);
 
-        if (wasSuccessful) onReplySuccess && onReplySuccess(comment);
-    } catch (response: any) {
-        if (response && 'customConfig' in response && response.customConfig) {
-            handleNewCustomConfig(store, response.customConfig);
+        if (wasSuccessful && comment) onReplySuccess && onReplySuccess(comment);
+    } catch (caught: unknown) {
+        const errorResponse = caught as Partial<CreateCommentPublic200Response> | undefined;
+        if (errorResponse && errorResponse.customConfig) {
+            handleNewCustomConfig(
+                store,
+                errorResponse.customConfig as unknown as Parameters<typeof handleNewCustomConfig>[1]
+            );
         }
         if (isAuthenticating) {
-            store.getState().setCurrentUser(null as any);
+            store.getState().setCurrentUser(null);
             onAuthenticationChange &&
-                onAuthenticationChange('authentication-failed', null, newComment as unknown as RNComment);
+                onAuthenticationChange('authentication-failed', null, null);
         }
         setReplyState({
             isReplySaving: false,
             showAuthInputForm: false,
             showSuccessMessage: false,
-            lastSaveResponse: response,
+            lastSaveResponse: errorResponse as CreateCommentPublic200Response | undefined,
         });
     }
 }
