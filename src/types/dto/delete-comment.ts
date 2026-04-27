@@ -1,4 +1,4 @@
-import {CommonHTTPResponse} from "../../services/http";
+import {CommonHTTPResponse} from "./common-http-response";
 import { FastCommentsWidgetComment } from 'fastcomments-typescript';
 
 export interface DeleteCommentResponse extends CommonHTTPResponse {

@@ -7,7 +7,7 @@ import {
     ImageAssetConfig,
     RNComment,
 } from '../types';
-import { createURLQueryString, getAPIHost, makeRequest } from './http';
+import { getAPIHost } from './api-host';
 import { mergeSimpleSSO } from './sso';
 import { handleNewCustomConfig } from './custom-config';
 import { cleanupSubscriber, persistSubscriberState } from './live';
@@ -93,38 +93,32 @@ export class FastCommentsLiveCommentingService {
 
         try {
             let response: GetCommentsResponse;
+            const sdk = new FastCommentsServerSDK({ basePath: store.getState().apiHost });
+            const ssoConfigString = store.getState().ssoConfigString;
+            const isFirstPageLoad = internalState.lastComments.length === 0;
             if (isActivityFeed) {
-                // TODO comments-for-user (activity feed) endpoint not in fastcomments-sdk yet; refactor when added
-                const queryParams: Record<string, string | number | undefined> = {
+                // The activity feed (tenantId === 'all') routes through
+                // /comments-for-user which keys off userId rather than urlId.
+                // When SSO is in play we still pass the SSO tenant so the
+                // server can resolve cross-tenant moderation flags.
+                const apiResponse = await sdk.publicApi.getCommentsForUserRaw({
+                    userId: config.userId,
+                    tenantId: config.sso ? config.ssoTenantId : undefined,
                     urlId: config.urlId,
                     page: store.getState().page,
+                    direction: store.getState().sortDirection as SortDirections,
                     lastGenDate: internalState.lastGenDate,
-                };
-                if (internalState.lastComments.length === 0) {
-                    queryParams.includei10n = 'true';
-                    queryParams.useFullTranslationIds = 'true';
-                    if (config.locale) queryParams.locale = config.locale;
-                }
-                if (config.countAll) queryParams.countAll = 'true';
-                if (internalState.isFirstRequest) {
-                    queryParams.includeConfig = 'true';
-                    queryParams.includeNotificationCount = 'true';
-                }
-                const ssoConfigString = store.getState().ssoConfigString;
-                if (ssoConfigString) queryParams.sso = ssoConfigString;
-                queryParams.direction = store.getState().sortDirection;
-                if (config.jumpToId) queryParams.fetchPageForCommentId = config.jumpToId;
-                queryParams.userId = config.userId;
-                if (config.sso) queryParams.tenantId = (config as any).ssoTenantId;
-                response = await makeRequest<GetCommentsResponse>({
-                    apiHost: store.getState().apiHost,
-                    method: 'GET',
-                    url: '/comments-for-user' + createURLQueryString(queryParams),
+                    fetchPageForCommentId: config.jumpToId,
+                    includei10n: isFirstPageLoad ? true : undefined,
+                    useFullTranslationIds: isFirstPageLoad ? true : undefined,
+                    locale: isFirstPageLoad ? config.locale : undefined,
+                    includeConfig: internalState.isFirstRequest ? true : undefined,
+                    includeNotificationCount: internalState.isFirstRequest ? true : undefined,
+                    countAll: config.countAll ? true : undefined,
+                    sso: ssoConfigString,
                 });
+                response = (await apiResponse.raw.json()) as GetCommentsResponse;
             } else {
-                const sdk = new FastCommentsServerSDK({ basePath: store.getState().apiHost });
-                const ssoConfigString = store.getState().ssoConfigString;
-                const isFirstPageLoad = internalState.lastComments.length === 0;
                 const apiResponse = await sdk.publicApi.getCommentsPublicRaw({
                     tenantId: config.tenantId!,
                     urlId: config.urlId,

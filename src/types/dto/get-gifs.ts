@@ -1,4 +1,4 @@
-import {CommonHTTPResponse} from "../../services/http";
+import {CommonHTTPResponse} from "./common-http-response";
 
 export interface GetGifsResponse extends CommonHTTPResponse {
     // source, width, height

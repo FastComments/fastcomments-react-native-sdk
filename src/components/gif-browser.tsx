@@ -11,11 +11,9 @@ import {
 } from "react-native";
 import {FastCommentsImageAsset, IFastCommentsStyles, ImageAssetConfig} from "../types";
 import {useEffect, useRef, useState} from "react";
-import {createURLQueryString, getAPIHost, makeRequest} from "../services/http";
-import {GetGifsResponse} from "../types/dto/get-gifs";
+import {FastCommentsServerSDK} from "fastcomments-sdk/server";
+import {getAPIHost} from "../services/api-host";
 import {FastCommentsRNConfig} from "../types/react-native-config";
-import {GetTranslationsResponse} from "../types/dto/get-translations-response";
-import {GetGifLargeResponse} from "../types/dto/get-gif-large";
 import {getMergedTranslations} from "../services/translations";
 import {showError} from "../services/show-error";
 
@@ -81,21 +79,37 @@ export function GifBrowser({
         setIsFetching(true);
         lastGifsRequest.current = request;
         lastRequestTime.current = Date.now();
-        const response = await makeRequest<GetGifsResponse>({
-            apiHost: getAPIHost(config),
-            method: 'GET',
-            url: '/gifs/' + (request.search ? 'search/' : 'trending/') + config.tenantId + createURLQueryString(request)
-        });
+        const sdk = new FastCommentsServerSDK({basePath: getAPIHost(config)});
+        const response = request.search
+            ? await sdk.publicApi.getGifsSearch({
+                tenantId: config.tenantId!,
+                search: request.search,
+                locale: request.locale,
+                rating: request.rating,
+                page: request.page,
+            })
+            : await sdk.publicApi.getGifsTrending({
+                tenantId: config.tenantId!,
+                locale: request.locale,
+                rating: request.rating,
+                page: request.page,
+            });
         if (response.status === 'success') {
-            setHasMore(response.images.length >= 25);
+            // Server emits each image as a heterogeneous tuple [src, width, height];
+            // OpenAPI 3.0 cannot express tuples, so the SDK types `images` loosely.
+            // We narrow it back to the contract documented on the controller.
+            const images: [string, number, number][] = (response.images ?? []).map((row: ArrayLike<unknown>): [string, number, number] => {
+                return [String(row[0]), Number(row[1]), Number(row[2])];
+            });
+            setHasMore(images.length >= 25);
             setIsFetching(false);
             setIsInitialLoad(false);
             if (isNewTerm) {
-                setGifsDeDupe(response.images);
+                setGifsDeDupe(images);
             } else {
                 setGifsDeDupe([
                     ...gifs,
-                    ...response.images
+                    ...images
                 ]);
             }
         } else {
@@ -105,27 +119,23 @@ export function GifBrowser({
     }
 
     async function getGifsTranslations() {
-        let url = '/translations/widgets/comment-ui-gifs?useFullTranslationIds=true';
-        if (config.locale) {
-            url += '&locale=' + config.locale;
-        }
-        const response = await makeRequest<GetTranslationsResponse<string>>({
-            apiHost: getAPIHost(config),
-            method: 'GET',
-            url: url
+        const sdk = new FastCommentsServerSDK({basePath: getAPIHost(config)});
+        const response = await sdk.publicApi.getTranslations({
+            namespace: 'widgets',
+            component: 'comment-ui-gifs',
+            useFullTranslationIds: true,
+            locale: config.locale,
         });
         return response.translations || {};
     }
 
     async function getCommonTranslations() {
-        let url = '/translations/widgets/comment-ui?useFullTranslationIds=true';
-        if (config.locale) {
-            url += '&locale=' + config.locale;
-        }
-        const response = await makeRequest<GetTranslationsResponse<string>>({
-            apiHost: getAPIHost(config),
-            method: 'GET',
-            url: url
+        const sdk = new FastCommentsServerSDK({basePath: getAPIHost(config)});
+        const response = await sdk.publicApi.getTranslations({
+            namespace: 'widgets',
+            component: 'comment-ui',
+            useFullTranslationIds: true,
+            locale: config.locale,
         });
         return response.translations || {};
     }
@@ -178,12 +188,10 @@ export function GifBrowser({
             pickedGIF(rawSrc);
         } else {
             // TODO show loading
-            const response = await makeRequest<GetGifLargeResponse>({
-                apiHost: getAPIHost(config),
-                method: 'GET',
-                url: '/gifs/get-large/' + config.tenantId + createURLQueryString({
-                    largeInternalURLSanitized: rawSrc
-                })
+            const sdk = new FastCommentsServerSDK({basePath: getAPIHost(config)});
+            const response = await sdk.publicApi.getGifLarge({
+                tenantId: config.tenantId!,
+                largeInternalURLSanitized: rawSrc,
             });
             if (response.status === 'success' && response.src) {
                 pickedGIF(response.src);

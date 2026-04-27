@@ -18,7 +18,7 @@ import {
     saveFeedScrollOffset,
 } from '../services/feed-scroll-memory';
 import { startFeedStatsPoll, stopFeedStatsPoll } from '../services/feed-stats';
-import { makeRequest } from '../services/http';
+import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import { FeedNewPostsBanner } from './feed-new-posts-banner';
 import { FeedPostComposer } from './feed-post-composer';
 import { FeedPostRow } from './feed-post-row';
@@ -28,7 +28,6 @@ import type { FeedCustomToolbarButton } from '../types/feed-custom-toolbar-butto
 import type { FollowStateProvider } from '../types/follow-state-provider';
 import type {
     FastCommentsCallbacks,
-    GetTranslationsResponse,
     IFastCommentsStyles,
     ImageAssetConfig,
 } from '../types';
@@ -111,12 +110,12 @@ export const FastCommentsFeed = forwardRef<FastCommentsFeedHandle, FastCommentsF
             // GET. We don't fail the feed load if this errors - the feed
             // simply renders with empty translation strings.
             try {
-                let url = '/translations/widgets/comment-ui?useFullTranslationIds=true';
-                if (config.locale) url += '&locale=' + encodeURIComponent(config.locale);
-                const response = await makeRequest<GetTranslationsResponse<string>>({
-                    apiHost: store.getState().apiHost,
-                    method: 'GET',
-                    url,
+                const sdk = new FastCommentsServerSDK({ basePath: store.getState().apiHost });
+                const response = await sdk.publicApi.getTranslations({
+                    namespace: 'widgets',
+                    component: 'comment-ui',
+                    useFullTranslationIds: true,
+                    locale: config.locale,
                 });
                 if (!cancelled && response.translations) {
                     addTranslationsToStore(store, response.translations);

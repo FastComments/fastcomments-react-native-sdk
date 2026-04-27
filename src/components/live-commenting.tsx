@@ -17,9 +17,7 @@ import { LiveCommentingList } from './live-commenting-list';
 import { LiveStatusBar } from './live-status-bar';
 import { CAN_CLOSE, CAN_NOT_CLOSE, ModalMenu } from './modal-menu';
 import { getCommentMenuItems, OpenCommentMenuRequest } from './comment-menu';
-import { makeRequest } from '../services/http';
-import { GetTranslationsResponse } from '../types/dto/get-translations-response';
-import { CommentCancelTranslations } from '../types/comment-cancel-translations';
+import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import { addTranslationsToStore } from '../services/translations';
 import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
@@ -116,15 +114,15 @@ export function FastCommentsLiveCommenting({ config, styles, callbacks, assets }
         if (!force && !comment && isReplyingToParentIdRef.current) {
             const s = store.getState();
             if (!s.translations.CONFIRM_CANCEL_REPLY) {
-                let url = '/translations/widgets/comment-ui-cancel?useFullTranslationIds=true';
-                if (s.config.locale) url += '&locale=' + s.config.locale;
-                const translationsResponse = await makeRequest<GetTranslationsResponse<CommentCancelTranslations>>({
-                    apiHost: s.apiHost,
-                    method: 'GET',
-                    url,
+                const sdk = new FastCommentsServerSDK({ basePath: s.apiHost });
+                const translationsResponse = await sdk.publicApi.getTranslations({
+                    namespace: 'widgets',
+                    component: 'comment-ui-cancel',
+                    useFullTranslationIds: true,
+                    locale: s.config.locale,
                 });
-                if (translationsResponse.status === 'success') {
-                    addTranslationsToStore(store, translationsResponse.translations!);
+                if (translationsResponse.status === 'success' && translationsResponse.translations) {
+                    addTranslationsToStore(store, translationsResponse.translations);
                 }
             }
             const t = store.getState().translations;

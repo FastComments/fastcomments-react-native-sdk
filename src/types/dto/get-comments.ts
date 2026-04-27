@@ -1,5 +1,5 @@
 import { FastCommentsCommentWidgetConfig, FastCommentsWidgetComment } from "fastcomments-typescript";
-import {CommonHTTPResponse} from "../../services/http";
+import {CommonHTTPResponse} from "./common-http-response";
 import {FastCommentsSessionUser} from "../user";
 import {UserPresencePollStateEnum} from "../fastcomments-state";
 

@@ -6,8 +6,8 @@
  *      translated error via the supplied error handler.
  */
 import type { FastCommentsStore } from '../store/types';
-import type { ReactBodyParams, ReactFeedPostPublic200Response } from 'fastcomments-sdk';
-import { createURLQueryString, makeRequest } from './http';
+import type { ReactBodyParams } from 'fastcomments-sdk';
+import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import { newBroadcastId } from './broadcast-id';
 
 export type FeedReactionResult = { ok: true; isUndo: boolean } | { error: string };
@@ -38,35 +38,22 @@ export async function reactToFeedPost(
     state.applyFeedPostReactDelta(postId, reactType, delta, myReactsValue);
 
     const broadcastId = newBroadcastId(store);
-    // TODO: switch to sdk.publicApi.reactFeedPostPublic once the OpenAPI spec
-    // exposes `urlId` on the route. Server reads `req.query.urlId` to populate
-    // `sessionDetails.urlId`, which is then used as the pubsub channel for
-    // the reaction event. The feed list/create/delete endpoints route their
-    // broadcasts via the literal 'FEEDS' channel, so we mirror that here so
-    // the live `fr` / `dfr` events land on the same channel A is subscribed
-    // to. The typed `ReactFeedPostPublicRequest` does not currently carry
-    // `urlId`, so we keep this single call on `makeRequest` until the spec is
-    // updated; everything else in this directory uses the typed SDK.
-    const queryParams: Record<string, string | number | boolean | undefined> = {
-        broadcastId,
-        isUndo: isUndo ? true : undefined,
-        urlId: 'FEEDS',
-    };
-    if (state.ssoConfigString) queryParams.sso = state.ssoConfigString;
-
+    // The feed list/create/delete endpoints publish under the literal 'FEEDS'
+    // pubsub channel, so we mirror that here so live `fr` / `dfr` events land
+    // on the same channel each subscriber is listening on. The server reads
+    // `urlId` off the query string to populate `sessionDetails.urlId`.
     const reactBody: ReactBodyParams = { reactType };
+    const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
 
     try {
-        const response = await makeRequest<ReactFeedPostPublic200Response>({
-            apiHost: state.apiHost,
-            method: 'POST',
-            url:
-                '/feed-posts/' +
-                encodeURIComponent(tenantId) +
-                '/react/' +
-                encodeURIComponent(postId) +
-                createURLQueryString(queryParams),
-            body: reactBody,
+        const response = await sdk.publicApi.reactFeedPostPublic({
+            tenantId,
+            postId,
+            reactBodyParams: reactBody,
+            isUndo: isUndo ? true : undefined,
+            broadcastId,
+            urlId: 'FEEDS',
+            sso: state.ssoConfigString,
         });
         if (response.status !== 'success') {
             store.getState().setFeedPostReacts(postId, prevReacts, prevMyReacts);

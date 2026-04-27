@@ -1,6 +1,5 @@
 import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
-import {FastCommentsServerSDK} from "fastcomments-sdk/server";
-import {createURLQueryString} from "./http";
+import {FastCommentsServerSDK, createURLQueryString} from "fastcomments-sdk/server";
 import {WebsocketLiveEvent, WebsocketLiveNewOrUpdatedCommentEvent} from "../types/dto/websocket-live-event";
 import {EventLogEntryData, GetEventLogResponse} from "../types/dto/get-event-log";
 

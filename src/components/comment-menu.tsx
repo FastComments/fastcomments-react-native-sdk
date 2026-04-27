@@ -3,7 +3,6 @@ import { FastCommentsCallbacks, FastCommentsImageAsset } from '../types';
 import { Alert, Image } from 'react-native';
 import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import type { PublicBlockFromCommentParams } from 'fastcomments-sdk';
-import { makeRequest } from '../services/http';
 import { showError } from '../services/show-error';
 import { CommentActionEdit, DirtyRef } from './comment-action-edit';
 import { CommentPromptDelete } from './comment-action-delete';
@@ -13,8 +12,6 @@ import { IFastCommentsStyles, RNComment } from '../types';
 import type { FastCommentsCommentPositions } from '../types/dto/websocket-live-event';
 import { addTranslationsToStore } from '../services/translations';
 import { newBroadcastId } from '../services/broadcast-id';
-import { GetTranslationsResponse } from '../types';
-import { CommentCancelTranslations } from '../types';
 import type { FastCommentsStore } from '../store/types';
 
 async function startEditingComment(
@@ -249,16 +246,15 @@ export function getCommentMenuItems(
                 if (isDirtyRef.current && isDirtyRef.current()) {
                     const freshState = store.getState();
                     if (!freshState.translations.CONFIRM_CANCEL_EDIT) {
-                        let url = '/translations/widgets/comment-ui-cancel?useFullTranslationIds=true';
-                        if (freshState.config.locale) url += '&locale=' + freshState.config.locale;
-                        // TODO translations endpoint not in fastcomments-sdk yet; refactor when added
-                        const translationsResponse = await makeRequest<GetTranslationsResponse<CommentCancelTranslations>>({
-                            apiHost: freshState.apiHost,
-                            method: 'GET',
-                            url,
+                        const sdk = new FastCommentsServerSDK({ basePath: freshState.apiHost });
+                        const translationsResponse = await sdk.publicApi.getTranslations({
+                            namespace: 'widgets',
+                            component: 'comment-ui-cancel',
+                            useFullTranslationIds: true,
+                            locale: freshState.config.locale,
                         });
-                        if (translationsResponse.status === 'success') {
-                            addTranslationsToStore(store, translationsResponse.translations!);
+                        if (translationsResponse.status === 'success' && translationsResponse.translations) {
+                            addTranslationsToStore(store, translationsResponse.translations);
                         }
                     }
                     const t = store.getState().translations;

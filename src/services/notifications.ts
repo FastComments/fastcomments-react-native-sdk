@@ -1,5 +1,6 @@
 import {FastCommentsRNConfig, GetTranslationsResponse, GetUserUnreadNotificationsCountResponse, UserNotificationTranslations} from "../types";
-import {CommonHTTPResponse, getAPIHost, makeRequest} from "./http";
+import {CommonHTTPResponse} from "../types/dto/common-http-response";
+import {getAPIHost} from "./api-host";
 import {GetUserNotificationsResponse, UserNotification} from "../types";
 import {NotificationType} from "fastcomments-typescript";
 import {FastCommentsServerSDK} from "fastcomments-sdk/server";
@@ -126,20 +127,25 @@ export async function markNotificationOptedOut(request: MarkNotificationOptedOut
 }
 
 export async function getNotificationTranslations(config: FastCommentsRNConfig): Promise<GetTranslationsResponse<UserNotificationTranslations>> {
-    let url = '/translations/widgets/comment-ui-notifications-list?useFullTranslationIds=true';
-    if (config.locale) {
-        url += '&locale=' + config.locale;
-    }
-    // TODO translations endpoint not in fastcomments-sdk yet; refactor when added
-    const response = await makeRequest<GetTranslationsResponse<UserNotificationTranslations>>({
-        apiHost: getAPIHost(config),
-        method: 'GET',
-        url
+    const sdk = getSDK(config);
+    const response = await sdk.publicApi.getTranslations({
+        namespace: 'widgets',
+        component: 'comment-ui-notifications-list',
+        useFullTranslationIds: true,
+        locale: config.locale,
     });
-    if (!response.translations) { // note - makeRequest will already do retries, so ideally this never happens or is very rare.
+    if (!response.translations) {
         throw Error('Could not get notifications list translations!');
     }
-    return response;
+    // The SDK types translations as Record<string, string>; this endpoint
+    // is documented to return the UserNotificationTranslations key set.
+    const typed: GetTranslationsResponse<UserNotificationTranslations> = {
+        status: response.status,
+        code: response.code,
+        reason: response.reason,
+        translations: response.translations as Record<UserNotificationTranslations, string>,
+    };
+    return typed;
 }
 
 export function getNotificationDisplayHTML(notification: UserNotification, notificationTranslations: Record<UserNotificationTranslations, string>) {

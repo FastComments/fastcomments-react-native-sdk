@@ -11,7 +11,6 @@ import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import type { CommentData, CreateCommentPublic200Response, PublicComment } from 'fastcomments-sdk';
 import { getActionTenantId, getActionURLID } from '../services/tenants';
 import { newBroadcastId } from '../services/broadcast-id';
-import { makeRequest } from '../services/http';
 import { handleNewCustomConfig } from '../services/custom-config';
 import { incOverallCommentCount } from '../services/comment-count';
 import { setupUserPresenceState } from '../services/user-presense';
@@ -65,12 +64,8 @@ async function logout(
             sso.logoutCallback('');
         }
     }
-    // TODO logout endpoint not in fastcomments-sdk yet; refactor when added
-    await makeRequest({
-        apiHost: state.apiHost,
-        method: 'PUT',
-        url: '/auth/logout',
-    });
+    const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+    await sdk.publicApi.logoutPublic();
     const currentUser = state.currentUser;
     const currentUserId = currentUser && 'id' in currentUser ? currentUser.id : undefined;
 

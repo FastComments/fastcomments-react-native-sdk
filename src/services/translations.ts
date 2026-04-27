@@ -1,4 +1,4 @@
-import { CommonHTTPResponse } from './http';
+import { CommonHTTPResponse } from '../types/dto/common-http-response';
 import type { FastCommentsStore } from '../store/types';
 
 export function getMergedTranslations(
