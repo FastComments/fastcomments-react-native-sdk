@@ -7,12 +7,14 @@ import {FastCommentsRNConfig, UserNotificationTranslations} from "../types";
 import {ThreeDot} from "./three-dot";
 import {Dispatch, SetStateAction, useState} from "react";
 import {getNotificationDisplayHTML, markNotificationOptedOut, markNotificationRead} from "../services/notifications";
+import type {FastCommentsStore} from "../store/types";
 export interface NotificationListItemProps extends Pick<FastCommentsCallbacks, 'onNotificationSelected'> {
     config: FastCommentsRNConfig
     defaultAvatar: ImageURISource
     imageAssets: ImageAssetConfig
     notification: UserNotification
     notificationTranslations: Record<UserNotificationTranslations, string>
+    store: FastCommentsStore
     styles: IFastCommentsStyles
     translations: Record<string, string>
     width: number
@@ -25,6 +27,7 @@ export function NotificationListItem({
         notification,
         notificationTranslations,
         onNotificationSelected,
+        store,
         styles,
         translations,
         width,
@@ -38,7 +41,7 @@ export function NotificationListItem({
             label: notificationTranslations.NOTIFICATION_MARK_UNREAD,
             handler: async (setModalId: Dispatch<SetStateAction<string | null>>) => {
                 await markNotificationRead({
-                    config,
+                    store,
                     notificationId: notification._id,
                     isRead: false
                 });
@@ -50,7 +53,7 @@ export function NotificationListItem({
             label: notificationTranslations.NOTIFICATION_MARK_READ,
             handler: async (setModalId: Dispatch<SetStateAction<string | null>>) => {
                 await markNotificationRead({
-                    config,
+                    store,
                     notificationId: notification._id,
                     isRead: true
                 });
@@ -63,7 +66,7 @@ export function NotificationListItem({
             label: notificationTranslations.NOTIFICATION_OPT_IN_FOR_COMMENT,
             handler: async (setModalId: Dispatch<SetStateAction<string | null>>) => {
                 await markNotificationOptedOut({
-                    config,
+                    store,
                     notificationId: notification._id,
                     isOptedOut: false
                 });
@@ -75,7 +78,7 @@ export function NotificationListItem({
             label: notificationTranslations.NOTIFICATION_OPT_OUT_FOR_COMMENT,
             handler: async (setModalId: Dispatch<SetStateAction<string | null>>) => {
                 await markNotificationOptedOut({
-                    config,
+                    store,
                     notificationId: notification._id,
                     isOptedOut: true
                 });

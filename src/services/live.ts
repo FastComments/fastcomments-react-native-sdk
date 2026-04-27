@@ -215,6 +215,7 @@ export function persistSubscriberState(
     if (prevInstance) prevInstance.close();
 
     SubscriberInstanceById[instanceId] = subscribeToChanges(
+        store,
         state.config,
         state.wsHost,
         newTenantIdWS,

@@ -18,7 +18,6 @@ import {
     saveFeedScrollOffset,
 } from '../services/feed-scroll-memory';
 import { startFeedStatsPoll, stopFeedStatsPoll } from '../services/feed-stats';
-import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import { FeedNewPostsBanner } from './feed-new-posts-banner';
 import { FeedPostComposer } from './feed-post-composer';
 import { FeedPostRow } from './feed-post-row';
@@ -110,7 +109,7 @@ export const FastCommentsFeed = forwardRef<FastCommentsFeedHandle, FastCommentsF
             // GET. We don't fail the feed load if this errors - the feed
             // simply renders with empty translation strings.
             try {
-                const sdk = new FastCommentsServerSDK({ basePath: store.getState().apiHost });
+                const sdk = store.getState().sdk;
                 const response = await sdk.publicApi.getTranslations({
                     namespace: 'widgets',
                     component: 'feed-ui',

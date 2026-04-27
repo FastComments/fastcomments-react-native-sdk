@@ -1,7 +1,6 @@
 import { View, Text, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
 import { FastCommentsCallbacks, FastCommentsImageAsset } from '../types';
 import { useState } from 'react';
-import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import type { CommentTextUpdateRequest } from 'fastcomments-sdk';
 import { getActionTenantId } from '../services/tenants';
 import { newBroadcastId } from '../services/broadcast-id';
@@ -36,7 +35,7 @@ async function saveCommentText(
     const state = store.getState();
     const tenantId = getActionTenantId({ store, tenantId: comment.tenantId });
     const broadcastId = newBroadcastId(store);
-    const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+    const sdk = state.sdk;
     const commentTextUpdateRequest: CommentTextUpdateRequest = { comment: newValue };
     const response = await sdk.publicApi.setCommentText({
         tenantId,

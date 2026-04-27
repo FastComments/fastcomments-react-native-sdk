@@ -52,8 +52,11 @@ export class FastCommentsLiveCommentingService {
         assets?: ImageAssetConfig
     ): FastCommentsStore {
         mergeSimpleSSO(config);
+        const apiHost = getAPIHost(config);
+        const sdk = new FastCommentsServerSDK({ basePath: apiHost });
         const store = createFastCommentsStore({
-            apiHost: getAPIHost(config),
+            apiHost,
+            sdk,
             wsHost:
                 config.wsHost ??
                 (config.region === 'eu'
@@ -93,7 +96,7 @@ export class FastCommentsLiveCommentingService {
 
         try {
             let response: GetCommentsResponse;
-            const sdk = new FastCommentsServerSDK({ basePath: store.getState().apiHost });
+            const sdk = store.getState().sdk;
             const ssoConfigString = store.getState().ssoConfigString;
             const isFirstPageLoad = internalState.lastComments.length === 0;
             if (isActivityFeed) {

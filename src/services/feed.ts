@@ -6,7 +6,6 @@ import type {
     FeedPostMediaItemAsset,
 } from '../types/feed-post';
 import type { FeedPost as SDKFeedPost } from 'fastcomments-sdk';
-import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import { newBroadcastId } from './broadcast-id';
 import { persistSubscriberState } from './live';
 
@@ -80,7 +79,7 @@ export async function loadFeedPosts(
     const limit = options.limit ?? state.PAGE_SIZE;
 
     try {
-        const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+        const sdk = state.sdk;
         const response = await sdk.publicApi.getFeedPostsPublic({
             tenantId,
             afterId: options.afterId,
@@ -146,7 +145,7 @@ export async function createFeedPost(
     const broadcastId = newBroadcastId(store);
 
     try {
-        const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+        const sdk = state.sdk;
         const response = await sdk.publicApi.createFeedPostPublic({
             tenantId,
             broadcastId,
@@ -265,7 +264,7 @@ export async function deleteFeedPost(
     const broadcastId = newBroadcastId(store);
 
     try {
-        const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+        const sdk = state.sdk;
         const response = await sdk.publicApi.deleteFeedPostPublic({
             tenantId,
             postId,

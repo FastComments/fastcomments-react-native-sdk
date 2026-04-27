@@ -5,8 +5,22 @@
 import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import { setupTestContext, teardownTestContext, TestContext } from '../framework/harness/test-context';
 import { subscribeToChanges } from '../../src/services/subscribe-to-changes';
+import { createFastCommentsStore } from '../../src/store/create-store';
 import { FC_HOST, FC_WS_HOST } from '../framework/api/host';
 import { pollUntil, sleep } from '../framework/harness/poll';
+
+function makeStubStore(tenantId: string) {
+    return createFastCommentsStore({
+        apiHost: FC_HOST,
+        sdk: new FastCommentsServerSDK({ basePath: FC_HOST }),
+        wsHost: FC_WS_HOST,
+        config: { tenantId } as any,
+        currentUser: undefined as any,
+        imageAssets: {} as any,
+        isDemo: false,
+        instanceId: 'ws-test-' + Math.random(),
+    });
+}
 
 const hasKey = !!process.env.FC_E2E_API_KEY;
 const maybe = hasKey ? describe : describe.skip;
@@ -50,6 +64,7 @@ maybe('WebSocket / Presence SDK-level', () => {
         let connected = false;
         let failed = false;
         const sub = subscribeToChanges(
+            makeStubStore(ctx.tenant.tenantId),
             { tenantId: ctx.tenant.tenantId } as any,
             FC_WS_HOST,
             params.tenantIdWS,
@@ -84,6 +99,7 @@ maybe('WebSocket / Presence SDK-level', () => {
 
         const eventsSeenByA: any[] = [];
         const subA = subscribeToChanges(
+            makeStubStore(ctx.tenant.tenantId),
             { tenantId: ctx.tenant.tenantId } as any,
             FC_WS_HOST,
             paramsA.tenantIdWS,
@@ -103,6 +119,7 @@ maybe('WebSocket / Presence SDK-level', () => {
 
         const paramsB = await fetchWSParams(ctx.tenant.tenantId, ctx.urlId, ssoB);
         const subB = subscribeToChanges(
+            makeStubStore(ctx.tenant.tenantId),
             { tenantId: ctx.tenant.tenantId } as any,
             FC_WS_HOST,
             paramsB.tenantIdWS,

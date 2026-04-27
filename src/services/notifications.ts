@@ -1,45 +1,40 @@
 import {FastCommentsRNConfig, GetTranslationsResponse, GetUserUnreadNotificationsCountResponse, UserNotificationTranslations} from "../types";
 import {CommonHTTPResponse} from "../types/dto/common-http-response";
-import {getAPIHost} from "./api-host";
 import {GetUserNotificationsResponse, UserNotification} from "../types";
 import {NotificationType} from "fastcomments-typescript";
-import {FastCommentsServerSDK} from "fastcomments-sdk/server";
 import {
     RenderableUserNotification,
     UpdateUserNotificationCommentSubscriptionStatusOptedInOrOutEnum,
     UpdateUserNotificationPageSubscriptionStatusSubscribedOrUnsubscribedEnum,
     UpdateUserNotificationStatusNewStatusEnum,
 } from "fastcomments-sdk";
+import type {FastCommentsStore} from "../store/types";
 
 export interface GetUserNotificationsRequest {
-    config: FastCommentsRNConfig
+    store: FastCommentsStore
     unreadOnly?: boolean
     afterId?: string
 }
 
 export interface GetUserUnreadNotificationCountRequest {
-    config: FastCommentsRNConfig
+    store: FastCommentsStore
 }
 
 export interface MarkNotificationReadRequest {
-    config: FastCommentsRNConfig
+    store: FastCommentsStore
     notificationId: string
     isRead: boolean
 }
 
 export interface MarkNotificationOptedOutRequest {
-    config: FastCommentsRNConfig
+    store: FastCommentsStore
     notificationId: string
     isOptedOut: boolean
 }
 
 interface SubscriptionStateChangeRequest {
-    config: FastCommentsRNConfig
+    store: FastCommentsStore
     isSubscribed: boolean
-}
-
-function getSDK(config: FastCommentsRNConfig): FastCommentsServerSDK {
-    return new FastCommentsServerSDK({basePath: getAPIHost(config)});
 }
 
 function getSSO(config: FastCommentsRNConfig): string | undefined {
@@ -70,12 +65,13 @@ function mapNotification(n: RenderableUserNotification): UserNotification {
  * Gets a page of last 20 user notifications. Optionally can return only unread notifications.
  */
 export async function getUserNotifications(request: GetUserNotificationsRequest): Promise<GetUserNotificationsResponse> {
-    const sdk = getSDK(request.config);
+    const state = request.store.getState();
+    const sdk = state.sdk;
     const response = await sdk.publicApi.getUserNotifications({
-        tenantId: request.config.tenantId,
+        tenantId: state.config.tenantId,
         afterId: request.afterId,
         unreadOnly: request.unreadOnly,
-        sso: getSSO(request.config),
+        sso: getSSO(state.config),
     });
     return {
         status: response.status,
@@ -89,10 +85,11 @@ export async function getUserNotifications(request: GetUserNotificationsRequest)
 }
 
 export async function getUserUnreadNotificationCount(request: GetUserUnreadNotificationCountRequest): Promise<GetUserUnreadNotificationsCountResponse> {
-    const sdk = getSDK(request.config);
+    const state = request.store.getState();
+    const sdk = state.sdk;
     const response = await sdk.publicApi.getUserNotificationCount({
-        tenantId: request.config.tenantId,
-        sso: getSSO(request.config),
+        tenantId: state.config.tenantId,
+        sso: getSSO(state.config),
     });
     return {
         status: response.status,
@@ -104,35 +101,38 @@ export async function getUserUnreadNotificationCount(request: GetUserUnreadNotif
 }
 
 export async function markNotificationRead(request: MarkNotificationReadRequest): Promise<void> {
-    const sdk = getSDK(request.config);
+    const state = request.store.getState();
+    const sdk = state.sdk;
     await sdk.publicApi.updateUserNotificationStatus({
-        tenantId: request.config.tenantId,
+        tenantId: state.config.tenantId,
         notificationId: request.notificationId,
         newStatus: request.isRead ? UpdateUserNotificationStatusNewStatusEnum.read : UpdateUserNotificationStatusNewStatusEnum.unread,
-        sso: getSSO(request.config),
+        sso: getSSO(state.config),
     });
 }
 
 export async function markNotificationOptedOut(request: MarkNotificationOptedOutRequest): Promise<void> {
-    const sdk = getSDK(request.config);
+    const state = request.store.getState();
+    const sdk = state.sdk;
     // TODO commentId is required by the typed SDK contract but the legacy URL-only call did not pass one.
     // Callers do not currently thread the related comment id through; leave empty until the call sites are updated.
     await sdk.publicApi.updateUserNotificationCommentSubscriptionStatus({
-        tenantId: request.config.tenantId,
+        tenantId: state.config.tenantId,
         notificationId: request.notificationId,
         optedInOrOut: request.isOptedOut ? UpdateUserNotificationCommentSubscriptionStatusOptedInOrOutEnum.out : UpdateUserNotificationCommentSubscriptionStatusOptedInOrOutEnum.in,
         commentId: '',
-        sso: getSSO(request.config),
+        sso: getSSO(state.config),
     });
 }
 
-export async function getNotificationTranslations(config: FastCommentsRNConfig): Promise<GetTranslationsResponse<UserNotificationTranslations>> {
-    const sdk = getSDK(config);
+export async function getNotificationTranslations(store: FastCommentsStore): Promise<GetTranslationsResponse<UserNotificationTranslations>> {
+    const state = store.getState();
+    const sdk = state.sdk;
     const response = await sdk.publicApi.getTranslations({
         namespace: 'widgets',
         component: 'comment-ui-notifications-list',
         useFullTranslationIds: true,
-        locale: config.locale,
+        locale: state.config.locale,
     });
     if (!response.translations) {
         throw Error('Could not get notifications list translations!');
@@ -170,16 +170,17 @@ export function getNotificationDisplayHTML(notification: UserNotification, notif
 }
 
 export async function changePageSubscriptionStateForUser(request: SubscriptionStateChangeRequest): Promise<CommonHTTPResponse> {
-    const sdk = getSDK(request.config);
+    const state = request.store.getState();
+    const sdk = state.sdk;
     const response = await sdk.publicApi.updateUserNotificationPageSubscriptionStatus({
-        tenantId: request.config.tenantId,
-        urlId: request.config.urlId ?? '',
-        url: request.config.url ?? '',
-        pageTitle: request.config.pageTitle ?? '',
+        tenantId: state.config.tenantId,
+        urlId: state.config.urlId ?? '',
+        url: state.config.url ?? '',
+        pageTitle: state.config.pageTitle ?? '',
         subscribedOrUnsubscribed: request.isSubscribed
             ? UpdateUserNotificationPageSubscriptionStatusSubscribedOrUnsubscribedEnum.subscribe
             : UpdateUserNotificationPageSubscriptionStatusSubscribedOrUnsubscribedEnum.unsubscribe,
-        sso: getSSO(request.config),
+        sso: getSSO(state.config),
     });
     return {
         status: response.status,

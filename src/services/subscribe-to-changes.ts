@@ -1,7 +1,8 @@
 import {FastCommentsCommentWidgetConfig} from "fastcomments-typescript";
-import {FastCommentsServerSDK, createURLQueryString} from "fastcomments-sdk/server";
+import {createURLQueryString} from "fastcomments-sdk/server";
 import {WebsocketLiveEvent, WebsocketLiveNewOrUpdatedCommentEvent} from "../types/dto/websocket-live-event";
 import {EventLogEntryData, GetEventLogResponse} from "../types/dto/get-event-log";
+import type {FastCommentsStore} from "../store/types";
 
 function extractCommentIdFromEvent(liveEvent: WebsocketLiveNewOrUpdatedCommentEvent) {
     if (liveEvent.type === 'new-comment') {
@@ -15,6 +16,7 @@ export interface SubscriberInstance {
 }
 
 export function subscribeToChanges(
+    store: FastCommentsStore,
     config: FastCommentsCommentWidgetConfig,
     wsHost: string,
     tenantIdWS: string,
@@ -39,7 +41,7 @@ export function subscribeToChanges(
         // it simply fetches any events in the log that it would have missed.
         async function fetchEventLog(startTime: number | undefined, endTime: number) {
             // console.log('FastComments: fetchEventLog.', startTime, endTime);
-            const sdk = new FastCommentsServerSDK({ basePath: config.apiHost! });
+            const sdk = store.getState().sdk;
             const apiResponse = await sdk.publicApi.getEventLogRaw({
                 tenantId: config.tenantId!,
                 urlId, // important this isn't urlIdWS. urlIdWS contains tenant id and is only meant for the pubsub server.
@@ -158,7 +160,7 @@ export function subscribeToChanges(
                 if (!isIntentionallyClosed) {
                     onConnectionStatusChange && onConnectionStatusChange(false, lastLiveEventTime);
                     setTimeout(function () {
-                        subscribeToChanges(config, wsHost, tenantIdWS, urlId, urlIdWS, userIdWS, checkBlockedComments, handleLiveEvent, onConnectionStatusChange, lastLiveEventTime);
+                        subscribeToChanges(store, config, wsHost, tenantIdWS, urlId, urlIdWS, userIdWS, checkBlockedComments, handleLiveEvent, onConnectionStatusChange, lastLiveEventTime);
                     }, 2000 * Math.random());
                 }
             };

@@ -1,3 +1,4 @@
+import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import type { RNComment } from '../../types/react-native-comment';
 import { createFastCommentsStore } from '../create-store';
 import type { FastCommentsStore } from '../types';
@@ -20,8 +21,10 @@ export function makeComment(overrides: Partial<RNComment> & { _id: string }): RN
 }
 
 export function makeTestStore(): FastCommentsStore {
+    const apiHost = 'https://api.test';
     return createFastCommentsStore({
-        apiHost: 'https://api.test',
+        apiHost,
+        sdk: new FastCommentsServerSDK({ basePath: apiHost }),
         wsHost: 'wss://ws.test',
         config: { urlId: 'url-1', tenantId: 't1' } as any,
         currentUser: undefined as any,

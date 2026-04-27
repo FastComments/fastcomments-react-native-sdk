@@ -7,7 +7,6 @@ import { ThreeDot } from './three-dot';
 import { NotificationBell } from './notification-bell';
 import { CommentAreaMessage } from './comment-area-message';
 import { CommentTextArea, FocusObserver, ValueObserver, EmoticonBarConfig } from './comment-text-area';
-import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import type { CommentData, CreateCommentPublic200Response, PublicComment } from 'fastcomments-sdk';
 import { getActionTenantId, getActionURLID } from '../services/tenants';
 import { newBroadcastId } from '../services/broadcast-id';
@@ -64,7 +63,7 @@ async function logout(
             sso.logoutCallback('');
         }
     }
-    const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+    const sdk = state.sdk;
     await sdk.publicApi.logoutPublic();
     const currentUser = state.currentUser;
     const currentUserId = currentUser && 'id' in currentUser ? currentUser.id : undefined;
@@ -233,7 +232,7 @@ async function submit(
     const broadcastId = newBroadcastId(store);
 
     try {
-        const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+        const sdk = state.sdk;
         const response = await sdk.publicApi.createCommentPublic({
             tenantId: tenantIdToUse,
             urlId: urlIdToUse,

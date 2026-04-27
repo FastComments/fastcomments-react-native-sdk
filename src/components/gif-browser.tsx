@@ -11,11 +11,10 @@ import {
 } from "react-native";
 import {FastCommentsImageAsset, IFastCommentsStyles, ImageAssetConfig} from "../types";
 import {useEffect, useRef, useState} from "react";
-import {FastCommentsServerSDK} from "fastcomments-sdk/server";
-import {getAPIHost} from "../services/api-host";
 import {FastCommentsRNConfig} from "../types/react-native-config";
 import {getMergedTranslations} from "../services/translations";
 import {showError} from "../services/show-error";
+import type {FastCommentsStore} from "../store/types";
 
 export interface GifBrowserProps {
     cancelled: () => void
@@ -23,6 +22,7 @@ export interface GifBrowserProps {
     imageAssets: ImageAssetConfig
     onError?: (title: string, message: string) => void
     pickedGIF: (gifPath: string) => void
+    store: FastCommentsStore
     styles: IFastCommentsStyles
 }
 
@@ -39,6 +39,7 @@ export function GifBrowser({
     imageAssets,
     onError,
     pickedGIF,
+    store,
     styles
 }: GifBrowserProps) {
     const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -79,7 +80,7 @@ export function GifBrowser({
         setIsFetching(true);
         lastGifsRequest.current = request;
         lastRequestTime.current = Date.now();
-        const sdk = new FastCommentsServerSDK({basePath: getAPIHost(config)});
+        const sdk = store.getState().sdk;
         const response = request.search
             ? await sdk.publicApi.getGifsSearch({
                 tenantId: config.tenantId!,
@@ -119,7 +120,7 @@ export function GifBrowser({
     }
 
     async function getGifsTranslations() {
-        const sdk = new FastCommentsServerSDK({basePath: getAPIHost(config)});
+        const sdk = store.getState().sdk;
         const response = await sdk.publicApi.getTranslations({
             namespace: 'widgets',
             component: 'comment-ui-gifs',
@@ -130,7 +131,7 @@ export function GifBrowser({
     }
 
     async function getCommonTranslations() {
-        const sdk = new FastCommentsServerSDK({basePath: getAPIHost(config)});
+        const sdk = store.getState().sdk;
         const response = await sdk.publicApi.getTranslations({
             namespace: 'widgets',
             component: 'comment-ui',
@@ -188,7 +189,7 @@ export function GifBrowser({
             pickedGIF(rawSrc);
         } else {
             // TODO show loading
-            const sdk = new FastCommentsServerSDK({basePath: getAPIHost(config)});
+            const sdk = store.getState().sdk;
             const response = await sdk.publicApi.getGifLarge({
                 tenantId: config.tenantId!,
                 largeInternalURLSanitized: rawSrc,

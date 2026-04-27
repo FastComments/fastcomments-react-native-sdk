@@ -1,4 +1,5 @@
 import type { StateCreator } from 'zustand';
+import type { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import type { ConfigSlice, FastCommentsStoreState } from '../types';
 import type { FastCommentsRNConfig } from '../../types/react-native-config';
 import type { FastCommentsSessionUser } from '../../types/user';
@@ -7,6 +8,7 @@ import type { SubscriberInstance } from '../../services/subscribe-to-changes';
 
 export interface ConfigSliceInitial {
     apiHost: string;
+    sdk: FastCommentsServerSDK;
     wsHost: string;
     config: FastCommentsRNConfig;
     currentUser: FastCommentsSessionUser;
@@ -21,6 +23,7 @@ export const createConfigSlice =
     (set) => ({
         PAGE_SIZE: 30,
         apiHost: initial.apiHost,
+        sdk: initial.sdk,
         wsHost: initial.wsHost,
         config: initial.config,
         currentUser: initial.currentUser,

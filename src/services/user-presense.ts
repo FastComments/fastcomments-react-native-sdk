@@ -1,5 +1,4 @@
 import { FastCommentsCommentWidgetConfig, FastCommentsWidgetComment } from 'fastcomments-typescript';
-import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import { UserPresencePollStateEnum } from '../types/fastcomments-state';
 import type { FastCommentsStore } from '../store/types';
 
@@ -50,7 +49,7 @@ async function getAndUpdateUserStatuses(
     store: FastCommentsStore,
     userIds: string[]
 ) {
-    const sdk = new FastCommentsServerSDK({ basePath: apiHost });
+    const sdk = store.getState().sdk;
     const response = await sdk.publicApi.getUserPresenceStatuses({
         tenantId: tenantId!,
         urlIdWS,
@@ -82,7 +81,7 @@ export async function handleNewRemoteUser(
     store: FastCommentsStore,
     userIds: string[]
 ) {
-    const sdk = new FastCommentsServerSDK({ basePath: config.apiHost! });
+    const sdk = store.getState().sdk;
     const response = await sdk.publicApi.getUserPresenceStatuses({
         tenantId: config.tenantId!,
         urlIdWS,

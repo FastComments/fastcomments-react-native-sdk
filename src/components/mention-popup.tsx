@@ -24,7 +24,6 @@ export interface MentionPopupProps {
 }
 
 export function MentionPopup({ store, styles, query, onSelect }: MentionPopupProps) {
-    const apiHost = useStoreValue(store, (s) => s.apiHost);
     const tenantId = useStoreValue(store, (s) => s.config.tenantId);
     const urlId = useStoreValue(store, (s) => s.config.urlId);
     const ssoConfigString = useStoreValue(store, (s) => s.ssoConfigString);
@@ -52,7 +51,7 @@ export function MentionPopup({ store, styles, query, onSelect }: MentionPopupPro
         const handle = setTimeout(async () => {
             try {
                 const results = await searchMentionUsers({
-                    apiHost,
+                    store,
                     tenantId,
                     urlId,
                     usernameStartsWith: query,
@@ -70,7 +69,7 @@ export function MentionPopup({ store, styles, query, onSelect }: MentionPopupPro
             }
         }, SEARCH_DEBOUNCE_MS);
         return () => clearTimeout(handle);
-    }, [query, apiHost, tenantId, urlId, ssoConfigString]);
+    }, [query, store, tenantId, urlId, ssoConfigString]);
 
     const popupStyle = useMemo(() => ({
         backgroundColor: hasDarkBackground ? '#2c2c2c' : 'white',

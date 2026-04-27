@@ -1,4 +1,5 @@
 import type { StoreApi, UseBoundStore } from 'zustand';
+import type { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import type { FastCommentsBadge, FastCommentsWidgetComment } from 'fastcomments-typescript';
 import type { FastCommentsRNConfig } from '../types/react-native-config';
 import type { FastCommentsSessionUser } from '../types/user';
@@ -68,6 +69,7 @@ export interface CommentsSlice {
 export interface ConfigSlice {
     PAGE_SIZE: 30;
     apiHost: string;
+    sdk: FastCommentsServerSDK;
     wsHost: string;
     config: FastCommentsRNConfig;
     currentUser: FastCommentsSessionUser;

@@ -1,7 +1,6 @@
 import { Dispatch, SetStateAction } from 'react';
 import { FastCommentsCallbacks, FastCommentsImageAsset } from '../types';
 import { Alert, Image } from 'react-native';
-import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import type { PublicBlockFromCommentParams } from 'fastcomments-sdk';
 import { showError } from '../services/show-error';
 import { CommentActionEdit, DirtyRef } from './comment-action-edit';
@@ -21,7 +20,7 @@ async function startEditingComment(
     onError?: (title: string, message: string) => void
 ) {
     const state = store.getState();
-    const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+    const sdk = state.sdk;
     const response = await sdk.publicApi.getCommentText({
         tenantId: state.config.tenantId!,
         commentId: comment._id,
@@ -47,7 +46,7 @@ async function setCommentPinStatus(
     onError?: (title: string, message: string) => void
 ) {
     const state = store.getState();
-    const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+    const sdk = state.sdk;
     const tenantId = state.config.tenantId!;
     const broadcastId = newBroadcastId(store);
     const response = doPin
@@ -86,7 +85,7 @@ async function setCommentBlockedStatus(
     onError?: (title: string, message: string) => void
 ) {
     const state = store.getState();
-    const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+    const sdk = state.sdk;
     const tenantId = state.config.tenantId!;
     const publicBlockFromCommentParams: PublicBlockFromCommentParams = {
         commentIds: Object.keys(state.byId),
@@ -128,7 +127,7 @@ async function setCommentFlaggedStatus(
     onError?: (title: string, message: string) => void
 ) {
     const state = store.getState();
-    const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+    const sdk = state.sdk;
     const response = await sdk.publicApi.flagCommentPublic({
         tenantId: state.config.tenantId!,
         commentId: comment._id,
@@ -246,7 +245,7 @@ export function getCommentMenuItems(
                 if (isDirtyRef.current && isDirtyRef.current()) {
                     const freshState = store.getState();
                     if (!freshState.translations.CONFIRM_CANCEL_EDIT) {
-                        const sdk = new FastCommentsServerSDK({ basePath: freshState.apiHost });
+                        const sdk = freshState.sdk;
                         const translationsResponse = await sdk.publicApi.getTranslations({
                             namespace: 'widgets',
                             component: 'comment-ui-cancel',
@@ -349,7 +348,7 @@ export function getCommentMenuItems(
         const promptBlock = async (doBlock: boolean) => {
             const fresh = store.getState();
             if (!fresh.translations.BLOCK_CONFIRM_MESSAGE) {
-                const sdk = new FastCommentsServerSDK({ basePath: fresh.apiHost });
+                const sdk = fresh.sdk;
                 const translationsResponse = await sdk.publicApi.getTranslations({
                     namespace: 'widgets',
                     component: 'block-confirm',

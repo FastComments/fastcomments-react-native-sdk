@@ -7,7 +7,6 @@
  */
 import type { FastCommentsStore } from '../store/types';
 import type { ReactBodyParams } from 'fastcomments-sdk';
-import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import { newBroadcastId } from './broadcast-id';
 
 export type FeedReactionResult = { ok: true; isUndo: boolean } | { error: string };
@@ -43,7 +42,7 @@ export async function reactToFeedPost(
     // on the same channel each subscriber is listening on. The server reads
     // `urlId` off the query string to populate `sessionDetails.urlId`.
     const reactBody: ReactBodyParams = { reactType };
-    const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+    const sdk = state.sdk;
 
     try {
         const response = await sdk.publicApi.reactFeedPostPublic({

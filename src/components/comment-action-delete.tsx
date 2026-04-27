@@ -1,5 +1,4 @@
 import { Alert } from 'react-native';
-import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import { getActionTenantId } from '../services/tenants';
 import { newBroadcastId } from '../services/broadcast-id';
 import { removeCommentOnClient } from '../services/remove-comment-on-client';
@@ -22,7 +21,7 @@ async function deleteComment(
     const state = store.getState();
     const tenantId = getActionTenantId({ store, tenantId: comment.tenantId });
     const broadcastId = newBroadcastId(store);
-    const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+    const sdk = state.sdk;
     const response = await sdk.publicApi.deleteCommentPublic({
         tenantId,
         commentId: comment._id,

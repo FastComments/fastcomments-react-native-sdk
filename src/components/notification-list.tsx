@@ -50,9 +50,9 @@ export function NotificationList({imageAssets, onError, onNotificationSelected, 
     const loadAsync = async () => {
         setLoading(true);
         const [notificationTranslationsResponse, notificationsState] = await Promise.all([
-            getNotificationTranslations(config),
+            getNotificationTranslations(store),
             getUserNotifications({
-                config: config
+                store
             }),
         ]);
         setNotificationTranslations(notificationTranslationsResponse.translations!);
@@ -75,7 +75,7 @@ export function NotificationList({imageAssets, onError, onNotificationSelected, 
             onValueChange={(value: boolean) => {
                 (async function () {
                     const response = await changePageSubscriptionStateForUser({
-                        config: config,
+                        store,
                         isSubscribed: value
                     });
                     if (response.status === 'success') {
@@ -107,7 +107,7 @@ export function NotificationList({imageAssets, onError, onNotificationSelected, 
         }
         setIsFetchingNextPage(true);
         const notificationsState = await getUserNotifications({
-            config: config,
+            store,
             afterId: notifications[notifications.length - 1]?._id
         });
         setNotifications([
@@ -126,6 +126,7 @@ export function NotificationList({imageAssets, onError, onNotificationSelected, 
             notification={info.item}
             notificationTranslations={notificationTranslations!}
             onNotificationSelected={onNotificationSelected}
+            store={store}
             styles={styles}
             translations={translations}
             width={width}

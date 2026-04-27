@@ -8,7 +8,6 @@
  */
 import type { FastCommentsStore } from '../store/types';
 import type { FeedPostStatsPatch } from '../store/types';
-import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 
 const DEFAULT_INTERVAL_MS = 30000;
 
@@ -26,7 +25,7 @@ export async function refreshFeedStatsOnce(store: FastCommentsStore): Promise<vo
     if (ids.length === 0) return;
 
     try {
-        const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+        const sdk = state.sdk;
         const response = await sdk.publicApi.getFeedPostsStats({
             tenantId,
             postIds: ids,

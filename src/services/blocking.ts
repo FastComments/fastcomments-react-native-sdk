@@ -1,4 +1,3 @@
-import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import type { FastCommentsStore } from '../store/types';
 
 // Used for handling live events since the pub-sub server is stateless.
@@ -9,7 +8,7 @@ export async function checkBlockedComments(
     const state = store.getState();
     if (state.currentUser && 'hasBlockedUsers' in state.currentUser && state.currentUser.hasBlockedUsers) {
         try {
-            const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+            const sdk = state.sdk;
             const response = await sdk.publicApi.checkedCommentsForBlocked({
                 tenantId: state.config.tenantId!,
                 commentIds: commentIds.join(','),

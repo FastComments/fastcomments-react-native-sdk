@@ -7,7 +7,7 @@ import type {
 } from '../types';
 import { FastCommentsImageAsset } from '../types';
 import { useState } from 'react';
-import { FastCommentsServerSDK, VoteBodyParamsVoteDirEnum } from 'fastcomments-sdk/server';
+import { VoteBodyParamsVoteDirEnum } from 'fastcomments-sdk/server';
 import type { VoteBodyParams, VoteComment200Response } from 'fastcomments-sdk';
 import { getActionTenantId } from '../services/tenants';
 import { newBroadcastId } from '../services/broadcast-id';
@@ -70,7 +70,7 @@ async function doVote(
     setVoteState({ isLoading: true });
     try {
         const tenantIdToUse = getActionTenantId({ store, tenantId: comment.tenantId });
-        const sdk = new FastCommentsServerSDK({ basePath: state.apiHost });
+        const sdk = state.sdk;
 
         if (comment.isVotedUp || comment.isVotedDown) {
             const response = await sdk.publicApi.deleteCommentVote({

@@ -17,7 +17,6 @@ import { LiveCommentingList } from './live-commenting-list';
 import { LiveStatusBar } from './live-status-bar';
 import { CAN_CLOSE, CAN_NOT_CLOSE, ModalMenu } from './modal-menu';
 import { getCommentMenuItems, OpenCommentMenuRequest } from './comment-menu';
-import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import { addTranslationsToStore } from '../services/translations';
 import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
@@ -114,7 +113,7 @@ export function FastCommentsLiveCommenting({ config, styles, callbacks, assets }
         if (!force && !comment && isReplyingToParentIdRef.current) {
             const s = store.getState();
             if (!s.translations.CONFIRM_CANCEL_REPLY) {
-                const sdk = new FastCommentsServerSDK({ basePath: s.apiHost });
+                const sdk = s.sdk;
                 const translationsResponse = await sdk.publicApi.getTranslations({
                     namespace: 'widgets',
                     component: 'comment-ui-cancel',

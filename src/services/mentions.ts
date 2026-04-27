@@ -1,5 +1,5 @@
-import { FastCommentsServerSDK } from 'fastcomments-sdk/server';
 import type { SearchUsers200Response } from 'fastcomments-sdk';
+import type { FastCommentsStore } from '../store/types';
 
 export interface MentionUser {
     id: string;
@@ -10,7 +10,7 @@ export interface MentionUser {
 }
 
 export interface SearchUsersParams {
-    apiHost: string;
+    store: FastCommentsStore;
     tenantId: string;
     urlId: string;
     usernameStartsWith: string;
@@ -24,9 +24,9 @@ export interface SearchUsersParams {
  * (empty when query is blank).
  */
 export async function searchMentionUsers(params: SearchUsersParams): Promise<MentionUser[]> {
-    const { apiHost, tenantId, urlId, usernameStartsWith, sso } = params;
+    const { store, tenantId, urlId, usernameStartsWith, sso } = params;
     if (!usernameStartsWith.trim()) return [];
-    const sdk = new FastCommentsServerSDK({ basePath: apiHost });
+    const sdk = store.getState().sdk;
     const apiResponse = await sdk.publicApi.searchUsersRaw({
         tenantId,
         urlId,
