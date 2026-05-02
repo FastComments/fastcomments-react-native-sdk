@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Text, View } from 'react-native';
 import type { FeedPost } from '../types/feed-post';
 import type { FeedCustomToolbarButton } from '../types/feed-custom-toolbar-button';
@@ -57,11 +58,11 @@ function decodeEntities(input: string): string {
 
 function stripHtml(input: string | undefined): string {
     if (!input) return '';
-    // The SDK's MVP feed does not render HTML; the row shows plain text. The
-    // full Android Feed adapter renders rich content; we intentionally keep
-    // this minimal. Decode entities first because the server returns HTML
-    // double-escaped (`&lt;p&gt;...`) on this endpoint.
-    return decodeEntities(input).replace(/<[^>]*>/g, '').trim();
+    // Strip tags first, then decode entities. Decoding first would turn
+    // attacker-encoded `&lt;script&gt;` into real `<script>` tags before the
+    // strip ran. Output goes only into a `<Text>`, but ordering should not
+    // depend on that being the only consumer.
+    return decodeEntities(input.replace(/<[^>]*>/g, '')).trim();
 }
 
 function toEpoch(value: FeedPost['createdAt']): number {
@@ -71,7 +72,7 @@ function toEpoch(value: FeedPost['createdAt']): number {
     return Date.now();
 }
 
-export function FeedPostRow({ post, translations, styles, customToolbarButtons, store, currentUser, followStateProvider, followStateRevision }: FeedPostRowProps) {
+function FeedPostRowImpl({ post, translations, styles, customToolbarButtons, store, currentUser, followStateProvider, followStateRevision }: FeedPostRowProps) {
     const author = post.fromUserDisplayName ?? '';
     const content = stripHtml(post.contentHTML);
     const ts = toEpoch(post.createdAt);
@@ -137,3 +138,12 @@ export function FeedPostRow({ post, translations, styles, customToolbarButtons, 
         </View>
     );
 }
+
+/**
+ * Wrapped in `memo` so a state mutation that re-renders the parent feed
+ * (reaction tick, stats merge, banner counter) doesn't re-render every row.
+ * Inputs are referentially stable: each `post` is replaced in `feedPostsById`
+ * only when its own fields change, and `translations`/`styles`/`store`/etc.
+ * are stable across renders.
+ */
+export const FeedPostRow = memo(FeedPostRowImpl);

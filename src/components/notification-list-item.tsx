@@ -68,6 +68,7 @@ export function NotificationListItem({
                 await markNotificationOptedOut({
                     store,
                     notificationId: notification._id,
+                    commentId: notification.fromCommentId ?? notification.relatedObjectId ?? '',
                     isOptedOut: false
                 });
                 setIsOptedOut(false);
@@ -80,6 +81,7 @@ export function NotificationListItem({
                 await markNotificationOptedOut({
                     store,
                     notificationId: notification._id,
+                    commentId: notification.fromCommentId ?? notification.relatedObjectId ?? '',
                     isOptedOut: true
                 });
                 setIsOptedOut(true);

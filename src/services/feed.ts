@@ -214,16 +214,19 @@ export async function uploadFeedMediaItem(
             const formData = new FormData();
             formData.append('file', fileOrUrl);
             const xhr = new XMLHttpRequest();
+            const ssoQuery = state.ssoConfigString
+                ? '&sso=' + encodeURIComponent(state.ssoConfigString)
+                : '';
             xhr.open(
                 'POST',
-                state.apiHost + '/upload-image/' + encodeURIComponent(tenantId) + '?sizePreset=CrossPlatform&urlId=FEEDS'
+                state.apiHost + '/upload-image/' + encodeURIComponent(tenantId) + '?sizePreset=CrossPlatform&urlId=FEEDS' + ssoQuery
             );
             xhr.upload.onprogress = (ev) => {
                 if (ev.lengthComputable && onProgress) onProgress(ev.loaded, ev.total);
             };
             xhr.onload = () => {
                 if (xhr.status !== 200) {
-                    resolve({ error: xhr.response || 'upload-failed' });
+                    resolve({ error: 'upload-failed' });
                     return;
                 }
                 try {

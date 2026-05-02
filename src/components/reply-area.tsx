@@ -674,7 +674,7 @@ export function ReplyArea(props: ReplyAreaProps) {
                 </Text>
             );
         } else if (lastSaveResponse.translatedError) {
-            displayError = <Text style={styles.replyArea?.error}>lastSaveResponse.translatedError</Text>;
+            displayError = <Text style={styles.replyArea?.error}>{lastSaveResponse.translatedError}</Text>;
         } else if (lastSaveResponse.code) {
             const translatedError = translations[lastSaveResponse.code];
             displayError = <Text style={styles.replyArea?.error}>{translatedError}</Text>;

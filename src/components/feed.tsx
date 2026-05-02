@@ -246,17 +246,20 @@ export const FastCommentsFeed = forwardRef<FastCommentsFeedHandle, FastCommentsF
         }
     };
 
-    const renderItem = (info: ListRenderItemInfo<FeedPost>) => (
-        <FeedPostRow
-            post={info.item}
-            translations={translations}
-            styles={effectiveStyles}
-            customToolbarButtons={customToolbarButtons}
-            store={store}
-            currentUser={currentUser}
-            followStateProvider={followStateProvider}
-            followStateRevision={followStateRevision}
-        />
+    const renderItem = useCallback(
+        (info: ListRenderItemInfo<FeedPost>) => (
+            <FeedPostRow
+                post={info.item}
+                translations={translations}
+                styles={effectiveStyles}
+                customToolbarButtons={customToolbarButtons}
+                store={store}
+                currentUser={currentUser}
+                followStateProvider={followStateProvider}
+                followStateRevision={followStateRevision}
+            />
+        ),
+        [translations, effectiveStyles, customToolbarButtons, store, currentUser, followStateProvider, followStateRevision]
     );
 
     const empty = (

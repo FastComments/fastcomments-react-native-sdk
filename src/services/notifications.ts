@@ -29,6 +29,12 @@ export interface MarkNotificationReadRequest {
 export interface MarkNotificationOptedOutRequest {
     store: FastCommentsStore
     notificationId: string
+    /**
+     * The id of the comment whose subscription is being toggled. Required by
+     * the typed SDK contract; pull it from the notification's
+     * `fromCommentId` (preferred) or `relatedObjectId` field.
+     */
+    commentId: string
     isOptedOut: boolean
 }
 
@@ -114,13 +120,11 @@ export async function markNotificationRead(request: MarkNotificationReadRequest)
 export async function markNotificationOptedOut(request: MarkNotificationOptedOutRequest): Promise<void> {
     const state = request.store.getState();
     const sdk = state.sdk;
-    // TODO commentId is required by the typed SDK contract but the legacy URL-only call did not pass one.
-    // Callers do not currently thread the related comment id through; leave empty until the call sites are updated.
     await sdk.publicApi.updateUserNotificationCommentSubscriptionStatus({
         tenantId: state.config.tenantId,
         notificationId: request.notificationId,
         optedInOrOut: request.isOptedOut ? UpdateUserNotificationCommentSubscriptionStatusOptedInOrOutEnum.out : UpdateUserNotificationCommentSubscriptionStatusOptedInOrOutEnum.in,
-        commentId: '',
+        commentId: request.commentId,
         sso: getSSO(state.config),
     });
 }
