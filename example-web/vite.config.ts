@@ -54,6 +54,14 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: /^fastcomments-react-native-sdk$/, replacement: path.join(sdkRoot, 'index.ts') },
+      // `react-native-enriched`'s web build (and react-native-render-html) import
+      // the bare `react-native` specifier (e.g. `processColor`). The custom
+      // `reactNativeWebAlias` plugin handles top-level resolves, but Rollup's
+      // commonjs resolver bypasses it for nested dep imports during build, pulling
+      // in the real (Flow-typed) react-native and failing to parse. An exact-match
+      // alias redirects it to react-native-web everywhere. The `$` anchor avoids
+      // catching `react-native-enriched` / `react-native-web` themselves.
+      { find: /^react-native$/, replacement: path.dirname(require.resolve('react-native-web/package.json')) },
     ],
     extensions: ['.web.tsx', '.web.ts', '.web.jsx', '.web.js', '.tsx', '.ts', '.jsx', '.js', '.json'],
     mainFields: ['module', 'browser', 'main'],
@@ -83,8 +91,7 @@ export default defineConfig({
       'react-native-web > postcss-value-parser',
       'lodash',
       'fastcomments-typescript',
-      'react-quill-new',
-      'quill',
+      'react-native-enriched',
     ],
     exclude: ['react-native'],
   },

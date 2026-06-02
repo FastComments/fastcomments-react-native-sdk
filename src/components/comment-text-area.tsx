@@ -14,39 +14,18 @@ import {
     Image,
 } from "react-native";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-// react-quill-new exports a ReactQuill class component. We use `any` for the
-// ref because the exported types don't include getEditor() on the instance
-// and we only need the ref to reach into Quill.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-import ReactQuill from 'react-quill-new';
-import 'react-quill-new/dist/quill.snow.css';
-// TODO(@mention popup, web): port the native MentionPopup to Quill. Requires a
-// Quill keyboard handler that fires on `@`, listens to text-change for the
-// active query, and inserts a Mention blot on selection. The native popup
-// covers iOS/Android; web users currently can paste `@username` but won't see
-// a typeahead. Tracked alongside the native MentionPopup feature.
+import {
+    EnrichedTextInput,
+    type EnrichedTextInputInstance,
+    type OnChangeStateEvent,
+} from 'react-native-enriched';
+import type { NativeSyntheticEvent } from 'react-native';
+import { MentionPopup } from './mention-popup';
+import { MentionUser } from '../services/mentions';
 
-// Quill's snow theme sizes `.quill` to content (display:block, flex:0 1 auto)
-// so the editor never fills its parent RN View. Also the snow theme draws a
-// border on `.ql-container` that fights the outer View's border. Inject once
-// to make .quill/.ql-container flex-fill and drop the redundant border.
-// We target Quill globally because react-native-web's View strips className,
-// so we can't scope to a wrapper. The SDK renders at most one editor at a
-// time and Quill's classes are specific enough that collisions are unlikely.
-const quillFillStyleId = 'fc-rn-sdk-quill-fill';
-function ensureQuillFillStyles() {
-    if (typeof document === 'undefined') return;
-    if (document.getElementById(quillFillStyleId)) return;
-    const el = document.createElement('style');
-    el.id = quillFillStyleId;
-    el.textContent = `
-        .quill { display: flex; flex-direction: column; flex: 1; width: 100%; min-height: 0; }
-        .ql-container.ql-snow { border: 0; flex: 1; display: flex; flex-direction: column; font-size: inherit; font-family: inherit; min-height: 0; }
-        .ql-editor { flex: 1; padding: 8px; overflow: auto; }
-        .ql-editor.ql-blank::before { left: 8px; right: 8px; font-style: normal; color: #9a9a9a; }
-    `;
-    document.head.appendChild(el);
-}
+// Library's own event types follow snake->camelCase with `strikeThrough`.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type OnChangeHtmlEvent = { value: string };
 
 export interface ValueObserver {
     getValue?: () => string
@@ -86,7 +65,7 @@ type ActiveFormats = {
     bold: boolean
     italic: boolean
     underline: boolean
-    strike: boolean
+    strikethrough: boolean
     code: boolean
 };
 
@@ -100,9 +79,44 @@ const defaultToolbarButtons: ToolbarButtonConfig = {
     gif: true,
 };
 
-// Quill accepts a fixed set of format names. We only whitelist ones we expose
-// via the toolbar plus link/image so paste-with-formatting still renders.
-const allowedFormats = ['bold', 'italic', 'underline', 'strike', 'code', 'link', 'image'];
+/**
+ * Strip simple HTML tags / decode common entities so we can detect `@...` triggers
+ * in rich-text HTML the editor emits. Comment editors typically wrap text in
+ * <p>/<div> with breaks; we just need readable text for the trigger regex.
+ */
+function htmlToPlainText(html: string): string {
+    if (!html) return '';
+    const stripped = html
+        .replace(/<br\s*\/?>(\n)?/gi, '\n')
+        .replace(/<\/(p|div|li)>/gi, '\n')
+        .replace(/<[^>]+>/g, '');
+    return stripped
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+}
+
+/**
+ * Returns the active mention query (text after the most recent `@` that starts
+ * a token) or undefined when no mention is active. A trailing space terminates
+ * the mention.
+ */
+export function detectMentionQuery(value: string): string | undefined {
+    const text = htmlToPlainText(value);
+    const atIdx = text.lastIndexOf('@');
+    if (atIdx === -1) return undefined;
+    if (atIdx > 0) {
+        const prev = text.charAt(atIdx - 1);
+        if (!/\s/.test(prev)) return undefined;
+    }
+    const after = text.substring(atIdx + 1);
+    if (/\n/.test(after)) return undefined;
+    if (after.length > 0 && /\s$/.test(after)) return undefined;
+    return after;
+}
 
 export function CommentTextArea({
     emoticonBarConfig,
@@ -123,61 +137,71 @@ export function CommentTextArea({
     const imageAssets = useStoreValue(store, (s) => s.imageAssets);
     const useSingleLineCommentInput = useStoreValue(store, (s) => !!s.config.useSingleLineCommentInput);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const quillRef = useRef<any>(null);
-    const [html, setHtml] = useState<string>(value || '');
-    useEffect(() => { ensureQuillFillStyles(); }, []);
+    const editorRef = useRef<EnrichedTextInputInstance>(null);
+    const htmlRef = useRef<string>(value || '');
     const [imageUploadProgress, setImageUploadProgress] = useState<number | null>(null);
-    const [active, setActive] = useState<ActiveFormats>({ bold: false, italic: false, underline: false, strike: false, code: false });
+    const [active, setActive] = useState<ActiveFormats>({ bold: false, italic: false, underline: false, strikethrough: false, code: false });
+    const [mentionQuery, setMentionQuery] = useState<string | undefined>(undefined);
 
     const buttons = { ...defaultToolbarButtons, ...toolbarButtons };
 
     useEffect(() => {
-        if (value !== undefined && value !== html) {
-            setHtml(value);
+        if (value !== undefined && value !== htmlRef.current) {
+            htmlRef.current = value;
+            editorRef.current?.setValue(value);
+            setMentionQuery(detectMentionQuery(value));
         }
     }, [value]);
 
     useEffect(() => {
         if (!focusObserver) return;
         focusObserver.setFocused = (focused) => {
-            const editor = quillRef.current?.getEditor?.();
-            if (!editor) return;
-            if (focused) editor.focus();
-            else editor.blur();
+            if (focused) editorRef.current?.focus();
+            else editorRef.current?.blur();
         };
     }, [focusObserver]);
 
-    output.getValue = () => html.substring(0, maxLength);
+    output.getValue = () => htmlRef.current.substring(0, maxLength);
 
-    const updateActive = useCallback(() => {
-        const editor = quillRef.current?.getEditor?.();
-        if (!editor) return;
-        const fmts = editor.getFormat();
-        setActive({
-            bold: !!fmts.bold,
-            italic: !!fmts.italic,
-            underline: !!fmts.underline,
-            strike: !!fmts.strike,
-            code: !!fmts.code,
-        });
+    const onChangeHtml = useCallback((e: NativeSyntheticEvent<OnChangeHtmlEvent>) => {
+        const next = e.nativeEvent.value;
+        htmlRef.current = next;
+        setMentionQuery(detectMentionQuery(next));
     }, []);
 
-    const toggleFormat = useCallback((name: keyof ActiveFormats) => {
-        const editor = quillRef.current?.getEditor?.();
-        if (!editor) return;
-        editor.focus();
-        const current = editor.getFormat();
-        editor.format(name, !current[name]);
-        updateActive();
-    }, [updateActive]);
+    const handleMentionSelect = useCallback((user: MentionUser) => {
+        const label = user.displayName || user.name;
+        const current = htmlRef.current || '';
+        const plain = htmlToPlainText(current);
+        const atIdx = plain.lastIndexOf('@');
+        // Only safely rewrite when the editor's value is plain text (no HTML
+        // markup difference). When the editor has rich HTML, we replace the
+        // raw current value with a plain-text-friendly mention insert; the
+        // editor will re-render via setValue.
+        let nextValue: string;
+        if (current === plain) {
+            nextValue = current.substring(0, atIdx) + `@${label} `;
+        } else {
+            nextValue = current.replace(/@[^@<>\n]*$/, `@${label} `);
+            if (nextValue === current) {
+                // Fallback: append.
+                nextValue = current + `@${label} `;
+            }
+        }
+        htmlRef.current = nextValue;
+        editorRef.current?.setValue(nextValue);
+        setMentionQuery(undefined);
+    }, []);
 
-    const insertImageByUrl = useCallback((url: string) => {
-        const editor = quillRef.current?.getEditor?.();
-        if (!editor) return;
-        const range = editor.getSelection(true) || { index: editor.getLength(), length: 0 };
-        editor.insertEmbed(range.index, 'image', url, 'user');
-        editor.setSelection(range.index + 1, 0);
+    const onChangeState = useCallback((e: NativeSyntheticEvent<OnChangeStateEvent>) => {
+        const s = e.nativeEvent;
+        setActive({
+            bold: !!s.bold?.isActive,
+            italic: !!s.italic?.isActive,
+            underline: !!s.underline?.isActive,
+            strikethrough: !!s.strikeThrough?.isActive,
+            code: !!s.inlineCode?.isActive,
+        });
     }, []);
 
     const handleImageUpload = async () => {
@@ -186,7 +210,7 @@ export function CommentTextArea({
             const photoData = await pickImage();
             if (!photoData) return;
             if (typeof photoData === 'string' && photoData.startsWith('http')) {
-                insertImageByUrl(photoData);
+                editorRef.current?.setImage(photoData, 0, 0);
                 return;
             }
             setImageUploadProgress(0);
@@ -209,7 +233,7 @@ export function CommentTextArea({
                 };
                 xhr.send(formData);
             });
-            insertImageByUrl(url);
+            editorRef.current?.setImage(url, 0, 0);
         } catch (err) {
             console.error('Image upload failed:', err);
             setImageUploadProgress(null);
@@ -220,7 +244,7 @@ export function CommentTextArea({
         if (!pickGIF) return;
         try {
             const url = await pickGIF();
-            if (url) insertImageByUrl(url);
+            if (url) editorRef.current?.setImage(url, 0, 0);
         } catch (err) {
             console.error('GIF pick failed:', err);
         }
@@ -228,11 +252,9 @@ export function CommentTextArea({
 
     if (emoticonBarConfig) {
         emoticonBarConfig.addEmoticon = (src: string) => {
-            insertImageByUrl(src);
+            editorRef.current?.setImage(src, 0, 0);
         };
     }
-
-    const quillModules = useMemo(() => ({ toolbar: false }), []);
 
     const toolbarButtonStyle = useMemo(() => ({
         backgroundColor: hasDarkBackground ? '#444' : 'white',
@@ -251,32 +273,36 @@ export function CommentTextArea({
 
     return (
         <View style={{ width: '100%', flex: 1 }}>
-            <View
-                style={[
-                    styles.commentTextArea?.textarea,
-                    {
-                        minHeight: useSingleLineCommentInput ? 40 : 100,
-                        borderRadius: styles.commentTextArea?.textarea?.borderRadius || 11,
-                        overflow: 'hidden',
-                        paddingHorizontal: 0,
-                        paddingVertical: 0,
-                    }
-                ]}
-            >
-                <ReactQuill
-                    ref={quillRef}
-                    theme="snow"
-                    value={html}
-                    onChange={(content: string) => {
-                        setHtml(content);
-                        updateActive();
+            <View style={[
+                styles.commentTextArea?.textarea,
+                {
+                    minHeight: useSingleLineCommentInput ? 40 : 100,
+                    borderRadius: styles.commentTextArea?.textarea?.borderRadius || 11,
+                    overflow: 'hidden',
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                }
+            ]}>
+                <EnrichedTextInput
+                    ref={editorRef}
+                    defaultValue={value || ''}
+                    onChangeHtml={onChangeHtml}
+                    onChangeState={onChangeState}
+                    onFocus={onFocus ? () => onFocus() : undefined}
+                    style={{
+                        minHeight: useSingleLineCommentInput ? 32 : 92,
+                        flex: 1,
+                        backgroundColor: 'transparent',
                     }}
-                    onChangeSelection={updateActive}
-                    onFocus={onFocus as any}
-                    modules={quillModules}
-                    formats={allowedFormats}
                 />
             </View>
+
+            <MentionPopup
+                store={store}
+                styles={styles}
+                query={mentionQuery}
+                onSelect={handleMentionSelect}
+            />
 
             {emoticonBarConfig?.emoticons && (
                 <ScrollView horizontal style={styles.commentTextAreaEmoticonBar?.root}>
@@ -304,7 +330,7 @@ export function CommentTextArea({
                 {buttons.bold && (
                     <TouchableOpacity
                         style={[toolbarButtonStyle, active.bold && { backgroundColor: activeBackground }]}
-                        onPress={() => toggleFormat('bold')}
+                        onPress={() => editorRef.current?.toggleBold()}
                         activeOpacity={0.7}
                     >
                         <Text style={{ fontWeight: 'bold', fontSize: 14, color: hasDarkBackground ? '#fff' : '#333' }}>B</Text>
@@ -313,7 +339,7 @@ export function CommentTextArea({
                 {buttons.italic && (
                     <TouchableOpacity
                         style={[toolbarButtonStyle, active.italic && { backgroundColor: activeBackground }]}
-                        onPress={() => toggleFormat('italic')}
+                        onPress={() => editorRef.current?.toggleItalic()}
                         activeOpacity={0.7}
                     >
                         <Text style={{ fontStyle: 'italic', fontSize: 14, color: hasDarkBackground ? '#fff' : '#333' }}>I</Text>
@@ -322,7 +348,7 @@ export function CommentTextArea({
                 {buttons.underline && (
                     <TouchableOpacity
                         style={[toolbarButtonStyle, active.underline && { backgroundColor: activeBackground }]}
-                        onPress={() => toggleFormat('underline')}
+                        onPress={() => editorRef.current?.toggleUnderline()}
                         activeOpacity={0.7}
                     >
                         <Text style={{ textDecorationLine: 'underline', fontSize: 14, color: hasDarkBackground ? '#fff' : '#333' }}>U</Text>
@@ -330,8 +356,8 @@ export function CommentTextArea({
                 )}
                 {buttons.strikethrough && (
                     <TouchableOpacity
-                        style={[toolbarButtonStyle, active.strike && { backgroundColor: activeBackground }]}
-                        onPress={() => toggleFormat('strike')}
+                        style={[toolbarButtonStyle, active.strikethrough && { backgroundColor: activeBackground }]}
+                        onPress={() => editorRef.current?.toggleStrikeThrough()}
                         activeOpacity={0.7}
                     >
                         <Text style={{ textDecorationLine: 'line-through', fontSize: 14, color: hasDarkBackground ? '#fff' : '#333' }}>S</Text>
@@ -340,7 +366,7 @@ export function CommentTextArea({
                 {buttons.code && (
                     <TouchableOpacity
                         style={[toolbarButtonStyle, active.code && { backgroundColor: activeBackground }]}
-                        onPress={() => toggleFormat('code')}
+                        onPress={() => editorRef.current?.toggleInlineCode()}
                         activeOpacity={0.7}
                     >
                         <Text style={{ fontFamily: 'monospace', fontSize: 12, color: hasDarkBackground ? '#fff' : '#333' }}>{"<>"}</Text>

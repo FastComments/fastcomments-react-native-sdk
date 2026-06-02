@@ -17,7 +17,7 @@ This library is a complete react-native implementation of [FastComments](https:/
 It supports live commenting, chat, threads, emoticons, notifications, SSO, skins, and full customization by passing in a stylesheet object. All assets
 can also be customized, and it supports toggling different assets based on dark mode.
 
-The benefit of this library is that it is more flexible than the `fastcomments-react-native` wrapper. Comments are rendered with native components rather than inside a webview. Note: `react-native-webview` is still required as a transitive dependency of the rich text editor (`@10play/tentap-editor`).
+The benefit of this library is that it is more flexible than the `fastcomments-react-native` wrapper. Comments are rendered with native components rather than inside a webview.
 
 It all runs on the FastComments backend, so you only have to incorporate the UI:
 
@@ -40,7 +40,9 @@ Add live chat to your existing React Native application, or even build a social 
 
 ### Rich Text Editor
 
-This library uses the 10tap editor for rich text editing functionality, which provides a powerful WYSIWYG editing experience.
+This library uses [`react-native-enriched`](https://github.com/software-mansion/react-native-enriched) for rich text editing, which provides a powerful WYSIWYG editing experience. The same editor powers iOS, Android, and the web (via `react-native-web`), so the composer behaves consistently across every platform with a single implementation.
+
+`react-native-enriched` requires the React Native New Architecture (Fabric) on native, and a bundler that resolves package `exports` conditions (Metro with package exports / RN 0.72+). Web support is currently experimental.
 
 ### Configuration Options
 
