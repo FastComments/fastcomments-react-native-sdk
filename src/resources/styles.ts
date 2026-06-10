@@ -1,13 +1,16 @@
 import {IFastCommentsStyles} from "../types";
 import {ViewStyle} from "react-native";
 
+// The loading state is a sole, full-area render (the widget early-returns this
+// while fetching). It must NOT be `position: absolute`: an absolutely-positioned
+// sole child is out of flow, so its container collapses to 0 height, and on web
+// (where the host's #root is not always a flex container that propagates height)
+// a 0-height `inset: 0` box centers the spinner on y=0 - i.e. half off the top of
+// the screen. Filling via normal flow (flex + a minHeight floor) centers it
+// reliably on both web and native.
 const LoadingOverlay: ViewStyle = {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
     flex: 1,
+    minHeight: 200,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#ffffff50'
