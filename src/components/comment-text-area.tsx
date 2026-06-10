@@ -12,6 +12,7 @@ import {
     ScrollView,
     TouchableOpacity,
     Image,
+    Platform,
 } from "react-native";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -20,12 +21,32 @@ import {
     type OnChangeStateEvent,
 } from 'react-native-enriched';
 import type { NativeSyntheticEvent } from 'react-native';
-import { MentionPopup } from './mention-popup';
+import { MentionPopup, MentionPopupHandle } from './mention-popup';
+import { MentionPortal } from './mention-portal';
 import { MentionUser } from '../services/mentions';
+import { detectMentionQuery, htmlToPlainText, replaceActiveMention } from '../services/mention-detection';
 
 // Library's own event types follow snake->camelCase with `strikeThrough`.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type OnChangeHtmlEvent = { value: string };
+
+// react-native-enriched's web build renders tiptap's contenteditable
+// (`.ProseMirror`) inside a wrapper (`.eti-editor`) that receives our `style`
+// (minHeight/flex). The contenteditable itself only auto-sizes to its content
+// (one line), so the lower part of the bordered box is a dead, unclickable div.
+// The library ships no CSS to stretch it. Inject a tiny web-only rule once so
+// the editor fills its wrapper and the whole box is clickable/typable.
+const WEB_EDITOR_STYLE_ID = 'fastcomments-enriched-web-fill';
+function ensureWebEditorFillStyles() {
+    if (typeof document === 'undefined') return;
+    if (document.getElementById(WEB_EDITOR_STYLE_ID)) return;
+    const el = document.createElement('style');
+    el.id = WEB_EDITOR_STYLE_ID;
+    el.textContent =
+        '.eti-editor{display:flex;flex-direction:column;}' +
+        '.eti-editor>.tiptap,.eti-editor>.ProseMirror{flex:1 1 auto;}';
+    document.head.appendChild(el);
+}
 
 export interface ValueObserver {
     getValue?: () => string
@@ -66,6 +87,7 @@ type ActiveFormats = {
     italic: boolean
     underline: boolean
     strikethrough: boolean
+    code: boolean
 };
 
 const defaultToolbarButtons: ToolbarButtonConfig = {
@@ -78,44 +100,9 @@ const defaultToolbarButtons: ToolbarButtonConfig = {
     gif: true,
 };
 
-/**
- * Strip simple HTML tags / decode common entities so we can detect `@...` triggers
- * in rich-text HTML the editor emits. Comment editors typically wrap text in
- * <p>/<div> with breaks; we just need readable text for the trigger regex.
- */
-function htmlToPlainText(html: string): string {
-    if (!html) return '';
-    const stripped = html
-        .replace(/<br\s*\/?>(\n)?/gi, '\n')
-        .replace(/<\/(p|div|li)>/gi, '\n')
-        .replace(/<[^>]+>/g, '');
-    return stripped
-        .replace(/&nbsp;/g, ' ')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'");
-}
-
-/**
- * Returns the active mention query (text after the most recent `@` that starts
- * a token) or undefined when no mention is active. A trailing space terminates
- * the mention.
- */
-export function detectMentionQuery(value: string): string | undefined {
-    const text = htmlToPlainText(value);
-    const atIdx = text.lastIndexOf('@');
-    if (atIdx === -1) return undefined;
-    if (atIdx > 0) {
-        const prev = text.charAt(atIdx - 1);
-        if (!/\s/.test(prev)) return undefined;
-    }
-    const after = text.substring(atIdx + 1);
-    if (/\n/.test(after)) return undefined;
-    if (after.length > 0 && /\s$/.test(after)) return undefined;
-    return after;
-}
+// Re-exported for any existing importers (the implementations now live in the
+// dependency-free `../services/mention-detection` module).
+export { detectMentionQuery, htmlToPlainText };
 
 export function CommentTextArea({
     emoticonBarConfig,
@@ -138,11 +125,93 @@ export function CommentTextArea({
 
     const editorRef = useRef<EnrichedTextInputInstance>(null);
     const htmlRef = useRef<string>(value || '');
+    // For keyboard-driving the mention popup (web): the wrapper DOM node we
+    // attach a capture-phase keydown listener to, the popup's imperative handle,
+    // and a ref mirror of `mentionQuery` so that once-attached listener sees the
+    // current open state without re-binding.
+    const wrapperRef = useRef<View>(null);
+    const editorBoxRef = useRef<View>(null);
+    const mentionPopupRef = useRef<MentionPopupHandle>(null);
+    const mentionActiveRef = useRef<boolean>(false);
     const [imageUploadProgress, setImageUploadProgress] = useState<number | null>(null);
-    const [active, setActive] = useState<ActiveFormats>({ bold: false, italic: false, underline: false, strikethrough: false });
+    const [active, setActive] = useState<ActiveFormats>({ bold: false, italic: false, underline: false, strikethrough: false, code: false });
     const [mentionQuery, setMentionQuery] = useState<string | undefined>(undefined);
+    // On web the composer lives inside the scrollable comment list (as its
+    // header), so an `absolute` popup gets clipped by the list's overflow and
+    // painted under later comment-row cells. Position it `fixed` (measured off
+    // the editor box) to escape both. Native keeps the in-flow `absolute` overlay.
+    const [mentionOverlayStyle, setMentionOverlayStyle] = useState<Record<string, unknown> | null>(null);
+    mentionActiveRef.current = mentionQuery !== undefined;
 
     const buttons = { ...defaultToolbarButtons, ...toolbarButtons };
+
+    useEffect(() => {
+        if (Platform.OS === 'web') ensureWebEditorFillStyles();
+    }, []);
+
+    // Web-only: drive the mention popup from the keyboard. react-native-enriched's
+    // web editor forwards keydown but always returns false to ProseMirror, so it
+    // can't tell PM "handled - don't move the cursor / insert a newline". Instead
+    // we listen on the wrapper in the CAPTURE phase: the event is intercepted
+    // before it reaches the contenteditable, so stopping it keeps PM from acting.
+    useEffect(() => {
+        if (Platform.OS !== 'web') return;
+        // The tsconfig has no DOM lib (this is an RN project), so we type the web
+        // key event minimally rather than relying on the global KeyboardEvent
+        // (which resolves to react-native's unrelated KeyboardEvent type).
+        type WebKeyEvent = { key: string; preventDefault: () => void; stopPropagation: () => void };
+        const node = wrapperRef.current as unknown as {
+            addEventListener?: (t: string, h: (e: WebKeyEvent) => void, c?: boolean) => void;
+            removeEventListener?: (t: string, h: (e: WebKeyEvent) => void, c?: boolean) => void;
+        } | null;
+        if (!node || typeof node.addEventListener !== 'function') return;
+        const onKeyDown = (e: WebKeyEvent) => {
+            if (!mentionActiveRef.current) return;
+            const key = e.key;
+            if (key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                setMentionQuery(undefined);
+                return;
+            }
+            if (key === 'ArrowDown' || key === 'ArrowUp' || key === 'Enter' || key === 'Tab') {
+                if (mentionPopupRef.current?.handleKey(key)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }
+        };
+        node.addEventListener('keydown', onKeyDown, true);
+        return () => node.removeEventListener?.('keydown', onKeyDown, true);
+    }, []);
+
+    // Web-only: keep the fixed-positioned mention popup anchored under the editor
+    // box while it's open (reposition on scroll/resize since `fixed` is relative
+    // to the viewport).
+    useEffect(() => {
+        if (Platform.OS !== 'web') return;
+        if (mentionQuery === undefined) {
+            setMentionOverlayStyle(null);
+            return;
+        }
+        const win = globalThis as unknown as {
+            addEventListener?: (t: string, h: () => void, c?: boolean) => void;
+            removeEventListener?: (t: string, h: () => void, c?: boolean) => void;
+        };
+        const reposition = () => {
+            const box = editorBoxRef.current as unknown as { getBoundingClientRect?: () => { bottom: number; left: number; width: number } } | null;
+            const rect = box?.getBoundingClientRect?.();
+            if (!rect) return;
+            setMentionOverlayStyle({ position: 'fixed', top: rect.bottom, left: rect.left, width: rect.width, zIndex: 2147483000 });
+        };
+        reposition();
+        win.addEventListener?.('scroll', reposition, true);
+        win.addEventListener?.('resize', reposition);
+        return () => {
+            win.removeEventListener?.('scroll', reposition, true);
+            win.removeEventListener?.('resize', reposition);
+        };
+    }, [mentionQuery]);
 
     useEffect(() => {
         if (value !== undefined && value !== htmlRef.current) {
@@ -170,23 +239,7 @@ export function CommentTextArea({
 
     const handleMentionSelect = useCallback((user: MentionUser) => {
         const label = user.displayName || user.name;
-        const current = htmlRef.current || '';
-        const plain = htmlToPlainText(current);
-        const atIdx = plain.lastIndexOf('@');
-        // Only safely rewrite when the editor's value is plain text (no HTML
-        // markup difference). When the editor has rich HTML, we replace the
-        // raw current value with a plain-text-friendly mention insert; the
-        // editor will re-render via setValue.
-        let nextValue: string;
-        if (current === plain) {
-            nextValue = current.substring(0, atIdx) + `@${label} `;
-        } else {
-            nextValue = current.replace(/@[^@<>\n]*$/, `@${label} `);
-            if (nextValue === current) {
-                // Fallback: append.
-                nextValue = current + `@${label} `;
-            }
-        }
+        const nextValue = replaceActiveMention(htmlRef.current || '', label);
         htmlRef.current = nextValue;
         editorRef.current?.setValue(nextValue);
         setMentionQuery(undefined);
@@ -199,6 +252,7 @@ export function CommentTextArea({
             italic: !!s.italic?.isActive,
             underline: !!s.underline?.isActive,
             strikethrough: !!s.strikeThrough?.isActive,
+            code: !!s.inlineCode?.isActive,
         });
     }, []);
 
@@ -270,37 +324,57 @@ export function CommentTextArea({
     const activeBackground = hasDarkBackground ? '#666' : '#d8d8d8';
 
     return (
-        <View style={{ width: '100%', flex: 1 }}>
-            <View style={[
-                styles.commentTextArea?.textarea,
-                {
-                    minHeight: useSingleLineCommentInput ? 40 : 100,
-                    borderRadius: styles.commentTextArea?.textarea?.borderRadius || 11,
-                    overflow: 'hidden',
-                    paddingHorizontal: 8,
-                    paddingVertical: 4,
-                }
-            ]}>
-                <EnrichedTextInput
-                    ref={editorRef}
-                    defaultValue={value || ''}
-                    onChangeHtml={onChangeHtml}
-                    onChangeState={onChangeState}
-                    onFocus={onFocus ? () => onFocus() : undefined}
-                    style={{
-                        minHeight: useSingleLineCommentInput ? 32 : 92,
-                        flex: 1,
-                        backgroundColor: 'transparent',
-                    }}
-                />
-            </View>
+        <View ref={wrapperRef} style={{ width: '100%', flex: 1 }}>
+            {/* Relative anchor so that on native the mention popup overlays
+                (position:absolute, top:100%) directly under the editor box. On web
+                the popup is positioned `fixed` instead (see mentionOverlayStyle) to
+                escape the scrollable comment list that clips/stacks over it. */}
+            <View style={{ position: 'relative', zIndex: 10 }}>
+                <View
+                    ref={editorBoxRef}
+                    style={[
+                        styles.commentTextArea?.textarea,
+                        {
+                            minHeight: useSingleLineCommentInput ? 40 : 100,
+                            borderRadius: styles.commentTextArea?.textarea?.borderRadius || 11,
+                            overflow: 'hidden',
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                        }
+                    ]}
+                >
+                    <EnrichedTextInput
+                        ref={editorRef}
+                        defaultValue={value || ''}
+                        onChangeHtml={onChangeHtml}
+                        onChangeState={onChangeState}
+                        onFocus={onFocus ? () => onFocus() : undefined}
+                        style={{
+                            minHeight: useSingleLineCommentInput ? 32 : 92,
+                            flex: 1,
+                            backgroundColor: 'transparent',
+                        }}
+                    />
+                </View>
 
-            <MentionPopup
-                store={store}
-                styles={styles}
-                query={mentionQuery}
-                onSelect={handleMentionSelect}
-            />
+                <MentionPortal>
+                    <View
+                        style={(
+                            Platform.OS === 'web'
+                                ? (mentionOverlayStyle || { position: 'absolute', top: 0, left: 0, width: 0, height: 0, opacity: 0 })
+                                : { position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000 }
+                        ) as never}
+                    >
+                        <MentionPopup
+                            ref={mentionPopupRef}
+                            store={store}
+                            styles={styles}
+                            query={mentionQuery}
+                            onSelect={handleMentionSelect}
+                        />
+                    </View>
+                </MentionPortal>
+            </View>
 
             {emoticonBarConfig?.emoticons && (
                 <ScrollView horizontal style={styles.commentTextAreaEmoticonBar?.root}>
@@ -359,6 +433,15 @@ export function CommentTextArea({
                         activeOpacity={0.7}
                     >
                         <Text style={{ textDecorationLine: 'line-through', fontSize: 14, color: hasDarkBackground ? '#fff' : '#333' }}>S</Text>
+                    </TouchableOpacity>
+                )}
+                {buttons.code && (
+                    <TouchableOpacity
+                        style={[toolbarButtonStyle, active.code && { backgroundColor: activeBackground }]}
+                        onPress={() => editorRef.current?.toggleInlineCode()}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={{ fontFamily: 'monospace', fontSize: 12, color: hasDarkBackground ? '#fff' : '#333' }}>{"<>"}</Text>
                     </TouchableOpacity>
                 )}
                 {buttons.image && pickImage && (

@@ -180,6 +180,17 @@ async function submit(
                         (currentUserBeforeSubmit && 'email' in currentUserBeforeSubmit && (currentUserBeforeSubmit as any).email)
                     ))))
     ) {
+        // The submit can't proceed (no text, or guest hasn't supplied the
+        // name/email this tenant requires). The caller turned the spinner on
+        // before awaiting us; reset it so it doesn't hang forever, and surface
+        // the name/email form when identity is what's missing.
+        const missingIdentity =
+            !!replyState.comment &&
+            !allowAnon &&
+            !(replyState.username || (currentUserBeforeSubmit as any)?.username);
+        const patch: Partial<CommentReplyState> = { isReplySaving: false };
+        if (missingIdentity) patch.showAuthInputForm = true;
+        setReplyState(patch);
         return;
     }
 
@@ -260,15 +271,18 @@ async function submit(
             incOverallCommentCount(latest.config.countAll, store, comment.parentId);
 
             if (response.user) {
-                const responseUser = response.user;
-                if (latest.config.simpleSSO) {
-                    latest.setCurrentUser({
-                        ...(latest.currentUser as object),
-                        ...responseUser,
-                    } as FastCommentsSessionUser);
-                } else {
-                    latest.setCurrentUser(responseUser as FastCommentsSessionUser);
-                }
+                // Merge the server's user into the existing session, like the web
+                // widget (frontend/comment-ui copies each response.user key onto
+                // currentUser). The server returns an authorized user with the
+                // email/username the guest just entered; consuming it hides the
+                // name/email form and populates the top bar. Merging (vs replacing)
+                // preserves any fields the response omits (e.g. avatar).
+                const existingUser = latest.currentUser as object | null;
+                latest.setCurrentUser(
+                    (existingUser
+                        ? { ...existingUser, ...response.user }
+                        : response.user) as FastCommentsSessionUser
+                );
                 onAuthenticationChange &&
                     onAuthenticationChange('user-set', store.getState().currentUser, comment);
             }
@@ -279,12 +293,19 @@ async function submit(
                 'sessionId' in response.user &&
                 response.user.sessionId
             ) {
-                latest.setCurrentUser({
-                    ...(latest.currentUser as object),
-                    sessionId: response.user.sessionId,
-                } as FastCommentsSessionUser);
-                onAuthenticationChange &&
-                    onAuthenticationChange('session-id-set', store.getState().currentUser, comment);
+                // Apply the sessionId on top of the freshly-merged user. Reading
+                // `store.getState().currentUser` (not the stale `latest` snapshot
+                // captured before the merge above) avoids reverting to the prior
+                // anon user, which is what kept the auth form showing after submit.
+                const mergedUser = store.getState().currentUser as object | null;
+                if (mergedUser) {
+                    latest.setCurrentUser({
+                        ...mergedUser,
+                        sessionId: response.user.sessionId,
+                    } as FastCommentsSessionUser);
+                    onAuthenticationChange &&
+                        onAuthenticationChange('session-id-set', store.getState().currentUser, comment);
+                }
             }
             if (replyingToId === null && !latest.config.disableSuccessMessage) showSuccessMessage = true;
             const newCurrentUserId =
@@ -368,7 +389,16 @@ export function ReplyArea(props: ReplyAreaProps) {
     const ssoConfig = useStoreValue(store, (s) => s.config.sso || s.config.simpleSSO);
     const inlineReactImages = useStoreValue(store, (s) => s.config.inlineReactImages);
 
-    const needsAuth = !currentUser && !!parentComment;
+    // Mirror the web widget (frontend/shared/get-reply-area-html.ts): a guest must
+    // supply a name (and email, unless the tenant allows fully-anonymous) before
+    // commenting. Show the auth prompt when there's no authorized user, or when an
+    // anon session still owes us an email. The old `!currentUser && !!parentComment`
+    // was wrong: it only prompted on replies and treated the anon session (which
+    // exists from connect, with no username/email) as fully logged in - so root
+    // comments silently failed validation.
+    const currentUserAny = currentUser as { authorized?: boolean; isAnonSession?: boolean; email?: string } | null | undefined;
+    const anonSessionNeedsEmail = !!(currentUserAny && currentUserAny.isAnonSession && !currentUserAny.email && !allowAnon);
+    const needsAuth = !currentUserAny || !currentUserAny.authorized || anonSessionNeedsEmail;
     const valueGetter: ValueObserver = {};
     const focusObserver: FocusObserver = {};
 
@@ -413,7 +443,7 @@ export function ReplyArea(props: ReplyAreaProps) {
     let commentSubmitButton = null;
     let authFormArea = null;
 
-    if (!currentUser && ssoConfig && !allowAnon) {
+    if (needsAuth && ssoConfig && !allowAnon) {
         if (ssoConfig.loginURL || ssoConfig.loginCallback) {
             ssoLoginWrapper = (
                 <View style={styles.replyArea?.ssoLoginWrapper}>
@@ -586,7 +616,11 @@ export function ReplyArea(props: ReplyAreaProps) {
             );
         }
 
+        // Like the frontend, render the name/email inputs whenever the guest still
+        // needs to identify themselves (recomputed each render so it tracks the
+        // anon session loading in), plus the explicit toggle / signup-error cases.
         const showAuth =
+            needsAuth ||
             commentReplyState.showAuthInputForm ||
             (commentReplyState.lastSaveResponse?.code &&
                 SignUpErrorsTranslationIds[commentReplyState.lastSaveResponse.code!]);
@@ -607,7 +641,7 @@ export function ReplyArea(props: ReplyAreaProps) {
                             textContentType="emailAddress"
                             keyboardType="email-address"
                             autoComplete="email"
-                            value={commentReplyState.email}
+                            value={commentReplyState.email || ''}
                             returnKeyType={enableCommenterLinks ? 'next' : 'send'}
                             onChangeText={(value) => setCommentReplyState({ email: value })}
                         />
@@ -619,7 +653,7 @@ export function ReplyArea(props: ReplyAreaProps) {
                         placeholder={translations.PUBLICLY_DISPLAYED_USERNAME}
                         textContentType="username"
                         autoComplete="username"
-                        value={commentReplyState.username}
+                        value={commentReplyState.username || ''}
                         returnKeyType={enableCommenterLinks ? 'next' : 'send'}
                         onChangeText={(value) => setCommentReplyState({ username: value })}
                     />

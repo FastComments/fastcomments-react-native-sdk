@@ -22,6 +22,7 @@ export type EnrichedTextInputInstance = {
     toggleItalic: () => void;
     toggleUnderline: () => void;
     toggleStrikeThrough: () => void;
+    toggleInlineCode: () => void;
 };
 
 export type OnChangeStateEvent = {
@@ -29,6 +30,7 @@ export type OnChangeStateEvent = {
     italic?: { isActive?: boolean };
     underline?: { isActive?: boolean };
     strikeThrough?: { isActive?: boolean };
+    inlineCode?: { isActive?: boolean };
 };
 
 export interface EnrichedTextInputProps {
@@ -60,6 +62,7 @@ export const EnrichedTextInput = forwardRef<EnrichedTextInputInstance, EnrichedT
             toggleItalic: () => {},
             toggleUnderline: () => {},
             toggleStrikeThrough: () => {},
+            toggleInlineCode: () => {},
         }));
 
         return (

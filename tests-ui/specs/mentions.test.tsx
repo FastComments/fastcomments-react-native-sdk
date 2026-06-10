@@ -52,8 +52,9 @@ maybe('Mention UI tests', () => {
             label: 'commentInput visible',
         });
 
-        // Type "@Tester a" to trigger the mention search.
-        fireEvent.changeText(getByTestId('commentInput'), '@Tester a');
+        // Type "@Tester" to trigger the mention search (the query is a single
+        // token - a space ends it - and "Tester" prefix-matches all seeded users).
+        fireEvent.changeText(getByTestId('commentInput'), '@Tester');
 
         // Wait for the popup to appear.
         await pollUntil(() => !!queryByTestId('mentionPopup'), {
@@ -118,14 +119,14 @@ maybe('Mention UI tests', () => {
         });
 
         // Trigger the mention search.
-        fireEvent.changeText(getByTestId('commentInput'), '@Tester a');
+        fireEvent.changeText(getByTestId('commentInput'), '@Tester');
         await pollUntil(() => !!queryByTestId('mentionPopup'), {
             timeoutMs: 15000,
             label: 'mentionPopup visible',
         });
 
         // Type a trailing space; popup should be dismissed.
-        fireEvent.changeText(getByTestId('commentInput'), '@Tester a ');
+        fireEvent.changeText(getByTestId('commentInput'), '@Tester ');
         await pollUntil(() => queryByTestId('mentionPopup') === null, {
             timeoutMs: 5000,
             label: 'mentionPopup dismissed after trailing space',
