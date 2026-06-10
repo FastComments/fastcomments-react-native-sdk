@@ -464,6 +464,8 @@ export function ReplyArea(props: ReplyAreaProps) {
             ssoLoginWrapper = (
                 <View style={styles.replyArea?.ssoLoginWrapper}>
                     <TouchableOpacity
+                        testID="ssoLoginButton"
+                        accessibilityLabel="ssoLoginButton"
                         style={styles.replyArea?.ssoLoginButton}
                         onPress={async () => {
                             if (ssoConfig.loginURL) await Linking.openURL(ssoConfig.loginURL);

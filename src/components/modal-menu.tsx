@@ -112,7 +112,7 @@ export function ModalMenu({
                 })}
             </Modal>
         </View>}
-        {openButton && <TouchableOpacity onPress={() => setModalIdVisible('menu')}>
+        {openButton && <TouchableOpacity testID="modalMenuOpenButton" accessibilityLabel="modalMenuOpenButton" onPress={() => setModalIdVisible('menu')}>
             {openButton}
         </TouchableOpacity>}
     </View>;
