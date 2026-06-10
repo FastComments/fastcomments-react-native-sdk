@@ -180,6 +180,17 @@ async function submit(
                         (currentUserBeforeSubmit && 'email' in currentUserBeforeSubmit && (currentUserBeforeSubmit as any).email)
                     ))))
     ) {
+        // The submit can't proceed (no text, or guest hasn't supplied the
+        // name/email this tenant requires). The caller turned the spinner on
+        // before awaiting us; reset it so it doesn't hang forever, and surface
+        // the name/email form when identity is what's missing.
+        const missingIdentity =
+            !!replyState.comment &&
+            !allowAnon &&
+            !(replyState.username || (currentUserBeforeSubmit as any)?.username);
+        const patch: Partial<CommentReplyState> = { isReplySaving: false };
+        if (missingIdentity) patch.showAuthInputForm = true;
+        setReplyState(patch);
         return;
     }
 
@@ -368,7 +379,16 @@ export function ReplyArea(props: ReplyAreaProps) {
     const ssoConfig = useStoreValue(store, (s) => s.config.sso || s.config.simpleSSO);
     const inlineReactImages = useStoreValue(store, (s) => s.config.inlineReactImages);
 
-    const needsAuth = !currentUser && !!parentComment;
+    // Mirror the web widget (frontend/shared/get-reply-area-html.ts): a guest must
+    // supply a name (and email, unless the tenant allows fully-anonymous) before
+    // commenting. Show the auth prompt when there's no authorized user, or when an
+    // anon session still owes us an email. The old `!currentUser && !!parentComment`
+    // was wrong: it only prompted on replies and treated the anon session (which
+    // exists from connect, with no username/email) as fully logged in - so root
+    // comments silently failed validation.
+    const currentUserAny = currentUser as { authorized?: boolean; isAnonSession?: boolean; email?: string } | null | undefined;
+    const anonSessionNeedsEmail = !!(currentUserAny && currentUserAny.isAnonSession && !currentUserAny.email && !allowAnon);
+    const needsAuth = !currentUserAny || !currentUserAny.authorized || anonSessionNeedsEmail;
     const valueGetter: ValueObserver = {};
     const focusObserver: FocusObserver = {};
 
@@ -413,7 +433,7 @@ export function ReplyArea(props: ReplyAreaProps) {
     let commentSubmitButton = null;
     let authFormArea = null;
 
-    if (!currentUser && ssoConfig && !allowAnon) {
+    if (needsAuth && ssoConfig && !allowAnon) {
         if (ssoConfig.loginURL || ssoConfig.loginCallback) {
             ssoLoginWrapper = (
                 <View style={styles.replyArea?.ssoLoginWrapper}>
@@ -586,7 +606,11 @@ export function ReplyArea(props: ReplyAreaProps) {
             );
         }
 
+        // Like the frontend, render the name/email inputs whenever the guest still
+        // needs to identify themselves (recomputed each render so it tracks the
+        // anon session loading in), plus the explicit toggle / signup-error cases.
         const showAuth =
+            needsAuth ||
             commentReplyState.showAuthInputForm ||
             (commentReplyState.lastSaveResponse?.code &&
                 SignUpErrorsTranslationIds[commentReplyState.lastSaveResponse.code!]);
@@ -607,7 +631,7 @@ export function ReplyArea(props: ReplyAreaProps) {
                             textContentType="emailAddress"
                             keyboardType="email-address"
                             autoComplete="email"
-                            value={commentReplyState.email}
+                            value={commentReplyState.email || ''}
                             returnKeyType={enableCommenterLinks ? 'next' : 'send'}
                             onChangeText={(value) => setCommentReplyState({ email: value })}
                         />
@@ -619,7 +643,7 @@ export function ReplyArea(props: ReplyAreaProps) {
                         placeholder={translations.PUBLICLY_DISPLAYED_USERNAME}
                         textContentType="username"
                         autoComplete="username"
-                        value={commentReplyState.username}
+                        value={commentReplyState.username || ''}
                         returnKeyType={enableCommenterLinks ? 'next' : 'send'}
                         onChangeText={(value) => setCommentReplyState({ username: value })}
                     />

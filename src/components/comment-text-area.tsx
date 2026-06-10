@@ -12,6 +12,7 @@ import {
     ScrollView,
     TouchableOpacity,
     Image,
+    Platform,
 } from "react-native";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -22,10 +23,29 @@ import {
 import type { NativeSyntheticEvent } from 'react-native';
 import { MentionPopup } from './mention-popup';
 import { MentionUser } from '../services/mentions';
+import { detectMentionQuery, htmlToPlainText } from '../services/mention-detection';
 
 // Library's own event types follow snake->camelCase with `strikeThrough`.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type OnChangeHtmlEvent = { value: string };
+
+// react-native-enriched's web build renders tiptap's contenteditable
+// (`.ProseMirror`) inside a wrapper (`.eti-editor`) that receives our `style`
+// (minHeight/flex). The contenteditable itself only auto-sizes to its content
+// (one line), so the lower part of the bordered box is a dead, unclickable div.
+// The library ships no CSS to stretch it. Inject a tiny web-only rule once so
+// the editor fills its wrapper and the whole box is clickable/typable.
+const WEB_EDITOR_STYLE_ID = 'fastcomments-enriched-web-fill';
+function ensureWebEditorFillStyles() {
+    if (typeof document === 'undefined') return;
+    if (document.getElementById(WEB_EDITOR_STYLE_ID)) return;
+    const el = document.createElement('style');
+    el.id = WEB_EDITOR_STYLE_ID;
+    el.textContent =
+        '.eti-editor{display:flex;flex-direction:column;}' +
+        '.eti-editor>.tiptap,.eti-editor>.ProseMirror{flex:1 1 auto;}';
+    document.head.appendChild(el);
+}
 
 export interface ValueObserver {
     getValue?: () => string
@@ -79,44 +99,9 @@ const defaultToolbarButtons: ToolbarButtonConfig = {
     gif: true,
 };
 
-/**
- * Strip simple HTML tags / decode common entities so we can detect `@...` triggers
- * in rich-text HTML the editor emits. Comment editors typically wrap text in
- * <p>/<div> with breaks; we just need readable text for the trigger regex.
- */
-function htmlToPlainText(html: string): string {
-    if (!html) return '';
-    const stripped = html
-        .replace(/<br\s*\/?>(\n)?/gi, '\n')
-        .replace(/<\/(p|div|li)>/gi, '\n')
-        .replace(/<[^>]+>/g, '');
-    return stripped
-        .replace(/&nbsp;/g, ' ')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'");
-}
-
-/**
- * Returns the active mention query (text after the most recent `@` that starts
- * a token) or undefined when no mention is active. A trailing space terminates
- * the mention.
- */
-export function detectMentionQuery(value: string): string | undefined {
-    const text = htmlToPlainText(value);
-    const atIdx = text.lastIndexOf('@');
-    if (atIdx === -1) return undefined;
-    if (atIdx > 0) {
-        const prev = text.charAt(atIdx - 1);
-        if (!/\s/.test(prev)) return undefined;
-    }
-    const after = text.substring(atIdx + 1);
-    if (/\n/.test(after)) return undefined;
-    if (after.length > 0 && /\s$/.test(after)) return undefined;
-    return after;
-}
+// Re-exported for any existing importers (the implementations now live in the
+// dependency-free `../services/mention-detection` module).
+export { detectMentionQuery, htmlToPlainText };
 
 export function CommentTextArea({
     emoticonBarConfig,
@@ -144,6 +129,10 @@ export function CommentTextArea({
     const [mentionQuery, setMentionQuery] = useState<string | undefined>(undefined);
 
     const buttons = { ...defaultToolbarButtons, ...toolbarButtons };
+
+    useEffect(() => {
+        if (Platform.OS === 'web') ensureWebEditorFillStyles();
+    }, []);
 
     useEffect(() => {
         if (value !== undefined && value !== htmlRef.current) {
