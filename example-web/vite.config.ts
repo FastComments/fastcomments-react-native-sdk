@@ -62,7 +62,18 @@ export default defineConfig({
       // alias redirects it to react-native-web everywhere. The `$` anchor avoids
       // catching `react-native-enriched` / `react-native-web` themselves.
       { find: /^react-native$/, replacement: path.dirname(require.resolve('react-native-web/package.json')) },
+      // react-native-web's ESM dist imports inline-style-prefixer's CJS `lib/`
+      // deep paths (e.g. `inline-style-prefixer/lib/plugins/cursor`). Served raw
+      // to the browser, those CJS files expose no ESM `default` export and throw
+      // "doesn't provide an export named: 'default'". The package also ships a
+      // real ESM build under `es/`; redirect the deep `lib/` paths there.
+      { find: /^inline-style-prefixer\/lib\/(.*)$/, replacement: path.join(path.dirname(require.resolve('inline-style-prefixer/package.json')), 'es/$1') },
     ],
+    // The demo imports the SDK from source (`../src`), whose files `import 'react'`.
+    // Without deduping, that resolves to the SDK root's own React copy while the
+    // app uses example-web's React 19 -> two React instances -> "invalid hook
+    // call". Force a single copy (example-web's React 19) for the whole graph.
+    dedupe: ['react', 'react-dom'],
     extensions: ['.web.tsx', '.web.ts', '.web.jsx', '.web.js', '.tsx', '.ts', '.jsx', '.js', '.json'],
     mainFields: ['module', 'browser', 'main'],
   },
@@ -89,6 +100,17 @@ export default defineConfig({
       'react-native-web > memoize-one',
       'react-native-web > styleq',
       'react-native-web > postcss-value-parser',
+      // react-native-web's ESM dist also imports these CJS *sub-entry* points
+      // directly. They aren't reachable from each package's main entry, so the
+      // `> pkg` includes above don't cover them, and served raw they expose no
+      // ESM named/default export ("doesn't provide an export named ..."). List
+      // them so Vite pre-bundles each with CJS->ESM interop.
+      'styleq/transform-localize-style',
+      'fbjs/lib/invariant',
+      'fbjs/lib/warning',
+      // react-native-web's renderer imports `{ createRoot }` from this CJS
+      // sub-entry; same raw-CJS named-export problem as the deps above.
+      'react-dom/client',
       'lodash',
       'fastcomments-typescript',
       'react-native-enriched',
