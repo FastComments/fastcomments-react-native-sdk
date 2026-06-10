@@ -399,6 +399,7 @@ export function ReplyArea(props: ReplyAreaProps) {
     const useSingleReplyField = useStoreValue(store, (s) => !!s.config.useSingleReplyField);
     const hasDarkBackground = useStoreValue(store, (s) => !!s.config.hasDarkBackground);
     const disableEmailInputs = useStoreValue(store, (s) => !!s.config.disableEmailInputs);
+    const useInlineSubmitButton = useStoreValue(store, (s) => !!s.config.useInlineSubmitButton);
     const enableCommenterLinks = useStoreValue(store, (s) => !!s.config.enableCommenterLinks);
     const ssoConfig = useStoreValue(store, (s) => s.config.sso || s.config.simpleSSO);
     const inlineReactImages = useStoreValue(store, (s) => s.config.inlineReactImages);
@@ -573,17 +574,6 @@ export function ReplyArea(props: ReplyAreaProps) {
             );
         }
 
-        commentInputArea = (
-            <View
-                style={[
-                    styles.replyArea?.commentInputArea,
-                    commentReplyState.isReplySaving ? styles.replyArea?.commentInputAreaReplySaving : null,
-                ]}
-            >
-                {commentInputAreaContent}
-            </View>
-        );
-
         const handleSubmit = async () => {
             const latestValue = valueGetter.getValue ? valueGetter.getValue() : '';
             setCommentReplyState({ comment: latestValue });
@@ -607,7 +597,39 @@ export function ReplyArea(props: ReplyAreaProps) {
             }
         };
 
-        if (!commentReplyState.isReplySaving) {
+        // Inline mode anchors an icon-only send button inside the comment box
+        // (the standalone labeled button is not rendered).
+        const inlineSubmitButton = useInlineSubmitButton && !commentReplyState.isReplySaving ? (
+            <TouchableOpacity
+                testID="inlineSendButton"
+                accessibilityLabel="inlineSendButton"
+                style={styles.replyArea?.inlineSubmitButton}
+                onPress={handleSubmit}
+            >
+                <Image
+                    source={
+                        hasDarkBackground
+                            ? imageAssets[FastCommentsImageAsset.ICON_RETURN_WHITE]
+                            : imageAssets[FastCommentsImageAsset.ICON_RETURN]
+                    }
+                    style={styles.replyArea?.inlineSubmitButtonIcon}
+                />
+            </TouchableOpacity>
+        ) : null;
+
+        commentInputArea = (
+            <View
+                style={[
+                    styles.replyArea?.commentInputArea,
+                    commentReplyState.isReplySaving ? styles.replyArea?.commentInputAreaReplySaving : null,
+                ]}
+            >
+                {commentInputAreaContent}
+                {inlineSubmitButton}
+            </View>
+        );
+
+        if (!commentReplyState.isReplySaving && !useInlineSubmitButton) {
             commentSubmitButton = (
                 <View style={styles.replyArea?.replyButtonWrapper}>
                     <TouchableOpacity

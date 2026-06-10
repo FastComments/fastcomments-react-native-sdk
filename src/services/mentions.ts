@@ -26,11 +26,14 @@ export interface SearchUsersParams {
 export async function searchMentionUsers(params: SearchUsersParams): Promise<MentionUser[]> {
     const { store, tenantId, urlId, usernameStartsWith, sso } = params;
     if (!usernameStartsWith.trim()) return [];
-    const sdk = store.getState().sdk;
+    const state = store.getState();
+    const sdk = state.sdk;
     const apiResponse = await sdk.publicApi.searchUsersRaw({
         tenantId,
         urlId,
         usernameStartsWith,
+        // Scope results to the host's groups (e.g. project members).
+        mentionGroupIds: state.config.mentionGroupIds,
         sso,
     });
     // The SDK's typed parser requires a 'sections' field that the legacy

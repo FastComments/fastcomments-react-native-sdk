@@ -33,6 +33,7 @@ export * from './modal-menu';
 export * from './notification-bell';
 export * from './notification-list';
 export * from './notification-list-item';
+export * from './page-reacts-bar';
 export * from './pagination-next';
 export * from './pagination-prev';
 export * from './reply-area';

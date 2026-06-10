@@ -16,4 +16,6 @@ export interface FastCommentsRNConfig extends FastCommentsCommentWidgetConfig {
     showLiveStatus?: boolean
     /** When true (default), the FastCommentsFeed remembers its FlatList scroll offset across unmount/remount, keyed by tenantId + urlId. **/
     preserveFeedScrollPosition?: boolean
+    /** Render the submit button as an icon inside the comment box (replaces the standalone labeled button). **/
+    useInlineSubmitButton?: boolean
 }

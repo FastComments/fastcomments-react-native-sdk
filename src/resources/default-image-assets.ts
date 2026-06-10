@@ -32,6 +32,8 @@ export function getDefaultImageAssets(): ImageAssetConfig {
         [FastCommentsImageAsset.ICON_EDIT_BIG_WHITE]: require('./icons/edit_white.png'),
         [FastCommentsImageAsset.ICON_TRASH]: require('./icons/trash_thin.png'),
         [FastCommentsImageAsset.ICON_TRASH_WHITE]: require('./icons/trash_thin_white.png'),
+        [FastCommentsImageAsset.ICON_HEART]: require('./icons/heart.png'),
+        [FastCommentsImageAsset.ICON_HEART_ACTIVE]: require('./icons/heart_active.png'),
         [FastCommentsImageAsset.ICON_EYE]: require('./icons/view.png'),
         [FastCommentsImageAsset.ICON_EYE_WHITE]: require('./icons/view_white.png'),
         [FastCommentsImageAsset.ICON_EYE_SLASH]: require('./icons/view_hide.png'),

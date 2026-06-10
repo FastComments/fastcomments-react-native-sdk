@@ -1141,6 +1141,21 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 aspectRatio: 1,
                 resizeMode: 'stretch'
             },
+            inlineSubmitButton: {
+                position: 'absolute',
+                right: t.spacing.sm,
+                top: t.spacing.sm,
+                minWidth: 36,
+                minHeight: 36,
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderRadius: t.radius.pill
+            },
+            inlineSubmitButtonIcon: {
+                width: 20,
+                height: 20,
+                resizeMode: 'contain'
+            },
             loadingView: {
                 ...LoadingOverlay
             },
@@ -1283,6 +1298,44 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 borderTopWidth: hairline,
                 borderColor: t.colors.border,
                 padding: t.spacing.md
+            }
+        },
+        pageReacts: {
+            root: {
+                marginTop: t.spacing.lg,
+                marginLeft: t.spacing.lg,
+                marginRight: t.spacing.lg
+            },
+            row: {
+                flexDirection: 'row',
+                alignItems: 'center'
+            },
+            react: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginRight: t.spacing.lg
+            },
+            reactButton: {
+                minHeight: 36,
+                minWidth: 36,
+                justifyContent: 'center',
+                alignItems: 'center'
+            },
+            reactImage: {
+                width: 22,
+                height: 22,
+                resizeMode: 'contain'
+            },
+            countText: {
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.voteCount,
+                marginRight: t.spacing.xs
+            },
+            usersText: {
+                marginTop: t.spacing.xs,
+                fontSize: t.fontSize.base,
+                color: t.colors.textSecondary
             }
         },
         feed: {

@@ -255,6 +255,9 @@ export interface IFastCommentsStyles {
         replyButton?: ViewStyle
         replyButtonText?: TextStyle
         replyButtonIcon?: ImageStyle
+        /** Icon-only send button anchored inside the comment box (config.useInlineSubmitButton). **/
+        inlineSubmitButton?: ViewStyle
+        inlineSubmitButtonIcon?: ImageStyle
         loadingView?: ViewStyle
         error?: TextStyle
         userInfoInput?: TextStyle
@@ -282,6 +285,15 @@ export interface IFastCommentsStyles {
     liveChat?: {
         root?: ViewStyle
         composerWrapper?: ViewStyle
+    }
+    pageReacts?: {
+        root?: ViewStyle
+        row?: ViewStyle
+        react?: ViewStyle
+        reactButton?: ViewStyle
+        reactImage?: ImageStyle
+        countText?: TextStyle
+        usersText?: TextStyle
     }
     feed?: {
         root?: ViewStyle

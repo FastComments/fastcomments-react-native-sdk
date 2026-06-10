@@ -6,6 +6,7 @@ import type {
     ImageAssetConfig,
 } from '../types';
 import { FastCommentsImageAsset } from '../types';
+import { VoteStyle } from 'fastcomments-typescript';
 import { useState } from 'react';
 import { VoteBodyParamsVoteDirEnum } from 'fastcomments-sdk/server';
 import type { VoteBodyParams, VoteComment200Response } from 'fastcomments-sdk';
@@ -181,7 +182,41 @@ export function CommentVote(props: CommentVoteProps) {
     const upCount = Number(comment.votesUp || 0);
     const downCount = Number(comment.votesDown || 0);
 
-    const voteOptions = (
+    // Heart style: one like toggle (the icon is overridable via assets, e.g.
+    // a star), no up/down pair. Pressing again removes the vote.
+    const isHeartStyle = config.voteStyle === VoteStyle.Heart;
+
+    const voteOptions = isHeartStyle ? (
+        <View style={styles.commentVote?.commentVoteOptions}>
+            <Pressable
+                testID={`likeButton-${comment._id}`}
+                accessibilityLabel="likeButton"
+                style={styles.commentVote?.voteButton}
+                onPress={() => {
+                    setVoteStateRaw((prev) => ({ ...prev, voteDir: 'up' }));
+                    void doVote(store, comment, { ...voteState, voteDir: 'up' }, setVoteState, onVoteSuccess);
+                }}
+            >
+                <Image
+                    source={
+                        imageAssets[
+                            comment.isVotedUp
+                                ? FastCommentsImageAsset.ICON_HEART_ACTIVE
+                                : FastCommentsImageAsset.ICON_HEART
+                        ]
+                    }
+                    style={styles.commentVote?.voteButtonIcon}
+                />
+            </Pressable>
+            <Text
+                testID={`likeCount-${comment._id}`}
+                accessibilityLabel="likeCount"
+                style={[styles.commentVote?.votesDownText, upCount === 0 && styles.commentVote?.votesZeroText]}
+            >
+                {upCount.toLocaleString()}
+            </Text>
+        </View>
+    ) : (
         <View style={styles.commentVote?.commentVoteOptions}>
             <Text
                 testID={`upVoteCount-${comment._id}`}
