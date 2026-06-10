@@ -22,6 +22,11 @@ interface FastCommentsInternalState {
     lastComments: RNComment[];
 }
 
+/** Chat-style rendering: chronological order with new messages at the bottom. */
+export function isLiveChatStyle(config: Pick<FastCommentsCommentWidgetConfig, 'defaultSortDirection' | 'newCommentsToBottom'>): boolean {
+    return config.defaultSortDirection === 'NF' && !!config.newCommentsToBottom;
+}
+
 export class FastCommentsLiveCommentingService {
     private readonly store: FastCommentsStore;
     private readonly internalState: FastCommentsInternalState;
@@ -172,8 +177,8 @@ export class FastCommentsLiveCommentingService {
             }
 
             const responseComments = (response.comments || []) as RNComment[];
-            const isLiveChatStyle = config.defaultSortDirection === 'NF' && config.newCommentsToBottom;
-            if (isLiveChatStyle) responseComments.reverse();
+            const chatStyle = isLiveChatStyle(config);
+            if (chatStyle) responseComments.reverse();
 
             if (typeof response.hasMore === 'boolean') state.setHasMore(response.hasMore);
 
@@ -182,7 +187,7 @@ export class FastCommentsLiveCommentingService {
                 if (isPrev) {
                     mergedComments = responseComments.concat(internalState.lastComments);
                 } else if (state.page > 0) {
-                    mergedComments = isLiveChatStyle
+                    mergedComments = chatStyle
                         ? responseComments.concat(internalState.lastComments)
                         : internalState.lastComments.concat(responseComments);
                 } else {

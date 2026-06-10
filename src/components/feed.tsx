@@ -9,7 +9,8 @@ import {
     View,
 } from 'react-native';
 import { FastCommentsLiveCommentingService } from '../services/fastcomments-live-commenting';
-import { getDefaultFastCommentsStyles } from '../resources';
+import { resolveStyles } from '../resources/resolve-styles';
+import { FastCommentsThemeOverrides } from '../types/fastcomments-theme';
 import { addTranslationsToStore } from '../services/translations';
 import { createFeedPost, loadFeedPosts } from '../services/feed';
 import { teardownFeedLive } from '../services/feed-live';
@@ -44,6 +45,9 @@ export interface FastCommentsFeedHandle {
 
 export interface FastCommentsFeedProps {
     config: FastCommentsRNConfig;
+    /** Semantic design tokens; generates the whole default style tree. **/
+    theme?: FastCommentsThemeOverrides;
+    /** Raw style overrides. With `theme`, merged on top of the themed tree; alone, replaces the defaults entirely (legacy behavior). **/
     styles?: IFastCommentsStyles;
     assets?: ImageAssetConfig;
     customToolbarButtons?: FeedCustomToolbarButton[];
@@ -67,10 +71,10 @@ export interface FastCommentsFeedProps {
 }
 
 export const FastCommentsFeed = forwardRef<FastCommentsFeedHandle, FastCommentsFeedProps>(function FastCommentsFeed(
-    { config, styles, assets, customToolbarButtons, callbacks, followStateProvider, statsPollIntervalMs, onStoreReady },
+    { config, theme, styles, assets, customToolbarButtons, callbacks, followStateProvider, statsPollIntervalMs, onStoreReady },
     ref,
 ) {
-    const effectiveStyles = styles ?? getDefaultFastCommentsStyles();
+    const effectiveStyles = useMemo(() => resolveStyles(styles, theme), [styles, theme]);
 
     const storeRef = useRef<FastCommentsStore | null>(null);
     if (storeRef.current === null) {

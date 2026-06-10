@@ -42,6 +42,21 @@ export interface EnrichedTextInputProps {
     testID?: string;
 }
 
+/**
+ * Mirror the real editor's HTML contract (README: "Plain text paragraphs are
+ * wrapped in <p> tags. Empty paragraphs are represented as <br>."). Typed text
+ * that is not already HTML gets p-wrapped per line, so specs exercise the same
+ * block-wrapped payloads the native/web editor sends the SDK.
+ */
+function toEditorHtml(text: string): string {
+    if (!text) return '';
+    if (text.startsWith('<')) return text;
+    return text
+        .split('\n')
+        .map((line) => (line.length > 0 ? `<p>${line}</p>` : '<br>'))
+        .join('');
+}
+
 export const EnrichedTextInput = forwardRef<EnrichedTextInputInstance, EnrichedTextInputProps>(
     function EnrichedTextInput(props, ref) {
         const [value, setValue] = useState<string>(props.defaultValue || '');
@@ -70,8 +85,9 @@ export const EnrichedTextInput = forwardRef<EnrichedTextInputInstance, EnrichedT
                 testID={props.testID || 'commentInput'}
                 value={value}
                 onChangeText={(text) => {
-                    setValue(text);
-                    props.onChangeHtml && props.onChangeHtml({ nativeEvent: { value: text } });
+                    const html = toEditorHtml(text);
+                    setValue(html);
+                    props.onChangeHtml && props.onChangeHtml({ nativeEvent: { value: html } });
                 }}
                 onFocus={props.onFocus}
                 multiline

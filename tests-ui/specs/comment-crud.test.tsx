@@ -17,8 +17,9 @@ import {
 } from '../framework/harness/test-context';
 import { buildSDKConfig } from '../framework/harness/build-config';
 import { pollUntil, sleep } from '../framework/harness/poll';
-import { seedComment } from '../framework/api/comments-rest';
+import { seedComment, fetchLatestCommentHTML } from '../framework/api/comments-rest';
 import { clearAlerts, pressLatestAlertButton } from '../framework/harness/alert-helper';
+import { textOf } from '../framework/harness/text-of';
 
 const hasKey = !!process.env.FC_E2E_API_KEY;
 const maybe = hasKey ? describe : describe.skip;
@@ -70,6 +71,80 @@ maybe('Comment CRUD UI tests', () => {
         await pollUntil(() => !!queryByText(text), {
             timeoutMs: 15000,
             label: 'submitted comment text visible in list',
+        });
+    });
+
+    it('testMultiParagraphCommentKeepsLineBreaks', async () => {
+        ctx = await setupTestContext({ emailPrefix: 'multipara', urlIdLabel: 'multi-para' });
+        const ssoToken = ctx.ssoFor('userA');
+        const config = buildSDKConfig({ tenant: ctx.tenant, urlId: ctx.urlId, ssoToken });
+
+        const { getByTestId, queryByText, unmount } = render(
+            <FastCommentsLiveCommenting config={config} />
+        );
+        ctx.onTeardown(unmount);
+
+        await pollUntil(() => !!getByTestId('commentInput'), {
+            timeoutMs: 15000,
+            label: 'commentInput visible',
+        });
+        // The editor (real and mock) emits each line as a <p> block. The server
+        // strips <p> (not in its allowed tags), so without SDK-side normalization
+        // the two lines glue together into "first paragraphsecond paragraph".
+        fireEvent.changeText(getByTestId('commentInput'), 'first paragraph\nsecond paragraph');
+        fireEvent.press(getByTestId('sendButton'));
+
+        await pollUntil(() => !!queryByText(/first paragraph/), {
+            timeoutMs: 15000,
+            label: 'submitted comment visible in list',
+        });
+        const storedHTML = await fetchLatestCommentHTML(ctx.tenant, ctx.urlId);
+        expect(storedHTML).toBeTruthy();
+        expect(storedHTML).not.toContain('first paragraphsecond paragraph');
+        expect(storedHTML).toMatch(/first paragraph\s*<br\s*\/?>\s*second paragraph/);
+    });
+
+    it('testGuestSubmitHidesAuthFormAndKeepsUser', async () => {
+        // Regression guard for the guest-submit bug: after a successful guest
+        // post the server returns an authorized user, but a stale snapshot was
+        // re-applied and reverted currentUser to the anon session, so the
+        // name/email form stayed visible forever.
+        ctx = await setupTestContext({ emailPrefix: 'guest', urlIdLabel: 'guest-submit' });
+        const config = buildSDKConfig({ tenant: ctx.tenant, urlId: ctx.urlId });
+
+        const { getByTestId, queryByTestId, queryByText, unmount } = render(
+            <FastCommentsLiveCommenting config={config} />
+        );
+        ctx.onTeardown(unmount);
+
+        await pollUntil(() => !!getByTestId('commentInput'), {
+            timeoutMs: 15000,
+            label: 'commentInput visible',
+        });
+        const text = 'Guest comment from UI test';
+        fireEvent.changeText(getByTestId('commentInput'), text);
+        await pollUntil(() => !!queryByTestId('authInputForm'), {
+            timeoutMs: 15000,
+            label: 'guest auth form visible',
+        });
+        fireEvent.changeText(getByTestId('authEmailInput'), `guest-${Date.now()}@fctest.com`);
+        fireEvent.changeText(getByTestId('authUsernameInput'), 'GuestTester');
+        fireEvent.press(getByTestId('sendButton'));
+
+        await pollUntil(() => !!queryByText(text), {
+            timeoutMs: 15000,
+            label: 'guest comment visible in list',
+        });
+        await pollUntil(() => !queryByTestId('authInputForm'), {
+            timeoutMs: 15000,
+            label: 'auth form hidden after authorized response',
+        });
+        await pollUntil(() => {
+            const topBarUsername = queryByTestId('topBarUsername');
+            return !!topBarUsername && textOf(topBarUsername).includes('GuestTester');
+        }, {
+            timeoutMs: 15000,
+            label: 'top bar shows the authorized guest username',
         });
     });
 

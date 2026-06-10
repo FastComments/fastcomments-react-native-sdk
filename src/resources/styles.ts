@@ -1,5 +1,7 @@
 import {IFastCommentsStyles} from "../types";
-import {ViewStyle} from "react-native";
+import {FastCommentsTheme} from "../types/fastcomments-theme";
+import {StyleSheet, ViewStyle} from "react-native";
+import {getLightTheme} from "./themes";
 
 // The loading state is a sole, full-area render (the widget early-returns this
 // while fetching). It must NOT be `position: absolute`: an absolutely-positioned
@@ -8,36 +10,67 @@ import {ViewStyle} from "react-native";
 // a 0-height `inset: 0` box centers the spinner on y=0 - i.e. half off the top of
 // the screen. Filling via normal flow (flex + a minHeight floor) centers it
 // reliably on both web and native.
-const LoadingOverlay: ViewStyle = {
-    flex: 1,
-    minHeight: 200,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ffffff50'
+function getLoadingOverlay(t: FastCommentsTheme): ViewStyle {
+    return {
+        flex: 1,
+        minHeight: 200,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: t.colors.background + '50'
+    };
 }
 
-const GreyButton = {
-    borderWidth: 1,
-    borderColor: "#a2a2a2",
-    backgroundColor: "#fbfbfb"
-}
-
-export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
+/**
+ * The entire default style tree is generated from semantic theme tokens; pass a
+ * theme (getDarkTheme(), or resolveTheme({...}) for partial overrides) to
+ * restyle every widget consistently. No theme means the light theme.
+ */
+export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCommentsStyles {
+    const t = theme ?? getLightTheme();
+    const LoadingOverlay = getLoadingOverlay(t);
+    const hairline = StyleSheet.hairlineWidth;
+    const modalShadow = {
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 4
+        },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 5
+    };
+    const filledButton: ViewStyle = {
+        backgroundColor: t.colors.primary,
+        borderRadius: t.radius.md,
+        paddingTop: t.spacing.sm + 2,
+        paddingBottom: t.spacing.sm + 2,
+        paddingLeft: t.spacing.lg,
+        paddingRight: t.spacing.lg
+    };
+    const surfaceButton: ViewStyle = {
+        backgroundColor: t.colors.surface,
+        borderRadius: t.radius.md,
+        paddingTop: t.spacing.sm + 2,
+        paddingBottom: t.spacing.sm + 2,
+        paddingLeft: t.spacing.lg,
+        paddingRight: t.spacing.lg
+    };
     return {
         root: {
-            flex: 1
+            flex: 1,
+            backgroundColor: t.colors.background
         },
         loadingOverlay: {
             ...LoadingOverlay
         },
         red: {
-            color: 'red'
+            color: t.colors.danger
         },
         threeDotMenu: {
             root: {
-                paddingTop: 5,
-                paddingBottom: 5,
-                marginRight: 5
+                paddingTop: t.spacing.xs,
+                paddingBottom: t.spacing.xs,
+                marginRight: t.spacing.xs
             },
             dots: {
                 flexDirection: 'row',
@@ -48,11 +81,8 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             dot: {
                 width: 4,
                 height: 4,
-                backgroundColor: "#333",
-                borderTopLeftRadius: 4,
-                borderTopRightRadius: 4,
-                borderBottomRightRadius: 4,
-                borderBottomLeftRadius: 4,
+                backgroundColor: t.colors.textSecondary,
+                borderRadius: 4,
                 marginTop: 0,
                 marginRight: 2,
                 marginBottom: 0,
@@ -61,115 +91,117 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
         },
         topArea: {
             replyArea: {
-                marginTop: 15,
-                marginRight: 7.5,
-                marginLeft: 7.5
+                marginTop: t.spacing.lg,
+                marginRight: t.spacing.md,
+                marginLeft: t.spacing.md
             },
             separator: {
                 flexDirection: 'row',
                 justifyContent: 'space-between',
-                paddingTop: 3,
-                paddingBottom: 3,
-                paddingLeft: 10,
-                paddingRight: 10,
-                borderBottomWidth: 1,
-                borderColor: '#afafaf'
+                paddingTop: t.spacing.sm,
+                paddingBottom: t.spacing.sm,
+                paddingLeft: t.spacing.md,
+                paddingRight: t.spacing.md,
+                borderBottomWidth: hairline,
+                borderColor: t.colors.border
             },
             commentCount: {
                 alignSelf: 'center',
-                fontWeight: '500',
-                fontSize: 12
+                fontWeight: t.fontWeight.semibold,
+                fontSize: t.fontSize.base,
+                color: t.colors.textPrimary
             }
         },
         liveStatusBar: {
             root: {
                 flexDirection: 'row',
                 alignItems: 'center',
-                paddingTop: 8,
-                paddingBottom: 8,
-                paddingLeft: 10,
-                paddingRight: 10
+                paddingTop: t.spacing.sm,
+                paddingBottom: t.spacing.sm,
+                paddingLeft: t.spacing.md,
+                paddingRight: t.spacing.md,
+                backgroundColor: t.colors.liveChatHeaderBackground
             },
             connectionChip: {
                 flexDirection: 'row',
                 alignItems: 'center',
-                paddingTop: 4,
-                paddingBottom: 4,
-                paddingLeft: 8,
-                paddingRight: 10,
-                borderRadius: 12,
-                backgroundColor: '#eef3ef'
+                paddingTop: t.spacing.xs,
+                paddingBottom: t.spacing.xs,
+                paddingLeft: t.spacing.sm,
+                paddingRight: t.spacing.sm + 2,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.colors.surface
             },
             connectionChipConnected: {
-                backgroundColor: '#e6f5ec'
+                backgroundColor: t.colors.surface
             },
             connectionChipDisconnected: {
-                backgroundColor: '#f5e6e6'
+                backgroundColor: t.colors.surface
             },
             connectionDot: {
                 width: 8,
                 height: 8,
                 borderRadius: 4,
-                marginRight: 6
+                marginRight: t.spacing.xs + 2
             },
             connectionDotConnected: {
-                backgroundColor: '#3aa55c'
+                backgroundColor: t.colors.liveChatConnectedDot
             },
             connectionDotDisconnected: {
-                backgroundColor: '#c0392b'
+                backgroundColor: t.colors.liveChatDisconnectedDot
             },
             connectionText: {
-                fontSize: 12,
-                fontWeight: '600',
-                color: '#1f2d24'
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.liveChatHeaderText
             },
             userCountChip: {
-                marginLeft: 8,
-                paddingTop: 4,
-                paddingBottom: 4,
-                paddingLeft: 8,
-                paddingRight: 8,
-                borderRadius: 12,
-                backgroundColor: '#eef0f3'
+                marginLeft: t.spacing.sm,
+                paddingTop: t.spacing.xs,
+                paddingBottom: t.spacing.xs,
+                paddingLeft: t.spacing.sm,
+                paddingRight: t.spacing.sm,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.colors.surface
             },
             userCountText: {
-                fontSize: 12,
-                fontWeight: '600',
-                color: '#1f242d'
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.liveChatUserCountText
             }
         },
         bottomArea: {
             replyArea: {
-                marginTop: 15,
-                marginRight: 7.5,
-                marginLeft: 7.5
+                marginTop: t.spacing.lg,
+                marginRight: t.spacing.md,
+                marginLeft: t.spacing.md
             },
             separator: {
                 flexDirection: 'row',
                 justifyContent: 'space-between',
-                paddingBottom: 5,
-                paddingLeft: 10,
-                paddingRight: 10,
-                borderBottomWidth: 1,
-                borderColor: '#afafaf'
+                paddingBottom: t.spacing.xs,
+                paddingLeft: t.spacing.md,
+                paddingRight: t.spacing.md,
+                borderBottomWidth: hairline,
+                borderColor: t.colors.border
             }
         },
         commentsWrapper: {
-            paddingTop: 5,
+            paddingTop: t.spacing.xs,
             paddingLeft: 0,
             paddingRight: 0,
+            backgroundColor: t.colors.background
         },
         commentsListContent: {
-            paddingHorizontal: 7.5,
+            paddingHorizontal: t.spacing.lg
         },
         comment: {
             root: {
-                marginTop: 10
+                marginTop: t.spacing.lg
             },
             topRight: {
                 position: "absolute",
                 flexDirection: 'row',
-                // alignItems: 'center',
                 justifyContent: 'flex-end',
                 top: 0,
                 right: 0,
@@ -177,7 +209,8 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             },
             displayDate: {
                 alignSelf: 'center',
-                fontSize: 12,
+                fontSize: t.fontSize.base,
+                color: t.colors.textSecondary,
                 textAlignVertical: 'center',
             },
             pin: {
@@ -187,20 +220,27 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             },
             contentWrapper: {},
             text: {
-                marginLeft: 5,
-                marginTop: 10,
-                fontSize: 13,
+                marginLeft: t.spacing.xs,
+                marginTop: t.spacing.sm,
+                fontSize: t.fontSize.body,
+                lineHeight: 21,
+                color: t.colors.textPrimary
+            },
+            textLinkStyles: {
+                a: {
+                    color: t.colors.link
+                }
             },
             HTMLNodeStyleByClass: {
                 react: {
-                    paddingRight: 5
+                    paddingRight: t.spacing.xs
                 }
             },
             children: {
-                marginTop: 15,
+                marginTop: t.spacing.lg,
                 marginRight: 0,
                 marginBottom: 0,
-                marginLeft: 15
+                marginLeft: t.spacing.lg
             },
         },
         commentMenu: {
@@ -221,75 +261,64 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             modalView: {
                 width: '100%',
                 minWidth: 300,
-                margin: 20,
-                backgroundColor: "white",
-                borderRadius: 20,
+                margin: t.spacing.xl,
+                backgroundColor: t.colors.surfaceRaised,
+                borderRadius: t.radius.lg,
                 paddingTop: 35,
-                paddingLeft: 10,
-                paddingRight: 10,
-                paddingBottom: 20,
+                paddingLeft: t.spacing.md,
+                paddingRight: t.spacing.md,
+                paddingBottom: t.spacing.xl,
                 alignItems: "center",
-                shadowColor: "#000",
-                shadowOffset: {
-                    width: 0,
-                    height: 2
-                },
-                shadowOpacity: 0.25,
-                shadowRadius: 4,
-                elevation: 5
+                ...modalShadow
             },
             modalCancel: {
                 position: 'absolute',
-                top: 10,
-                right: 10
+                top: t.spacing.md,
+                right: t.spacing.md
             },
             loadingView: {
                 ...LoadingOverlay
             },
             saveButton: {
-                marginTop: 10
+                marginTop: t.spacing.md
             }
         },
         commentAreaMessage: {
             wrapper: {
                 flex: 1,
-                minHeight: '140px',
-                padding: '30px 0',
+                minHeight: 140,
+                paddingTop: 30,
+                paddingBottom: 30,
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderBottomStartRadius: 0,
-                borderBottomLeftRadius: 11,
-                borderBottomRightRadius: 11,
-                borderBottomEndRadius: 11
+                borderRadius: t.radius.md
             },
             message: {
-                paddingTop: 10,
-                paddingRight: 17,
-                paddingBottom: 10,
-                paddingLeft: 27,
-                borderTopLeftRadius: 0,
-                borderTopRightRadius: 7,
-                borderBottomRightRadius: 7,
-                borderBottomLeftRadius: 7,
-                backgroundColor: "#333",
+                paddingTop: t.spacing.sm + 2,
+                paddingRight: t.spacing.lg,
+                paddingBottom: t.spacing.sm + 2,
+                paddingLeft: t.spacing.lg,
+                borderRadius: t.radius.md,
+                backgroundColor: t.colors.surface,
                 marginTop: 0,
                 marginRight: "5%",
                 marginBottom: 0,
                 marginLeft: "5%",
             },
             messageText: {
-                marginRight: 10,
-                fontSize: 17,
-                fontWeight: "500",
+                marginRight: t.spacing.sm,
+                fontSize: t.fontSize.lg,
+                fontWeight: t.fontWeight.medium,
+                color: t.colors.textPrimary
             }
         },
         commentBottom: {
             root: {
-                marginTop: 10,
-                marginLeft: 5
+                marginTop: t.spacing.sm,
+                marginLeft: t.spacing.xs
             },
             replyAreaRoot: {
-                marginTop: 10
+                marginTop: t.spacing.sm
             },
             commentBottomToolbar: {
                 flexDirection: 'row',
@@ -297,10 +326,15 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             },
             commentBottomToolbarReply: {
                 flexDirection: 'row',
-                alignItems: 'center'
+                alignItems: 'center',
+                paddingTop: t.spacing.xs,
+                paddingBottom: t.spacing.xs
             },
             commentBottomToolbarReplyText: {
-                marginLeft: 5
+                marginLeft: t.spacing.xs,
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.replyButton
             },
             commentBottomToolbarReplyIcon: {
                 width: 15,
@@ -309,26 +343,28 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
         },
         commentNotices: {
             spamNotice: {
-                paddingTop: 15,
+                paddingTop: t.spacing.lg,
                 paddingRight: 0,
-                paddingBottom: 15,
+                paddingBottom: t.spacing.lg,
                 paddingLeft: 0,
-                fontSize: 12,
-                color: "red"
+                fontSize: t.fontSize.base,
+                color: t.colors.danger
             },
             requiresVerificationApprovalNotice: {
-                paddingTop: 15,
+                paddingTop: t.spacing.lg,
                 paddingRight: 0,
-                paddingBottom: 15,
+                paddingBottom: t.spacing.lg,
                 paddingLeft: 0,
-                fontSize: 12,
+                fontSize: t.fontSize.base,
+                color: t.colors.textSecondary
             },
             awaitingApprovalNotice: {
-                paddingTop: 15,
+                paddingTop: t.spacing.lg,
                 paddingRight: 0,
-                paddingBottom: 15,
+                paddingBottom: t.spacing.lg,
                 paddingLeft: 0,
-                fontSize: 12,
+                fontSize: t.fontSize.base,
+                color: t.colors.textSecondary
             }
         },
         commentReplyToggle: {
@@ -336,30 +372,65 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 flexDirection: 'row',
                 alignItems: "center",
                 justifyContent: 'flex-start',
-                marginTop: 10,
+                marginTop: t.spacing.sm,
+                paddingTop: t.spacing.xs,
+                paddingBottom: t.spacing.xs
             },
             text: {
-                fontSize: 12
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.medium,
+                color: t.colors.toggleRepliesButton
             },
-            count: {},
+            count: {
+                color: t.colors.toggleRepliesButton
+            },
             icon: {
                 width: 18,
                 aspectRatio: 1,
                 resizeMode: 'contain',
-                marginRight: 5
+                marginRight: t.spacing.xs
             },
         },
         commentTextArea: {
             textarea: {
                 alignSelf: 'stretch',
                 borderWidth: 1,
-                borderColor: 'black',
-                borderRadius: 11
+                borderColor: t.colors.border,
+                borderRadius: t.radius.md,
+                backgroundColor: t.colors.inputBackground
             },
             placeholder: {
                 position: 'absolute',
-                padding: 8,
-                color: '#000'
+                padding: t.spacing.sm,
+                color: t.colors.textSecondary
+            },
+            text: {
+                color: t.colors.textPrimary
+            },
+            toolbarRoot: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingTop: t.spacing.xs,
+                paddingBottom: t.spacing.xs
+            },
+            toolbarFormatButton: {
+                minWidth: 32,
+                alignItems: 'center',
+                paddingTop: t.spacing.xs,
+                paddingBottom: t.spacing.xs,
+                paddingLeft: t.spacing.sm,
+                paddingRight: t.spacing.sm,
+                marginRight: t.spacing.xs,
+                borderRadius: t.radius.sm,
+                backgroundColor: t.colors.surface
+            },
+            toolbarFormatButtonActive: {
+                backgroundColor: t.colors.pressed
+            },
+            toolbarFormatButtonText: {
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.textPrimary
             },
             toolbarButton: {
                 height: 18,
@@ -372,24 +443,62 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 alignItems: "center"
             },
             imageUploadModalContent: {
-                backgroundColor: "white",
-                borderRadius: 20,
+                backgroundColor: t.colors.surfaceRaised,
+                borderRadius: t.radius.lg,
                 padding: 35,
                 alignItems: "center",
-                shadowColor: "#000",
-                shadowOffset: {
-                    width: 0,
-                    height: 2
-                },
-                shadowOpacity: 0.25,
-                shadowRadius: 4,
-                elevation: 5
+                ...modalShadow
             },
             imageUploadModalProgressSpinnerSize: 100,
             imageUploadModalProgressText: {
-                marginTop: 10,
-                fontSize: 20,
-                fontWeight: 'bold'
+                marginTop: t.spacing.sm,
+                fontSize: t.fontSize.xl,
+                fontWeight: t.fontWeight.bold,
+                color: t.colors.textPrimary
+            }
+        },
+        mentionPopup: {
+            root: {
+                backgroundColor: t.colors.surfaceRaised,
+                borderRadius: t.radius.md,
+                borderWidth: 1,
+                borderColor: t.colors.border,
+                ...modalShadow
+            },
+            item: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingTop: t.spacing.sm,
+                paddingBottom: t.spacing.sm,
+                paddingLeft: t.spacing.md,
+                paddingRight: t.spacing.md
+            },
+            itemSelected: {
+                backgroundColor: t.colors.pressed
+            },
+            itemText: {
+                fontSize: t.fontSize.base,
+                color: t.colors.textPrimary
+            },
+            avatar: {
+                width: 24,
+                height: 24,
+                borderRadius: t.radius.pill,
+                marginRight: t.spacing.sm
+            },
+            loadingRow: {
+                padding: t.spacing.md
+            },
+            loadingText: {
+                fontSize: t.fontSize.base,
+                color: t.colors.textSecondary
+            },
+            emptyRow: {
+                padding: t.spacing.md
+            },
+            emptyText: {
+                fontSize: t.fontSize.base,
+                color: t.colors.textSecondary
             }
         },
         commentTextAreaEmoticonBar: {
@@ -397,10 +506,10 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 alignSelf: 'stretch',
                 flexDirection: 'row',
                 justifyContent: 'center',
-                padding: 10,
+                padding: t.spacing.sm,
             },
             button: {
-                marginRight: 20,
+                marginRight: t.spacing.xl,
             },
             icon: {
                 height: 20,
@@ -415,36 +524,27 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 right: 6,
                 width: 4,
                 height: 4,
-                borderTopLeftRadius: 10,
-                borderTopRightRadius: 10,
-                borderBottomRightRadius: 10,
-                borderBottomLeftRadius: 10,
-                backgroundColor: "lime"
+                borderRadius: 10,
+                backgroundColor: t.colors.onlineIndicator
             },
             offline: {
                 position: "absolute",
                 top: 6,
                 right: 6,
-                borderTopLeftRadius: 10,
-                borderTopRightRadius: 10,
-                borderBottomRightRadius: 10,
-                borderBottomLeftRadius: 10
+                borderRadius: 10
             }
         },
         commentUserBadge: {
             imageBadge: {
                 marginTop: 3,
-                marginRight: 5,
+                marginRight: t.spacing.xs,
                 marginBottom: 0,
                 marginLeft: 0,
-                paddingTop: 5,
-                paddingRight: 7,
-                paddingBottom: 5,
+                paddingTop: t.spacing.xs,
+                paddingRight: t.spacing.xs + 3,
+                paddingBottom: t.spacing.xs,
                 paddingLeft: 0,
-                borderTopLeftRadius: 4,
-                borderTopRightRadius: 4,
-                borderBottomRightRadius: 4,
-                borderBottomLeftRadius: 4,
+                borderRadius: t.radius.sm,
                 borderColor: "transparent",
                 backgroundColor: "transparent"
             },
@@ -455,23 +555,20 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             },
             textBadge: {
                 marginTop: 3,
-                marginRight: 5,
+                marginRight: t.spacing.xs,
                 marginBottom: 0,
                 marginLeft: 0,
-                paddingTop: 5,
-                paddingRight: 7,
-                paddingBottom: 5,
-                paddingLeft: 7,
-                borderTopLeftRadius: 4,
-                borderTopRightRadius: 4,
-                borderBottomRightRadius: 4,
-                borderBottomLeftRadius: 4,
+                paddingTop: t.spacing.xs,
+                paddingRight: t.spacing.xs + 3,
+                paddingBottom: t.spacing.xs,
+                paddingLeft: t.spacing.xs + 3,
+                borderRadius: t.radius.sm,
                 borderColor: "transparent",
                 backgroundColor: "transparent"
             },
             textBadgeText: {
-                fontSize: 12,
-                color: "#000",
+                fontSize: t.fontSize.base,
+                color: t.colors.textPrimary,
             }
         },
         commentUserInfo: {
@@ -480,65 +577,48 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 alignItems: 'center'
             },
             infoLeft: {
-                marginRight: 7
+                marginRight: t.spacing.sm + 2
             },
             infoRight: {
                 flexDirection: 'column',
                 justifyContent: 'center'
             },
             label: {
-                fontSize: 10,
-                textTransform: "uppercase",
-                fontWeight: "500",
-                color: "#666666"
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.medium,
+                color: t.colors.textSecondary
             },
             username: {
-                fontSize: 12,
-                fontWeight: "500",
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.textPrimary
             },
             usernameWithLink: {
-                color: "#000",
-                textDecorationLine: "underline",
-                textDecorationColor: "black",
-                textDecorationStyle: "solid"
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.link
             },
             avatarWrapper: {
                 position: "relative",
-                width: 36,
-                height: 36,
-                borderRadius: 36,
-                shadowRadius: 5,
-                shadowColor: '#000',
-                shadowOpacity: 1,
-                shadowOffset: {
-                    width: 6,
-                    height: 3
-                },
-                elevation: 2
+                width: t.avatar.md,
+                height: t.avatar.md,
+                borderRadius: t.avatar.md
             },
             avatarWrapperDefault: {
                 position: "relative",
-                width: 36,
-                height: 36,
-                borderRadius: 36,
-                borderWidth: 1,
-                borderColor: "#3f3f3f",
+                width: t.avatar.md,
+                height: t.avatar.md,
+                borderRadius: t.avatar.md,
+                borderWidth: hairline,
+                borderColor: t.colors.border,
                 borderStyle: "solid",
-                shadowRadius: 5,
-                shadowColor: '#000',
-                shadowOpacity: 1,
-                shadowOffset: {
-                    width: 6,
-                    height: 3
-                },
-                elevation: 2,
-                // otherwise the elevation causes the image to appear too dark since the default image has some transparency
-                backgroundColor: '#fff'
+                // The default avatar asset has transparency.
+                backgroundColor: t.colors.surfaceRaised
             },
             avatarImage: {
-                width: 36,
-                height: 36,
-                borderRadius: 36,
+                width: t.avatar.md,
+                height: t.avatar.md,
+                borderRadius: t.avatar.md,
             },
             avatarOnlineBadge: {
                 position: "absolute",
@@ -548,8 +628,8 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 height: 10,
                 borderRadius: 10,
                 borderWidth: 2,
-                borderColor: "#fff",
-                backgroundColor: "#3ddc84"
+                borderColor: t.colors.background,
+                backgroundColor: t.colors.onlineIndicator
             },
             avatarOfflineBadge: {
                 position: "absolute",
@@ -559,7 +639,7 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 height: 10,
                 borderRadius: 10,
                 borderWidth: 2,
-                borderColor: "#fff",
+                borderColor: t.colors.background,
                 backgroundColor: "transparent"
             }
         },
@@ -570,21 +650,31 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 marginTop: 0,
-                marginRight: 7,
+                marginRight: t.spacing.sm,
                 marginBottom: 0,
                 marginLeft: 2,
             },
             votesUpText: {
-                fontSize: 12,
-                marginRight: 5
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.voteCount,
+                marginRight: t.spacing.xs
             },
             votesDownText: {
-                fontSize: 12,
-                marginLeft: 5
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.voteCount,
+                marginLeft: t.spacing.xs
             },
             voteButton: {
-                height: 22,
-                justifyContent: 'center'
+                minHeight: 28,
+                minWidth: 28,
+                justifyContent: 'center',
+                alignItems: 'center',
+                paddingLeft: t.spacing.sm,
+                paddingRight: t.spacing.sm,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.colors.surface
             },
             voteButtonIcon: {
                 height: 12,
@@ -592,33 +682,32 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 resizeMode: 'center'
             },
             voteDivider: {
-                backgroundColor: '#c2c2c2',
+                backgroundColor: t.colors.voteDivider,
                 width: 1,
                 height: 20,
-                marginRight: 10,
-                marginLeft: 10
+                marginRight: t.spacing.sm,
+                marginLeft: t.spacing.sm
             },
             commentVoteAuth: {
                 maxWidth: 400,
-                marginTop: 10,
-                paddingTop: 9,
-                paddingRight: 12,
-                paddingBottom: 9,
-                paddingLeft: 12,
-                borderTopLeftRadius: 0,
-                borderTopRightRadius: 6,
-                borderBottomRightRadius: 6,
-                borderBottomLeftRadius: 6,
+                marginTop: t.spacing.sm,
+                paddingTop: t.spacing.sm,
+                paddingRight: t.spacing.md,
+                paddingBottom: t.spacing.sm,
+                paddingLeft: t.spacing.md,
+                borderRadius: t.radius.md,
                 borderWidth: 1,
-                borderColor: "#a2a2a2",
-                borderStyle: "solid"
+                borderColor: t.colors.border,
+                borderStyle: "solid",
+                backgroundColor: t.colors.surfaceRaised
             },
             authInput: {
-                marginTop: 10,
+                marginTop: t.spacing.sm,
                 marginRight: 0,
-                marginBottom: 10,
+                marginBottom: t.spacing.sm,
                 marginLeft: 0,
-                fontSize: 13
+                fontSize: t.fontSize.base,
+                color: t.colors.textPrimary
             },
             loadingView: {
                 ...LoadingOverlay
@@ -641,33 +730,27 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 alignItems: "center"
             },
             modalView: {
-                margin: 20,
-                backgroundColor: "white",
-                borderRadius: 20,
-                padding: 35,
+                margin: t.spacing.xl,
+                backgroundColor: t.colors.surfaceRaised,
+                borderRadius: t.radius.lg,
+                padding: t.spacing.xl,
                 alignItems: "center",
-                shadowColor: "#000",
-                shadowOffset: {
-                    width: 0,
-                    height: 2
-                },
-                shadowOpacity: 0.25,
-                shadowRadius: 4,
-                elevation: 5
+                ...modalShadow
             },
             menuOptionButton: {
                 flexDirection: 'row',
                 minWidth: 100,
                 justifyContent: 'flex-start',
                 alignItems: 'center',
-                marginBottom: 10,
-                padding: 10,
-                elevation: 2,
+                marginBottom: t.spacing.sm,
+                padding: t.spacing.sm + 2,
+                borderRadius: t.radius.sm
             },
             menuOptionText: {
-                paddingLeft: 10,
-                color: "black",
-                fontWeight: "bold",
+                paddingLeft: t.spacing.sm + 2,
+                color: t.colors.textPrimary,
+                fontSize: t.fontSize.body,
+                fontWeight: t.fontWeight.semibold,
                 textAlign: "left"
             },
             menuCancelIcon: {
@@ -678,8 +761,8 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             },
             modalCancel: {
                 position: 'absolute',
-                top: 10,
-                right: 10
+                top: t.spacing.md,
+                right: t.spacing.md
             },
             loadingView: {
                 ...LoadingOverlay
@@ -692,16 +775,18 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             },
             bellCount: {
                 position: "absolute",
-                top: -3,
-                left: 26,
-                fontSize: 11
+                top: -5,
+                left: 24,
+                fontSize: t.fontSize.base,
+                color: t.colors.textSecondary
             },
             bellCountNonZero: {
                 position: "absolute",
-                top: -3,
-                left: 26,
-                fontSize: 11,
-                color: 'red'
+                top: -5,
+                left: 24,
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.danger
             }
         },
         notificationList: {
@@ -711,18 +796,11 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 alignItems: "center",
             },
             root: {
-                margin: 20,
-                backgroundColor: "white",
-                borderRadius: 20,
-                padding: 10,
-                shadowColor: "#000",
-                shadowOffset: {
-                    width: 0,
-                    height: 2
-                },
-                shadowOpacity: 0.25,
-                shadowRadius: 4,
-                elevation: 5
+                margin: t.spacing.xl,
+                backgroundColor: t.colors.surfaceRaised,
+                borderRadius: t.radius.lg,
+                padding: t.spacing.md,
+                ...modalShadow
             },
             closeButton: {
                 position: 'absolute',
@@ -741,14 +819,15 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             subscriptionHeaderCheckBoxImage: {
                 width: 22,
                 height: 22,
-                marginRight: 5
+                marginRight: t.spacing.xs
             },
             subscriptionHeaderCheckBoxText: {},
             subscriptionHeaderText: {
-                fontSize: 12
+                fontSize: t.fontSize.base,
+                color: t.colors.textSecondary
             },
             notification: {
-                marginTop: 10,
+                marginTop: t.spacing.sm + 2,
                 flexDirection: 'column',
                 alignItems: 'flex-start'
             },
@@ -767,19 +846,17 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             notificationAvatar: {
                 width: 32,
                 height: 32,
-                marginRight: 10,
-                borderTopLeftRadius: 25,
-                borderTopRightRadius: 25,
-                borderBottomRightRadius: 25,
-                borderBottomLeftRadius: 25,
+                marginRight: t.spacing.sm + 2,
+                borderRadius: t.radius.pill,
             },
             notificationDate: {
-                fontSize: 12
+                fontSize: t.fontSize.base,
+                color: t.colors.textSecondary
             },
             notificationMenu: {},
             notificationMenuButton: {
-                paddingTop: 5,
-                paddingBottom: 5,
+                paddingTop: t.spacing.xs,
+                paddingBottom: t.spacing.xs,
             },
             notificationBottom: {
                 flexDirection: 'row',
@@ -789,31 +866,33 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 width: 10,
                 height: 10,
                 borderRadius: 10,
-                marginRight: 5,
-                backgroundColor: "lightgrey",
+                marginRight: t.spacing.xs,
+                backgroundColor: t.colors.border,
             },
             notificationIsUnreadCircle: {
                 width: 10,
                 height: 10,
                 borderRadius: 10,
-                marginRight: 5,
-                backgroundColor: "#2fccff",
+                marginRight: t.spacing.xs,
+                backgroundColor: t.colors.primary,
             },
         },
         paginationNext: {
             root: {
                 flexDirection: 'row',
-                paddingTop: 50,
+                paddingTop: t.spacing.xl,
                 alignItems: 'center',
                 justifyContent: 'space-around'
             },
             next: {
-                paddingTop: 10,
-                paddingRight: 20,
-                paddingBottom: 10,
-                paddingLeft: 20,
-                borderRadius: 7,
-                ...GreyButton
+                paddingTop: t.spacing.sm + 2,
+                paddingRight: t.spacing.xl,
+                paddingBottom: t.spacing.sm + 2,
+                paddingLeft: t.spacing.xl,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.colors.surface,
+                color: t.colors.loadMoreButtonText,
+                fontWeight: t.fontWeight.semibold
             },
             nextHTMLStyles: {
                 span: {
@@ -821,24 +900,29 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 }
             },
             all: {
-                paddingTop: 10,
-                paddingRight: 20,
-                paddingBottom: 10,
-                paddingLeft: 20,
-                borderRadius: 7,
-                ...GreyButton
+                paddingTop: t.spacing.sm + 2,
+                paddingRight: t.spacing.xl,
+                paddingBottom: t.spacing.sm + 2,
+                paddingLeft: t.spacing.xl,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.colors.surface,
+                color: t.colors.loadMoreButtonText,
+                fontWeight: t.fontWeight.semibold
             },
             allHTMLStyles: {
                 span: {
-                    fontWeight: 'bold'
+                    fontWeight: t.fontWeight.bold
                 }
             }
         },
         paginationPrev: {
             root: {
-                paddingTop: 50,
+                paddingTop: t.spacing.xl,
             },
-            text: {}
+            text: {
+                color: t.colors.loadMoreButtonText,
+                fontWeight: t.fontWeight.semibold
+            }
         },
         gifBrowser: {
             centeredView: {
@@ -852,27 +936,20 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             },
             modalView: {
                 minWidth: 300,
-                margin: 20,
-                backgroundColor: "white",
-                borderRadius: 20,
+                margin: t.spacing.xl,
+                backgroundColor: t.colors.surfaceRaised,
+                borderRadius: t.radius.lg,
                 paddingTop: 35,
-                paddingLeft: 10,
-                paddingRight: 10,
-                paddingBottom: 20,
+                paddingLeft: t.spacing.md,
+                paddingRight: t.spacing.md,
+                paddingBottom: t.spacing.xl,
                 alignItems: "flex-start",
-                shadowColor: "#000",
-                shadowOffset: {
-                    width: 0,
-                    height: 2
-                },
-                shadowOpacity: 0.25,
-                shadowRadius: 4,
-                elevation: 5
+                ...modalShadow
             },
             modalCancel: {
                 position: 'absolute',
-                top: 10,
-                right: 10
+                top: t.spacing.md,
+                right: t.spacing.md
             },
             modalCancelImage: {
                 width: 16,
@@ -880,32 +957,35 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             },
             searchInput: {
                 width: '100%',
-                marginBottom: 10,
-                paddingTop: 5,
-                paddingBottom: 5,
+                marginBottom: t.spacing.sm + 2,
+                paddingTop: t.spacing.xs + 2,
+                paddingBottom: t.spacing.xs + 2,
+                paddingLeft: t.spacing.sm + 2,
+                paddingRight: t.spacing.sm + 2,
                 borderWidth: 1,
-                borderColor: '#000',
-                borderRadius: 10
+                borderColor: t.colors.border,
+                borderRadius: t.radius.md,
+                backgroundColor: t.colors.inputBackground
             },
             list: {
                 width: '100%'
             },
             listImage: {
-                marginBottom: 5,
+                marginBottom: t.spacing.xs,
                 aspectRatio: 1,
                 resizeMode: 'stretch',
-                borderWidth: 1,
-                borderColor: 'red'
+                borderRadius: t.radius.sm
             },
             noResultsMessage: {
-                marginTop: 10,
-                marginBottom: 10,
-                textAlign: 'center'
+                marginTop: t.spacing.sm,
+                marginBottom: t.spacing.sm,
+                textAlign: 'center',
+                color: t.colors.textSecondary
             }
         },
         replyArea: {
             replyingTo: {
-                marginBottom: 5,
+                marginBottom: t.spacing.xs,
             },
             ssoLoginWrapper: {
                 flex: 1,
@@ -917,37 +997,31 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 alignItems: "center",
                 justifyContent: "center",
                 borderWidth: 1,
-                borderColor: "#bfbfbf",
+                borderColor: t.colors.border,
                 borderStyle: "solid",
-                borderTopLeftRadius: 0,
-                borderTopRightRadius: 11,
-                borderBottomRightRadius: 11,
-                borderBottomLeftRadius: 11
+                borderRadius: t.radius.md
             },
             ssoLoginButton: {
-                paddingTop: 10,
-                paddingRight: 17,
-                paddingBottom: 10,
-                paddingLeft: 27,
-                borderTopLeftRadius: 0,
-                borderTopRightRadius: 7,
-                borderBottomRightRadius: 7,
-                borderBottomLeftRadius: 7,
-                backgroundColor: "#333"
+                flexDirection: 'row',
+                alignItems: 'center',
+                ...filledButton,
+                paddingLeft: t.spacing.xl,
+                paddingRight: t.spacing.xl
             },
             ssoLoginButtonText: {
-                color: "#fff",
-                fontWeight: '500',
-                textAlign: 'center'
+                color: t.colors.onPrimary,
+                fontWeight: t.fontWeight.semibold,
+                textAlign: 'center',
+                marginLeft: t.spacing.sm
             },
             topBar: {
                 flexDirection: 'row',
                 justifyContent: 'space-between',
                 minHeight: 25,
                 marginTop: 0,
-                marginRight: 26,
-                marginBottom: 15,
-                marginLeft: 26,
+                marginRight: t.spacing.xl,
+                marginBottom: t.spacing.lg,
+                marginLeft: t.spacing.xl,
             },
             loggedInInfo: {
                 flexDirection: 'row',
@@ -955,27 +1029,20 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 minWidth: 150
             },
             topBarAvatarWrapper: {
-                height: 25,
-                width: 25,
-                marginRight: 5,
-                borderRadius: 25,
-                overflow: "hidden",
-                shadowRadius: 5,
-                shadowColor: '#000',
-                shadowOpacity: 1,
-                shadowOffset: {
-                    width: 6,
-                    height: 3
-                },
-                elevation: 2
+                height: t.avatar.sm,
+                width: t.avatar.sm,
+                marginRight: t.spacing.sm,
+                borderRadius: t.avatar.sm,
+                overflow: "hidden"
             },
             topBarAvatar: {
-                height: 25,
-                width: 25,
+                height: t.avatar.sm,
+                width: t.avatar.sm,
             },
             topBarUsername: {
                 overflow: "scroll",
-                fontWeight: "700",
+                fontWeight: t.fontWeight.bold,
+                color: t.colors.textPrimary,
                 flexWrap: 'nowrap'
             },
             topBarRight: {
@@ -995,25 +1062,22 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             },
             replyButton: {
                 flexDirection: 'row',
-                alignItems: 'flex-start',
+                alignItems: 'center',
                 justifyContent: 'space-between',
-                marginTop: 15,
-                marginBottom: 10,
+                marginTop: t.spacing.lg,
+                marginBottom: t.spacing.sm + 2,
                 marginRight: 0,
-                paddingTop: 10,
-                paddingRight: 20,
-                paddingBottom: 10,
-                paddingLeft: 20,
-                borderRadius: 7,
-                ...GreyButton
+                ...filledButton
             },
             replyButtonText: {
-                color: "#333"
+                color: t.colors.onPrimary,
+                fontWeight: t.fontWeight.semibold,
+                fontSize: t.fontSize.base
             },
             replyButtonIcon: {
                 width: 22,
                 height: 22,
-                marginLeft: 10,
+                marginLeft: t.spacing.sm + 2,
                 aspectRatio: 1,
                 resizeMode: 'stretch'
             },
@@ -1021,75 +1085,68 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 ...LoadingOverlay
             },
             error: {
-                margin: 5,
-                color: "#ff0000"
+                margin: t.spacing.xs,
+                color: t.colors.danger
             },
             userInfoInput: {
-                marginTop: 10,
+                marginTop: t.spacing.sm + 2,
                 marginRight: 0,
-                marginBottom: 10,
+                marginBottom: t.spacing.sm + 2,
                 marginLeft: 0,
-                fontSize: 13
+                fontSize: t.fontSize.base
             },
             emailReasoning: {
-                fontWeight: '600'
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.textPrimary
             },
             authInput: {
-                marginTop: 10,
-                paddingTop: 9,
-                paddingRight: 12,
-                paddingBottom: 9,
-                paddingLeft: 12,
-                borderTopLeftRadius: 0,
-                borderTopRightRadius: 6,
-                borderBottomRightRadius: 6,
-                borderBottomLeftRadius: 6,
-                fontSize: 14,
+                marginTop: t.spacing.sm + 2,
+                paddingTop: t.spacing.sm + 1,
+                paddingRight: t.spacing.md,
+                paddingBottom: t.spacing.sm + 1,
+                paddingLeft: t.spacing.md,
+                borderRadius: t.radius.md,
+                fontSize: t.fontSize.base,
                 borderWidth: 1,
-                borderColor: "#a2a2a2",
-                borderStyle: "solid"
+                borderColor: t.colors.border,
+                borderStyle: "solid",
+                backgroundColor: t.colors.inputBackground,
+                color: t.colors.textPrimary
             },
             solicitationInfo: {
-                marginTop: 10
+                marginTop: t.spacing.sm + 2,
+                color: t.colors.textSecondary
             },
             authInputSubmit: {
-                paddingTop: 10,
-                paddingRight: 27,
-                paddingBottom: 10,
-                paddingLeft: 27,
-                borderTopLeftRadius: 0,
-                borderTopRightRadius: 7,
-                borderBottomRightRadius: 7,
-                borderBottomLeftRadius: 7,
-                backgroundColor: "#333"
+                ...filledButton,
+                paddingLeft: t.spacing.xl,
+                paddingRight: t.spacing.xl
             },
             replyCancelButtonWrapper: {
                 position: 'absolute',
-                top: 10,
-                right: 10
+                top: t.spacing.sm + 2,
+                right: t.spacing.sm + 2
             },
             replyCancelButton: {
-                paddingTop: 10,
-                paddingRight: 10,
-                paddingBottom: 10,
-                paddingLeft: 10,
-                borderTopLeftRadius: 4,
-                borderTopRightRadius: 4,
-                borderBottomRightRadius: 4,
-                borderBottomLeftRadius: 4,
-                ...GreyButton
+                paddingTop: t.spacing.sm + 2,
+                paddingRight: t.spacing.sm + 2,
+                paddingBottom: t.spacing.sm + 2,
+                paddingLeft: t.spacing.sm + 2,
+                borderRadius: t.radius.sm,
+                backgroundColor: t.colors.surface
             }
         },
         selectSortDirection: {
             openButton: {
                 flexDirection: 'row',
                 alignItems: 'center',
-                padding: 5,
+                padding: t.spacing.xs,
             },
             text: {
-                marginRight: 5,
-                fontSize: 12,
-                fontWeight: '500'
+                marginRight: t.spacing.xs,
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.medium,
+                color: t.colors.textSecondary
             },
             downCarrot: {
                 position: 'relative',
@@ -1098,7 +1155,7 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 borderRightWidth: 5,
                 borderBottomWidth: 0,
                 borderLeftWidth: 5,
-                borderTopColor: "#000",
+                borderTopColor: t.colors.textSecondary,
                 borderRightColor: 'transparent',
                 borderBottomColor: 'transparent',
                 borderLeftColor: 'transparent',
@@ -1106,246 +1163,252 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
         },
         showHideCommentsToggle: {
             root: {
-                backgroundColor: "#333",
-                margin: 20,
-                paddingTop: 10,
-                paddingRight: 17,
-                paddingBottom: 10,
-                paddingLeft: 27,
-                borderRadius: 7,
+                backgroundColor: t.colors.primary,
+                margin: t.spacing.xl,
+                paddingTop: t.spacing.sm + 2,
+                paddingRight: t.spacing.lg,
+                paddingBottom: t.spacing.sm + 2,
+                paddingLeft: t.spacing.lg,
+                borderRadius: t.radius.md,
                 alignContent: 'center',
-                alignItems: 'center',
-                elevation: 1,
+                alignItems: 'center'
             },
             text: {
-                marginTop: 10,
-                marginBottom: 10,
-                color: "#fff",
-                fontSize: 16,
-                fontWeight: "500",
+                marginTop: t.spacing.sm + 2,
+                marginBottom: t.spacing.sm + 2,
+                color: t.colors.onPrimary,
+                fontSize: t.fontSize.body,
+                fontWeight: t.fontWeight.semibold,
             }
         },
         showNewLiveComments: {
             button: {
                 alignSelf: 'center',
                 flexDirection: 'row',
-                marginTop: 20,
+                alignItems: 'center',
+                marginTop: t.spacing.xl,
                 marginBottom: 0,
-                paddingTop: 5,
-                paddingRight: 10,
-                paddingBottom: 5,
-                paddingLeft: 10,
+                paddingTop: t.spacing.xs + 2,
+                paddingRight: t.spacing.md,
+                paddingBottom: t.spacing.xs + 2,
+                paddingLeft: t.spacing.md,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.colors.surface
             },
             count: {
                 minWidth: 20,
-                paddingRight: 5,
-                paddingLeft: 5,
-                marginRight: 6,
-                borderWidth: 1,
-                borderColor: '#a2a2a2',
-                borderStyle: 'solid',
-                borderTopLeftRadius: 4,
-                borderTopRightRadius: 0,
-                borderBottomRightRadius: 4,
-                borderBottomLeftRadius: 4,
-                fontWeight: '500',
+                marginRight: t.spacing.xs + 2,
+                fontWeight: t.fontWeight.semibold,
                 textAlign: 'center',
-                fontSize: 13
+                fontSize: t.fontSize.base,
+                color: t.colors.primary
             },
             text: {
-                paddingBottom: 2,
-                borderBottomWidth: 1,
-                borderBottomColor: '#a3a3a3',
-                fontWeight: '500',
-                fontSize: 12
+                fontWeight: t.fontWeight.semibold,
+                fontSize: t.fontSize.base,
+                color: t.colors.primary
+            }
+        },
+        liveChat: {
+            root: {
+                flex: 1,
+                backgroundColor: t.colors.background
+            },
+            composerWrapper: {
+                backgroundColor: t.colors.surface,
+                borderTopWidth: hairline,
+                borderColor: t.colors.border,
+                padding: t.spacing.md
             }
         },
         feed: {
             root: {
                 flex: 1,
-                backgroundColor: '#fff'
+                backgroundColor: t.colors.background
             },
             listContent: {
                 paddingHorizontal: 0,
-                paddingBottom: 16
+                paddingBottom: t.spacing.lg
             },
             emptyState: {
-                padding: 24,
+                padding: t.spacing.xl,
                 alignItems: 'center'
             },
             emptyStateText: {
-                color: '#888',
-                fontSize: 14
+                color: t.colors.textSecondary,
+                fontSize: t.fontSize.base
             },
             loadFailed: {
-                padding: 16,
+                padding: t.spacing.lg,
                 alignItems: 'center'
             },
             loadFailedText: {
-                color: '#b00',
-                fontSize: 14
+                color: t.colors.danger,
+                fontSize: t.fontSize.base
             },
             newPostsBanner: {
-                paddingVertical: 10,
-                paddingHorizontal: 16,
-                backgroundColor: '#1f6feb',
+                paddingVertical: t.spacing.sm + 2,
+                paddingHorizontal: t.spacing.lg,
+                backgroundColor: t.colors.primary,
                 alignItems: 'center'
             },
             newPostsBannerText: {
-                color: '#fff',
-                fontSize: 14,
-                fontWeight: '600'
+                color: t.colors.onPrimary,
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold
             },
             post: {
-                paddingVertical: 12,
-                paddingHorizontal: 16,
-                borderBottomWidth: 1,
-                borderBottomColor: '#eee'
+                paddingVertical: t.spacing.lg,
+                paddingHorizontal: t.spacing.lg,
+                borderBottomWidth: hairline,
+                borderBottomColor: t.colors.border
             },
             postHeader: {
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                marginBottom: 6
+                marginBottom: t.spacing.xs + 2
             },
             postTitle: {
-                fontSize: 16,
-                fontWeight: '600',
-                marginBottom: 4
+                fontSize: t.fontSize.lg,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.textPrimary,
+                marginBottom: t.spacing.xs
             },
             postAuthor: {
-                fontSize: 13,
-                color: '#666',
+                fontSize: t.fontSize.base,
+                color: t.colors.textSecondary,
                 flexShrink: 1
             },
             followPill: {
-                paddingVertical: 4,
-                paddingHorizontal: 12,
-                borderRadius: 16,
-                backgroundColor: '#1f6feb',
-                marginLeft: 8
+                paddingVertical: t.spacing.xs,
+                paddingHorizontal: t.spacing.md,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.colors.primary,
+                marginLeft: t.spacing.sm
             },
             followPillText: {
-                color: '#fff',
-                fontSize: 12,
-                fontWeight: '600'
+                color: t.colors.onPrimary,
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold
             },
             followPillFollowing: {
-                paddingVertical: 4,
-                paddingHorizontal: 12,
-                borderRadius: 16,
+                paddingVertical: t.spacing.xs,
+                paddingHorizontal: t.spacing.md,
+                borderRadius: t.radius.pill,
                 borderWidth: 1,
-                borderColor: '#c4c4c4',
+                borderColor: t.colors.border,
                 backgroundColor: 'transparent',
-                marginLeft: 8
+                marginLeft: t.spacing.sm
             },
             followPillFollowingText: {
-                color: '#444',
-                fontSize: 12,
-                fontWeight: '600'
+                color: t.colors.textSecondary,
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold
             },
             postContent: {
-                fontSize: 14,
-                color: '#222',
-                marginBottom: 6
+                fontSize: t.fontSize.body,
+                lineHeight: 21,
+                color: t.colors.textPrimary,
+                marginBottom: t.spacing.xs + 2
             },
             postDate: {
-                fontSize: 12,
-                color: '#999'
+                fontSize: t.fontSize.base,
+                color: t.colors.textSecondary
             },
             composer: {
-                padding: 12,
-                borderTopWidth: 1,
-                borderTopColor: '#eee',
-                backgroundColor: '#fafafa'
+                padding: t.spacing.md,
+                borderTopWidth: hairline,
+                borderTopColor: t.colors.border,
+                backgroundColor: t.colors.surface
             },
             composerInputTitle: {
                 borderWidth: 1,
-                borderColor: '#ddd',
-                borderRadius: 4,
-                padding: 8,
-                marginBottom: 8,
-                fontSize: 14,
-                color: '#222'
+                borderColor: t.colors.border,
+                borderRadius: t.radius.md,
+                padding: t.spacing.sm + 2,
+                marginBottom: t.spacing.sm,
+                fontSize: t.fontSize.base,
+                color: t.colors.textPrimary,
+                backgroundColor: t.colors.inputBackground
             },
             composerInput: {
                 borderWidth: 1,
-                borderColor: '#ddd',
-                borderRadius: 4,
-                padding: 8,
+                borderColor: t.colors.border,
+                borderRadius: t.radius.md,
+                padding: t.spacing.sm + 2,
                 minHeight: 60,
-                marginBottom: 8,
-                fontSize: 14,
-                color: '#222'
+                marginBottom: t.spacing.sm,
+                fontSize: t.fontSize.base,
+                color: t.colors.textPrimary,
+                backgroundColor: t.colors.inputBackground
             },
             composerSubmit: {
                 alignSelf: 'flex-end',
-                paddingVertical: 8,
-                paddingHorizontal: 16,
-                backgroundColor: '#1f6feb',
-                borderRadius: 4
+                paddingVertical: t.spacing.sm,
+                paddingHorizontal: t.spacing.lg,
+                backgroundColor: t.colors.primary,
+                borderRadius: t.radius.md
             },
             composerSubmitText: {
-                color: '#fff',
-                fontWeight: '600',
-                fontSize: 14
+                color: t.colors.onPrimary,
+                fontWeight: t.fontWeight.semibold,
+                fontSize: t.fontSize.base
             },
             composerSubmitDisabled: {
-                backgroundColor: '#9ab5dd'
+                backgroundColor: t.colors.pressed
             },
             customToolbar: {
                 flexDirection: 'row',
                 alignItems: 'center',
-                marginTop: 8,
+                marginTop: t.spacing.sm,
                 flexWrap: 'wrap'
             },
             customToolbarButton: {
                 flexDirection: 'row',
                 alignItems: 'center',
-                paddingVertical: 6,
-                paddingHorizontal: 10,
-                marginRight: 8,
-                borderRadius: 4,
-                backgroundColor: '#f2f2f2'
+                paddingVertical: t.spacing.xs + 2,
+                paddingHorizontal: t.spacing.sm + 2,
+                marginRight: t.spacing.sm,
+                borderRadius: t.radius.sm,
+                backgroundColor: t.colors.surface
             },
             customToolbarButtonIcon: {
                 width: 16,
                 height: 16,
-                marginRight: 6,
+                marginRight: t.spacing.xs + 2,
                 resizeMode: 'contain'
             },
             customToolbarButtonLabel: {
-                fontSize: 12,
-                color: '#222'
+                fontSize: t.fontSize.base,
+                color: t.colors.textPrimary
             },
             composerMediaToolbar: {
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'flex-start',
-                marginBottom: 8
+                marginBottom: t.spacing.sm
             },
             composerMediaAttachButton: {
-                paddingVertical: 6,
-                paddingHorizontal: 12,
-                borderWidth: 1,
-                borderColor: '#a2a2a2',
-                borderRadius: 4,
-                backgroundColor: '#fbfbfb'
+                paddingVertical: t.spacing.xs + 2,
+                paddingHorizontal: t.spacing.md,
+                borderRadius: t.radius.md,
+                backgroundColor: t.colors.surface
             },
             composerMediaAttachButtonText: {
-                fontSize: 13,
-                color: '#222'
+                fontSize: t.fontSize.base,
+                color: t.colors.textPrimary
             },
             composerMediaPreviewStrip: {
-                marginBottom: 8
+                marginBottom: t.spacing.sm
             },
             composerMediaPreviewItem: {
                 width: 80,
                 height: 80,
-                marginRight: 8,
-                borderRadius: 4,
+                marginRight: t.spacing.sm,
+                borderRadius: t.radius.sm,
                 overflow: 'hidden',
-                backgroundColor: '#eee'
+                backgroundColor: t.colors.surface
             },
             composerMediaPreviewImage: {
                 width: 80,
@@ -1357,14 +1420,14 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 top: 2,
                 right: 2,
                 paddingVertical: 2,
-                paddingHorizontal: 6,
+                paddingHorizontal: t.spacing.xs + 2,
                 backgroundColor: 'rgba(0,0,0,0.6)',
-                borderRadius: 10
+                borderRadius: t.radius.pill
             },
             composerMediaPreviewRemoveText: {
-                color: '#fff',
-                fontSize: 11,
-                fontWeight: '700'
+                color: '#FFFFFF',
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.bold
             },
             composerMediaPreviewProgress: {
                 position: 'absolute',
@@ -1376,65 +1439,65 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
                 alignItems: 'center'
             },
             composerMediaPreviewProgressText: {
-                color: '#fff',
-                fontSize: 11
+                color: '#FFFFFF',
+                fontSize: t.fontSize.base
             },
             composerMediaPreviewError: {
-                fontSize: 11,
-                color: '#b00',
-                marginBottom: 4
+                fontSize: t.fontSize.base,
+                color: t.colors.danger,
+                marginBottom: t.spacing.xs
             },
             postMediaGallery: {
-                marginTop: 6,
-                marginBottom: 6
+                marginTop: t.spacing.xs + 2,
+                marginBottom: t.spacing.xs + 2
             },
             postMediaImage: {
                 width: 200,
                 height: 200,
-                marginRight: 8,
-                borderRadius: 4,
+                marginRight: t.spacing.sm,
+                borderRadius: t.radius.md,
                 resizeMode: 'cover'
             },
             reactionsRow: {
                 flexDirection: 'row',
                 alignItems: 'center',
                 flexWrap: 'wrap',
-                marginTop: 8
+                marginTop: t.spacing.sm
             },
             reactionChip: {
                 flexDirection: 'row',
                 alignItems: 'center',
-                paddingVertical: 4,
-                paddingHorizontal: 10,
-                borderRadius: 14,
-                backgroundColor: '#f0f2f5',
-                marginRight: 6,
-                marginBottom: 6
+                paddingVertical: t.spacing.xs,
+                paddingHorizontal: t.spacing.sm + 2,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.colors.surface,
+                marginRight: t.spacing.xs + 2,
+                marginBottom: t.spacing.xs + 2
             },
             reactionChipActive: {
-                backgroundColor: '#dbeafe'
+                backgroundColor: t.colors.pressed
             },
             reactionChipGlyph: {
-                fontSize: 14,
-                marginRight: 4
+                fontSize: t.fontSize.base,
+                marginRight: t.spacing.xs
             },
             reactionChipCount: {
-                fontSize: 12,
-                color: '#222',
-                fontWeight: '500'
+                fontSize: t.fontSize.base,
+                color: t.colors.textPrimary,
+                fontWeight: t.fontWeight.medium
             },
             reactionPickerButton: {
-                paddingVertical: 4,
-                paddingHorizontal: 10,
-                borderRadius: 14,
-                backgroundColor: '#eef2ff',
-                marginRight: 6,
-                marginBottom: 6
+                paddingVertical: t.spacing.xs,
+                paddingHorizontal: t.spacing.sm + 2,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.colors.surface,
+                marginRight: t.spacing.xs + 2,
+                marginBottom: t.spacing.xs + 2
             },
             reactionPickerButtonText: {
-                fontSize: 12,
-                color: '#1f3a93',
-                fontWeight: '600'
+                fontSize: t.fontSize.base,
+                color: t.colors.primary,
+                fontWeight: t.fontWeight.semibold
             },
             reactionPickerOverlay: {
                 flex: 1,
@@ -1444,19 +1507,15 @@ export function getDefaultFastCommentsStyles(): IFastCommentsStyles {
             },
             reactionPickerSheet: {
                 flexDirection: 'row',
-                paddingVertical: 12,
-                paddingHorizontal: 16,
-                backgroundColor: '#fff',
-                borderRadius: 16,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.2,
-                shadowRadius: 6,
-                elevation: 4
+                paddingVertical: t.spacing.md,
+                paddingHorizontal: t.spacing.lg,
+                backgroundColor: t.colors.surfaceRaised,
+                borderRadius: t.radius.lg,
+                ...modalShadow
             },
             reactionPickerItem: {
-                paddingVertical: 6,
-                paddingHorizontal: 8,
+                paddingVertical: t.spacing.xs + 2,
+                paddingHorizontal: t.spacing.sm,
                 marginHorizontal: 2
             },
             reactionPickerItemGlyph: {

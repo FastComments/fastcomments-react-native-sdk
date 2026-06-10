@@ -76,27 +76,29 @@ export function CommentBottom(props: CommentBottomProps) {
                         onVoteSuccess={onVoteSuccess}
                     />
                 )}
-                <TouchableOpacity
-                    testID={`replyButton-${comment._id}`}
-                    accessibilityLabel="replyButton"
-                    style={styles.commentBottom?.commentBottomToolbarReply}
-                    onPress={async () => {
-                        const canClose = await requestSetReplyingTo!(isReplyBoxOpen ? null : comment);
-                        if (canClose === CAN_CLOSE) setIsReplyBoxOpen(!isReplyBoxOpen);
-                    }}
-                >
-                    <Image
-                        source={
-                            imageAssets[
-                                isReplyBoxOpen
-                                    ? FastCommentsImageAsset.ICON_REPLY_ARROW_ACTIVE
-                                    : FastCommentsImageAsset.ICON_REPLY_ARROW_INACTIVE
-                            ]
-                        }
-                        style={styles.commentBottom?.commentBottomToolbarReplyIcon}
-                    />
-                    <Text style={styles.commentBottom?.commentBottomToolbarReplyText}>{translations.REPLY}</Text>
-                </TouchableOpacity>
+                {config.maxReplyDepth !== 0 && (
+                    <TouchableOpacity
+                        testID={`replyButton-${comment._id}`}
+                        accessibilityLabel="replyButton"
+                        style={styles.commentBottom?.commentBottomToolbarReply}
+                        onPress={async () => {
+                            const canClose = await requestSetReplyingTo!(isReplyBoxOpen ? null : comment);
+                            if (canClose === CAN_CLOSE) setIsReplyBoxOpen(!isReplyBoxOpen);
+                        }}
+                    >
+                        <Image
+                            source={
+                                imageAssets[
+                                    isReplyBoxOpen
+                                        ? FastCommentsImageAsset.ICON_REPLY_ARROW_ACTIVE
+                                        : FastCommentsImageAsset.ICON_REPLY_ARROW_INACTIVE
+                                ]
+                            }
+                            style={styles.commentBottom?.commentBottomToolbarReplyIcon}
+                        />
+                        <Text style={styles.commentBottom?.commentBottomToolbarReplyText}>{translations.REPLY}</Text>
+                    </TouchableOpacity>
+                )}
             </View>
             {isReplyBoxOpen && !config.useSingleReplyField && (
                 <View

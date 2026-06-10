@@ -12,7 +12,7 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "jsx": "react-jsx",
-    "lib": ["esnext"],
+    "lib": ["esnext", "dom"],
     "types": ["jest", "react-native"],
     "module": "esnext",
     "moduleResolution": "node",

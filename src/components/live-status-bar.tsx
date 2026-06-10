@@ -30,6 +30,8 @@ export function LiveStatusBar({ store, styles }: LiveStatusBarProps) {
                 ]}
             >
                 <View
+                    testID="connectionDot"
+                    accessibilityLabel="connectionDot"
                     style={[
                         bar?.connectionDot,
                         wsConnected ? bar?.connectionDotConnected : bar?.connectionDotDisconnected,

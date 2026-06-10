@@ -1,6 +1,6 @@
 {
   "name": "fastcomments-react-native-sdk",
-  "version": "4.0.1",
+  "version": "4.1.0",
   "description": "React Native FastComments Components. Add live commenting to any React Native application.",
   "main": "index.ts",
   "react-native": "index.ts",
@@ -23,6 +23,7 @@
     "clean": "ts-clean",
     "test": "jest",
     "test-ui": "jest --config tests-ui/jest.config.js",
+    "test-web": "npm --prefix example-web run test",
     "compile-test": "tsc --noEmit",
     "compile": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",

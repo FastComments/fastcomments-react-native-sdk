@@ -1,7 +1,7 @@
 import { CommentAreaMessage } from './comment-area-message';
 import { ActivityIndicator, Alert, BackHandler, Text, View } from 'react-native';
 import { FastCommentsLiveCommentingService } from '../services/fastcomments-live-commenting';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     IFastCommentsStyles,
     FastCommentsCallbacks,
@@ -10,7 +10,8 @@ import {
     FastCommentsImageAsset,
 } from '../types';
 import { CallbackObserver, LiveCommentingBottomArea } from './live-commenting-bottom-area';
-import { getDefaultFastCommentsStyles } from '../resources';
+import { resolveStyles } from '../resources/resolve-styles';
+import { FastCommentsThemeOverrides } from '../types/fastcomments-theme';
 import { FastCommentsRNConfig } from '../types/react-native-config';
 import { ShowHideCommentsToggle } from './show-hide-comments-toggle';
 import { LiveCommentingList } from './live-commenting-list';
@@ -23,13 +24,16 @@ import { useStoreValue } from '../store/hooks';
 
 export interface FastCommentsLiveCommentingProps {
     config: FastCommentsRNConfig;
+    /** Semantic design tokens; generates the whole default style tree. **/
+    theme?: FastCommentsThemeOverrides;
+    /** Raw style overrides. With `theme`, merged on top of the themed tree; alone, replaces the defaults entirely (legacy behavior). **/
     styles?: IFastCommentsStyles;
     callbacks?: FastCommentsCallbacks;
     assets?: ImageAssetConfig;
 }
 
-export function FastCommentsLiveCommenting({ config, styles, callbacks, assets }: FastCommentsLiveCommentingProps) {
-    if (!styles) styles = getDefaultFastCommentsStyles();
+export function FastCommentsLiveCommenting({ config, theme, styles: stylesProp, callbacks, assets }: FastCommentsLiveCommentingProps) {
+    const styles = useMemo(() => resolveStyles(stylesProp, theme), [stylesProp, theme]);
 
     const storeRef = useRef<FastCommentsStore | null>(null);
     if (storeRef.current === null) {
@@ -172,7 +176,7 @@ export function FastCommentsLiveCommenting({ config, styles, callbacks, assets }
     ) {
         if (isLoading) {
             return (
-                <View style={[styles.root, styles.loadingOverlay]}>
+                <View style={[styles.root, styles.loadingOverlay]} testID="loadingOverlay">
                     <ActivityIndicator size="large" />
                 </View>
             );

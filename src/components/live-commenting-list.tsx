@@ -4,14 +4,14 @@ import RenderHtml, {
     RenderHTMLConfigProvider,
     TRenderEngineProvider,
 } from 'react-native-render-html';
-import { ActivityIndicator, FlatList, ListRenderItemInfo, useWindowDimensions, View, Text } from 'react-native';
+import { ActivityIndicator, FlatList, ListRenderItemInfo, NativeScrollEvent, NativeSyntheticEvent, useWindowDimensions, View, Text } from 'react-native';
 import { FastCommentsCallbacks, IFastCommentsStyles, ImageAssetConfig, RNComment } from '../types';
-import React, { MutableRefObject, useMemo, useState } from 'react';
+import React, { MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { PaginationNext } from './pagination-next';
 import { PaginationPrev } from './pagination-prev';
 import { canPaginateNext, paginateNext, paginatePrev } from '../services/pagination';
 import { CommentViewProps, FastCommentsCommentView } from './comment';
-import { FastCommentsLiveCommentingService } from '../services/fastcomments-live-commenting';
+import { FastCommentsLiveCommentingService, isLiveChatStyle } from '../services/fastcomments-live-commenting';
 import { LiveCommentingTopArea } from './live-commenting-top-area';
 import { FastCommentsRNConfig } from '../types/react-native-config';
 import { CallbackObserver } from './live-commenting-bottom-area';
@@ -117,8 +117,47 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
             ? null
             : <PaginationNext store={store} styles={styles} doPaginate={doPaginateNext} />;
 
+    // Chat mode: chronological list, newest at the bottom. Older history loads
+    // from the TOP edge, auto-scroll keeps the newest message in view like the
+    // Android LiveChatView (pause while scrolled up, resume at the bottom).
+    const chatStyle = isLiveChatStyle(config);
+    const listRef = useRef<FlatList<RNComment>>(null);
+    const isNearBottomRef = useRef(true);
+    const lastCommentIdRef = useRef<string | undefined>(undefined);
+    const currentUserId = useStoreValue(store, (s) => {
+        const user = s.currentUser;
+        return user && 'id' in user ? user.id : undefined;
+    });
+    const lastComment = chatStyle && viewableComments.length > 0
+        ? viewableComments[viewableComments.length - 1]
+        : undefined;
+    useEffect(() => {
+        if (!chatStyle || !lastComment) return;
+        const previousId = lastCommentIdRef.current;
+        lastCommentIdRef.current = lastComment._id;
+        if (previousId === lastComment._id) return;
+        // Initial load also lands here, scrolling the chat to the newest message.
+        if (isNearBottomRef.current || (currentUserId !== undefined && lastComment.userId === currentUserId)) {
+            listRef.current?.scrollToEnd({ animated: true });
+        }
+    }, [chatStyle, lastComment?._id, currentUserId]);
+
+    const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        if (!chatStyle) return;
+        const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+        const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+        isNearBottomRef.current = distanceFromBottom < 80;
+        if (contentOffset.y < 40 && !isFetchingNextPage && canPaginateNext(store)) {
+            // Known v1 limitation: prepending can shift the scroll position on
+            // RN versions without maintainVisibleContentPosition on Android.
+            doPaginateNext(false);
+        }
+    };
+
     const onEndReached = async () => {
-        if (enableInfiniteScrolling && canPaginateNext(store)) {
+        // In chat mode the bottom edge is the newest message; older history
+        // loads from the top via onScroll instead.
+        if (!chatStyle && enableInfiniteScrolling && canPaginateNext(store)) {
             await doPaginateNext(false);
         }
     };
@@ -177,11 +216,13 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
     return (
         <TRenderEngineProvider
             baseStyle={styles.comment?.text}
+            tagsStyles={styles.comment?.textLinkStyles}
             classesStyles={styles.comment?.HTMLNodeStyleByClass}
             customHTMLElementModels={customHTMLElementModels}
         >
             <RenderHTMLConfigProvider>
                 <FlatList
+                    ref={listRef}
                     testID="recyclerViewComments"
                     accessibilityLabel="recyclerViewComments"
                     style={styles.commentsWrapper}
@@ -189,6 +230,8 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
                     data={viewableComments}
                     keyExtractor={(item, index) => (item && item._id !== undefined ? item._id : `missing-${index}`)}
                     maxToRenderPerBatch={PAGE_SIZE}
+                    onScroll={chatStyle ? onScroll : undefined}
+                    scrollEventThrottle={chatStyle ? 64 : undefined}
                     onEndReachedThreshold={0.3}
                     onEndReached={onEndReached}
                     renderItem={renderItem}

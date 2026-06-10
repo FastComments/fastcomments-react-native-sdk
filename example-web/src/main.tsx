@@ -1,11 +1,13 @@
 import * as React from 'react';
 import { useState } from 'react';
 import { AppRegistry } from 'react-native';
-import { FastCommentsLiveCommenting } from '../../index';
+import { FastCommentsLiveCommenting, FastCommentsLiveChat, getDarkTheme } from '../../index';
 import type { FastCommentsCommentWidgetConfig } from 'fastcomments-typescript';
 
 // Browser equivalent of example/src/AppCommenting.tsx. Routes API calls
 // through the Vite dev proxy so localhost dev avoids CORS.
+// Query params: ?theme=dark renders the dark token set, ?widget=chat renders
+// the FastCommentsLiveChat preset widget.
 function AppCommentingWeb() {
   const [config] = useState<FastCommentsCommentWidgetConfig>({
     tenantId: 'demo',
@@ -15,7 +17,12 @@ function AppCommentingWeb() {
     apiHost: '/_fc',
   } as FastCommentsCommentWidgetConfig);
 
-  return <FastCommentsLiveCommenting config={config} />;
+  const params = new URLSearchParams(window.location.search);
+  const theme = params.get('theme') === 'dark' ? getDarkTheme() : undefined;
+  if (params.get('widget') === 'chat') {
+    return <FastCommentsLiveChat config={config} theme={theme} />;
+  }
+  return <FastCommentsLiveCommenting config={config} theme={theme} />;
 }
 
 const appName = 'FastcommentsReactNativeWebExample';

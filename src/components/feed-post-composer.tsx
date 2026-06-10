@@ -131,7 +131,9 @@ export function FeedPostComposer({
             }
             const params: CreateFeedPostParams = {
                 title: title.trim() ? title.trim() : undefined,
-                contentHTML: content.trim() ? '<p>' + content.trim() + '</p>' : undefined,
+                // Newlines become <br> like the web feed widget; <p> is not in the
+                // server's allowed tags and gets entity-escaped into visible text.
+                contentHTML: content.trim() ? content.trim().replace(/\n/g, '<br>') : undefined,
                 media: uploadedMedia.length > 0 ? uploadedMedia : undefined,
             };
             await submit(params);

@@ -24,6 +24,7 @@ export * from './feed-post-media-gallery';
 export * from './feed-post-reactions';
 export * from './feed-post-row';
 export * from './gif-browser';
+export * from './live-chat';
 export * from './live-commenting';
 export * from './live-commenting-bottom-area';
 export * from './live-commenting-list';

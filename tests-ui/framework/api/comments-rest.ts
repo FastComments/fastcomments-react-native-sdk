@@ -48,6 +48,27 @@ export async function seedComment(params: SeedCommentParams): Promise<string> {
  * Returns the most recent comment id for a urlId, polling up to 3 times with
  * 500ms gaps to absorb the eventual-consistency window.
  */
+/** Returns the most recent comment's server-rendered HTML body, or null. */
+export async function fetchLatestCommentHTML(tenant: TestTenant, urlId: string): Promise<string | null> {
+    const sdk = new FastCommentsServerSDK({ basePath: FC_HOST, apiKey: tenant.apiKey });
+    for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+            logHttp('SDK', 'getComments', { tenantId: tenant.tenantId, urlId, limit: 1 });
+            const json = await sdk.defaultApi.getComments({
+                tenantId: tenant.tenantId,
+                urlId,
+                limit: 1,
+            });
+            const html = json.comments && json.comments[0] ? json.comments[0].commentHTML : undefined;
+            if (typeof html === 'string') return html;
+        } catch (e) {
+            logHttp('fetchLatestCommentHTML attempt failed:', (e as Error).message);
+        }
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+    }
+    return null;
+}
+
 export async function fetchLatestCommentId(tenant: TestTenant, urlId: string): Promise<string | null> {
     const sdk = new FastCommentsServerSDK({ basePath: FC_HOST, apiKey: tenant.apiKey });
     for (let attempt = 0; attempt < 3; attempt++) {

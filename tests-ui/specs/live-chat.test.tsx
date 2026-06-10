@@ -1,13 +1,9 @@
 /**
- * Ports LiveChat scenarios -> RN SDK.
- *
- * The RN SDK does not have a separate "live chat" component; it's the same
- * FastCommentsLiveCommenting wrapper with chat-style config flags
- * (showLiveRightAway, defaultSortDirection='NF', newCommentsToBottom). Tests
- * configure those flags explicitly.
- *
- * connectionStatusText / userCountText (the Android live-chat header strip)
- * are not currently rendered by the RN SDK - tracked as a feature gap.
+ * Ports LiveChat scenarios -> RN SDK, driving FastCommentsLiveCommenting with
+ * raw chat-style config flags. This is the regression suite for the manual
+ * flag path; the dedicated <FastCommentsLiveChat> widget (presets, header
+ * strip, auto-scroll, load-older) is covered in live-chat-widget.test.tsx,
+ * and the header strip itself in live-status.test.tsx.
  */
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';

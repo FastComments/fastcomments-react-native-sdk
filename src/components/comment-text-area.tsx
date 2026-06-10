@@ -308,20 +308,9 @@ export function CommentTextArea({
         };
     }
 
-    const toolbarButtonStyle = useMemo(() => ({
-        backgroundColor: hasDarkBackground ? '#444' : 'white',
-        paddingHorizontal: 8,
-        paddingVertical: 6,
-        borderRadius: 4,
-        borderWidth: 1,
-        borderColor: styles.commentTextArea?.textarea?.borderColor || (hasDarkBackground ? '#555' : '#a2a2a2'),
-        minWidth: 28,
-        alignItems: 'center' as const,
-        justifyContent: 'center' as const,
-        marginRight: 6,
-    }), [hasDarkBackground, styles.commentTextArea?.textarea?.borderColor]);
-
-    const activeBackground = hasDarkBackground ? '#666' : '#d8d8d8';
+    const toolbarButtonStyle = styles.commentTextArea?.toolbarFormatButton;
+    const toolbarButtonActiveStyle = styles.commentTextArea?.toolbarFormatButtonActive;
+    const toolbarButtonTextStyle = styles.commentTextArea?.toolbarFormatButtonText;
 
     return (
         <View ref={wrapperRef} style={{ width: '100%', flex: 1 }}>
@@ -390,58 +379,50 @@ export function CommentTextArea({
                 </ScrollView>
             )}
 
-            <View style={{
-                backgroundColor: hasDarkBackground ? '#2c2c2c' : '#f8f8f8',
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'flex-start',
-                flexWrap: 'wrap',
-            }}>
+            <View style={styles.commentTextArea?.toolbarRoot}>
                 {buttons.bold && (
                     <TouchableOpacity
-                        style={[toolbarButtonStyle, active.bold && { backgroundColor: activeBackground }]}
+                        style={[toolbarButtonStyle, active.bold && toolbarButtonActiveStyle]}
                         onPress={() => editorRef.current?.toggleBold()}
                         activeOpacity={0.7}
                     >
-                        <Text style={{ fontWeight: 'bold', fontSize: 14, color: hasDarkBackground ? '#fff' : '#333' }}>B</Text>
+                        <Text style={[toolbarButtonTextStyle, { fontWeight: 'bold' }]}>B</Text>
                     </TouchableOpacity>
                 )}
                 {buttons.italic && (
                     <TouchableOpacity
-                        style={[toolbarButtonStyle, active.italic && { backgroundColor: activeBackground }]}
+                        style={[toolbarButtonStyle, active.italic && toolbarButtonActiveStyle]}
                         onPress={() => editorRef.current?.toggleItalic()}
                         activeOpacity={0.7}
                     >
-                        <Text style={{ fontStyle: 'italic', fontSize: 14, color: hasDarkBackground ? '#fff' : '#333' }}>I</Text>
+                        <Text style={[toolbarButtonTextStyle, { fontStyle: 'italic' }]}>I</Text>
                     </TouchableOpacity>
                 )}
                 {buttons.underline && (
                     <TouchableOpacity
-                        style={[toolbarButtonStyle, active.underline && { backgroundColor: activeBackground }]}
+                        style={[toolbarButtonStyle, active.underline && toolbarButtonActiveStyle]}
                         onPress={() => editorRef.current?.toggleUnderline()}
                         activeOpacity={0.7}
                     >
-                        <Text style={{ textDecorationLine: 'underline', fontSize: 14, color: hasDarkBackground ? '#fff' : '#333' }}>U</Text>
+                        <Text style={[toolbarButtonTextStyle, { textDecorationLine: 'underline' }]}>U</Text>
                     </TouchableOpacity>
                 )}
                 {buttons.strikethrough && (
                     <TouchableOpacity
-                        style={[toolbarButtonStyle, active.strikethrough && { backgroundColor: activeBackground }]}
+                        style={[toolbarButtonStyle, active.strikethrough && toolbarButtonActiveStyle]}
                         onPress={() => editorRef.current?.toggleStrikeThrough()}
                         activeOpacity={0.7}
                     >
-                        <Text style={{ textDecorationLine: 'line-through', fontSize: 14, color: hasDarkBackground ? '#fff' : '#333' }}>S</Text>
+                        <Text style={[toolbarButtonTextStyle, { textDecorationLine: 'line-through' }]}>S</Text>
                     </TouchableOpacity>
                 )}
                 {buttons.code && (
                     <TouchableOpacity
-                        style={[toolbarButtonStyle, active.code && { backgroundColor: activeBackground }]}
+                        style={[toolbarButtonStyle, active.code && toolbarButtonActiveStyle]}
                         onPress={() => editorRef.current?.toggleInlineCode()}
                         activeOpacity={0.7}
                     >
-                        <Text style={{ fontFamily: 'monospace', fontSize: 12, color: hasDarkBackground ? '#fff' : '#333' }}>{"<>"}</Text>
+                        <Text style={[toolbarButtonTextStyle, { fontFamily: 'monospace' }]}>{"<>"}</Text>
                     </TouchableOpacity>
                 )}
                 {buttons.image && pickImage && (

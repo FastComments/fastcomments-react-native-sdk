@@ -44,6 +44,36 @@ This library uses [`react-native-enriched`](https://github.com/software-mansion/
 
 `react-native-enriched` requires the React Native New Architecture (Fabric) on native, and a bundler that resolves package `exports` conditions (Metro with package exports / RN 0.72+). Web support is currently experimental.
 
+### Widgets
+
+The SDK ships three widgets, mirroring the FastComments Android SDK:
+
+- `FastCommentsLiveCommenting` - threaded commenting with votes, replies, pagination, mentions, notifications, and live updates.
+- `FastCommentsLiveChat` - a chat preset over the same engine: chronological messages with new ones at the bottom, the composer below the list, a live header strip (connection dot + user count), infinite history loaded by scrolling up, auto-scroll to new messages, no votes or reply threading. Every preset can be overridden via `config`.
+- `FastCommentsFeed` - a social feed with post composer, media, reactions, follows, and live new-post banners.
+
+```tsx
+    <FastCommentsLiveChat config={{ tenantId: 'demo', urlId: 'my-room' }}/>
+```
+
+### Theming
+
+The default look is generated from a set of semantic design tokens (`FastCommentsTheme`): colors, spacing, radii, font sizes, font weights, and avatar sizes. Pass partial token overrides through the `theme` prop on any widget and the entire style tree restyles consistently:
+
+```tsx
+    <FastCommentsLiveCommenting config={config} theme={{ colors: { primary: '#FF5500' } }}/>
+```
+
+Dark mode is one token set away:
+
+```tsx
+    import { getDarkTheme } from 'fastcomments-react-native-sdk';
+
+    <FastCommentsLiveCommenting config={config} theme={getDarkTheme()}/>
+```
+
+The `styles` prop still accepts a raw `IFastCommentsStyles` tree for surgical control. When `theme` and `styles` are both provided, the explicit styles win over the themed tree; when only `styles` is provided, it replaces the defaults entirely (the original behavior, so existing integrations and skins are unaffected). `setupDarkModeSkin` is deprecated in favor of the `theme` prop.
+
 ### Configuration Options
 
 This library aims to support all configuration options defined in [fastcomments-typescript](https://github.com/FastComments/fastcomments-typescript/blob/main/src/fast-comments-comment-widget-config.ts), just like the web implementation.

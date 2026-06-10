@@ -11,6 +11,7 @@ import type { CommentData, CreateCommentPublic200Response, PublicComment } from 
 import { getActionTenantId, getActionURLID } from '../services/tenants';
 import { newBroadcastId } from '../services/broadcast-id';
 import { handleNewCustomConfig } from '../services/custom-config';
+import { editorHtmlToServerHtml } from '../services/editor/editor-html-to-server-html';
 import { incOverallCommentCount } from '../services/comment-count';
 import { setupUserPresenceState } from '../services/user-presense';
 import { persistSubscriberState } from '../services/live';
@@ -64,7 +65,7 @@ async function logout(
         }
     }
     const sdk = state.sdk;
-    await sdk.publicApi.logoutPublic();
+    await sdk.publicApi.logout();
     const currentUser = state.currentUser;
     const currentUserId = currentUser && 'id' in currentUser ? currentUser.id : undefined;
 
@@ -230,7 +231,7 @@ async function submit(
         commenterEmail: commenterEmail ?? null,
         commenterLink: commenterLink ?? null,
         avatarSrc: avatarSrc ?? null,
-        comment: replyState.comment ?? '',
+        comment: editorHtmlToServerHtml(replyState.comment ?? ''),
         parentId: replyingToId ?? null,
         date: date.valueOf(),
         localDateString: date.toString(),
@@ -484,7 +485,7 @@ export function ReplyArea(props: ReplyAreaProps) {
                                 }
                             />
                         </View>
-                        <Text style={styles.replyArea?.topBarUsername}>{(currentUser as any).username}</Text>
+                        <Text style={styles.replyArea?.topBarUsername} testID="topBarUsername">{(currentUser as any).username}</Text>
                     </View>
                     <View style={styles.replyArea?.topBarRight}>
                         {(!ssoConfig || (ssoConfig && (ssoConfig.logoutURL || ssoConfig.logoutCallback))) && (
@@ -626,7 +627,7 @@ export function ReplyArea(props: ReplyAreaProps) {
                 SignUpErrorsTranslationIds[commentReplyState.lastSaveResponse.code!]);
         if (showAuth) {
             authFormArea = (
-                <View style={styles.replyArea?.userInfoInput}>
+                <View style={styles.replyArea?.userInfoInput} testID="authInputForm">
                     {!disableEmailInputs && (
                         <Text style={styles.replyArea?.emailReasoning}>
                             {allowAnon ? translations.ENTER_EMAIL_TO_KEEP_COMMENT : translations.ENTER_EMAIL_TO_COMMENT}
@@ -634,6 +635,8 @@ export function ReplyArea(props: ReplyAreaProps) {
                     )}
                     {!disableEmailInputs && (
                         <TextInput
+                            testID="authEmailInput"
+                            accessibilityLabel="authEmailInput"
                             style={styles.replyArea?.authInput}
                             multiline={false}
                             maxLength={70}
@@ -647,6 +650,8 @@ export function ReplyArea(props: ReplyAreaProps) {
                         />
                     )}
                     <TextInput
+                        testID="authUsernameInput"
+                        accessibilityLabel="authUsernameInput"
                         style={styles.replyArea?.authInput}
                         multiline={false}
                         maxLength={70}

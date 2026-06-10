@@ -1,5 +1,27 @@
 # Changelog
 
+## 4.1.0
+
+Visual redesign, theme tokens, a dedicated live chat widget, and two bug fixes. Purely additive API.
+
+### New
+
+- `FastCommentsTheme` semantic token layer (colors, spacing, radii, font sizes, font weights, avatar sizes). New optional `theme` prop on `FastCommentsLiveCommenting`, `FastCommentsFeed`, and `FastCommentsLiveChat` generates the entire default style tree from tokens; `getLightTheme()` / `getDarkTheme()` / `resolveTheme()` exported. `styles` passed together with `theme` is merged on top (styles win); `styles` alone keeps the legacy full-replace behavior.
+- `FastCommentsLiveChat` widget (Android `LiveChatView` parity): chronological messages, composer below the list, live header strip with connection dot + user count, auto-scroll to new messages (pauses while scrolled up, resumes at the bottom or on your own message), older history loads on scroll-to-top, votes and reply threading disabled. All presets overridable via `config`.
+- `config.maxReplyDepth: 0` now hides reply buttons (flat mode).
+- Redesigned default look ("modern neutral"): token-driven palette with hairline separators, pill vote buttons and chips, filled primary action buttons, larger rounded avatars without drop shadows, a consistent 14px+ type scale, and themed dark mode. The dark and erebus skins now derive from the dark theme; `setupDarkModeSkin` is deprecated in favor of the `theme` prop.
+- New style keys: `commentTextArea.toolbarRoot/toolbarFormatButton/toolbarFormatButtonActive/toolbarFormatButtonText`, `mentionPopup.itemSelected`, `comment.textLinkStyles` (per-tag HTML styles, used for link color), `liveChat.root/composerWrapper`.
+
+### Fixed
+
+- Feed posts composed in the SDK rendered with literal `<p>` tags: the composer wrapped content in `<p>`, which the server entity-escapes (not an allowed tag). The composer now sends `<br>`-separated content like the web feed widget.
+- Multi-paragraph comments lost their line breaks: the editor emits `<p>`-wrapped paragraphs, which the server strips, gluing paragraphs together. Editor HTML is now normalized to `<br>`-separated content before create and edit.
+
+### Testing
+
+- New web test lane (`npm run test-web`): vitest + jsdom in `example-web/`, mounting the SDK through react-native-web with the real `react-native-enriched` (tiptap) editor against the real backend; covers the `.web.tsx` / react-native-web class of regression the node suite cannot reach.
+- The jest mock for `react-native-enriched` now mirrors the real editor's HTML contract (`<p>`-wrapped paragraphs). New E2E specs: LiveChat widget (dual-session two-way exchange, header strip, presets, auto-scroll, load-older), the theme prop, guest submit, multi-paragraph comments.
+
 ## 4.0.0
 
 State management rewrite. Internal implementation changed from Hookstate to Zustand, with a flat indexed comment store (byId + childrenByParent + rootOrder + pinnedIds) replacing the previous tree-in-state. Delivers O(1) live-event mutations, removes two full-tree JSON deep-clones on every fetch, and drops the global CommentChangeCounter memoization hack in favor of standard selector-based subscriptions.

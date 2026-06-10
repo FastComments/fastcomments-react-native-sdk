@@ -42,7 +42,6 @@ export const MentionPopup = forwardRef<MentionPopupHandle, MentionPopupProps>(fu
     const ssoConfigString = useStoreValue(store, (s) => s.ssoConfigString);
     const translations = useStoreValue(store, (s) => s.translations);
     const imageAssets = useStoreValue(store, (s) => s.imageAssets);
-    const hasDarkBackground = useStoreValue(store, (s) => !!s.config.hasDarkBackground);
 
     const [users, setUsers] = useState<MentionUser[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
@@ -112,18 +111,12 @@ export const MentionPopup = forwardRef<MentionPopupHandle, MentionPopupProps>(fu
     }), [query, users, selectedIndex, onSelect]);
 
     const popupStyle = useMemo(() => ({
-        backgroundColor: hasDarkBackground ? '#2c2c2c' : 'white',
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: hasDarkBackground ? '#444' : '#ddd',
         maxHeight: 220,
         ...styles.mentionPopup?.root,
-    }), [hasDarkBackground, styles.mentionPopup?.root]);
+    }), [styles.mentionPopup?.root]);
 
     if (query === undefined) return null;
     if (!loading && users.length === 0 && !query.trim()) return null;
-
-    const itemTextColor = hasDarkBackground ? '#fff' : '#222';
 
     return (
         <View
@@ -132,16 +125,16 @@ export const MentionPopup = forwardRef<MentionPopupHandle, MentionPopupProps>(fu
             style={popupStyle}
         >
             {loading && users.length === 0 && (
-                <View style={[{ padding: 12, flexDirection: 'row', alignItems: 'center' }, styles.mentionPopup?.loadingRow]}>
+                <View style={[{ flexDirection: 'row', alignItems: 'center' }, styles.mentionPopup?.loadingRow]}>
                     <ActivityIndicator size="small" />
-                    <Text style={[{ marginLeft: 8, color: itemTextColor }, styles.mentionPopup?.loadingText]}>
+                    <Text style={[{ marginLeft: 8 }, styles.mentionPopup?.loadingText]}>
                         {translations.MENTION_SEARCHING}
                     </Text>
                 </View>
             )}
             {!loading && users.length === 0 && query.trim().length > 0 && (
-                <View style={[{ padding: 12 }, styles.mentionPopup?.emptyRow]}>
-                    <Text style={[{ color: itemTextColor }, styles.mentionPopup?.emptyText]}>
+                <View style={styles.mentionPopup?.emptyRow}>
+                    <Text style={styles.mentionPopup?.emptyText}>
                         {translations.MENTION_NO_MATCHES}
                     </Text>
                 </View>
@@ -159,24 +152,15 @@ export const MentionPopup = forwardRef<MentionPopupHandle, MentionPopupProps>(fu
                                 onPress={() => onSelect(user)}
                                 onPressIn={() => setSelectedIndex(index)}
                                 style={[
-                                    {
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        paddingVertical: 8,
-                                        paddingHorizontal: 12,
-                                    },
                                     styles.mentionPopup?.item,
-                                    isSelected && { backgroundColor: hasDarkBackground ? '#3a3a3a' : '#eef2ff' },
+                                    isSelected && styles.mentionPopup?.itemSelected,
                                 ]}
                             >
                                 <Image
                                     source={user.avatarSrc ? { uri: user.avatarSrc } : getDefaultAvatarSrc(imageAssets)}
-                                    style={[
-                                        { width: 24, height: 24, borderRadius: 12, marginRight: 8 },
-                                        styles.mentionPopup?.avatar,
-                                    ]}
+                                    style={styles.mentionPopup?.avatar}
                                 />
-                                <Text style={[{ color: itemTextColor }, styles.mentionPopup?.itemText]}>
+                                <Text style={styles.mentionPopup?.itemText}>
                                     {label}
                                 </Text>
                             </TouchableOpacity>

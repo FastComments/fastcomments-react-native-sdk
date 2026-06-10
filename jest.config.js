@@ -13,9 +13,16 @@ module.exports = {
     '-spike\\.tsx?$',
     // The tests-ui suite has its own jest config (UI tests against the real
     // FastComments backend; mounts RN components). Run via `npm run test-ui`.
-    '/tests-ui/'
+    '/tests-ui/',
+    // The web lane runs under vitest + jsdom. Run via `npm run test-web`.
+    '/example-web/'
   ],
   transform: {
     '.(ts|tsx)': 'ts-jest'
+  },
+  moduleNameMapper: {
+    // The real react-native is Flow-typed source node cannot parse; unit tests
+    // only need the few VALUES the SDK imports at module scope (see the stub).
+    '^react-native$': '<rootDir>/src/__test-stubs__/react-native.ts'
   }
 };

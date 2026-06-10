@@ -11,6 +11,7 @@ import {
 } from './comment-text-area';
 import { IFastCommentsStyles, RNComment } from '../types';
 import { showError } from '../services/show-error';
+import { editorHtmlToServerHtml } from '../services/editor/editor-html-to-server-html';
 import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
 
@@ -36,7 +37,8 @@ async function saveCommentText(
     const tenantId = getActionTenantId({ store, tenantId: comment.tenantId });
     const broadcastId = newBroadcastId(store);
     const sdk = state.sdk;
-    const commentTextUpdateRequest: CommentTextUpdateRequest = { comment: newValue };
+    const serverHtml = editorHtmlToServerHtml(newValue);
+    const commentTextUpdateRequest: CommentTextUpdateRequest = { comment: serverHtml };
     const response = await sdk.publicApi.setCommentText({
         tenantId,
         commentId: comment._id,
@@ -48,7 +50,7 @@ async function saveCommentText(
     if (response.status === 'success') {
         store.getState().mergeCommentFields(comment._id, {
             approved: response.comment.approved,
-            comment: newValue,
+            comment: serverHtml,
             commentHTML: response.comment.commentHTML,
         });
     } else {

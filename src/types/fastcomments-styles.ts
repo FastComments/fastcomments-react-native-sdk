@@ -45,6 +45,8 @@ export interface IFastCommentsStyles {
         emptyStateText?: TextStyle
         contentWrapper?: ViewStyle
         text?: MixedStyleDeclaration
+        /** Per-tag styles for the comment body HTML renderer (e.g. link color via `a`). **/
+        textLinkStyles?: MixedStyleRecord
         HTMLNodeStyleByClass?: MixedStyleRecord
         /** Will be deprecated when this is fixed and can move to 6.x: https://github.com/meliorence/react-native-render-html/issues/582 **/
         textHTML?: string
@@ -90,6 +92,10 @@ export interface IFastCommentsStyles {
         textarea?: ViewStyle
         placeholder?: TextStyle
         text?: TextStyle
+        toolbarRoot?: ViewStyle
+        toolbarFormatButton?: ViewStyle
+        toolbarFormatButtonActive?: ViewStyle
+        toolbarFormatButtonText?: TextStyle
         toolbarButton?: ImageStyle
         imageUploadModalCenteredView?: ViewStyle
         imageUploadModalContent?: ViewStyle
@@ -99,6 +105,7 @@ export interface IFastCommentsStyles {
     mentionPopup?: {
         root?: ViewStyle
         item?: ViewStyle
+        itemSelected?: ViewStyle
         itemText?: TextStyle
         avatar?: ImageStyle
         loadingRow?: ViewStyle
@@ -268,6 +275,10 @@ export interface IFastCommentsStyles {
         button?: ViewStyle,
         count?: TextStyle,
         text?: TextStyle
+    }
+    liveChat?: {
+        root?: ViewStyle
+        composerWrapper?: ViewStyle
     }
     feed?: {
         root?: ViewStyle
