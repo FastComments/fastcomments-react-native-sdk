@@ -271,15 +271,18 @@ async function submit(
             incOverallCommentCount(latest.config.countAll, store, comment.parentId);
 
             if (response.user) {
-                const responseUser = response.user;
-                if (latest.config.simpleSSO) {
-                    latest.setCurrentUser({
-                        ...(latest.currentUser as object),
-                        ...responseUser,
-                    } as FastCommentsSessionUser);
-                } else {
-                    latest.setCurrentUser(responseUser as FastCommentsSessionUser);
-                }
+                // Merge the server's user into the existing session, like the web
+                // widget (frontend/comment-ui copies each response.user key onto
+                // currentUser). The server returns an authorized user with the
+                // email/username the guest just entered; consuming it hides the
+                // name/email form and populates the top bar. Merging (vs replacing)
+                // preserves any fields the response omits (e.g. avatar).
+                const existingUser = latest.currentUser as object | null;
+                latest.setCurrentUser(
+                    (existingUser
+                        ? { ...existingUser, ...response.user }
+                        : response.user) as FastCommentsSessionUser
+                );
                 onAuthenticationChange &&
                     onAuthenticationChange('user-set', store.getState().currentUser, comment);
             }
@@ -290,12 +293,19 @@ async function submit(
                 'sessionId' in response.user &&
                 response.user.sessionId
             ) {
-                latest.setCurrentUser({
-                    ...(latest.currentUser as object),
-                    sessionId: response.user.sessionId,
-                } as FastCommentsSessionUser);
-                onAuthenticationChange &&
-                    onAuthenticationChange('session-id-set', store.getState().currentUser, comment);
+                // Apply the sessionId on top of the freshly-merged user. Reading
+                // `store.getState().currentUser` (not the stale `latest` snapshot
+                // captured before the merge above) avoids reverting to the prior
+                // anon user, which is what kept the auth form showing after submit.
+                const mergedUser = store.getState().currentUser as object | null;
+                if (mergedUser) {
+                    latest.setCurrentUser({
+                        ...mergedUser,
+                        sessionId: response.user.sessionId,
+                    } as FastCommentsSessionUser);
+                    onAuthenticationChange &&
+                        onAuthenticationChange('session-id-set', store.getState().currentUser, comment);
+                }
             }
             if (replyingToId === null && !latest.config.disableSuccessMessage) showSuccessMessage = true;
             const newCurrentUserId =
