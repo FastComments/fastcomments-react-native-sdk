@@ -123,6 +123,7 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
     const chatStyle = isLiveChatStyle(config);
     const listRef = useRef<FlatList<RNComment>>(null);
     const isNearBottomRef = useRef(true);
+    const initialScrollDoneRef = useRef(false);
     const lastCommentIdRef = useRef<string | undefined>(undefined);
     const currentUserId = useStoreValue(store, (s) => {
         const user = s.currentUser;
@@ -141,6 +142,16 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
             listRef.current?.scrollToEnd({ animated: true });
         }
     }, [chatStyle, lastComment?._id, currentUserId]);
+
+    // The mount effect can fire before web layout settles, leaving the chat
+    // parked at the oldest message; pin to the bottom once content has size.
+    const onContentSizeChange = () => {
+        if (!chatStyle) return;
+        if (!initialScrollDoneRef.current && viewableComments.length > 0) {
+            initialScrollDoneRef.current = true;
+            listRef.current?.scrollToEnd({ animated: false });
+        }
+    };
 
     const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         if (!chatStyle) return;
@@ -231,6 +242,7 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
                     keyExtractor={(item, index) => (item && item._id !== undefined ? item._id : `missing-${index}`)}
                     maxToRenderPerBatch={PAGE_SIZE}
                     onScroll={chatStyle ? onScroll : undefined}
+                    onContentSizeChange={chatStyle ? onContentSizeChange : undefined}
                     scrollEventThrottle={chatStyle ? 64 : undefined}
                     onEndReachedThreshold={0.3}
                     onEndReached={onEndReached}

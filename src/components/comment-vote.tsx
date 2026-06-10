@@ -11,6 +11,7 @@ import { VoteBodyParamsVoteDirEnum } from 'fastcomments-sdk/server';
 import type { VoteBodyParams, VoteComment200Response } from 'fastcomments-sdk';
 import { getActionTenantId } from '../services/tenants';
 import { newBroadcastId } from '../services/broadcast-id';
+import { userNeedsAuthToAct } from '../services/user-auth-state';
 import { Pressable } from 'react-native';
 import { FastCommentsRNConfig } from '../types/react-native-config';
 import type { FastCommentsStore } from '../store/types';
@@ -33,6 +34,7 @@ interface VoteState {
     authEmail?: string;
     authUserName?: string;
     voteResponse?: VoteComment200Response;
+    requestFailed?: boolean;
 }
 
 const ErrorCodesToMessageIds: Record<string, string> = {
@@ -49,7 +51,7 @@ async function doVote(
 ) {
     const state = store.getState();
     const currentUser = state.currentUser;
-    if (!currentUser) {
+    if (userNeedsAuthToAct(currentUser, !!state.config.allowAnon)) {
         if (voteState.authUserName && (state.config.allowAnon || voteState.authEmail)) {
             // has authentication info
         } else {
@@ -67,7 +69,7 @@ async function doVote(
             }
         }
     }
-    setVoteState({ isLoading: true });
+    setVoteState({ isLoading: true, requestFailed: false });
     try {
         const tenantIdToUse = getActionTenantId({ store, tenantId: comment.tenantId });
         const sdk = state.sdk;
@@ -152,6 +154,14 @@ async function doVote(
         }
     } catch (e) {
         console.error('Failed to vote', e);
+        // A rejected session vote (e.g. stale anon cookie -> 401) must not dead
+        // end: fall back to collecting identity, or surface a visible error.
+        if (!voteState.authUserName && !state.config.sso) {
+            setVoteState({ isLoading: false, isAuthenticating: true });
+            return;
+        }
+        setVoteState({ isLoading: false, requestFailed: true });
+        return;
     }
     setVoteState({ isLoading: false });
 }
@@ -176,9 +186,9 @@ export function CommentVote(props: CommentVoteProps) {
             <Text
                 testID={`upVoteCount-${comment._id}`}
                 accessibilityLabel="upVoteCount"
-                style={styles.commentVote?.votesUpText}
+                style={[styles.commentVote?.votesUpText, upCount === 0 && styles.commentVote?.votesZeroText]}
             >
-                {upCount > 0 ? upCount.toLocaleString() : ''}
+                {upCount.toLocaleString()}
             </Text>
             <Pressable
                 testID={`upVoteButton-${comment._id}`}
@@ -231,9 +241,9 @@ export function CommentVote(props: CommentVoteProps) {
                 <Text
                     testID={`downVoteCount-${comment._id}`}
                     accessibilityLabel="downVoteCount"
-                    style={styles.commentVote?.votesDownText}
+                    style={[styles.commentVote?.votesDownText, downCount === 0 && styles.commentVote?.votesZeroText]}
                 >
-                    {downCount > 0 ? downCount.toLocaleString() : ''}
+                    {downCount.toLocaleString()}
                 </Text>
             )}
         </View>
@@ -242,11 +252,13 @@ export function CommentVote(props: CommentVoteProps) {
     let auth = null;
     if (voteState.isAuthenticating) {
         auth = (
-            <View style={styles.commentVote?.commentVoteAuth}>
+            <View style={styles.commentVote?.commentVoteAuth} testID="voteAuthForm" accessibilityLabel="voteAuthForm">
                 {!config.disableEmailInputs && (
                     <View>
-                        <Text>{translations.ENTER_EMAIL_VOTE}</Text>
+                        <Text style={styles.commentVote?.voteAuthReasoning}>{translations.ENTER_EMAIL_VOTE}</Text>
                         <TextInput
+                            testID="voteAuthEmailInput"
+                            accessibilityLabel="voteAuthEmailInput"
                             style={styles.commentVote?.authInput}
                             textContentType="emailAddress"
                             value={voteState.authEmail}
@@ -256,6 +268,8 @@ export function CommentVote(props: CommentVoteProps) {
                     </View>
                 )}
                 <TextInput
+                    testID="voteAuthUsernameInput"
+                    accessibilityLabel="voteAuthUsernameInput"
                     style={styles.commentVote?.authInput}
                     textContentType="username"
                     value={voteState.authUserName}
@@ -305,6 +319,12 @@ export function CommentVote(props: CommentVoteProps) {
         } else {
             error = <Text style={styles.commentVote?.voteError}>{translations.ERROR_MESSAGE}</Text>;
         }
+    } else if (voteState.requestFailed) {
+        error = (
+            <Text style={styles.commentVote?.voteError} testID="voteError" accessibilityLabel="voteError">
+                {translations.ERROR_MESSAGE}
+            </Text>
+        );
     }
 
     return (

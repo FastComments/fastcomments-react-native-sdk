@@ -119,11 +119,13 @@ export function CommentUserInfo(props: CommentUserInfoProps) {
         </View> : null}
         <View style={styles.commentUserInfo?.infoRight}>
             {comment.badges && comment.badges.length > 0 && comment.badges.map((badge) => <CommentUserBadge key={badge.id} badge={badge} styles={styles}/>)}
+            {displayLabel}
+            {usernameElement}
+            {/* Identity first, status second: leading with "Unverified comment" made
+                the negative label the most prominent line of every guest comment. */}
             {!comment.verified && !(comment.wasPostedCurrentSession && comment.requiresVerification) && !config.disableUnverifiedLabel &&
             <Text style={styles.commentUserInfo?.label}>{translations.UNVERIFIED_COMMENT}</Text>
             }
-            {displayLabel}
-            {usernameElement}
         </View>
     </View>;
 }

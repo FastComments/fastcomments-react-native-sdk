@@ -116,7 +116,7 @@ export function CommentTextArea({
     value,
     toolbarButtons,
 }: CommentTextAreaProps) {
-    const maxLength = useStoreValue(store, (s) => s.config.maxCommentCharacterLength) || 2000;
+    const translations = useStoreValue(store, (s) => s.translations);
     const hasDarkBackground = useStoreValue(store, (s) => !!s.config.hasDarkBackground);
     const apiHost = useStoreValue(store, (s) => s.apiHost);
     const tenantId = useStoreValue(store, (s) => s.config.tenantId);
@@ -229,7 +229,9 @@ export function CommentTextArea({
         };
     }, [focusObserver]);
 
-    output.getValue = () => htmlRef.current.substring(0, maxLength);
+    // Return the FULL value: silently truncating here lost everything past the
+    // limit with no warning. Length is validated (visibly) at submit time.
+    output.getValue = () => htmlRef.current;
 
     const onChangeHtml = useCallback((e: NativeSyntheticEvent<OnChangeHtmlEvent>) => {
         const next = e.nativeEvent.value;
@@ -334,14 +336,19 @@ export function CommentTextArea({
                 >
                     <EnrichedTextInput
                         ref={editorRef}
+                        autoFocus={false}
                         defaultValue={value || ''}
                         onChangeHtml={onChangeHtml}
                         onChangeState={onChangeState}
                         onFocus={onFocus ? () => onFocus() : undefined}
+                        placeholder={translations.ENTER_COMMENT_HERE}
+                        placeholderTextColor={styles.commentTextArea?.placeholder?.color}
                         style={{
                             minHeight: useSingleLineCommentInput ? 32 : 92,
                             flex: 1,
                             backgroundColor: 'transparent',
+                            color: styles.commentTextArea?.text?.color,
+                            fontSize: styles.commentTextArea?.text?.fontSize,
                         }}
                     />
                 </View>

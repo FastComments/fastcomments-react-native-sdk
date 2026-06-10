@@ -121,11 +121,15 @@ maybe('Comment CRUD UI tests', () => {
             timeoutMs: 15000,
             label: 'commentInput visible',
         });
+        // The auth form is progressively disclosed: hidden until the guest
+        // focuses the composer.
+        expect(queryByTestId('authInputForm')).toBeNull();
         const text = 'Guest comment from UI test';
+        fireEvent(getByTestId('commentInput'), 'focus');
         fireEvent.changeText(getByTestId('commentInput'), text);
         await pollUntil(() => !!queryByTestId('authInputForm'), {
             timeoutMs: 15000,
-            label: 'guest auth form visible',
+            label: 'guest auth form visible after focus',
         });
         fireEvent.changeText(getByTestId('authEmailInput'), `guest-${Date.now()}@fctest.com`);
         fireEvent.changeText(getByTestId('authUsernameInput'), 'GuestTester');

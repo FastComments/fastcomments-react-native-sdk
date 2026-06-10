@@ -1,5 +1,5 @@
 import { CommentAreaMessage } from './comment-area-message';
-import { ActivityIndicator, Alert, BackHandler, Text, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Platform, Text, View } from 'react-native';
 import { FastCommentsLiveCommentingService } from '../services/fastcomments-live-commenting';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -11,6 +11,8 @@ import {
 } from '../types';
 import { CallbackObserver, LiveCommentingBottomArea } from './live-commenting-bottom-area';
 import { resolveStyles } from '../resources/resolve-styles';
+import { isDarkColor, resolveTheme } from '../resources/themes';
+import { showConfirmDialog } from '../services/dialogs';
 import { FastCommentsThemeOverrides } from '../types/fastcomments-theme';
 import { FastCommentsRNConfig } from '../types/react-native-config';
 import { ShowHideCommentsToggle } from './show-hide-comments-toggle';
@@ -37,7 +39,11 @@ export function FastCommentsLiveCommenting({ config, theme, styles: stylesProp, 
 
     const storeRef = useRef<FastCommentsStore | null>(null);
     if (storeRef.current === null) {
-        storeRef.current = FastCommentsLiveCommentingService.createStoreFromConfig({ ...config }, assets);
+        // Dark themes need the dark icon/asset variants; derive the flag from
+        // the theme so consumers don't have to set it twice.
+        const hasDarkBackground = config.hasDarkBackground
+            ?? (theme ? isDarkColor(resolveTheme(theme).colors.background) : undefined);
+        storeRef.current = FastCommentsLiveCommentingService.createStoreFromConfig({ ...config, hasDarkBackground }, assets);
     }
     const store = storeRef.current!;
 
@@ -103,6 +109,8 @@ export function FastCommentsLiveCommenting({ config, theme, styles: stylesProp, 
     }, [sortDirection]);
 
     useEffect(() => {
+        // react-native-web has no BackHandler; registering one only logs warnings.
+        if (Platform.OS === 'web') return;
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
             if (isReplyingToParentIdRef.current) {
                 void requestSetReplyingTo(null, true);
@@ -130,23 +138,15 @@ export function FastCommentsLiveCommenting({ config, theme, styles: stylesProp, 
             }
             const t = store.getState().translations;
             return new Promise<typeof CAN_CLOSE | typeof CAN_NOT_CLOSE>((resolve) => {
-                Alert.alert(
-                    t.CONFIRM_CANCEL_REPLY_TITLE,
-                    t.CONFIRM_CANCEL_REPLY,
-                    [
-                        {
-                            text: t.CONFIRM_CANCEL_REPLY_CANCEL,
-                            onPress: () => resolve(CAN_NOT_CLOSE),
-                            style: 'cancel',
-                        },
-                        {
-                            text: t.CONFIRM_CANCEL_REPLY_OK,
-                            onPress: () => resolve(CAN_CLOSE),
-                            style: 'destructive',
-                        },
-                    ],
-                    { onDismiss: () => resolve(CAN_NOT_CLOSE) }
-                );
+                showConfirmDialog({
+                    title: t.CONFIRM_CANCEL_REPLY_TITLE,
+                    message: t.CONFIRM_CANCEL_REPLY,
+                    confirmText: t.CONFIRM_CANCEL_REPLY_OK,
+                    cancelText: t.CONFIRM_CANCEL_REPLY_CANCEL,
+                    destructive: true,
+                    onConfirm: () => resolve(CAN_CLOSE),
+                    onCancel: () => resolve(CAN_NOT_CLOSE),
+                });
             });
         }
         if (comment) {

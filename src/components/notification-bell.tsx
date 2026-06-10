@@ -38,19 +38,17 @@ export function NotificationBell({
     return (
         <View>
             <TouchableOpacity
+                testID="notificationBellButton"
+                accessibilityLabel="notificationBellButton"
                 onPress={() => setNotificationsListOpen(!isOpen)}
                 style={styles.notificationBell?.bellContainer}
             >
                 <Image source={imageAssets[bellIconType]} style={{ width: 20, height: 20 }} />
-                <Text
-                    style={
-                        notificationCount > 0
-                            ? styles.notificationBell?.bellCountNonZero
-                            : styles.notificationBell?.bellCount
-                    }
-                >
-                    {notificationCount < 100 ? Number(notificationCount).toLocaleString() : '99+'}
-                </Text>
+                {notificationCount > 0 && (
+                    <Text style={styles.notificationBell?.bellCountNonZero}>
+                        {notificationCount < 100 ? Number(notificationCount).toLocaleString() : '99+'}
+                    </Text>
+                )}
             </TouchableOpacity>
             {isOpen && (
                 <View style={styles.notificationList?.centeredView}>

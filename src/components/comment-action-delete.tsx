@@ -1,5 +1,5 @@
-import { Alert } from 'react-native';
 import { getActionTenantId } from '../services/tenants';
+import { showConfirmDialog } from '../services/dialogs';
 import { newBroadcastId } from '../services/broadcast-id';
 import { removeCommentOnClient } from '../services/remove-comment-on-client';
 import { RNComment } from '../types';
@@ -50,16 +50,15 @@ async function deleteComment(
 
 export async function CommentPromptDelete({ comment, store, onError, close }: CommentActionDeleteProps) {
     const translations = store.getState().translations;
-    Alert.alert(translations.DELETE_CONFIRM, translations.DELETE_CONFIRMATION_MESSAGE, [
-        {
-            text: translations.CANCEL,
-            onPress: close,
-            style: 'cancel',
-        },
-        {
-            text: translations.DELETE_CONFIRM,
-            style: 'destructive',
-            onPress: async () => {
+    showConfirmDialog({
+        title: translations.DELETE_CONFIRM,
+        message: translations.DELETE_CONFIRMATION_MESSAGE,
+        confirmText: translations.DELETE_CONFIRM,
+        cancelText: translations.CANCEL,
+        destructive: true,
+        onCancel: close,
+        onConfirm: () => {
+            void (async () => {
                 try {
                     await deleteComment(comment, store, onError);
                 } catch (e) {
@@ -67,7 +66,7 @@ export async function CommentPromptDelete({ comment, store, onError, close }: Co
                     showError(':(', t.DELETE_FAILURE, t.DISMISS, onError);
                 }
                 close();
-            },
+            })();
         },
-    ]);
+    });
 }

@@ -158,11 +158,14 @@ export interface IFastCommentsStyles {
         root?: ViewStyle
         commentVoteOptions?: ViewStyle
         votesUpText?: TextStyle
+        /** Applied on top of the count text when the count is zero. **/
+        votesZeroText?: TextStyle
         voteButton?: ViewStyle
         voteButtonIcon?: ImageStyle
         voteDivider?: ViewStyle
         votesDownText?: TextStyle
         commentVoteAuth?: ViewStyle
+        voteAuthReasoning?: TextStyle
         authInput?: TextStyle
         voteAuthButtons?: ViewStyle
         voteAwaitingVerificationMessage?: TextStyle

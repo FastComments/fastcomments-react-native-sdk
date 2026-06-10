@@ -16,6 +16,21 @@ Visual redesign, theme tokens, a dedicated live chat widget, and two bug fixes. 
 
 - Feed posts composed in the SDK rendered with literal `<p>` tags: the composer wrapped content in `<p>`, which the server entity-escapes (not an allowed tag). The composer now sends `<br>`-separated content like the web feed widget.
 - Multi-paragraph comments lost their line breaks: the editor emits `<p>`-wrapped paragraphs, which the server strips, gluing paragraphs together. Editor HTML is now normalized to `<br>`-separated content before create and edit.
+- Guest voting was a silent dead end: a stale anon session was treated as authenticated, the 401 was swallowed, and nothing happened on tap. Ghost anon sessions now route to the vote identity form, request failures render a visible error, and the vote auth inputs are themed.
+- A ghost anon session (stale cookie, no username) lit up logged-in chrome: an empty username box in the top bar, a Log Out menu, and a notification bell whose requests 401'd into an infinite spinner. The top bar now requires an identified user, and the notification list handles load failures with a visible error instead of spinning forever.
+- Reply indentation was always zero (the depth attached by the list was lost in a store merge), making threads render flat. Replies indent again, and the default indent is larger.
+- Dark theme: typed editor text was black-on-black, and light-theme PNG icons (bell, vote arrows, menu icons) were used on dark backgrounds. The editor now receives themed text color, font size, and placeholder; `hasDarkBackground` is derived from the theme's background luminance so dark icon variants apply automatically.
+- The composer had no placeholder and stole focus on page load (web).
+- `Alert.alert` is a no-op under react-native-web, so canceling a reply, confirming a delete/block, and error display were all dead ends in browsers. Dialogs now route through a platform shim (window.confirm/alert on web).
+- Bold/italic/underline formatting in posted comments rendered as plain text on web; explicit per-tag styles restore inline formatting.
+- The chat widget opened scrolled to the oldest message on web; it now pins to the newest message once content lays out. The comment-count/sort header is suppressed in chat mode.
+- Comments beyond the tenant character limit were silently truncated client-side; the SDK now shows the COMMENT_TOO_BIG error instead of losing the tail.
+
+### UX polish
+
+- Username now renders above the "Unverified comment" label (identity first, status second).
+- The guest name/email form is progressively disclosed on composer focus instead of rendering permanently.
+- Touch targets raised toward the 44px guideline (vote pills, reply, sort, bell, three-dot menu); vote icons enlarged; vote counts show 0 instead of hiding; the modal menus gained a scrim; composer and list share one gutter; the notification bell hides its badge at zero and the BackHandler warning is gone on web.
 
 ### Testing
 

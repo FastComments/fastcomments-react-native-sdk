@@ -207,8 +207,11 @@ export function FastCommentsCommentView(props: CommentViewProps) {
             content
         );
 
-    const indentStyles = comment.depth
-        ? { marginLeft: comment.depth * (styles.comment?.childIndent || 20) }
+    // depth is attached by the list to its prop copy only; the store object
+    // (which wins the merge above) never carries it.
+    const depth = propComment.depth ?? comment.depth;
+    const indentStyles = depth
+        ? { marginLeft: depth * (styles.comment?.childIndent || 20) }
         : null;
     return (
         <View

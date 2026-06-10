@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { FastCommentsLiveCommentingService } from '../services/fastcomments-live-commenting';
 import { resolveStyles } from '../resources/resolve-styles';
+import { isDarkColor, resolveTheme } from '../resources/themes';
 import { FastCommentsThemeOverrides } from '../types/fastcomments-theme';
 import { addTranslationsToStore } from '../services/translations';
 import { createFeedPost, loadFeedPosts } from '../services/feed';
@@ -78,7 +79,11 @@ export const FastCommentsFeed = forwardRef<FastCommentsFeedHandle, FastCommentsF
 
     const storeRef = useRef<FastCommentsStore | null>(null);
     if (storeRef.current === null) {
-        storeRef.current = FastCommentsLiveCommentingService.createStoreFromConfig({ ...config }, assets);
+        // Dark themes need the dark icon/asset variants; derive the flag from
+        // the theme so consumers don't have to set it twice.
+        const hasDarkBackground = config.hasDarkBackground
+            ?? (theme ? isDarkColor(resolveTheme(theme).colors.background) : undefined);
+        storeRef.current = FastCommentsLiveCommentingService.createStoreFromConfig({ ...config, hasDarkBackground }, assets);
     }
     const store = storeRef.current!;
 

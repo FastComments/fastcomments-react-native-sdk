@@ -1,5 +1,5 @@
 import { getDefaultFastCommentsStyles } from '../styles';
-import { getLightTheme, getDarkTheme, resolveTheme } from '../themes';
+import { getLightTheme, getDarkTheme, isDarkColor, resolveTheme } from '../themes';
 import type { FastCommentsTheme } from '../../types/fastcomments-theme';
 
 interface StyleRecord {
@@ -57,6 +57,23 @@ describe('theme -> styles generation', () => {
         expect(resolved.colors.primary).toBe('#123456');
         expect(resolved.colors.background).toBe(getLightTheme().colors.background);
         expect(resolved.spacing).toEqual(getLightTheme().spacing);
+    });
+
+    it('comment body tag styles render inline formatting (b/i lost their defaults on web once)', () => {
+        const styles = getDefaultFastCommentsStyles();
+        const tags = styles.comment?.textLinkStyles;
+        expect(tags?.b?.fontWeight).toBe('bold');
+        expect(tags?.strong?.fontWeight).toBe('bold');
+        expect(tags?.i?.fontStyle).toBe('italic');
+        expect(tags?.em?.fontStyle).toBe('italic');
+        expect(tags?.u?.textDecorationLine).toBe('underline');
+        expect(tags?.s?.textDecorationLine).toBe('line-through');
+    });
+
+    it('isDarkColor classifies both built-in theme backgrounds correctly', () => {
+        expect(isDarkColor(getLightTheme().colors.background)).toBe(false);
+        expect(isDarkColor(getDarkTheme().colors.background)).toBe(true);
+        expect(isDarkColor('not-a-color')).toBe(false);
     });
 
     it('dark theme produces dark backgrounds end to end', () => {

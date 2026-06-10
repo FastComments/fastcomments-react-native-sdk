@@ -79,6 +79,24 @@ maybe('Threading / Pagination order / Vote UI tests', () => {
         });
         // Parent should still be present.
         expect(queryByText('Parent comment')).not.toBeNull();
+
+        // The reply row must be visibly indented under its parent; depth was
+        // silently dropped once (store object won over the depth-carrying prop)
+        // and every thread rendered flat.
+        const rows = queryAllByTestId(/^commentRow-/);
+        expect(rows.length).toBeGreaterThanOrEqual(2);
+        const margins = rows.map((row) => {
+            const style = row.props.style;
+            const entries = Array.isArray(style) ? style : [style];
+            let marginLeft = 0;
+            for (const entry of entries) {
+                if (entry && typeof entry === 'object' && typeof entry.marginLeft === 'number') {
+                    marginLeft = entry.marginLeft;
+                }
+            }
+            return marginLeft;
+        });
+        expect(Math.max(...margins)).toBeGreaterThan(0);
     });
 
     it('testCommentsRenderedInOrder (newest-first)', async () => {

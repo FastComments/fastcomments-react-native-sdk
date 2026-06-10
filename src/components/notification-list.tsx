@@ -1,6 +1,6 @@
 import {memo} from 'react';
 import {useEffect, useState} from 'react';
-import {ActivityIndicator, FlatList, ListRenderItemInfo, useWindowDimensions, View} from "react-native";
+import {ActivityIndicator, FlatList, ListRenderItemInfo, Text, useWindowDimensions, View} from "react-native";
 import {RenderHTMLConfigProvider, TRenderEngineProvider} from "react-native-render-html";
 import {
     FastCommentsCallbacks,
@@ -45,19 +45,27 @@ export function NotificationList({imageAssets, onError, onNotificationSelected, 
     const [notificationTranslations, setNotificationTranslations] = useState<Record<UserNotificationTranslations, string>>();
     const [notifications, setNotifications] = useState<UserNotification[]>([]);
     const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
+    const [loadFailed, setLoadFailed] = useState<boolean>(false);
     const {width} = useWindowDimensions();
 
     const loadAsync = async () => {
         setLoading(true);
-        const [notificationTranslationsResponse, notificationsState] = await Promise.all([
-            getNotificationTranslations(store),
-            getUserNotifications({
-                store
-            }),
-        ]);
-        setNotificationTranslations(notificationTranslationsResponse.translations!);
-        setNotifications(notificationsState.notifications);
-        setIsSubscribed(notificationsState.isSubscribed);
+        setLoadFailed(false);
+        try {
+            const [notificationTranslationsResponse, notificationsState] = await Promise.all([
+                getNotificationTranslations(store),
+                getUserNotifications({
+                    store
+                }),
+            ]);
+            setNotificationTranslations(notificationTranslationsResponse.translations!);
+            setNotifications(notificationsState.notifications);
+            setIsSubscribed(notificationsState.isSubscribed);
+        } catch (e) {
+            // An unauthenticated/expired session 401s here; never spin forever.
+            console.error('Failed to load notifications', e);
+            setLoadFailed(true);
+        }
         setLoading(false);
     }
     useEffect(() => {
@@ -66,6 +74,14 @@ export function NotificationList({imageAssets, onError, onNotificationSelected, 
 
     if (isLoading) {
         return <View><ActivityIndicator size="small"/></View>
+    }
+
+    if (loadFailed) {
+        return (
+            <View testID="notificationsLoadFailed" accessibilityLabel="notificationsLoadFailed">
+                <Text style={styles.notificationList?.notificationDate}>{translations.ERROR_MESSAGE}</Text>
+            </View>
+        );
     }
 
     const subscribeHeader = notificationTranslations && <View style={styles.notificationList?.subscriptionHeader}>

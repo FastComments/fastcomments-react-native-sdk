@@ -12,6 +12,7 @@ import { getActionTenantId, getActionURLID } from '../services/tenants';
 import { newBroadcastId } from '../services/broadcast-id';
 import { handleNewCustomConfig } from '../services/custom-config';
 import { editorHtmlToServerHtml } from '../services/editor/editor-html-to-server-html';
+import { isIdentifiedUser } from '../services/user-auth-state';
 import { incOverallCommentCount } from '../services/comment-count';
 import { setupUserPresenceState } from '../services/user-presense';
 import { persistSubscriberState } from '../services/live';
@@ -48,6 +49,8 @@ interface CommentReplyState {
     showSuccessMessage: boolean;
     showAuthInputForm: boolean;
     lastSaveResponse?: CreateCommentPublic200Response;
+    /** Set when the comment exceeds the tenant's character limit. **/
+    tooLongLimit?: number;
 }
 
 async function logout(
@@ -163,6 +166,15 @@ async function submit(
     if (state.config.readonly) return;
     const replyingToId = parentComment?._id;
 
+    // The server hard-truncates beyond the limit; reject loudly instead of
+    // silently losing the tail of the comment.
+    const serverCommentHtml = editorHtmlToServerHtml(replyState.comment ?? '');
+    const maxCommentLength = state.config.maxCommentCharacterLength || 2000;
+    if (serverCommentHtml.length > maxCommentLength) {
+        setReplyState({ isReplySaving: false, tooLongLimit: maxCommentLength });
+        return;
+    }
+
     let isAuthenticating = false;
     const allowAnon = state.config.allowAnon;
 
@@ -231,7 +243,7 @@ async function submit(
         commenterEmail: commenterEmail ?? null,
         commenterLink: commenterLink ?? null,
         avatarSrc: avatarSrc ?? null,
-        comment: editorHtmlToServerHtml(replyState.comment ?? ''),
+        comment: serverCommentHtml,
         parentId: replyingToId ?? null,
         date: date.valueOf(),
         localDateString: date.toString(),
@@ -332,6 +344,7 @@ async function submit(
             showAuthInputForm: false,
             showSuccessMessage,
             lastSaveResponse: response,
+            tooLongLimit: undefined,
         };
         if (wasSuccessful) {
             patch.username = undefined;
@@ -406,7 +419,9 @@ export function ReplyArea(props: ReplyAreaProps) {
     const [commentReplyState, setCommentReplyStateRaw] = useState<CommentReplyState>({
         isReplySaving: false,
         showSuccessMessage: false,
-        showAuthInputForm: needsAuth,
+        // Progressive disclosure: the name/email fields appear once the user
+        // focuses the editor (or submits), not as a permanent registration form.
+        showAuthInputForm: false,
     });
     const setCommentReplyState = (patch: Partial<CommentReplyState>) =>
         setCommentReplyStateRaw((prev) => ({ ...prev, ...patch }));
@@ -471,7 +486,9 @@ export function ReplyArea(props: ReplyAreaProps) {
             );
         }
     } else {
-        if (!parentComment && currentUser) {
+        // A ghost anon session (stale cookie, no username) must not light up
+        // logged-in chrome: empty username, Log Out, and notifications all 401.
+        if (!parentComment && currentUser && isIdentifiedUser(currentUser)) {
             topBar = (
                 <View style={styles.replyArea?.topBar}>
                     <View style={styles.replyArea?.loggedInInfo}>
@@ -617,11 +634,10 @@ export function ReplyArea(props: ReplyAreaProps) {
             );
         }
 
-        // Like the frontend, render the name/email inputs whenever the guest still
-        // needs to identify themselves (recomputed each render so it tracks the
-        // anon session loading in), plus the explicit toggle / signup-error cases.
+        // Progressive disclosure: the name/email inputs stay hidden until the
+        // guest engages (focuses the editor or submits), so the composer reads
+        // as a comment box rather than a registration form.
         const showAuth =
-            needsAuth ||
             commentReplyState.showAuthInputForm ||
             (commentReplyState.lastSaveResponse?.code &&
                 SignUpErrorsTranslationIds[commentReplyState.lastSaveResponse.code!]);
@@ -686,7 +702,13 @@ export function ReplyArea(props: ReplyAreaProps) {
 
     let displayError = null;
     const lastSaveResponse = commentReplyState.lastSaveResponse;
-    if (lastSaveResponse && lastSaveResponse.status !== 'success') {
+    if (commentReplyState.tooLongLimit) {
+        displayError = (
+            <Text style={styles.replyArea?.error} testID="commentTooLongError" accessibilityLabel="commentTooLongError">
+                {translations.COMMENT_TOO_BIG.replace('[count]', String(commentReplyState.tooLongLimit))}
+            </Text>
+        );
+    } else if (lastSaveResponse && lastSaveResponse.status !== 'success') {
         if (lastSaveResponse.code === 'banned') {
             let bannedText = translations.BANNED_COMMENTING;
             if (lastSaveResponse.bannedUntil) {

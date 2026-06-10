@@ -4,6 +4,7 @@ import { ShowHideCommentsToggle } from './show-hide-comments-toggle';
 import { SelectSortDirection } from './select-sort-direction';
 import { ShowNewLiveCommentsButton } from './show-new-live-comments-button';
 import { CommentCount } from './comment-count';
+import { isLiveChatStyle } from '../services/fastcomments-live-commenting';
 import { FastCommentsCallbacks, IFastCommentsStyles, ImageAssetConfig, RNComment } from '../types';
 import { CallbackObserver } from './live-commenting-bottom-area';
 import { FastCommentsRNConfig } from '../types/react-native-config';
@@ -68,7 +69,9 @@ export function LiveCommentingTopArea(props: LiveCommentingTopAreaProps) {
                     <ShowHideCommentsToggle store={store} styles={styles} />
                 )}
             </View>
-            {areCommentsVisible && serverCommentCount > 0 && (
+            {/* Chat presents one chronological stream: a comment count + sort
+                selector header contradicts it and wastes vertical space. */}
+            {areCommentsVisible && serverCommentCount > 0 && !isLiveChatStyle(config) && (
                 <View style={styles.topArea?.separator}>
                     <CommentCount style={styles.topArea?.commentCount} store={store} count={serverCommentCount} />
                     {areCommentsVisible && serverCommentCount > 1 && (

@@ -1,6 +1,7 @@
 import { Dispatch, SetStateAction } from 'react';
 import { FastCommentsCallbacks, FastCommentsImageAsset } from '../types';
-import { Alert, Image } from 'react-native';
+import { Image } from 'react-native';
+import { showConfirmDialog } from '../services/dialogs';
 import type { PublicBlockFromCommentParams } from 'fastcomments-sdk';
 import { showError } from '../services/show-error';
 import { CommentActionEdit, DirtyRef } from './comment-action-edit';
@@ -258,18 +259,15 @@ export function getCommentMenuItems(
                     }
                     const t = store.getState().translations;
                     return new Promise((resolve) => {
-                        Alert.alert(t.CONFIRM_CANCEL_EDIT_TITLE, t.CONFIRM_CANCEL_EDIT, [
-                            {
-                                text: t.CONFIRM_CANCEL_EDIT_CANCEL,
-                                onPress: () => resolve(CAN_NOT_CLOSE),
-                                style: 'cancel',
-                            },
-                            {
-                                text: t.CONFIRM_CANCEL_EDIT_OK,
-                                onPress: () => resolve(CAN_CLOSE),
-                                style: 'destructive',
-                            },
-                        ], { onDismiss: () => resolve(CAN_NOT_CLOSE) });
+                        showConfirmDialog({
+                            title: t.CONFIRM_CANCEL_EDIT_TITLE,
+                            message: t.CONFIRM_CANCEL_EDIT,
+                            confirmText: t.CONFIRM_CANCEL_EDIT_OK,
+                            cancelText: t.CONFIRM_CANCEL_EDIT_CANCEL,
+                            destructive: true,
+                            onConfirm: () => resolve(CAN_CLOSE),
+                            onCancel: () => resolve(CAN_NOT_CLOSE),
+                        });
                     });
                 }
                 return CAN_CLOSE;
@@ -372,15 +370,15 @@ export function getCommentMenuItems(
             const title = doBlock ? t.COMMENT_MENU_BLOCK_USER : t.COMMENT_MENU_UNBLOCK_USER;
             const message = doBlock ? t.BLOCK_CONFIRM_MESSAGE : t.UNBLOCK_CONFIRM_MESSAGE;
             const confirmLabel = doBlock ? t.BLOCK : t.UNBLOCK;
-            Alert.alert(title, message, [
-                {
-                    text: t.CANCEL,
-                    style: 'cancel',
-                },
-                {
-                    text: confirmLabel,
-                    style: doBlock ? 'destructive' : 'default',
-                    onPress: async () => {
+            showConfirmDialog({
+                title,
+                message,
+                confirmText: confirmLabel,
+                cancelText: t.CANCEL,
+                destructive: doBlock,
+                onCancel: () => undefined,
+                onConfirm: () => {
+                    void (async () => {
                         await setCommentBlockedStatus(comment, store, doBlock, onError);
                         if (onUserBlocked) {
                             const currentUser = store.getState().currentUser;
@@ -388,9 +386,9 @@ export function getCommentMenuItems(
                                 onUserBlocked(currentUser.id, comment, doBlock);
                             }
                         }
-                    },
+                    })();
                 },
-            ]);
+            });
         };
 
         menuItems.push(

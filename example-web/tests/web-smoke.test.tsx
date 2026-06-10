@@ -52,6 +52,26 @@ describe('web smoke', () => {
         expect(document.getElementById('fastcomments-enriched-web-fill')).toBeTruthy();
     });
 
+    it('editor text is themed (dark theme must not type black-on-black) and shows a placeholder', async () => {
+        render(
+            <FastCommentsLiveCommenting
+                config={demoConfig()}
+                theme={{ colors: { textPrimary: '#F4F4F5', background: '#121316', inputBackground: '#1C1E23' } }}
+            />
+        );
+        await waitFor(() => {
+            if (!document.querySelector('.ProseMirror')) throw new Error('editor not mounted yet');
+        }, { timeout: 20000 });
+        const editorNode = document.querySelector('.ProseMirror');
+        if (!(editorNode instanceof HTMLElement)) throw new Error('editor not an element');
+        const color = window.getComputedStyle(editorNode).color;
+        expect(color).toBe('rgb(244, 244, 245)');
+        // The editor must hint what it is for.
+        const placeholderHost = document.querySelector('[data-placeholder]');
+        if (!(placeholderHost instanceof HTMLElement)) throw new Error('no placeholder host');
+        expect((placeholderHost.getAttribute('data-placeholder') || '').length).toBeGreaterThan(0);
+    });
+
     it('renders the loading state in normal flow so it cannot collapse to 0 height', () => {
         // Regression guard for the spinner-clipped-offscreen bug: the loading
         // overlay must participate in layout (flex + minHeight floor), not be

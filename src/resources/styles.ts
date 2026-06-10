@@ -68,6 +68,10 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
         },
         threeDotMenu: {
             root: {
+                minHeight: 36,
+                minWidth: 36,
+                justifyContent: 'center',
+                alignItems: 'center',
                 paddingTop: t.spacing.xs,
                 paddingBottom: t.spacing.xs,
                 marginRight: t.spacing.xs
@@ -90,10 +94,11 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
             }
         },
         topArea: {
+            // One shared gutter with the comment list below (commentsListContent).
             replyArea: {
                 marginTop: t.spacing.lg,
-                marginRight: t.spacing.md,
-                marginLeft: t.spacing.md
+                marginRight: t.spacing.lg,
+                marginLeft: t.spacing.lg
             },
             separator: {
                 flexDirection: 'row',
@@ -218,6 +223,14 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 width: 18,
                 height: 18,
             },
+            emptyState: {
+                padding: t.spacing.xl,
+                alignItems: 'center'
+            },
+            emptyStateText: {
+                color: t.colors.textSecondary,
+                fontSize: t.fontSize.base
+            },
             contentWrapper: {},
             text: {
                 marginLeft: t.spacing.xs,
@@ -226,10 +239,21 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 lineHeight: 21,
                 color: t.colors.textPrimary
             },
+            // Inline formatting must be explicit: the engine's defaults for
+            // these tags are lost on web, rendering bold/italic as plain text.
             textLinkStyles: {
                 a: {
                     color: t.colors.link
-                }
+                },
+                b: { fontWeight: 'bold' },
+                strong: { fontWeight: 'bold' },
+                i: { fontStyle: 'italic' },
+                em: { fontStyle: 'italic' },
+                u: { textDecorationLine: 'underline' },
+                s: { textDecorationLine: 'line-through' },
+                strike: { textDecorationLine: 'line-through' },
+                del: { textDecorationLine: 'line-through' },
+                code: { fontFamily: 'monospace' }
             },
             HTMLNodeStyleByClass: {
                 react: {
@@ -242,6 +266,7 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 marginBottom: 0,
                 marginLeft: t.spacing.lg
             },
+            childIndent: t.spacing.xl,
         },
         commentMenu: {
             itemIcon: {
@@ -322,13 +347,18 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
             },
             commentBottomToolbar: {
                 flexDirection: 'row',
-                justifyContent: 'space-between'
+                alignItems: 'center',
+                justifyContent: 'flex-start'
             },
             commentBottomToolbarReply: {
                 flexDirection: 'row',
                 alignItems: 'center',
+                minHeight: 36,
+                marginLeft: t.spacing.lg,
                 paddingTop: t.spacing.xs,
-                paddingBottom: t.spacing.xs
+                paddingBottom: t.spacing.xs,
+                paddingLeft: t.spacing.sm,
+                paddingRight: t.spacing.sm
             },
             commentBottomToolbarReplyText: {
                 marginLeft: t.spacing.xs,
@@ -405,7 +435,9 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 color: t.colors.textSecondary
             },
             text: {
-                color: t.colors.textPrimary
+                color: t.colors.textPrimary,
+                // Preview at the same size the posted comment body renders.
+                fontSize: t.fontSize.body
             },
             toolbarRoot: {
                 flexDirection: 'row',
@@ -666,9 +698,13 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 color: t.colors.voteCount,
                 marginLeft: t.spacing.xs
             },
+            votesZeroText: {
+                color: t.colors.voteCountZero,
+                fontWeight: t.fontWeight.regular
+            },
             voteButton: {
-                minHeight: 28,
-                minWidth: 28,
+                minHeight: 36,
+                minWidth: 40,
                 justifyContent: 'center',
                 alignItems: 'center',
                 paddingLeft: t.spacing.sm,
@@ -677,7 +713,7 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 backgroundColor: t.colors.surface
             },
             voteButtonIcon: {
-                height: 12,
+                height: 16,
                 aspectRatio: 1,
                 resizeMode: 'center'
             },
@@ -701,11 +737,24 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 borderStyle: "solid",
                 backgroundColor: t.colors.surfaceRaised
             },
+            voteAuthReasoning: {
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.textPrimary
+            },
             authInput: {
                 marginTop: t.spacing.sm,
                 marginRight: 0,
                 marginBottom: t.spacing.sm,
                 marginLeft: 0,
+                paddingTop: t.spacing.sm,
+                paddingBottom: t.spacing.sm,
+                paddingLeft: t.spacing.md,
+                paddingRight: t.spacing.md,
+                borderWidth: 1,
+                borderColor: t.colors.border,
+                borderRadius: t.radius.md,
+                backgroundColor: t.colors.inputBackground,
                 fontSize: t.fontSize.base,
                 color: t.colors.textPrimary
             },
@@ -717,8 +766,16 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 justifyContent: 'space-between',
                 alignItems: 'center'
             },
-            voteAwaitingVerificationMessage: {},
-            voteError: {},
+            voteAwaitingVerificationMessage: {
+                marginTop: t.spacing.sm,
+                fontSize: t.fontSize.base,
+                color: t.colors.textSecondary
+            },
+            voteError: {
+                marginTop: t.spacing.sm,
+                fontSize: t.fontSize.base,
+                color: t.colors.danger
+            },
         },
         modalMenu: {
             rootView: {
@@ -727,7 +784,9 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
             centeredView: {
                 flex: 1,
                 justifyContent: "center",
-                alignItems: "center"
+                alignItems: "center",
+                // Scrim: floating menus need separation from the page behind them.
+                backgroundColor: '#00000055'
             },
             modalView: {
                 margin: t.spacing.xl,
@@ -770,8 +829,10 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
         },
         notificationBell: {
             bellContainer: {
-                width: 35,
+                width: 40,
+                minHeight: 36,
                 alignItems: "center",
+                justifyContent: "center",
             },
             bellCount: {
                 position: "absolute",
@@ -1040,10 +1101,9 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 width: t.avatar.sm,
             },
             topBarUsername: {
-                overflow: "scroll",
+                flexShrink: 1,
                 fontWeight: t.fontWeight.bold,
-                color: t.colors.textPrimary,
-                flexWrap: 'nowrap'
+                color: t.colors.textPrimary
             },
             topBarRight: {
                 alignItems: 'center',
@@ -1140,7 +1200,11 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
             openButton: {
                 flexDirection: 'row',
                 alignItems: 'center',
-                padding: t.spacing.xs,
+                minHeight: 36,
+                paddingTop: t.spacing.xs,
+                paddingBottom: t.spacing.xs,
+                paddingLeft: t.spacing.sm,
+                paddingRight: t.spacing.sm,
             },
             text: {
                 marginRight: t.spacing.xs,
