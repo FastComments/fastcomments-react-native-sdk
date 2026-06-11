@@ -72,6 +72,15 @@ describe('web smoke', () => {
         expect((placeholderHost.getAttribute('data-placeholder') || '').length).toBeGreaterThan(0);
     });
 
+    it('image and gif toolbar buttons render by default on web (no host callbacks)', async () => {
+        const { queryByTestId } = render(<FastCommentsLiveCommenting config={demoConfig()} />);
+        await waitFor(() => {
+            if (!queryByTestId('toolbarGifButton')) throw new Error('gif button not rendered yet');
+        }, { timeout: 20000 });
+        // Web falls back to a DOM file input, so the image button needs no callback.
+        expect(queryByTestId('toolbarImageButton')).toBeTruthy();
+    });
+
     it('renders the loading state in normal flow so it cannot collapse to 0 height', () => {
         // Regression guard for the spinner-clipped-offscreen bug: the loading
         // overlay must participate in layout (flex + minHeight floor), not be

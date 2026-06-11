@@ -994,10 +994,15 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 width: '100%',
                 height: '100%',
                 justifyContent: "flex-start", // top of the screen feels better than the center
+                // Scrim: the browser overlays the widget like a modal.
+                backgroundColor: '#00000055'
             },
             modalView: {
                 minWidth: 300,
-                margin: t.spacing.xl,
+                width: '94%',
+                maxHeight: '85%',
+                alignSelf: 'center',
+                marginTop: t.spacing.xl,
                 backgroundColor: t.colors.surfaceRaised,
                 borderRadius: t.radius.lg,
                 paddingTop: 35,
@@ -1032,9 +1037,10 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 width: '100%'
             },
             listImage: {
-                marginBottom: t.spacing.xs,
+                width: '100%',
+                marginBottom: t.spacing.sm,
                 aspectRatio: 1,
-                resizeMode: 'stretch',
+                resizeMode: 'cover',
                 borderRadius: t.radius.sm
             },
             noResultsMessage: {

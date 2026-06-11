@@ -12,6 +12,7 @@ import { setupTestContext, teardownTestContext, TestContext } from '../framework
 import { buildSDKConfig } from '../framework/harness/build-config';
 import { pollUntil, sleep } from '../framework/harness/poll';
 import { textOf } from '../framework/harness/text-of';
+import { seedComment } from '../framework/api/comments-rest';
 
 const hasKey = !!process.env.FC_E2E_API_KEY;
 const maybe = hasKey ? describe : describe.skip;
@@ -112,6 +113,45 @@ maybe('idcolab parity', () => {
             const count = second.queryByTestId('pageReactCount-love');
             return !!count && textOf(count).trim() === '0';
         }, { timeoutMs: 15000, label: 'count 0 after un-react' });
+    }, 120000);
+
+    it('testShowCommentsToggleWithCountAboveToggle', async () => {
+        ctx = await setupTestContext({ emailPrefix: 'count-above', urlIdLabel: 'count-above' });
+        const ssoToken = ctx.ssoFor('userA');
+        for (let i = 1; i <= 3; i++) {
+            await seedComment({ tenant: ctx.tenant, urlId: ctx.urlId, text: `toggle-${i}`, ssoToken });
+        }
+        const config = buildSDKConfig({
+            tenant: ctx.tenant,
+            urlId: ctx.urlId,
+            ssoToken,
+            overrides: { useShowCommentsToggle: true, countAboveToggle: 1 },
+        });
+        const { queryAllByTestId, queryByTestId, getByText, unmount } = render(
+            <FastCommentsLiveCommenting config={config} />
+        );
+        ctx.onTeardown(unmount);
+
+        // Collapsed by default (web parity), but the composer still renders
+        // along with the first comment as a teaser.
+        await pollUntil(() => queryAllByTestId(/^commentRow-/).length === 1, {
+            timeoutMs: 15000,
+            label: 'exactly one teaser comment while collapsed',
+        });
+        expect(queryByTestId('commentInput')).toBeTruthy();
+        expect(queryByTestId('emptyStateView')).toBeNull();
+
+        // The toggle reveals the rest, and collapses back to the teaser.
+        fireEvent.press(getByText(/Show.*3.*Comment/i));
+        await pollUntil(() => queryAllByTestId(/^commentRow-/).length === 3, {
+            timeoutMs: 15000,
+            label: 'all comments after Show',
+        });
+        fireEvent.press(getByText(/Hide.*3.*Comment/i));
+        await pollUntil(() => queryAllByTestId(/^commentRow-/).length === 1, {
+            timeoutMs: 15000,
+            label: 'back to the teaser after Hide',
+        });
     }, 120000);
 
     it('testInlineSubmitButtonPostsComment', async () => {

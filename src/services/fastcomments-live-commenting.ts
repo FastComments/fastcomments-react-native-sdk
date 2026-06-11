@@ -80,6 +80,8 @@ export class FastCommentsLiveCommentingService {
         const state = store.getState();
         state.setSortDirection(config.defaultSortDirection ?? 'MR');
         state.setPage(typeof config.startingPage === 'number' ? config.startingPage : 0);
+        // Like the web widget, toggled widgets start collapsed.
+        state.setCommentsVisible(!(config.hideCommentsUnderCountTextFormat || config.useShowCommentsToggle));
         if (config.sso) {
             state.setSSOConfigString(JSON.stringify(config.sso));
         }

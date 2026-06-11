@@ -18,4 +18,6 @@ export interface FastCommentsRNConfig extends FastCommentsCommentWidgetConfig {
     preserveFeedScrollPosition?: boolean
     /** Render the submit button as an icon inside the comment box (replaces the standalone labeled button). **/
     useInlineSubmitButton?: boolean
+    /** With useShowCommentsToggle: how many comments render above the Show Comments toggle while collapsed (mirrors the web widget's countAboveToggle). **/
+    countAboveToggle?: number
 }

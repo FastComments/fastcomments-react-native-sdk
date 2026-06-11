@@ -9,6 +9,7 @@ import {
     Text,
     View,
     ActivityIndicator,
+    Modal,
     ScrollView,
     TouchableOpacity,
     Image,
@@ -21,6 +22,7 @@ import {
     type OnChangeStateEvent,
 } from 'react-native-enriched';
 import type { NativeSyntheticEvent } from 'react-native';
+import { GifBrowser } from './gif-browser';
 import { MentionPopup, MentionPopupHandle } from './mention-popup';
 import { MentionPortal } from './mention-portal';
 import { MentionUser } from '../services/mentions';
@@ -134,6 +136,8 @@ export function CommentTextArea({
     const mentionPopupRef = useRef<MentionPopupHandle>(null);
     const mentionActiveRef = useRef<boolean>(false);
     const [imageUploadProgress, setImageUploadProgress] = useState<number | null>(null);
+    const [showGifBrowser, setShowGifBrowser] = useState(false);
+    const storeConfig = useStoreValue(store, (s) => s.config);
     const [active, setActive] = useState<ActiveFormats>({ bold: false, italic: false, underline: false, strikethrough: false, code: false });
     const [mentionQuery, setMentionQuery] = useState<string | undefined>(undefined);
     // On web the composer lives inside the scrollable comment list (as its
@@ -258,10 +262,26 @@ export function CommentTextArea({
         });
     }, []);
 
+    // Web fallback when the host provides no pickImage: a DOM file input, like
+    // the web widget's default image-upload button.
+    const pickWebFile = (): Promise<File | null> =>
+        new Promise((resolve) => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = () => resolve(input.files && input.files[0] ? input.files[0] : null);
+            // No reliable cancel event exists for file inputs; resolving on the
+            // next pick is enough since the promise result is only used once.
+            input.click();
+        });
+
     const handleImageUpload = async () => {
-        if (!pickImage) return;
         try {
-            const photoData = await pickImage();
+            const photoData = pickImage
+                ? await pickImage()
+                : Platform.OS === 'web' && typeof document !== 'undefined'
+                    ? await pickWebFile()
+                    : null;
             if (!photoData) return;
             if (typeof photoData === 'string' && photoData.startsWith('http')) {
                 editorRef.current?.setImage(photoData, 0, 0);
@@ -269,7 +289,12 @@ export function CommentTextArea({
             }
             setImageUploadProgress(0);
             const formData = new FormData();
-            formData.append('file', photoData as string);
+            // File only exists in browser runtimes.
+            if (typeof File !== 'undefined' && photoData instanceof File) {
+                formData.append('file', photoData);
+            } else {
+                formData.append('file', photoData as string);
+            }
             const xhr = new XMLHttpRequest();
             xhr.open('POST', apiHost + '/upload-image/' + tenantId);
             xhr.upload.onprogress = (ev) => {
@@ -295,7 +320,11 @@ export function CommentTextArea({
     };
 
     const handleGIFPick = async () => {
-        if (!pickGIF) return;
+        // Hosts can supply their own picker; the SDK's GifBrowser is the default.
+        if (!pickGIF) {
+            setShowGifBrowser(true);
+            return;
+        }
         try {
             const url = await pickGIF();
             if (url) editorRef.current?.setImage(url, 0, 0);
@@ -432,16 +461,30 @@ export function CommentTextArea({
                         <Text style={[toolbarButtonTextStyle, { fontFamily: 'monospace' }]}>{"<>"}</Text>
                     </TouchableOpacity>
                 )}
-                {buttons.image && pickImage && (
-                    <TouchableOpacity style={toolbarButtonStyle} onPress={handleImageUpload} activeOpacity={0.7}>
+                {/* Web falls back to a DOM file input; native needs a host
+                    pickImage callback since the SDK ships no file picker. */}
+                {buttons.image && (pickImage || Platform.OS === 'web') && (
+                    <TouchableOpacity
+                        testID="toolbarImageButton"
+                        accessibilityLabel="toolbarImageButton"
+                        style={toolbarButtonStyle}
+                        onPress={handleImageUpload}
+                        activeOpacity={0.7}
+                    >
                         <Image
                             source={imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_IMAGE_UPLOAD_WHITE : FastCommentsImageAsset.ICON_IMAGE_UPLOAD]}
                             style={{ width: 16, height: 16 }}
                         />
                     </TouchableOpacity>
                 )}
-                {buttons.gif && pickGIF && (
-                    <TouchableOpacity style={toolbarButtonStyle} onPress={handleGIFPick} activeOpacity={0.7}>
+                {buttons.gif && (
+                    <TouchableOpacity
+                        testID="toolbarGifButton"
+                        accessibilityLabel="toolbarGifButton"
+                        style={toolbarButtonStyle}
+                        onPress={handleGIFPick}
+                        activeOpacity={0.7}
+                    >
                         <Image
                             source={imageAssets[FastCommentsImageAsset.ICON_GIF]}
                             style={{ width: 16, height: 16 }}
@@ -449,6 +492,24 @@ export function CommentTextArea({
                     </TouchableOpacity>
                 )}
             </View>
+
+            {showGifBrowser && (
+                // Modal portals out of the virtualized list: rendered inline,
+                // later comment rows paint over the browser on web.
+                <Modal transparent visible animationType="fade" onRequestClose={() => setShowGifBrowser(false)}>
+                    <GifBrowser
+                        store={store}
+                        styles={styles}
+                        config={storeConfig}
+                        imageAssets={imageAssets}
+                        cancelled={() => setShowGifBrowser(false)}
+                        pickedGIF={(gifPath) => {
+                            setShowGifBrowser(false);
+                            editorRef.current?.setImage(gifPath, 0, 0);
+                        }}
+                    />
+                </Modal>
+            )}
 
             {imageUploadProgress !== null && (
                 <View style={styles.commentTextArea?.imageUploadModalCenteredView}>

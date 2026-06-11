@@ -75,8 +75,22 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
         () => computeVisibleList({ byId, childrenByParent, rootOrder } as any),
         [byId, childrenByParent, rootOrder]
     );
+    const countAboveToggle = useStoreValue(store, (s) => s.config.countAboveToggle);
     const viewableComments = useMemo(() => {
         const out: RNComment[] = [];
+        // Collapsed (useShowCommentsToggle): only the first countAboveToggle
+        // ROOT comments render as a teaser, with their replies collapsed -
+        // mirroring the web widget.
+        if (!commentsVisible) {
+            const teaserCount = countAboveToggle ?? 0;
+            for (const entry of visibleEntries) {
+                if (out.length >= teaserCount) break;
+                const comment = byId[entry.id];
+                if (!comment || comment.parentId) continue;
+                out.push({ ...comment, depth: entry.depth, repliesHidden: true });
+            }
+            return out;
+        }
         for (const entry of visibleEntries) {
             const comment = byId[entry.id];
             if (!comment) continue;
@@ -89,10 +103,13 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
             out.push({ ...comment, depth: entry.depth });
         }
         return out;
-    }, [visibleEntries, byId]);
+    }, [visibleEntries, byId, commentsVisible, countAboveToggle]);
 
     const setRepliesHidden = (parentComment: RNComment, repliesHidden: boolean) => {
         store.getState().setRepliesHidden(parentComment._id, repliesHidden);
+        // Replies on a collapsed (countAboveToggle) teaser are not rendered at
+        // all; like the web widget, toggling them expands the whole list.
+        if (!commentsVisible) store.getState().setCommentsVisible(true);
     };
 
     const doPaginateNext = async (isAll: boolean) => {
@@ -168,7 +185,7 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
     const onEndReached = async () => {
         // In chat mode the bottom edge is the newest message; older history
         // loads from the top via onScroll instead.
-        if (!chatStyle && enableInfiniteScrolling && canPaginateNext(store)) {
+        if (commentsVisible && !chatStyle && enableInfiniteScrolling && canPaginateNext(store)) {
             await doPaginateNext(false);
         }
     };
@@ -249,15 +266,18 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
                     renderItem={renderItem}
                     ListHeaderComponent={header}
                     ListEmptyComponent={
-                        <View
-                            testID="emptyStateView"
-                            accessibilityLabel="emptyStateView"
-                            style={styles.comment?.emptyState}
-                        >
-                            <Text style={styles.comment?.emptyStateText}>
-                                {translations.NO_COMMENTS || 'No comments yet'}
-                            </Text>
-                        </View>
+                        // A collapsed toggle state is intentionally empty, not "no comments".
+                        commentsVisible ? (
+                            <View
+                                testID="emptyStateView"
+                                accessibilityLabel="emptyStateView"
+                                style={styles.comment?.emptyState}
+                            >
+                                <Text style={styles.comment?.emptyStateText}>
+                                    {translations.NO_COMMENTS || 'No comments yet'}
+                                </Text>
+                            </View>
+                        ) : null
                     }
                     ListFooterComponent={
                         <View>

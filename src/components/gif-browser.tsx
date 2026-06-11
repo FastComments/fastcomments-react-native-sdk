@@ -2,11 +2,11 @@ import {
     ActivityIndicator,
     BackHandler,
     FlatList,
+    Platform,
     Image,
     ListRenderItemInfo, Text,
     TextInput,
     TouchableOpacity,
-    useWindowDimensions,
     View
 } from "react-native";
 import {FastCommentsImageAsset, IFastCommentsStyles, ImageAssetConfig} from "../types";
@@ -55,7 +55,6 @@ export function GifBrowser({
         locale: config.locale,
         rating: config.gifRating
     });
-    const {width} = useWindowDimensions();
 
     function setGifsDeDupe(newList: [string, number, number][]) {
         const pathMap: Record<string, boolean> = {};
@@ -163,6 +162,8 @@ export function GifBrowser({
     }
 
     useEffect(() => {
+        // react-native-web has no BackHandler; registering one only logs warnings.
+        if (Platform.OS === 'web') return;
         const backHandler = BackHandler.addEventListener(
             "hardwareBackPress",
             () => {
@@ -203,9 +204,13 @@ export function GifBrowser({
         }
     };
 
-    const renderItem = ({item}: ListRenderItemInfo<[string, number, number]>) => {
-        return <TouchableOpacity onPressOut={() => handleSelected(item[0])}>
-            <Image source={{uri: item[0]}} style={[{width}, styles.gifBrowser?.listImage]}/>
+    const renderItem = ({item, index}: ListRenderItemInfo<[string, number, number]>) => {
+        return <TouchableOpacity
+            testID={`gifResult-${index}`}
+            accessibilityLabel={`gifResult-${index}`}
+            onPress={() => handleSelected(item[0])}
+        >
+            <Image source={{uri: item[0]}} style={styles.gifBrowser?.listImage}/>
         </TouchableOpacity>;
     };
 
@@ -235,7 +240,7 @@ export function GifBrowser({
         returnKeyType={'search'}
     />;
 
-    return <View style={styles.gifBrowser?.centeredView}>
+    return <View style={styles.gifBrowser?.centeredView} testID="gifBrowserModal" accessibilityLabel="gifBrowserModal">
         <View style={styles.gifBrowser?.modalView}>
             {
                 isInitialLoad ? <ActivityIndicator size="large"/> : <FlatList

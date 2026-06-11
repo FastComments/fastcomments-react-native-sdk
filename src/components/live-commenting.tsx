@@ -172,7 +172,11 @@ export function FastCommentsLiveCommenting({ config, theme, styles: stylesProp, 
             </View>
         );
     } else if (
-        !((rootOrderLength === 0 && readonlyConfig) || ((hideCommentsUnderCountTextFormat || useShowCommentsToggle) && !commentsVisible))
+        // useShowCommentsToggle keeps the full scaffold (composer + toggle +
+        // optional countAboveToggle teaser) even while collapsed, like the web
+        // widget; only the legacy hideCommentsUnderCountTextFormat mode
+        // replaces the widget with a bare link.
+        !((rootOrderLength === 0 && readonlyConfig) || (hideCommentsUnderCountTextFormat && !useShowCommentsToggle && !commentsVisible))
     ) {
         if (isLoading) {
             return (
@@ -185,7 +189,7 @@ export function FastCommentsLiveCommenting({ config, theme, styles: stylesProp, 
         return (
             <View style={styles.root}>
                 {showLiveStatus && <LiveStatusBar store={store} styles={styles} />}
-                {commentsVisible && (
+                {(commentsVisible || useShowCommentsToggle) && (
                     <LiveCommentingList
                         callbacks={callbacks}
                         callbackObserver={callbackObserverRef.current}
