@@ -226,6 +226,8 @@ export interface IFastCommentsStyles {
         text?: MixedStyleDeclaration
     }
     gifBrowser?: {
+        /** Sizing/elevation of the anchored popover the SDK opens from the toolbar GIF button. **/
+        popover?: ViewStyle
         centeredView?: ViewStyle
         modalView?: ViewStyle
         modalCancel?: ViewStyle

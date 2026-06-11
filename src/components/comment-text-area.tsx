@@ -9,11 +9,11 @@ import {
     Text,
     View,
     ActivityIndicator,
-    Modal,
     ScrollView,
     TouchableOpacity,
     Image,
     Platform,
+    type ViewStyle,
 } from "react-native";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -137,7 +137,43 @@ export function CommentTextArea({
     const mentionActiveRef = useRef<boolean>(false);
     const [imageUploadProgress, setImageUploadProgress] = useState<number | null>(null);
     const [showGifBrowser, setShowGifBrowser] = useState(false);
+    const [gifPopoverStyle, setGifPopoverStyle] = useState<ViewStyle | null>(null);
+    const gifButtonRef = useRef<TouchableOpacity>(null);
     const storeConfig = useStoreValue(store, (s) => s.config);
+
+    // Anchor the GIF popover under its toolbar button. On web the popover is
+    // portaled to document.body (the virtualized list clips/overpaints inline
+    // overlays), so position it with page coordinates measured off the button.
+    useEffect(() => {
+        if (Platform.OS !== 'web' || !showGifBrowser) return;
+        const win = globalThis as unknown as {
+            addEventListener?: (t: string, h: () => void, c?: boolean) => void;
+            removeEventListener?: (t: string, h: () => void, c?: boolean) => void;
+            scrollX?: number;
+            scrollY?: number;
+        };
+        const reposition = () => {
+            const button = gifButtonRef.current as unknown as { getBoundingClientRect?: () => { bottom: number; left: number } } | null;
+            const rect = button?.getBoundingClientRect?.();
+            if (!rect || typeof document === 'undefined') return;
+            const viewportWidth = document.documentElement.clientWidth;
+            const panelWidth = 340;
+            const left = Math.max(8, Math.min(rect.left, viewportWidth - panelWidth - 8));
+            setGifPopoverStyle({
+                position: 'absolute',
+                top: rect.bottom + (win.scrollY ?? 0) + 4,
+                left: left + (win.scrollX ?? 0),
+                zIndex: 2147483000,
+            });
+        };
+        reposition();
+        win.addEventListener?.('scroll', reposition, true);
+        win.addEventListener?.('resize', reposition);
+        return () => {
+            win.removeEventListener?.('scroll', reposition, true);
+            win.removeEventListener?.('resize', reposition);
+        };
+    }, [showGifBrowser]);
     const [active, setActive] = useState<ActiveFormats>({ bold: false, italic: false, underline: false, strikethrough: false, code: false });
     const [mentionQuery, setMentionQuery] = useState<string | undefined>(undefined);
     // On web the composer lives inside the scrollable comment list (as its
@@ -479,6 +515,7 @@ export function CommentTextArea({
                 )}
                 {buttons.gif && (
                     <TouchableOpacity
+                        ref={gifButtonRef}
                         testID="toolbarGifButton"
                         accessibilityLabel="toolbarGifButton"
                         style={toolbarButtonStyle}
@@ -494,21 +531,28 @@ export function CommentTextArea({
             </View>
 
             {showGifBrowser && (
-                // Modal portals out of the virtualized list: rendered inline,
-                // later comment rows paint over the browser on web.
-                <Modal transparent visible animationType="fade" onRequestClose={() => setShowGifBrowser(false)}>
-                    <GifBrowser
-                        store={store}
-                        styles={styles}
-                        config={storeConfig}
-                        imageAssets={imageAssets}
-                        cancelled={() => setShowGifBrowser(false)}
-                        pickedGIF={(gifPath) => {
-                            setShowGifBrowser(false);
-                            editorRef.current?.setImage(gifPath, 0, 0);
-                        }}
-                    />
-                </Modal>
+                <MentionPortal>
+                    <View
+                        style={[
+                            Platform.OS === 'web'
+                                ? (gifPopoverStyle ?? { position: 'absolute', top: 0, left: 0, opacity: 0 })
+                                : { position: 'absolute', top: '100%', left: 0, zIndex: 1000 },
+                            styles.gifBrowser?.popover,
+                        ]}
+                    >
+                        <GifBrowser
+                            store={store}
+                            styles={styles}
+                            config={storeConfig}
+                            imageAssets={imageAssets}
+                            cancelled={() => setShowGifBrowser(false)}
+                            pickedGIF={(gifPath) => {
+                                setShowGifBrowser(false);
+                                editorRef.current?.setImage(gifPath, 0, 0);
+                            }}
+                        />
+                    </View>
+                </MentionPortal>
             )}
 
             {imageUploadProgress !== null && (

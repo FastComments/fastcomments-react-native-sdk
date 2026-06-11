@@ -54,13 +54,13 @@ export default function AppCommentingImageSelection() {
     return (
         <View style={{flex: 1}}>
             <FastCommentsLiveCommenting config={config} callbacks={callbacks}/>
-            {gifPickerConfig ? <GifBrowser
+            {gifPickerConfig ? <View style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#00000055'}}><GifBrowser
                 cancelled={gifPickerConfig.cancelled}
                 config={config}
                 pickedGIF={gifPickerConfig.pickedGIF}
                 imageAssets={gifPickerConfig.imageAssets}
                 styles={gifPickerConfig.styles}
-            /> : null}
+            /></View> : null}
         </View>
     );
 }

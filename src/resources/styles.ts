@@ -986,29 +986,26 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
             }
         },
         gifBrowser: {
+            // The anchored dropdown the toolbar GIF button opens (web-widget style).
+            popover: {
+                width: 340,
+                maxWidth: '96%'
+            },
             centeredView: {
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                flex: 1,
-                width: '100%',
-                height: '100%',
-                justifyContent: "flex-start", // top of the screen feels better than the center
-                // Scrim: the browser overlays the widget like a modal.
-                backgroundColor: '#00000055'
+                width: '100%'
             },
             modalView: {
-                minWidth: 300,
-                width: '94%',
-                maxHeight: '85%',
-                alignSelf: 'center',
-                marginTop: t.spacing.xl,
+                width: '100%',
+                maxHeight: 420,
+                overflow: 'hidden',
                 backgroundColor: t.colors.surfaceRaised,
+                borderWidth: 1,
+                borderColor: t.colors.border,
                 borderRadius: t.radius.lg,
                 paddingTop: 35,
                 paddingLeft: t.spacing.md,
                 paddingRight: t.spacing.md,
-                paddingBottom: t.spacing.xl,
+                paddingBottom: t.spacing.md,
                 alignItems: "flex-start",
                 ...modalShadow
             },
