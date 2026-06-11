@@ -11,7 +11,7 @@ import type { CommentData, CreateCommentPublic200Response, PublicComment } from 
 import { getActionTenantId, getActionURLID } from '../services/tenants';
 import { newBroadcastId } from '../services/broadcast-id';
 import { handleNewCustomConfig } from '../services/custom-config';
-import { editorHtmlToServerHtml } from '../services/editor/editor-html-to-server-html';
+import { editorHtmlToServerHtml, isEditorHtmlEffectivelyEmpty } from '../services/editor/editor-html-to-server-html';
 import { isIdentifiedUser } from '../services/user-auth-state';
 import { incOverallCommentCount } from '../services/comment-count';
 import { setupUserPresenceState } from '../services/user-presense';
@@ -184,7 +184,7 @@ async function submit(
     if (!currentUserBeforeSubmit && replyState.username) isAuthenticating = true;
 
     if (
-        !replyState.comment ||
+        isEditorHtmlEffectivelyEmpty(replyState.comment ?? '') ||
         (!allowAnon &&
             (!(replyState.username || (currentUserBeforeSubmit as any)?.username) ||
                 (!allowAnon &&
@@ -198,7 +198,7 @@ async function submit(
         // before awaiting us; reset it so it doesn't hang forever, and surface
         // the name/email form when identity is what's missing.
         const missingIdentity =
-            !!replyState.comment &&
+            !isEditorHtmlEffectivelyEmpty(replyState.comment ?? '') &&
             !allowAnon &&
             !(replyState.username || (currentUserBeforeSubmit as any)?.username);
         const patch: Partial<CommentReplyState> = { isReplySaving: false };

@@ -1,4 +1,4 @@
-import { editorHtmlToServerHtml } from '../editor-html-to-server-html';
+import { editorHtmlToServerHtml, isEditorHtmlEffectivelyEmpty } from '../editor-html-to-server-html';
 
 describe('editorHtmlToServerHtml', () => {
     it('returns empty input unchanged', () => {
@@ -33,5 +33,21 @@ describe('editorHtmlToServerHtml', () => {
 
     it('leaves already-flat content alone', () => {
         expect(editorHtmlToServerHtml('plain text<br>next line')).toBe('plain text<br>next line');
+    });
+});
+
+describe('isEditorHtmlEffectivelyEmpty', () => {
+    it('treats every empty-editor shape as empty', () => {
+        expect(isEditorHtmlEffectivelyEmpty('')).toBe(true);
+        expect(isEditorHtmlEffectivelyEmpty('<p></p>')).toBe(true);
+        expect(isEditorHtmlEffectivelyEmpty('<p><br></p>')).toBe(true);
+        expect(isEditorHtmlEffectivelyEmpty('<p> </p>')).toBe(true);
+        expect(isEditorHtmlEffectivelyEmpty('<p>&nbsp;</p>')).toBe(true);
+        expect(isEditorHtmlEffectivelyEmpty('<p><br></p><p><br></p>')).toBe(true);
+    });
+
+    it('treats text and image-only content as non-empty', () => {
+        expect(isEditorHtmlEffectivelyEmpty('<p>hi</p>')).toBe(false);
+        expect(isEditorHtmlEffectivelyEmpty('<p><img src="https://example.com/a.png" /></p>')).toBe(false);
     });
 });

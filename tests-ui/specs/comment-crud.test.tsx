@@ -104,6 +104,31 @@ maybe('Comment CRUD UI tests', () => {
         expect(storedHTML).toMatch(/first paragraph\s*<br\s*\/?>\s*second paragraph/);
     });
 
+    it('testEmptyEditorDoesNotSubmit', async () => {
+        ctx = await setupTestContext({ emailPrefix: 'empty-submit', urlIdLabel: 'empty-submit' });
+        const ssoToken = ctx.ssoFor('userA');
+        const config = buildSDKConfig({ tenant: ctx.tenant, urlId: ctx.urlId, ssoToken });
+        const { getByTestId, queryByTestId, unmount } = render(
+            <FastCommentsLiveCommenting config={config} />
+        );
+        ctx.onTeardown(unmount);
+
+        await pollUntil(() => !!queryByTestId('emptyStateView'), {
+            timeoutMs: 15000,
+            label: 'empty state visible',
+        });
+        // The real editor (tiptap/native) reports an empty box as
+        // '<p><br></p>' (or '<p></p>'), never '': submitting any of these
+        // must be a no-op or the server stores a blank "<br />" comment.
+        for (const emptyValue of ['<p><br></p>', '<p></p>', '<p> </p>']) {
+            fireEvent.changeText(getByTestId('commentInput'), emptyValue);
+            fireEvent.press(getByTestId('sendButton'));
+        }
+        await sleep(2000);
+        expect(queryByTestId('emptyStateView')).toBeTruthy();
+        expect(queryByTestId(/^commentRow-/)).toBeNull();
+    });
+
     it('testGuestSubmitHidesAuthFormAndKeepsUser', async () => {
         // Regression guard for the guest-submit bug: after a successful guest
         // post the server returns an authorized user, but a stale snapshot was

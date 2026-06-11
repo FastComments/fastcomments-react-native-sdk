@@ -14,3 +14,17 @@ export function editorHtmlToServerHtml(html: string): string {
     result = result.replace(/<p[^>]*>|<\/p>/g, '');
     return result;
 }
+
+/**
+ * Whether the editor content has nothing to submit. An empty editor reports
+ * '<p><br></p>' or '<p></p>', never '': posting those stores a blank "<br />"
+ * comment. Content that is only an image still counts as non-empty.
+ */
+export function isEditorHtmlEffectivelyEmpty(html: string): boolean {
+    if (!html) return true;
+    const serverHtml = editorHtmlToServerHtml(html);
+    return serverHtml
+        .replace(/<br\s*\/?>/g, '')
+        .replace(/&nbsp;/g, '')
+        .trim().length === 0;
+}
