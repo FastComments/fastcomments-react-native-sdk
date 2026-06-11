@@ -49,6 +49,7 @@ export function GifBrowser({
     const [translations, setTranslations] = useState<Record<string, string>>({});
     const [gifs, setGifs] = useState<[string, number, number][]>([]);
     const lastRequestTime = useRef<number>(0);
+    const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastGifsRequest = useRef<GifsRequest>({
         search: null,
         page: 0,
@@ -178,6 +179,9 @@ export function GifBrowser({
     useEffect(() => {
         // noinspection JSIgnoredPromiseFromCall
         initialLoad();
+        return () => {
+            if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+        };
     }, []);
 
     const onEndReached = async () => {
@@ -210,33 +214,40 @@ export function GifBrowser({
             accessibilityLabel={`gifResult-${index}`}
             onPress={() => handleSelected(item[0])}
         >
-            <Image source={{uri: item[0]}} style={styles.gifBrowser?.listImage}/>
+            <Image testID={`gifResultImage-${index}`} accessibilityLabel={`gifResultImage-${index}`} source={{uri: item[0]}} style={styles.gifBrowser?.listImage}/>
         </TouchableOpacity>;
     };
 
+    // Trailing-debounce auto-search like the web widget (700ms): every
+    // keystroke re-arms the timer, the final term searches without submit,
+    // and clearing the box falls back to trending.
+    const searchForTerm = (term: string) => {
+        const trimmed = term.trim();
+        const nextSearch = trimmed.length > 0 ? trimmed : null;
+        if (nextSearch === lastGifsRequest.current.search) return;
+        // noinspection JSIgnoredPromiseFromCall
+        getGifs({
+            ...lastGifsRequest.current,
+            page: 0,
+            search: nextSearch
+        });
+    };
+
     const header = <TextInput
+        testID="gifSearchInput"
+        accessibilityLabel="gifSearchInput"
         value={searchText}
         onChangeText={(newValue) => {
-            setSearchText(newValue)
-            if (Date.now() - lastRequestTime.current > 1_500) {
-                // noinspection JSIgnoredPromiseFromCall
-                getGifs({
-                    ...lastGifsRequest.current,
-                    search: searchText
-                });
-            }
-        }
-        }
+            setSearchText(newValue);
+            if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+            searchDebounceRef.current = setTimeout(() => searchForTerm(newValue), 700);
+        }}
         style={styles.gifBrowser?.searchInput}
         placeholder={translations.GIF_SEARCH_PLACEHOLDER}
         onSubmitEditing={() => {
-            // noinspection JSIgnoredPromiseFromCall
-            getGifs({
-                ...lastGifsRequest.current,
-                search: searchText
-            });
-        }
-        }
+            if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+            searchForTerm(searchText);
+        }}
         returnKeyType={'search'}
     />;
 

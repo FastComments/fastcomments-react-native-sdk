@@ -61,6 +61,39 @@ maybe('Editor toolbar media buttons', () => {
         }, { timeoutMs: 5000, label: 'gif inserted into the editor' });
     }, 120000);
 
+    it('testGifSearchAutoSearchesWithDebounce', async () => {
+        ctx = await setupTestContext({ emailPrefix: 'gifsearch', urlIdLabel: 'gif-search' });
+        const ssoToken = ctx.ssoFor('userA');
+        const config = buildSDKConfig({ tenant: ctx.tenant, urlId: ctx.urlId, ssoToken });
+        const { getByTestId, queryByTestId, queryAllByTestId, unmount } = render(
+            <FastCommentsLiveCommenting config={config} />
+        );
+        ctx.onTeardown(unmount);
+
+        await pollUntil(() => !!queryByTestId('toolbarGifButton'), { timeoutMs: 15000, label: 'gif button' });
+        fireEvent.press(getByTestId('toolbarGifButton'));
+        await pollUntil(() => queryAllByTestId(/^gifResult-/).length > 0, {
+            timeoutMs: 20000,
+            label: 'trending gifs loaded',
+        });
+        const firstGifSource = () => {
+            const image = queryByTestId('gifResultImage-0');
+            if (!image) return '';
+            const source = image.props.source;
+            return source && typeof source.uri === 'string' ? source.uri : '';
+        };
+        const trendingFirstSrc = firstGifSource();
+        expect(trendingFirstSrc.length).toBeGreaterThan(0);
+
+        // Typing alone (no submit) must trigger the search after the debounce,
+        // like the web widget's 700ms trailing search.
+        fireEvent.changeText(getByTestId('gifSearchInput'), 'congratulations');
+        await pollUntil(() => {
+            const src = firstGifSource();
+            return src.length > 0 && src !== trendingFirstSrc;
+        }, { timeoutMs: 20000, label: 'results changed via auto-search' });
+    }, 120000);
+
     it('testImageButtonRendersWithHostCallback', async () => {
         ctx = await setupTestContext({ emailPrefix: 'imgbtn', urlIdLabel: 'image-button' });
         const ssoToken = ctx.ssoFor('userA');
