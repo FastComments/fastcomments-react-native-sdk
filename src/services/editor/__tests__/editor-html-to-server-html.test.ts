@@ -34,6 +34,17 @@ describe('editorHtmlToServerHtml', () => {
     it('leaves already-flat content alone', () => {
         expect(editorHtmlToServerHtml('plain text<br>next line')).toBe('plain text<br>next line');
     });
+
+    // The server only accepts images as [img]src[/img] tokens (the web widget's
+    // wire format); raw <img> tags submitted by users are stripped server-side.
+    // The CONTENT stays untouched beyond that - block layout is a renderer
+    // concern, exactly like the web widget's display:block CSS.
+    it('tokenizes editor images for the server', () => {
+        expect(editorHtmlToServerHtml('<p>look <img src="https://x.com/a.webp"/></p>'))
+            .toBe('look [img]https://x.com/a.webp[/img]');
+        expect(editorHtmlToServerHtml('<img src="https://x.com/a.gif">'))
+            .toBe('[img]https://x.com/a.gif[/img]');
+    });
 });
 
 describe('isEditorHtmlEffectivelyEmpty', () => {

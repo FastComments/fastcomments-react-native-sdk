@@ -97,6 +97,12 @@ export interface IFastCommentsStyles {
         toolbarFormatButtonActive?: ViewStyle
         toolbarFormatButtonText?: TextStyle
         toolbarButton?: ImageStyle
+        /** Strip of images/GIFs attached on web, where the editor cannot embed them inline. **/
+        pendingImagesStrip?: ViewStyle
+        pendingImage?: ViewStyle
+        pendingImageThumb?: ImageStyle
+        pendingImageRemove?: ViewStyle
+        pendingImageRemoveText?: TextStyle
         imageUploadModalCenteredView?: ViewStyle
         imageUploadModalContent?: ViewStyle
         imageUploadModalProgressSpinnerSize?: number

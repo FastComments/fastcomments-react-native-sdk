@@ -1,10 +1,12 @@
 import RenderHtml, {
+    type CustomBlockRenderer,
     defaultHTMLElementModels,
     HTMLContentModel,
+    HTMLElementModel,
     RenderHTMLConfigProvider,
     TRenderEngineProvider,
 } from 'react-native-render-html';
-import { ActivityIndicator, FlatList, ListRenderItemInfo, NativeScrollEvent, NativeSyntheticEvent, useWindowDimensions, View, Text } from 'react-native';
+import { ActivityIndicator, FlatList, Linking, ListRenderItemInfo, NativeScrollEvent, NativeSyntheticEvent, useWindowDimensions, View, Text } from 'react-native';
 import { FastCommentsCallbacks, IFastCommentsStyles, ImageAssetConfig, RNComment } from '../types';
 import React, { MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { PaginationNext } from './pagination-next';
@@ -36,10 +38,39 @@ export interface LiveCommentingListProps {
 const CommentViewMemo = React.memo<CommentViewProps>((props) => FastCommentsCommentView(props));
 
 const customHTMLElementModels = {
+    // Inline emoticon/react images flow with the text...
     img: defaultHTMLElementModels.img.extend({
         contentModel: HTMLContentModel.mixed,
     }),
+    // ...while uploaded comment images render block, like the web widget's
+    // `.inline-image { display: block }` CSS. The server's <a class="inline-image">
+    // wrapper is retagged to this element in domVisitors below.
+    'comment-image-block': HTMLElementModel.fromCustomModel({
+        tagName: 'comment-image-block',
+        contentModel: HTMLContentModel.block,
+    }),
 };
+
+const domVisitors = {
+    onElement: (element: { tagName: string; attribs: Record<string, string> }) => {
+        if (element.tagName === 'a' && typeof element.attribs.class === 'string' && element.attribs.class.includes('inline-image')) {
+            element.tagName = 'comment-image-block';
+        }
+    },
+};
+
+// Keeps the web widget's tap-to-open behavior the anchor provided.
+const CommentImageBlockRenderer: CustomBlockRenderer = function CommentImageBlockRenderer({ TDefaultRenderer, ...props }) {
+    const href = props.tnode.attributes.href;
+    return (
+        <TDefaultRenderer
+            {...props}
+            onPress={href ? () => { void Linking.openURL(href); } : undefined}
+        />
+    );
+};
+
+const customRenderers = { 'comment-image-block': CommentImageBlockRenderer };
 
 export function LiveCommentingList(props: LiveCommentingListProps) {
     const {
@@ -247,8 +278,9 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
             tagsStyles={styles.comment?.textLinkStyles}
             classesStyles={styles.comment?.HTMLNodeStyleByClass}
             customHTMLElementModels={customHTMLElementModels}
+            domVisitors={domVisitors}
         >
-            <RenderHTMLConfigProvider>
+            <RenderHTMLConfigProvider renderers={customRenderers}>
                 <FlatList
                     ref={listRef}
                     testID="recyclerViewComments"

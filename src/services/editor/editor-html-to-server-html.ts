@@ -12,6 +12,10 @@ export function editorHtmlToServerHtml(html: string): string {
     let result = html.replace(/<\/?html>/g, '');
     result = result.replace(/<\/p>\s*<p[^>]*>/g, '<br>');
     result = result.replace(/<p[^>]*>|<\/p>/g, '');
+    // Images the native editor embeds (setImage) go over the wire as
+    // [img]src[/img] tokens, the same format the web widget submits; the
+    // server strips raw <img> tags from user submissions.
+    result = result.replace(/<img[^>]*src="([^"]+)"[^>]*\/?>/g, '[img]$1[/img]');
     return result;
 }
 

@@ -12,6 +12,7 @@ import { FastCommentsLiveCommenting } from '../../src/components/live-commenting
 import { setupTestContext, teardownTestContext, TestContext } from '../framework/harness/test-context';
 import { buildSDKConfig } from '../framework/harness/build-config';
 import { pollUntil } from '../framework/harness/poll';
+import { fetchLatestCommentHTML } from '../framework/api/comments-rest';
 
 const hasKey = !!process.env.FC_E2E_API_KEY;
 const maybe = hasKey ? describe : describe.skip;
@@ -59,6 +60,15 @@ maybe('Editor toolbar media buttons', () => {
             const value = input ? input.props.value : '';
             return typeof value === 'string' && value.includes('<img');
         }, { timeoutMs: 5000, label: 'gif inserted into the editor' });
+
+        // And SURVIVES submission: the server only keeps images sent as
+        // [img]src[/img] tokens, so assert the stored comment HTML, not just
+        // the editor state (a raw <img> submission is silently stripped).
+        fireEvent.press(getByTestId('sendButton'));
+        await pollUntil(async () => {
+            const storedHTML = await fetchLatestCommentHTML(ctx.tenant, ctx.urlId);
+            return !!storedHTML && storedHTML.includes('<img');
+        }, { timeoutMs: 15000, label: 'server kept the gif image' });
     }, 120000);
 
     it('testGifSearchAutoSearchesWithDebounce', async () => {

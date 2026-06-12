@@ -253,11 +253,39 @@ export function CommentTextArea({
         };
     }, [mentionQuery]);
 
+    // The web editor's schema has no image node: setImage is a stub and <img>
+    // in setValue gets stripped. On web, images/GIFs attach as a preview strip
+    // and are appended to the comment HTML at read time instead.
+    const supportsInlineImages = Platform.OS !== 'web';
+    const [pendingImages, setPendingImages] = useState<string[]>([]);
+
+    const insertImage = (src: string) => {
+        if (supportsInlineImages) {
+            editorRef.current?.setImage(src, 0, 0);
+        } else {
+            setPendingImages((prev) => [...prev, src]);
+        }
+    };
+
     useEffect(() => {
         if (value !== undefined && value !== htmlRef.current) {
-            htmlRef.current = value;
-            editorRef.current?.setValue(value);
-            setMentionQuery(detectMentionQuery(value));
+            let editorValue = value;
+            if (!supportsInlineImages && editorValue) {
+                // Editing on web: the raw comment source carries [img]src[/img]
+                // tokens; pull them out as attachment chips before the text hits
+                // the editor (whose schema has no image support).
+                const images: string[] = [];
+                editorValue = editorValue.replace(/\[img\]([^[\]]+)\[\/img\]/g, (_match, src: string) => {
+                    images.push(src);
+                    return '';
+                });
+                setPendingImages(images);
+            } else if (!value) {
+                setPendingImages([]);
+            }
+            htmlRef.current = editorValue;
+            editorRef.current?.setValue(editorValue);
+            setMentionQuery(detectMentionQuery(editorValue));
         }
     }, [value]);
 
@@ -271,7 +299,9 @@ export function CommentTextArea({
 
     // Return the FULL value: silently truncating here lost everything past the
     // limit with no warning. Length is validated (visibly) at submit time.
-    output.getValue = () => htmlRef.current;
+    // Web-attached images append as [img] tokens, the wire format directly.
+    output.getValue = () =>
+        htmlRef.current + pendingImages.map((src) => `[img]${src}[/img]`).join('');
 
     const onChangeHtml = useCallback((e: NativeSyntheticEvent<OnChangeHtmlEvent>) => {
         const next = e.nativeEvent.value;
@@ -320,7 +350,7 @@ export function CommentTextArea({
                     : null;
             if (!photoData) return;
             if (typeof photoData === 'string' && photoData.startsWith('http')) {
-                editorRef.current?.setImage(photoData, 0, 0);
+                insertImage(photoData);
                 return;
             }
             setImageUploadProgress(0);
@@ -348,7 +378,7 @@ export function CommentTextArea({
                 };
                 xhr.send(formData);
             });
-            editorRef.current?.setImage(url, 0, 0);
+            insertImage(url);
         } catch (err) {
             console.error('Image upload failed:', err);
             setImageUploadProgress(null);
@@ -363,7 +393,7 @@ export function CommentTextArea({
         }
         try {
             const url = await pickGIF();
-            if (url) editorRef.current?.setImage(url, 0, 0);
+            if (url) insertImage(url);
         } catch (err) {
             console.error('GIF pick failed:', err);
         }
@@ -371,7 +401,7 @@ export function CommentTextArea({
 
     if (emoticonBarConfig) {
         emoticonBarConfig.addEmoticon = (src: string) => {
-            editorRef.current?.setImage(src, 0, 0);
+            insertImage(src);
         };
     }
 
@@ -530,6 +560,29 @@ export function CommentTextArea({
                 )}
             </View>
 
+            {pendingImages.length > 0 && (
+                <ScrollView horizontal style={styles.commentTextArea?.pendingImagesStrip}>
+                    {pendingImages.map((src, index) => (
+                        <View key={src + index} style={styles.commentTextArea?.pendingImage}>
+                            <Image
+                                testID={`pendingImage-${index}`}
+                                accessibilityLabel={`pendingImage-${index}`}
+                                source={{ uri: src }}
+                                style={styles.commentTextArea?.pendingImageThumb}
+                            />
+                            <TouchableOpacity
+                                testID={`pendingImageRemove-${index}`}
+                                accessibilityLabel={`pendingImageRemove-${index}`}
+                                style={styles.commentTextArea?.pendingImageRemove}
+                                onPress={() => setPendingImages((prev) => prev.filter((_, i) => i !== index))}
+                            >
+                                <Text style={styles.commentTextArea?.pendingImageRemoveText}>{'×'}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ))}
+                </ScrollView>
+            )}
+
             {showGifBrowser && (
                 <MentionPortal>
                     <View
@@ -548,7 +601,7 @@ export function CommentTextArea({
                             cancelled={() => setShowGifBrowser(false)}
                             pickedGIF={(gifPath) => {
                                 setShowGifBrowser(false);
-                                editorRef.current?.setImage(gifPath, 0, 0);
+                                insertImage(gifPath);
                             }}
                         />
                     </View>

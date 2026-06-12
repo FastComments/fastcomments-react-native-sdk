@@ -258,6 +258,16 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
             HTMLNodeStyleByClass: {
                 react: {
                     paddingRight: t.spacing.xs
+                },
+                // Uploaded comment images: block layout with breathing room,
+                // left-aligned, mirroring the web widget's `.inline-image` CSS.
+                'inline-image': {
+                    marginTop: 10,
+                    marginBottom: 10,
+                    alignSelf: 'flex-start'
+                },
+                'comment-image': {
+                    alignSelf: 'flex-start'
                 }
             },
             children: {
@@ -468,6 +478,36 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 height: 18,
                 aspectRatio: 1,
                 resizeMode: 'contain'
+            },
+            pendingImagesStrip: {
+                flexDirection: 'row',
+                marginTop: t.spacing.sm
+            },
+            pendingImage: {
+                marginRight: t.spacing.sm
+            },
+            pendingImageThumb: {
+                width: 64,
+                height: 64,
+                borderRadius: t.radius.sm,
+                resizeMode: 'cover',
+                backgroundColor: t.colors.surface
+            },
+            pendingImageRemove: {
+                position: 'absolute',
+                top: 2,
+                right: 2,
+                minWidth: 22,
+                minHeight: 22,
+                borderRadius: t.radius.pill,
+                backgroundColor: 'rgba(0,0,0,0.6)',
+                justifyContent: 'center',
+                alignItems: 'center'
+            },
+            pendingImageRemoveText: {
+                color: '#FFFFFF',
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.bold
             },
             imageUploadModalCenteredView: {
                 flex: 1,
@@ -1243,23 +1283,22 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 borderLeftColor: 'transparent',
             }
         },
+        // A quiet, compact control like the web widget's: no button chrome.
         showHideCommentsToggle: {
             root: {
-                backgroundColor: t.colors.primary,
-                margin: t.spacing.xl,
-                paddingTop: t.spacing.sm + 2,
-                paddingRight: t.spacing.lg,
-                paddingBottom: t.spacing.sm + 2,
-                paddingLeft: t.spacing.lg,
-                borderRadius: t.radius.md,
+                alignSelf: 'center',
+                marginTop: t.spacing.sm,
+                marginBottom: t.spacing.sm,
+                paddingTop: 2,
+                paddingBottom: 3,
+                paddingLeft: t.spacing.sm,
+                paddingRight: t.spacing.sm,
                 alignContent: 'center',
                 alignItems: 'center'
             },
             text: {
-                marginTop: t.spacing.sm + 2,
-                marginBottom: t.spacing.sm + 2,
-                color: t.colors.onPrimary,
-                fontSize: t.fontSize.body,
+                color: t.colors.textPrimary,
+                fontSize: t.fontSize.base,
                 fontWeight: t.fontWeight.semibold,
             }
         },
@@ -1318,9 +1357,10 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 alignItems: 'center',
                 marginRight: t.spacing.lg
             },
+            // Touch target is restored via hitSlop on the buttons; visually the
+            // count hugs its icon.
             reactButton: {
-                minHeight: 36,
-                minWidth: 36,
+                padding: 2,
                 justifyContent: 'center',
                 alignItems: 'center'
             },
@@ -1333,7 +1373,7 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 fontSize: t.fontSize.base,
                 fontWeight: t.fontWeight.semibold,
                 color: t.colors.voteCount,
-                marginRight: t.spacing.xs
+                marginRight: 2
             },
             usersText: {
                 marginTop: t.spacing.xs,

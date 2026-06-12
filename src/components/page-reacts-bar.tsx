@@ -90,6 +90,7 @@ export function PageReactsBar({ store, styles }: PageReactsBarProps) {
                             <TouchableOpacity
                                 testID={`pageReactCount-${react.id}`}
                                 accessibilityLabel={`pageReactCount-${react.id}`}
+                                hitSlop={{ top: 10, bottom: 10, left: 6, right: 4 }}
                                 onPress={() => showUsers(react.id)}
                             >
                                 <Text style={[styles.pageReacts?.countText, count === 0 && styles.commentVote?.votesZeroText]}>
@@ -100,6 +101,7 @@ export function PageReactsBar({ store, styles }: PageReactsBarProps) {
                                 testID={`pageReact-${react.id}`}
                                 accessibilityLabel={`pageReact-${react.id}`}
                                 style={styles.pageReacts?.reactButton}
+                                hitSlop={{ top: 10, bottom: 10, left: 4, right: 10 }}
                                 onPress={() => toggle(react.id)}
                             >
                                 <Image

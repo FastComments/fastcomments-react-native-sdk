@@ -8,7 +8,7 @@
  */
 import * as React from 'react';
 import { describe, it, expect, afterEach } from 'vitest';
-import { render, cleanup, waitFor } from '@testing-library/react';
+import { render, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { FastCommentsLiveCommenting } from '../../index';
 import type { FastCommentsCommentWidgetConfig } from 'fastcomments-typescript';
 
@@ -79,6 +79,31 @@ describe('web smoke', () => {
         }, { timeout: 20000 });
         // Web falls back to a DOM file input, so the image button needs no callback.
         expect(queryByTestId('toolbarImageButton')).toBeTruthy();
+    });
+
+    it('selecting a GIF on web attaches it to the comment (the web editor cannot embed inline)', async () => {
+        const { queryByTestId, getByTestId, queryAllByTestId } = render(
+            <FastCommentsLiveCommenting config={demoConfig()} />
+        );
+        await waitFor(() => {
+            if (!queryByTestId('toolbarGifButton')) throw new Error('gif button not rendered yet');
+        }, { timeout: 20000 });
+        fireEvent.click(getByTestId('toolbarGifButton'));
+        await waitFor(() => {
+            if (queryAllByTestId(/^gifResult-/).length === 0 && !document.querySelector('[data-testid="gifResult-0"]')) {
+                throw new Error('trending gifs not loaded yet');
+            }
+        }, { timeout: 25000 });
+        const firstGif = document.querySelector('[data-testid="gifResult-0"]');
+        if (!(firstGif instanceof HTMLElement)) throw new Error('gif result not an element');
+        fireEvent.click(firstGif);
+        // The selection must be VISIBLE to the user: web attaches it as a
+        // pending-image chip (the editor schema strips inline <img>).
+        await waitFor(() => {
+            if (!document.querySelector('[data-testid="pendingImage-0"]')) {
+                throw new Error('pending image chip not rendered');
+            }
+        }, { timeout: 15000 });
     });
 
     it('renders the loading state in normal flow so it cannot collapse to 0 height', () => {
