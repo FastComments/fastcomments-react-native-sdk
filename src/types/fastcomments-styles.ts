@@ -181,6 +181,8 @@ export interface IFastCommentsStyles {
     modalMenu?: {
         rootView?: ViewStyle
         centeredView?: ViewStyle
+        /** The anchored dropdown panel rendered on web. **/
+        dropdown?: ViewStyle
         modalView?: ViewStyle
         menuOptionButton?: ViewStyle
         menuOptionText?: TextStyle
@@ -280,6 +282,12 @@ export interface IFastCommentsStyles {
         openButton?: ViewStyle
         text?: TextStyle
         downCarrot?: ViewStyle
+        /** The anchored dropdown panel rendered on web. **/
+        dropdown?: ViewStyle
+        option?: ViewStyle
+        optionSelected?: ViewStyle
+        optionText?: TextStyle
+        optionTextSelected?: TextStyle
     },
     showHideCommentsToggle?: {
         root?: ViewStyle

@@ -18,7 +18,7 @@ import {
 import { buildSDKConfig } from '../framework/harness/build-config';
 import { pollUntil, sleep } from '../framework/harness/poll';
 import { seedComment, fetchLatestCommentHTML } from '../framework/api/comments-rest';
-import { clearAlerts, pressLatestAlertButton } from '../framework/harness/alert-helper';
+import { clearAlerts, getLatestAlert, pressLatestAlertButton } from '../framework/harness/alert-helper';
 import { textOf } from '../framework/harness/text-of';
 
 const hasKey = !!process.env.FC_E2E_API_KEY;
@@ -175,6 +175,37 @@ maybe('Comment CRUD UI tests', () => {
             timeoutMs: 15000,
             label: 'top bar shows the authorized guest username',
         });
+    });
+
+    it('testEmptyReplyClosesWithoutConfirm', async () => {
+        ctx = await setupTestContext({ emailPrefix: 'replycancel', urlIdLabel: 'reply-cancel' });
+        const ssoToken = ctx.ssoFor('userA');
+        await seedComment({ tenant: ctx.tenant, urlId: ctx.urlId, text: 'Cancel target', ssoToken });
+        const config = buildSDKConfig({ tenant: ctx.tenant, urlId: ctx.urlId, ssoToken });
+        const { queryByTestId, queryAllByTestId, unmount } = render(
+            <FastCommentsLiveCommenting config={config} />
+        );
+        ctx.onTeardown(unmount);
+
+        await pollUntil(() => !!queryByTestId(/^replyButton-/), { timeoutMs: 15000, label: 'reply button' });
+        fireEvent.press(queryByTestId(/^replyButton-/)!);
+        await pollUntil(() => !!queryByTestId(/^replyIndicator-/), { timeoutMs: 5000, label: 'reply composer open' });
+
+        // Nothing typed: closing must NOT ask to discard, and must just close.
+        fireEvent.press(queryByTestId(/^replyButton-/)!);
+        await pollUntil(() => !queryByTestId(/^replyIndicator-/), {
+            timeoutMs: 5000,
+            label: 'empty reply closed without confirmation',
+        });
+        expect(getLatestAlert()).toBeUndefined();
+
+        // With text typed, closing DOES confirm.
+        fireEvent.press(queryByTestId(/^replyButton-/)!);
+        await pollUntil(() => !!queryByTestId(/^replyIndicator-/), { timeoutMs: 5000, label: 'reply composer reopened' });
+        const inputs = queryAllByTestId('commentInput');
+        fireEvent.changeText(inputs[inputs.length - 1], 'Half-written reply');
+        fireEvent.press(queryByTestId(/^replyButton-/)!);
+        await pollUntil(() => !!getLatestAlert(), { timeoutMs: 5000, label: 'discard confirmation shown' });
     });
 
     it('testEditCommentViaMenu', async () => {

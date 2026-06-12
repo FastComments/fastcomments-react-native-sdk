@@ -355,9 +355,11 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
             replyAreaRoot: {
                 marginTop: t.spacing.sm
             },
+            // Top-aligned so the vote auth form expanding below the pills does
+            // not re-center the date/reply controls against its full height.
             commentBottomToolbar: {
                 flexDirection: 'row',
-                alignItems: 'center',
+                alignItems: 'flex-start',
                 justifyContent: 'flex-start'
             },
             commentBottomToolbarReply: {
@@ -717,10 +719,13 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
         },
         commentUserInfoAsHTML: {},
         commentVote: {
+            // flex-start, NOT space-between: when the vote auth form opens it
+            // widens this column, and space-between scattered the buttons
+            // across the new width.
             commentVoteOptions: {
                 flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'space-between',
+                justifyContent: 'flex-start',
                 marginTop: 0,
                 marginRight: t.spacing.sm,
                 marginBottom: 0,
@@ -748,9 +753,7 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 justifyContent: 'center',
                 alignItems: 'center',
                 paddingLeft: t.spacing.sm,
-                paddingRight: t.spacing.sm,
-                borderRadius: t.radius.pill,
-                backgroundColor: t.colors.surface
+                paddingRight: t.spacing.sm
             },
             voteButtonIcon: {
                 height: 16,
@@ -827,6 +830,16 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 alignItems: "center",
                 // Scrim: floating menus need separation from the page behind them.
                 backgroundColor: '#00000055'
+            },
+            dropdown: {
+                width: 220,
+                paddingTop: t.spacing.xs,
+                paddingBottom: t.spacing.xs,
+                backgroundColor: t.colors.surfaceRaised,
+                borderWidth: 1,
+                borderColor: t.colors.border,
+                borderRadius: t.radius.md,
+                ...modalShadow
             },
             modalView: {
                 margin: t.spacing.xl,
@@ -1281,6 +1294,32 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 borderRightColor: 'transparent',
                 borderBottomColor: 'transparent',
                 borderLeftColor: 'transparent',
+            },
+            dropdown: {
+                width: 200,
+                paddingTop: t.spacing.xs,
+                paddingBottom: t.spacing.xs,
+                backgroundColor: t.colors.surfaceRaised,
+                borderWidth: 1,
+                borderColor: t.colors.border,
+                borderRadius: t.radius.md,
+                ...modalShadow
+            },
+            option: {
+                paddingTop: t.spacing.sm,
+                paddingBottom: t.spacing.sm,
+                paddingLeft: t.spacing.md,
+                paddingRight: t.spacing.md
+            },
+            optionSelected: {
+                backgroundColor: t.colors.pressed
+            },
+            optionText: {
+                fontSize: t.fontSize.base,
+                color: t.colors.textPrimary
+            },
+            optionTextSelected: {
+                fontWeight: t.fontWeight.semibold
             }
         },
         // A quiet, compact control like the web widget's: no button chrome.

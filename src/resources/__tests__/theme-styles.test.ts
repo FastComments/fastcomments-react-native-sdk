@@ -49,7 +49,8 @@ describe('theme -> styles generation', () => {
         const theme = getLightTheme();
         theme.radius.pill = 123;
         const styles = getDefaultFastCommentsStyles(theme);
-        expect(styles.commentVote?.voteButton?.borderRadius).toBe(123);
+        expect(styles.showNewLiveComments?.button?.borderRadius).toBe(123);
+        expect(styles.liveStatusBar?.connectionChip?.borderRadius).toBe(123);
     });
 
     it('resolveTheme merges per-group partials over the light base', () => {

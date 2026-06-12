@@ -1,5 +1,5 @@
 import { RenderHTMLSource } from 'react-native-render-html';
-import { Image, Pressable, TouchableOpacity, View } from 'react-native';
+import { Image, Platform, Pressable, TouchableOpacity, View } from 'react-native';
 import { CommentMenuState, getCommentMenuState } from './comment-menu';
 import { CommentNotices } from './comment-notices';
 import { CommentUserInfo, getCommentUserInfoHTML } from './comment-user-info';
@@ -15,7 +15,7 @@ import {
 } from '../types';
 import { CommentVote } from './comment-vote';
 import { ShowNewChildLiveCommentsButton } from './show-new-child-live-comments-button';
-import { memo } from 'react';
+import { memo, useRef } from 'react';
 import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
 
@@ -23,7 +23,7 @@ export interface FastCommentsCommentWithStore {
     comment: RNComment;
     config: FastCommentsRNConfig;
     imageAssets: ImageAssetConfig;
-    openCommentMenu: (comment: RNComment, menuState: CommentMenuState) => void;
+    openCommentMenu: (comment: RNComment, menuState: CommentMenuState, anchor?: { bottom: number; right: number }) => void;
     onReplySuccess: (comment: RNComment) => void;
     requestSetReplyingTo: (comment: RNComment | null) => Promise<boolean>;
     setRepliesHidden: (comment: RNComment, hidden: boolean) => void;
@@ -69,6 +69,15 @@ export function FastCommentsCommentView(props: CommentViewProps) {
     // Subscribe to this specific comment so we re-render only on its mutations.
     const liveComment = useStoreValue(store, (s) => s.byId[propComment._id]);
     const comment = liveComment ?? propComment;
+
+    // Web anchors the menu as a dropdown under this row's trigger.
+    const menuButtonRef = useRef<TouchableOpacity>(null);
+    const measureMenuAnchor = (): { bottom: number; right: number } | undefined => {
+        if (Platform.OS !== 'web') return undefined;
+        const button = menuButtonRef.current as unknown as { getBoundingClientRect?: () => { bottom: number; right: number } } | null;
+        const rect = button?.getBoundingClientRect?.();
+        return rect ? { bottom: rect.bottom, right: rect.right } : undefined;
+    };
 
     const html = comment.isDeleted
         ? translations.DELETED_PLACEHOLDER
@@ -127,10 +136,11 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                 )}
                 {!usePressableEditTrigger && shouldShowMenu && (
                     <TouchableOpacity
+                        ref={menuButtonRef}
                         testID={`commentMenuButton-${comment._id}`}
                         accessibilityLabel="commentMenuButton"
                         style={{ padding: 5 }}
-                        onPress={() => openCommentMenu(comment, menuState!)}
+                        onPress={() => openCommentMenu(comment, menuState!, measureMenuAnchor())}
                     >
                         <Image
                             source={

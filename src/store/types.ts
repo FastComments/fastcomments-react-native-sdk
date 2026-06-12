@@ -86,6 +86,8 @@ export interface ConfigSlice {
     userIdWS?: string | null;
     lastSubscriberInstance?: SubscriberInstance;
     ssoConfigString?: string;
+    /** Set by the open inline reply composer; closing skips the confirm when not dirty. **/
+    replyDirtyCheck?: (() => boolean) | null;
 
     setConfig: (config: FastCommentsRNConfig) => void;
     mergeConfig: (partial: Partial<FastCommentsRNConfig>) => void;
@@ -96,6 +98,7 @@ export interface ConfigSlice {
     setBlockingErrorMessage: (msg: string | undefined) => void;
     setModeratingTenantIds: (ids: string[] | undefined) => void;
     setWSIds: (urlIdWS?: string, tenantIdWS?: string, userIdWS?: string | null) => void;
+    setReplyDirtyCheck: (check: (() => boolean) | null) => void;
     setLastSubscriberInstance: (instance: SubscriberInstance | undefined) => void;
     setSSOConfigString: (s: string | undefined) => void;
     /**

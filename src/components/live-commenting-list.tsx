@@ -28,7 +28,7 @@ export interface LiveCommentingListProps {
     config: FastCommentsRNConfig;
     imageAssets: ImageAssetConfig;
     onReplySuccess: (comment: RNComment) => void;
-    openCommentMenu: (comment: RNComment, menuState: CommentMenuState) => void;
+    openCommentMenu: (comment: RNComment, menuState: CommentMenuState, anchor?: { bottom: number; right: number }) => void;
     requestSetReplyingTo: (comment: RNComment | null) => Promise<boolean>;
     styles: IFastCommentsStyles;
     store: FastCommentsStore;

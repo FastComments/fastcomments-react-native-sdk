@@ -40,6 +40,7 @@ export const createConfigSlice =
         userIdWS: undefined,
         lastSubscriberInstance: undefined,
         ssoConfigString: undefined,
+        replyDirtyCheck: undefined,
         broadcastIdsSent: new Set<string>(),
 
         setConfig: (config) => set({ config }),
@@ -53,6 +54,7 @@ export const createConfigSlice =
         setModeratingTenantIds: (ids) => set({ moderatingTenantIds: ids }),
         setWSIds: (urlIdWS, tenantIdWS, userIdWS) =>
             set({ urlIdWS, tenantIdWS, userIdWS }),
+        setReplyDirtyCheck: (check) => set({ replyDirtyCheck: check }),
         setLastSubscriberInstance: (instance: SubscriberInstance | undefined) =>
             set({ lastSubscriberInstance: instance }),
         setSSOConfigString: (s) => set({ ssoConfigString: s }),

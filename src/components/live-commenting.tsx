@@ -122,7 +122,10 @@ export function FastCommentsLiveCommenting({ config, theme, styles: stylesProp, 
     }, []);
 
     async function requestSetReplyingTo(comment: RNComment | null, force?: boolean) {
-        if (!force && !comment && isReplyingToParentIdRef.current) {
+        // An empty reply has nothing to discard; only confirm when dirty.
+        const replyDirtyCheck = store.getState().replyDirtyCheck;
+        const replyIsDirty = replyDirtyCheck ? replyDirtyCheck() : true;
+        if (!force && !comment && isReplyingToParentIdRef.current && replyIsDirty) {
             const s = store.getState();
             if (!s.translations.CONFIRM_CANCEL_REPLY) {
                 const sdk = s.sdk;
@@ -197,7 +200,7 @@ export function FastCommentsLiveCommenting({ config, theme, styles: stylesProp, 
                         onReplySuccess={handleReplySuccess}
                         requestSetReplyingTo={requestSetReplyingTo}
                         imageAssets={imageAssets}
-                        openCommentMenu={(comment, menuState) => setCommentMenuRequest({ comment, menuState })}
+                        openCommentMenu={(comment, menuState, anchor) => setCommentMenuRequest({ comment, menuState, anchor })}
                         styles={styles}
                         store={store}
                         service={service}
@@ -228,6 +231,7 @@ export function FastCommentsLiveCommenting({ config, theme, styles: stylesProp, 
                             commentMenuRequest.menuState
                         )}
                         isOpen={true}
+                        anchor={commentMenuRequest.anchor}
                         onClose={() => setCommentMenuRequest(undefined)}
                     />
                 ) : null}

@@ -191,6 +191,8 @@ export interface GetCommentMenuItemsProps
 export interface OpenCommentMenuRequest {
     comment: RNComment;
     menuState: CommentMenuState;
+    /** Web: viewport rect of the trigger so the menu anchors as a dropdown. **/
+    anchor?: { bottom: number; right: number };
 }
 
 export function getCommentMenuItems(

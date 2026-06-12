@@ -2,7 +2,7 @@ import { View, Text, Image, Linking, ActivityIndicator, TextInput, useWindowDime
 import { FastCommentsImageAsset, ImageAssetConfig } from '../types';
 import { getDefaultAvatarSrc } from '../services/default-avatar';
 import { ModalMenu } from './modal-menu';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { ThreeDot } from './three-dot';
 import { NotificationBell } from './notification-bell';
 import { CommentAreaMessage } from './comment-area-message';
@@ -416,6 +416,10 @@ export function ReplyArea(props: ReplyAreaProps) {
     const needsAuth = !currentUserAny || !currentUserAny.authorized || anonSessionNeedsEmail;
     const valueGetter: ValueObserver = {};
     const focusObserver: FocusObserver = {};
+    // The editor re-binds getValue against a fresh observer each render; the
+    // ref keeps the registered dirty-check pointing at the live one.
+    const valueGetterRef = useRef<ValueObserver>(valueGetter);
+    valueGetterRef.current = valueGetter;
 
     const [commentReplyState, setCommentReplyStateRaw] = useState<CommentReplyState>({
         isReplySaving: false,
@@ -430,6 +434,17 @@ export function ReplyArea(props: ReplyAreaProps) {
     useEffect(() => {
         if (parentComment) focusObserver.setFocused && focusObserver.setFocused(true);
     }, [parentComment]);
+
+    // Closing an EMPTY reply needs no "discard?" confirmation; register a
+    // dirty check the close flow consults.
+    useEffect(() => {
+        if (!parentComment) return;
+        store.getState().setReplyDirtyCheck(() => {
+            const getValue = valueGetterRef.current.getValue;
+            return !isEditorHtmlEffectivelyEmpty(getValue ? getValue() : '');
+        });
+        return () => store.getState().setReplyDirtyCheck(null);
+    }, [parentComment?._id]);
 
     useEffect(() => {
         if (!!parentComment && useSingleReplyField) {
