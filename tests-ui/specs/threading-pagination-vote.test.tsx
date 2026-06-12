@@ -82,21 +82,11 @@ maybe('Threading / Pagination order / Vote UI tests', () => {
 
         // The reply row must be visibly indented under its parent; depth was
         // silently dropped once (store object won over the depth-carrying prop)
-        // and every thread rendered flat.
+        // and every thread rendered flat. Depth now renders as the nesting
+        // rail, so a depth-carrying reply must have an elbow into its avatar.
         const rows = queryAllByTestId(/^commentRow-/);
         expect(rows.length).toBeGreaterThanOrEqual(2);
-        const margins = rows.map((row) => {
-            const style = row.props.style;
-            const entries = Array.isArray(style) ? style : [style];
-            let marginLeft = 0;
-            for (const entry of entries) {
-                if (entry && typeof entry === 'object' && typeof entry.marginLeft === 'number') {
-                    marginLeft = entry.marginLeft;
-                }
-            }
-            return marginLeft;
-        });
-        expect(Math.max(...margins)).toBeGreaterThan(0);
+        expect(queryByTestId(/^threadElbow-/)).toBeTruthy();
     });
 
     it('testCommentsRenderedInOrder (newest-first)', async () => {
@@ -121,6 +111,39 @@ maybe('Threading / Pagination order / Vote UI tests', () => {
         // Specific newest-first ordering is covered by store selector unit tests
         // (src/store/selectors/__tests__/visible-list.test.ts). Here we just
         // verify all three comments rendered at once.
+    });
+
+    it('testThreadNestingLines', async () => {
+        ctx = await setupTestContext({ emailPrefix: 'threadlines', urlIdLabel: 'thread-lines' });
+        const ssoToken = ctx.ssoFor('userA');
+        // P -> [C1 -> [G], C2]: C1 continues (C2 below it), C2 and G are last children.
+        const parentId = await seedComment({ tenant: ctx.tenant, urlId: ctx.urlId, text: 'TL parent', ssoToken });
+        const c1Id = await seedComment({ tenant: ctx.tenant, urlId: ctx.urlId, text: 'TL child one', ssoToken, parentId });
+        const gId = await seedComment({ tenant: ctx.tenant, urlId: ctx.urlId, text: 'TL grandchild', ssoToken, parentId: c1Id });
+        const c2Id = await seedComment({ tenant: ctx.tenant, urlId: ctx.urlId, text: 'TL child two', ssoToken, parentId });
+
+        const config = buildSDKConfig({ tenant: ctx.tenant, urlId: ctx.urlId, ssoToken, overrides: { defaultSortDirection: 'OF' } });
+        const { queryByText, queryByTestId, unmount } = render(<FastCommentsLiveCommenting config={config} />);
+        ctx.onTeardown(unmount);
+
+        await pollUntil(
+            () => !!queryByText('TL parent') && !!queryByText('TL grandchild') && !!queryByText('TL child two'),
+            { timeoutMs: 15000, label: 'thread fully visible' }
+        );
+
+        // Every child row hooks an elbow into its avatar; roots have none.
+        expect(queryByTestId(`threadElbow-${parentId}`)).toBeNull();
+        expect(queryByTestId(`threadElbow-${c1Id}`)).toBeTruthy();
+        expect(queryByTestId(`threadElbow-${c2Id}`)).toBeTruthy();
+        expect(queryByTestId(`threadElbow-${gId}`)).toBeTruthy();
+
+        // Continuation lines render only where the branch has more rows below:
+        // C1 continues toward C2 (through its own row and G's ancestor slot);
+        // last children (C2, G's own slot) do not.
+        expect(queryByTestId(`threadLine-${c1Id}-0`)).toBeTruthy();
+        expect(queryByTestId(`threadLine-${gId}-0`)).toBeTruthy();
+        expect(queryByTestId(`threadLine-${gId}-1`)).toBeNull();
+        expect(queryByTestId(`threadLine-${c2Id}-0`)).toBeNull();
     });
 
     it('testTapUpvote', async () => {

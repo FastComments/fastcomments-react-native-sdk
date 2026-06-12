@@ -7,11 +7,11 @@ import type { FastCommentsCommentWidgetConfig } from 'fastcomments-typescript';
 // Browser equivalent of example/src/AppCommenting.tsx. Routes API calls
 // through the Vite dev proxy so localhost dev avoids CORS.
 // Query params: ?theme=dark renders the dark token set, ?widget=chat renders
-// the FastCommentsLiveChat preset widget.
+// the FastCommentsLiveChat preset widget, ?urlId= points at another page.
 function AppCommentingWeb() {
   const [config] = useState<FastCommentsCommentWidgetConfig>({
     tenantId: 'demo',
-    urlId: 'native-test',
+    urlId: new URLSearchParams(window.location.search).get('urlId') || 'native-test',
     showLiveRightAway: true,
     countAll: true,
     apiHost: '/_fc',

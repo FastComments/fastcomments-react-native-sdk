@@ -36,6 +36,12 @@ export interface IFastCommentsStyles {
     commentsListContent?: ViewStyle
     comment?: {
         root?: ViewStyle
+        /** Content column right of the nesting rail; the inter-row gap lives here as paddingTop. **/
+        rowContent?: ViewStyle
+        /** Vertical continuation line for an ancestor branch with more rows below. **/
+        threadLine?: ViewStyle
+        /** Rounded corner hooking the nesting line into this row's avatar. **/
+        threadLineElbow?: ViewStyle
         subRoot?: ViewStyle
         topRight?: ViewStyle
         displayDate?: TextStyle

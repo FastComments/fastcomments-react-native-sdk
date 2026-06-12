@@ -1,5 +1,13 @@
 import { FastCommentsWidgetComment } from "fastcomments-typescript";
 
+/**
+ * Nesting-rail slot kinds, one per indent level (left to right). 'line' = an
+ * ancestor branch continues below this row; 'elbow' = this row is its parent's
+ * last child; 'tee' = elbow plus the branch continues below; 'none' = the
+ * ancestor branch already ended (blank spacer).
+ */
+export type ThreadLineSlot = 'line' | 'tee' | 'elbow' | 'none';
+
 // RN library stores extra state on the comment object that other clients do not.
 export interface RNComment extends FastCommentsWidgetComment {
     replyBoxOpen?: boolean;
@@ -12,6 +20,8 @@ export interface RNComment extends FastCommentsWidgetComment {
     requiresVerification?: boolean;
     changeCounter?: number;
     depth?: number;
+    /** Nesting-rail rendering plan; attached by the list to its prop copies, like `depth`. **/
+    threadLines?: ThreadLineSlot[];
     /**
      * Server-driven lock flag. The fastcomments-typescript package shipped on
      * npm hasn't republished this field yet, but the API includes it on every

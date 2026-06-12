@@ -201,8 +201,34 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
             paddingHorizontal: t.spacing.lg
         },
         comment: {
+            // The row is a horizontal strip: nesting-rail slots, then content.
+            // The inter-row gap lives as padding INSIDE the row (rowContent) so
+            // rail lines span it without breaks.
             root: {
-                marginTop: t.spacing.lg
+                flexDirection: 'row'
+            },
+            rowContent: {
+                flex: 1,
+                paddingTop: t.spacing.lg
+            },
+            threadLine: {
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                left: t.avatar.md / 2 - 1,
+                width: 2,
+                backgroundColor: t.colors.border
+            },
+            threadLineElbow: {
+                position: 'absolute',
+                top: 0,
+                left: t.avatar.md / 2 - 1,
+                width: t.spacing.xl + t.spacing.sm - (t.avatar.md / 2 - 1),
+                height: t.spacing.lg + t.avatar.md / 2,
+                borderLeftWidth: 2,
+                borderBottomWidth: 2,
+                borderColor: t.colors.border,
+                borderBottomLeftRadius: t.radius.md
             },
             topRight: {
                 position: "absolute",
@@ -276,7 +302,9 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 marginBottom: 0,
                 marginLeft: t.spacing.lg
             },
-            childIndent: t.spacing.xl,
+            // Wide enough for the elbow to run from under the parent avatar
+            // center (avatar.md / 2) to this row's avatar with a visible bend.
+            childIndent: t.spacing.xl + t.spacing.sm,
         },
         commentMenu: {
             itemIcon: {

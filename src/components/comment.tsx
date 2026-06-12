@@ -217,19 +217,34 @@ export function FastCommentsCommentView(props: CommentViewProps) {
             content
         );
 
-    // depth is attached by the list to its prop copy only; the store object
-    // (which wins the merge above) never carries it.
-    const depth = propComment.depth ?? comment.depth;
-    const indentStyles = depth
-        ? { marginLeft: depth * (styles.comment?.childIndent || 20) }
+    // depth/threadLines are attached by the list to its prop copy only; the
+    // store object (which wins the merge above) never carries them.
+    const depth = propComment.depth ?? comment.depth ?? 0;
+    const threadLines = propComment.threadLines ?? [];
+    const slotWidth = styles.comment?.childIndent || 20;
+    const rail = depth
+        ? Array.from({ length: depth }, (_, slot) => {
+              const kind = threadLines[slot] ?? 'none';
+              return (
+                  <View key={slot} style={{ width: slotWidth }}>
+                      {(kind === 'line' || kind === 'tee') && (
+                          <View testID={`threadLine-${comment._id}-${slot}`} style={styles.comment?.threadLine} />
+                      )}
+                      {(kind === 'elbow' || kind === 'tee') && (
+                          <View testID={`threadElbow-${comment._id}`} style={styles.comment?.threadLineElbow} />
+                      )}
+                  </View>
+              );
+          })
         : null;
     return (
         <View
             testID={`commentRow-${comment._id}`}
             accessibilityLabel="commentRow"
-            style={[styles.comment?.root, indentStyles]}
+            style={styles.comment?.root}
         >
-            {contentWrapped}
+            {rail}
+            <View style={styles.comment?.rowContent}>{contentWrapped}</View>
         </View>
     );
 }

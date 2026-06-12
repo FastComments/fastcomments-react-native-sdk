@@ -7,7 +7,7 @@ import RenderHtml, {
     TRenderEngineProvider,
 } from 'react-native-render-html';
 import { ActivityIndicator, FlatList, Linking, ListRenderItemInfo, NativeScrollEvent, NativeSyntheticEvent, useWindowDimensions, View, Text } from 'react-native';
-import { FastCommentsCallbacks, IFastCommentsStyles, ImageAssetConfig, RNComment } from '../types';
+import { FastCommentsCallbacks, IFastCommentsStyles, ImageAssetConfig, RNComment, ThreadLineSlot } from '../types';
 import React, { MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { PaginationNext } from './pagination-next';
 import { PaginationPrev } from './pagination-prev';
@@ -132,6 +132,27 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
             }
             // Attach a depth for indentation without mutating the canonical object.
             out.push({ ...comment, depth: entry.depth });
+        }
+        // Nesting rail: each child row gets one slot per indent level. A slot
+        // draws a continuation line while that ancestor branch has more rows
+        // below, and the rightmost slot hooks an elbow into this row's avatar.
+        const lastVisibleChildOf: Record<string, string> = {};
+        for (const c of out) {
+            if (c.parentId) lastVisibleChildOf[c.parentId] = c._id;
+        }
+        for (const c of out) {
+            const depth = c.depth ?? 0;
+            if (!depth || !c.parentId) continue;
+            const slots: ThreadLineSlot[] = new Array(depth);
+            let node: RNComment | undefined = c;
+            for (let level = depth - 1; level >= 0 && node && node.parentId; level--) {
+                const isLast = lastVisibleChildOf[node.parentId] === node._id;
+                slots[level] = level === depth - 1
+                    ? (isLast ? 'elbow' : 'tee')
+                    : (isLast ? 'none' : 'line');
+                node = byId[node.parentId];
+            }
+            c.threadLines = slots;
         }
         return out;
     }, [visibleEntries, byId, commentsVisible, countAboveToggle]);
