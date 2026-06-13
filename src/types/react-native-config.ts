@@ -20,4 +20,6 @@ export interface FastCommentsRNConfig extends FastCommentsCommentWidgetConfig {
     useInlineSubmitButton?: boolean
     /** With useShowCommentsToggle: how many comments render above the Show Comments toggle while collapsed (mirrors the web widget's countAboveToggle). **/
     countAboveToggle?: number
+    /** Hide the top bar above the comment input (logged-in username, avatar, logout menu, and notification bell). **/
+    hideTopBar?: boolean
 }

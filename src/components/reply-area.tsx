@@ -398,6 +398,7 @@ export function ReplyArea(props: ReplyAreaProps) {
     const allowAnon = useStoreValue(store, (s) => !!s.config.allowAnon);
     const useSingleReplyField = useStoreValue(store, (s) => !!s.config.useSingleReplyField);
     const hasDarkBackground = useStoreValue(store, (s) => !!s.config.hasDarkBackground);
+    const hideTopBar = useStoreValue(store, (s) => !!s.config.hideTopBar);
     const disableEmailInputs = useStoreValue(store, (s) => !!s.config.disableEmailInputs);
     const useInlineSubmitButton = useStoreValue(store, (s) => !!s.config.useInlineSubmitButton);
     const enableCommenterLinks = useStoreValue(store, (s) => !!s.config.enableCommenterLinks);
@@ -506,7 +507,7 @@ export function ReplyArea(props: ReplyAreaProps) {
     } else {
         // A ghost anon session (stale cookie, no username) must not light up
         // logged-in chrome: empty username, Log Out, and notifications all 401.
-        if (!parentComment && currentUser && isIdentifiedUser(currentUser)) {
+        if (!parentComment && currentUser && isIdentifiedUser(currentUser) && !hideTopBar) {
             topBar = (
                 <View style={styles.replyArea?.topBar}>
                     <View style={styles.replyArea?.loggedInInfo}>
