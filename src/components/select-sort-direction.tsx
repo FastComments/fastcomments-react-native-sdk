@@ -1,6 +1,6 @@
 import { FastCommentsSortDirection, FastCommentsImageAsset, IFastCommentsStyles } from '../types';
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
-import { useRef, useState } from 'react';
+import { useRef, useState, type ComponentRef } from 'react';
 import { ModalMenu } from './modal-menu';
 import { MentionPortal } from './mention-portal';
 import type { FastCommentsStore } from '../store/types';
@@ -26,7 +26,7 @@ export function SelectSortDirection({ store, styles }: SelectSortDirectionProps)
     const hasDarkBackground = useStoreValue(store, (s) => !!s.config.hasDarkBackground);
     const imageAssets = useStoreValue(store, (s) => s.imageAssets);
     const [isOpen, setIsOpen] = useState(false);
-    const buttonRef = useRef<TouchableOpacity>(null);
+    const buttonRef = useRef<ComponentRef<typeof TouchableOpacity>>(null);
     const dropdownRef = useRef<View>(null);
 
     const setValue = (newValue: FastCommentsSortDirection) => store.getState().setSortDirection(newValue);

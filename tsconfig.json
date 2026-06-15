@@ -13,7 +13,7 @@
     "forceConsistentCasingInFileNames": true,
     "jsx": "react-jsx",
     "lib": ["esnext", "dom"],
-    "types": ["jest", "react-native"],
+    "types": ["jest"],
     "module": "esnext",
     "moduleResolution": "node",
     "moduleSuffixes": [".native", ""],

@@ -15,7 +15,7 @@ import {
 } from '../types';
 import { CommentVote } from './comment-vote';
 import { ShowNewChildLiveCommentsButton } from './show-new-child-live-comments-button';
-import { memo, useRef } from 'react';
+import { memo, useRef, type ComponentRef } from 'react';
 import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
 import { measureAnchorRect } from '../services/web-anchor';
@@ -72,7 +72,7 @@ export function FastCommentsCommentView(props: CommentViewProps) {
     const comment = liveComment ?? propComment;
 
     // Web anchors the menu as a dropdown under this row's trigger.
-    const menuButtonRef = useRef<TouchableOpacity>(null);
+    const menuButtonRef = useRef<ComponentRef<typeof TouchableOpacity>>(null);
     const measureMenuAnchor = (): { bottom: number; right: number } | undefined => {
         const rect = measureAnchorRect(menuButtonRef);
         return rect ? { bottom: rect.bottom, right: rect.right } : undefined;

@@ -1,6 +1,6 @@
 import { Image, View, Text, TouchableOpacity, Modal, Platform, type ViewStyle } from 'react-native';
 import { FastCommentsImageAsset, ImageAssetConfig } from '../types';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type ComponentRef } from 'react';
 import { IFastCommentsStyles } from '../types';
 import { NotificationList } from './notification-list';
 import { MentionPortal } from './mention-portal';
@@ -33,7 +33,7 @@ export function NotificationBell({
     // Web: anchor the list as a dropdown under the bell (portaled to the body so
     // the comment list cannot clip it), like the comment/sort menus. Native
     // keeps the centered modal.
-    const bellRef = useRef<TouchableOpacity>(null);
+    const bellRef = useRef<ComponentRef<typeof TouchableOpacity>>(null);
     const dropdownRef = useRef<View>(null);
     const isWebDropdown = Platform.OS === 'web' && typeof document !== 'undefined';
     const dropdownPosition = useAnchoredPosition(isWebDropdown && isOpen, ({ scrollX, scrollY }) => {

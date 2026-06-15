@@ -137,7 +137,7 @@ export function CommentTextArea({
     const mentionActiveRef = useRef<boolean>(false);
     const [imageUploadProgress, setImageUploadProgress] = useState<number | null>(null);
     const [showGifBrowser, setShowGifBrowser] = useState(false);
-    const gifButtonRef = useRef<TouchableOpacity>(null);
+    const gifButtonRef = useRef<React.ComponentRef<typeof TouchableOpacity>>(null);
     const storeConfig = useStoreValue(store, (s) => s.config);
 
     // Anchor the GIF popover under its toolbar button. On web the popover is

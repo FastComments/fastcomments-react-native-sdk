@@ -4,3 +4,11 @@
 export const StyleSheet = {
     hairlineWidth: 0.5,
 };
+
+// Node unit tests run as the "native" platform: Platform.select returns the
+// ios/native/default branch (never the web one).
+export const Platform = {
+    OS: 'ios' as const,
+    select: <T,>(specifics: { web?: T; ios?: T; android?: T; native?: T; default?: T }): T | undefined =>
+        specifics.ios ?? specifics.native ?? specifics.default,
+};

@@ -1,4 +1,4 @@
-import {Dispatch, ReactNode, SetStateAction, useRef, useState} from 'react';
+import {Dispatch, ReactNode, SetStateAction, useRef, useState, type ComponentRef} from 'react';
 import {ActivityIndicator, Image, ImageURISource, Modal, Platform, Text, TouchableOpacity, View} from "react-native";
 import {IFastCommentsStyles} from "../types";
 import {MentionPortal} from './mention-portal';
@@ -46,7 +46,7 @@ export function ModalMenu({
 }: ModalMenuProps) {
     const [activeModalId, setModalIdVisible] = useState<string | null>(isOpen ? 'menu' : null);
     const [isLoading, setLoading] = useState(false);
-    const openButtonRef = useRef<TouchableOpacity>(null);
+    const openButtonRef = useRef<ComponentRef<typeof TouchableOpacity>>(null);
     const dropdownRef = useRef<View>(null);
 
     async function close(isSafe?: boolean) {

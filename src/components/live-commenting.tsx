@@ -58,7 +58,7 @@ export function FastCommentsLiveCommenting({ config, theme, styles: stylesProp, 
     const sortDirection = useStoreValue(store, (s) => s.sortDirection);
     const showLiveStatus = useStoreValue(store, (s) => !!s.config.showLiveStatus);
 
-    const service = useRef<FastCommentsLiveCommentingService>();
+    const service = useRef<FastCommentsLiveCommentingService | undefined>(undefined);
     useEffect(() => {
         service.current = new FastCommentsLiveCommentingService(store, callbacks);
         return () => {
