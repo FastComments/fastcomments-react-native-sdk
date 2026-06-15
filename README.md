@@ -31,6 +31,16 @@ Add live chat to your existing React Native application, or even build a social 
 
 ## Screenshots
 
+Live threaded commenting with avatars, nested replies, votes, and the built-in rich-text composer, plus a dark theme and a live-chat preset (shown here rendered via `react-native-web`):
+
+<table>
+  <tr>
+    <td align="center"><b>Live Commenting</b><br/><img src="./demo-screenshots/light.png" width="260" alt="Live commenting, light theme"/></td>
+    <td align="center"><b>Dark Theme</b><br/><img src="./demo-screenshots/dark.png" width="260" alt="Live commenting, dark theme"/></td>
+    <td align="center"><b>Live Chat</b><br/><img src="./demo-screenshots/chat.png" width="260" alt="Live chat preset"/></td>
+  </tr>
+</table>
+
 #### Skin: Erebus
 ![Skin: Erebus](./example/screenshots/skin-erebus.PNG)
 #### Skin: Default

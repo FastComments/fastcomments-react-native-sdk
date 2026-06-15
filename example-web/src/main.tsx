@@ -15,6 +15,8 @@ function AppCommentingWeb() {
     showLiveRightAway: true,
     countAll: true,
     apiHost: '/_fc',
+    // ?sort=OF|NF|MR overrides the default sort (handy for screenshots).
+    defaultSortDirection: (new URLSearchParams(window.location.search).get('sort') as 'OF' | 'NF' | 'MR') || undefined,
   } as FastCommentsCommentWidgetConfig);
 
   const params = new URLSearchParams(window.location.search);
