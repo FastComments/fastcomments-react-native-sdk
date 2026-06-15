@@ -1,10 +1,19 @@
 # Changelog
 
-## 4.1.0
+## 5.0.0
 
-Visual redesign, theme tokens, a dedicated live chat widget, and two bug fixes. Purely additive API.
+Major release: a complete visual redesign on a semantic theme-token layer, the `FastCommentsLiveChat` widget, first-class web support via `react-native-web`, and an upgrade of the dev/test/example toolchain to React Native 0.81 / React 19. The SDK source only uses stable RN APIs, so a consumer's integration code is unaffected; the break is the supported RN/React floor.
+
+### Breaking
+
+- Requires React Native 0.81 / React 19 on the toolchain. The Fabric editor (`react-native-enriched`) needs the New Architecture, the default since RN 0.76; consumers on older RN cannot take this as a minor.
+- Migrates to `fastcomments-sdk` 3.3.1: GIF methods renamed (`search`/`getTrending`/`getLarge` -> `getGifsSearch`/`getGifsTrending`/`getGifLarge`), `logout` -> `logoutPublic`, page reacts -> `getV2PageReacts`/`createV2PageReact`/`deleteV2PageReact`/`getV2PageReactUsers`, `getUserNotifications` gains `urlId`, `getCommentsForUser` reshaped (dropped tenantId/urlId/sso/cursor params), `reactFeedPostPublic` dropped `urlId`. Enum value imports moved to `fastcomments-sdk/server` (the bare entry is type-only).
 
 ### New
+
+- `config.hideTopBar` (`FastCommentsRNConfig`): hide the logged-in user + notification-bell strip above the composer.
+- First-class web overlays: the comment/sort menus, GIF popover, and notification list are portaled to the body and anchored under their trigger via shared `useAnchoredPosition` / `useDismissOnOutsideClick` hooks (capture-phase outside-click that excludes the trigger and content; selection closes the menu explicitly). The notification list opens as an anchored popover under the bell instead of a full-screen modal.
+- `shadow*` styles emit CSS `boxShadow` on web (react-native-web deprecates `shadow*`); native keeps `shadow*` + `elevation`.
 
 - `FastCommentsTheme` semantic token layer (colors, spacing, radii, font sizes, font weights, avatar sizes). New optional `theme` prop on `FastCommentsLiveCommenting`, `FastCommentsFeed`, and `FastCommentsLiveChat` generates the entire default style tree from tokens; `getLightTheme()` / `getDarkTheme()` / `resolveTheme()` exported. `styles` passed together with `theme` is merged on top (styles win); `styles` alone keeps the legacy full-replace behavior.
 - `FastCommentsLiveChat` widget (Android `LiveChatView` parity): chronological messages, composer below the list, live header strip with connection dot + user count, auto-scroll to new messages (pauses while scrolled up, resumes at the bottom or on your own message), older history loads on scroll-to-top, votes and reply threading disabled. All presets overridable via `config`.
@@ -31,6 +40,8 @@ Visual redesign, theme tokens, a dedicated live chat widget, and two bug fixes. 
 - Bold/italic/underline formatting in posted comments rendered as plain text on web; explicit per-tag styles restore inline formatting.
 - The chat widget opened scrolled to the oldest message on web; it now pins to the newest message once content lays out. The comment-count/sort header is suppressed in chat mode.
 - Comments beyond the tenant character limit were silently truncated client-side; the SDK now shows the COMMENT_TOO_BIG error instead of losing the tail.
+- "Subscribe to this page" never persisted: `getUserNotifications` now sends `urlId`, so the server returns the correct per-page `isSubscribed` and the checkbox no longer resets each time the list reopens.
+- `onScroll` top-pagination (chat mode) could fire `doPaginateNext` more than once between renders; a ref guard closes the double-fire window.
 
 ### UX polish
 
@@ -41,7 +52,8 @@ Visual redesign, theme tokens, a dedicated live chat widget, and two bug fixes. 
 ### Testing
 
 - New web test lane (`npm run test-web`): vitest + jsdom in `example-web/`, mounting the SDK through react-native-web with the real `react-native-enriched` (tiptap) editor against the real backend; covers the `.web.tsx` / react-native-web class of regression the node suite cannot reach.
-- The jest mock for `react-native-enriched` now mirrors the real editor's HTML contract (`<p>`-wrapped paragraphs). New E2E specs: LiveChat widget (dual-session two-way exchange, header strip, presets, auto-scroll, load-older), the theme prop, guest submit, multi-paragraph comments.
+- The jest mock for `react-native-enriched` now mirrors the real editor's HTML contract (`<p>`-wrapped paragraphs). New E2E specs: LiveChat widget (dual-session two-way exchange, header strip, presets, auto-scroll, load-older), the theme prop, guest submit, multi-paragraph comments. New web-lane specs: anchored `ModalMenu` (select/dismiss/sub-modal) and the notification popover (anchor + outside-click dismiss).
+- Verified on the RN 0.81 / React 19 stack: `tsc --noEmit` clean, 137 unit tests, 12 web-lane tests, and the tests-ui harness renders under React 19 (`render-smoke`). The full live E2E suite requires a backend key and the native example app (still RN 0.69) was not rebuilt.
 
 ## 4.0.0
 
