@@ -1,6 +1,6 @@
 import {IFastCommentsStyles} from "../types";
 import {FastCommentsTheme} from "../types/fastcomments-theme";
-import {StyleSheet, ViewStyle} from "react-native";
+import {Platform, StyleSheet, ViewStyle} from "react-native";
 import {getLightTheme} from "./themes";
 
 // The loading state is a sole, full-area render (the widget early-returns this
@@ -29,16 +29,22 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
     const t = theme ?? getLightTheme();
     const LoadingOverlay = getLoadingOverlay(t);
     const hairline = StyleSheet.hairlineWidth;
-    const modalShadow = {
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 4
-        },
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
-        elevation: 5
-    };
+    // react-native-web deprecates the `shadow*` props in favor of CSS `boxShadow`
+    // (which isn't a typed RN style until RN 0.76); native still needs `shadow*`
+    // (iOS) + `elevation` (Android). Emit the right one per platform.
+    const modalShadow: ViewStyle = Platform.select({
+        web: { boxShadow: '0px 4px 12px rgba(0,0,0,0.15)' } as ViewStyle,
+        default: {
+            shadowColor: '#000',
+            shadowOffset: {
+                width: 0,
+                height: 4
+            },
+            shadowOpacity: 0.15,
+            shadowRadius: 12,
+            elevation: 5
+        }
+    });
     const filledButton: ViewStyle = {
         backgroundColor: t.colors.primary,
         borderRadius: t.radius.md,

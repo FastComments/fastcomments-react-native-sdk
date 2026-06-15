@@ -1,4 +1,4 @@
-import { Image, View, Text, TouchableOpacity, Modal, Platform } from 'react-native';
+import { Image, View, Text, TouchableOpacity, Modal, Platform, type ViewStyle } from 'react-native';
 import { FastCommentsImageAsset, ImageAssetConfig } from '../types';
 import { useMemo, useRef, useState } from 'react';
 import { IFastCommentsStyles } from '../types';
@@ -60,9 +60,10 @@ export function NotificationBell({
                 margin: 0,
                 maxHeight: 440,
                 backgroundColor: 'transparent',
-                shadowOpacity: 0,
-                elevation: 0,
-            },
+                // Web only: the dropdown wrapper provides the shadow; clear the
+                // card's own (boxShadow, since react-native-web deprecates shadow*).
+                boxShadow: 'none',
+            } as ViewStyle,
         },
     }), [styles]);
 

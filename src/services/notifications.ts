@@ -2,12 +2,15 @@ import {FastCommentsRNConfig, GetTranslationsResponse, GetUserUnreadNotification
 import {CommonHTTPResponse} from "../types/dto/common-http-response";
 import {GetUserNotificationsResponse, UserNotification} from "../types";
 import {NotificationType} from "fastcomments-typescript";
+import type { RenderableUserNotification } from "fastcomments-sdk";
+// Enums are runtime values: the bare `fastcomments-sdk` entry is type-only
+// (export type *), so value imports must come from the /server (or /browser)
+// barrel where the enums exist as real exports.
 import {
-    RenderableUserNotification,
     UpdateUserNotificationCommentSubscriptionStatusOptedInOrOutEnum,
     UpdateUserNotificationPageSubscriptionStatusSubscribedOrUnsubscribedEnum,
     UpdateUserNotificationStatusNewStatusEnum,
-} from "fastcomments-sdk";
+} from "fastcomments-sdk/server";
 import type {FastCommentsStore} from "../store/types";
 
 export interface GetUserNotificationsRequest {
