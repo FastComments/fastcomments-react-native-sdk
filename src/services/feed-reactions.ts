@@ -37,10 +37,6 @@ export async function reactToFeedPost(
     state.applyFeedPostReactDelta(postId, reactType, delta, myReactsValue);
 
     const broadcastId = newBroadcastId(store);
-    // The feed list/create/delete endpoints publish under the literal 'FEEDS'
-    // pubsub channel, so we mirror that here so live `fr` / `dfr` events land
-    // on the same channel each subscriber is listening on. The server reads
-    // `urlId` off the query string to populate `sessionDetails.urlId`.
     const reactBody: ReactBodyParams = { reactType };
     const sdk = state.sdk;
 
@@ -51,7 +47,6 @@ export async function reactToFeedPost(
             reactBodyParams: reactBody,
             isUndo: isUndo ? true : undefined,
             broadcastId,
-            urlId: 'FEEDS',
             sso: state.ssoConfigString,
         });
         if (response.status !== 'success') {

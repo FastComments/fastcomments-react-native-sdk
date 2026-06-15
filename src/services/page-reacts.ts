@@ -13,10 +13,9 @@ export async function loadPageReacts(store: FastCommentsStore): Promise<PageReac
     const tenantId = state.config.tenantId;
     const urlId = state.config.urlId;
     if (!tenantId || !urlId) return null;
-    const response = await state.sdk.publicApi.getPageReacts({
+    const response = await state.sdk.publicApi.getV2PageReacts({
         tenantId,
         urlId,
-        sso: state.ssoConfigString,
     });
     if (response.status !== 'success') return null;
     return {
@@ -32,18 +31,16 @@ export async function setPageReact(store: FastCommentsStore, reactId: string, is
     const urlId = state.config.urlId;
     if (!tenantId || !urlId) return false;
     const response = isSelected
-        ? await state.sdk.publicApi.addPageReact({
+        ? await state.sdk.publicApi.createV2PageReact({
               tenantId,
               urlId,
               id: reactId,
               title: state.config.pageTitle,
-              sso: state.ssoConfigString,
           })
-        : await state.sdk.publicApi.deletePageReact({
+        : await state.sdk.publicApi.deleteV2PageReact({
               tenantId,
               urlId,
               id: reactId,
-              sso: state.ssoConfigString,
           });
     return response.status === 'success';
 }
@@ -54,11 +51,10 @@ export async function getPageReactUserNames(store: FastCommentsStore, reactId: s
     const tenantId = state.config.tenantId;
     const urlId = state.config.urlId;
     if (!tenantId || !urlId) return null;
-    const response = await state.sdk.publicApi.getPageReactUsers({
+    const response = await state.sdk.publicApi.getV2PageReactUsers({
         tenantId,
         urlId,
         id: reactId,
-        sso: state.ssoConfigString,
     });
     if (response.status !== 'success') return null;
     return response.userNames ?? [];

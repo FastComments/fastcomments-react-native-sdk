@@ -3291,7 +3291,7 @@ fast-json-stable-stringify@^2.1.0, fast-json-stable-stringify@2.x:
   integrity sha512-lhd/wF+Lk98HZoTCtlVraHtfh5XYijIjalXck7saUtuanSDyLMxnHhSXEDJqHxD7msR8D0uCmqlkwjCV8xvwHw==
 
 "fastcomments-sdk@file:../fastcomments-sdk-js":
-  version "3.2.4"
+  version "3.3.1"
   resolved "file:../fastcomments-sdk-js"
 
 fastcomments-typescript@^3.0.0:

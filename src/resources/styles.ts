@@ -937,6 +937,23 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 justifyContent: "center",
                 alignItems: "center",
             },
+            // Web: anchored popover under the bell (web-widget style), bounded so
+            // the list scrolls inside it instead of taking the whole page.
+            dropdown: {
+                width: 360,
+                maxWidth: '96%',
+                maxHeight: 480,
+                overflow: 'hidden',
+                paddingTop: t.spacing.md,
+                paddingLeft: t.spacing.md,
+                paddingRight: t.spacing.md,
+                paddingBottom: t.spacing.md,
+                backgroundColor: t.colors.surfaceRaised,
+                borderWidth: 1,
+                borderColor: t.colors.border,
+                borderRadius: t.radius.lg,
+                ...modalShadow
+            },
             root: {
                 margin: t.spacing.xl,
                 backgroundColor: t.colors.surfaceRaised,

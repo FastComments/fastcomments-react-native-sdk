@@ -75,6 +75,11 @@ export async function getUserNotifications(request: GetUserNotificationsRequest)
     const sdk = state.sdk;
     const response = await sdk.publicApi.getUserNotifications({
         tenantId: state.config.tenantId,
+        // The server's `isSubscribed` is page-scoped: without urlId it can't
+        // report this page's subscription, so the "subscribe to this page"
+        // checkbox would reset every time the list reloads (matches the web
+        // widget, which passes urlId here "for notification state").
+        urlId: state.config.urlId,
         afterId: request.afterId,
         unreadOnly: request.unreadOnly,
         sso: getSSO(state.config),

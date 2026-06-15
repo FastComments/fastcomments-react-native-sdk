@@ -68,7 +68,7 @@ async function logout(
         }
     }
     const sdk = state.sdk;
-    await sdk.publicApi.logout();
+    await sdk.publicApi.logoutPublic();
     const currentUser = state.currentUser;
     const currentUserId = currentUser && 'id' in currentUser ? currentUser.id : undefined;
 

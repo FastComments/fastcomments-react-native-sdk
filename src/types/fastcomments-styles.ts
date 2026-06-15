@@ -203,6 +203,8 @@ export interface IFastCommentsStyles {
     }
     notificationList?: {
         centeredView: ViewStyle
+        /** Web: the anchored popover the bell opens under itself (instead of the centered modal). **/
+        dropdown?: ViewStyle
         root?: ViewStyle
         closeButton?: ViewStyle
         closeButtonImage?: ImageStyle

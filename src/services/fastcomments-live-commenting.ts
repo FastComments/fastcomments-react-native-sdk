@@ -109,23 +109,12 @@ export class FastCommentsLiveCommentingService {
             if (isActivityFeed) {
                 // The activity feed (tenantId === 'all') routes through
                 // /comments-for-user which keys off userId rather than urlId.
-                // When SSO is in play we still pass the SSO tenant so the
-                // server can resolve cross-tenant moderation flags.
                 const apiResponse = await sdk.publicApi.getCommentsForUserRaw({
                     userId: config.userId,
-                    tenantId: config.sso ? config.ssoTenantId : undefined,
-                    urlId: config.urlId,
                     page: store.getState().page,
                     direction: store.getState().sortDirection as SortDirections,
-                    lastGenDate: internalState.lastGenDate,
-                    fetchPageForCommentId: config.jumpToId,
                     includei10n: isFirstPageLoad ? true : undefined,
-                    useFullTranslationIds: isFirstPageLoad ? true : undefined,
                     locale: isFirstPageLoad ? config.locale : undefined,
-                    includeConfig: internalState.isFirstRequest ? true : undefined,
-                    includeNotificationCount: internalState.isFirstRequest ? true : undefined,
-                    countAll: config.countAll ? true : undefined,
-                    sso: ssoConfigString,
                 });
                 response = (await apiResponse.raw.json()) as GetCommentsResponse;
             } else {

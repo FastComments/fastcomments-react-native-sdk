@@ -1,11 +1,15 @@
-import { Image, View, Text, TouchableOpacity, Modal } from 'react-native';
+import { Image, View, Text, TouchableOpacity, Modal, Platform } from 'react-native';
 import { FastCommentsImageAsset, ImageAssetConfig } from '../types';
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { IFastCommentsStyles } from '../types';
 import { NotificationList } from './notification-list';
+import { MentionPortal } from './mention-portal';
+import { measureAnchorRect, useAnchoredPosition, useDismissOnOutsideClick } from '../services/web-anchor';
 import { FastCommentsCallbacks } from '../types';
 import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
+
+const NOTIFICATION_DROPDOWN_WIDTH = 360;
 
 export interface NotificationBellProps extends Pick<FastCommentsCallbacks, 'onNotificationSelected'> {
     imageAssets: ImageAssetConfig;
@@ -26,6 +30,42 @@ export function NotificationBell({
     const notificationCount = useStoreValue(store, (s) => s.userNotificationState.count);
     const hasDarkBackground = useStoreValue(store, (s) => !!s.config.hasDarkBackground);
 
+    // Web: anchor the list as a dropdown under the bell (portaled to the body so
+    // the comment list cannot clip it), like the comment/sort menus. Native
+    // keeps the centered modal.
+    const bellRef = useRef<TouchableOpacity>(null);
+    const dropdownRef = useRef<View>(null);
+    const isWebDropdown = Platform.OS === 'web' && typeof document !== 'undefined';
+    const dropdownPosition = useAnchoredPosition(isWebDropdown && isOpen, ({ scrollX, scrollY }) => {
+        const rect = measureAnchorRect(bellRef);
+        if (!rect) return null;
+        return {
+            position: 'absolute',
+            top: rect.bottom + scrollY + 4,
+            left: Math.max(8, rect.right - NOTIFICATION_DROPDOWN_WIDTH) + scrollX,
+            zIndex: 2147483000,
+        };
+    });
+    useDismissOnOutsideClick(isWebDropdown && isOpen, () => setNotificationsListOpen(false), [bellRef, dropdownRef]);
+
+    // The dropdown wrapper is the card; flatten the list's own modal chrome
+    // (screen margin/background/shadow) and bound its height so it scrolls.
+    const webListStyles = useMemo<IFastCommentsStyles>(() => ({
+        ...styles,
+        notificationList: {
+            ...styles.notificationList,
+            centeredView: styles.notificationList?.centeredView ?? { flex: 1 },
+            root: {
+                ...styles.notificationList?.root,
+                margin: 0,
+                maxHeight: 440,
+                backgroundColor: 'transparent',
+                shadowOpacity: 0,
+                elevation: 0,
+            },
+        },
+    }), [styles]);
+
     if (disableNotificationBell) return null;
 
     const bellIconType =
@@ -38,6 +78,7 @@ export function NotificationBell({
     return (
         <View>
             <TouchableOpacity
+                ref={bellRef}
                 testID="notificationBellButton"
                 accessibilityLabel="notificationBellButton"
                 onPress={() => setNotificationsListOpen(!isOpen)}
@@ -50,7 +91,23 @@ export function NotificationBell({
                     </Text>
                 )}
             </TouchableOpacity>
-            {isOpen && (
+            {isOpen && (isWebDropdown ? (
+                <MentionPortal>
+                    <View
+                        ref={dropdownRef}
+                        testID="notificationListDropdown"
+                        style={[dropdownPosition ?? { position: 'absolute', top: 0, left: 0, opacity: 0 }, styles.notificationList?.dropdown]}
+                    >
+                        <NotificationList
+                            imageAssets={imageAssets}
+                            onNotificationSelected={onNotificationSelected}
+                            store={store}
+                            styles={webListStyles}
+                            translations={translations}
+                        />
+                    </View>
+                </MentionPortal>
+            ) : (
                 <View style={styles.notificationList?.centeredView}>
                     <Modal
                         animationType="slide"
@@ -75,7 +132,7 @@ export function NotificationBell({
                         </TouchableOpacity>
                     </Modal>
                 </View>
-            )}
+            ))}
         </View>
     );
 }

@@ -82,14 +82,14 @@ export function GifBrowser({
         lastRequestTime.current = Date.now();
         const sdk = store.getState().sdk;
         const response = request.search
-            ? await sdk.publicApi.search({
+            ? await sdk.publicApi.getGifsSearch({
                 tenantId: config.tenantId!,
                 search: request.search,
                 locale: request.locale,
                 rating: request.rating,
                 page: request.page,
             })
-            : await sdk.publicApi.getTrending({
+            : await sdk.publicApi.getGifsTrending({
                 tenantId: config.tenantId!,
                 locale: request.locale,
                 rating: request.rating,
@@ -195,7 +195,7 @@ export function GifBrowser({
         } else {
             // TODO show loading
             const sdk = store.getState().sdk;
-            const response = await sdk.publicApi.getLarge({
+            const response = await sdk.publicApi.getGifLarge({
                 tenantId: config.tenantId!,
                 largeInternalURLSanitized: rawSrc,
             });
