@@ -164,10 +164,21 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
         if (!commentsVisible) store.getState().setCommentsVisible(true);
     };
 
+    // A ref mirrors the in-flight state because onScroll reads from its render
+    // closure: several scroll events between renders would each see a stale
+    // `false` and fire pagination more than once. The ref is updated
+    // synchronously, closing that window across all callers.
+    const isFetchingNextPageRef = useRef(false);
     const doPaginateNext = async (isAll: boolean) => {
+        if (isFetchingNextPageRef.current) return;
+        isFetchingNextPageRef.current = true;
         setFetchingNextPage(true);
-        await paginateNext(store, service.current!, isAll ? -1 : undefined);
-        setFetchingNextPage(false);
+        try {
+            await paginateNext(store, service.current!, isAll ? -1 : undefined);
+        } finally {
+            isFetchingNextPageRef.current = false;
+            setFetchingNextPage(false);
+        }
     };
 
     const doPaginatePrev = async () => {
@@ -227,7 +238,7 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
         const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
         const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
         isNearBottomRef.current = distanceFromBottom < 80;
-        if (contentOffset.y < 40 && !isFetchingNextPage && canPaginateNext(store)) {
+        if (contentOffset.y < 40 && !isFetchingNextPageRef.current && canPaginateNext(store)) {
             // Known v1 limitation: prepending can shift the scroll position on
             // RN versions without maintainVisibleContentPosition on Android.
             doPaginateNext(false);

@@ -1,5 +1,5 @@
 import { RenderHTMLSource } from 'react-native-render-html';
-import { Image, Platform, Pressable, TouchableOpacity, View } from 'react-native';
+import { Image, Pressable, TouchableOpacity, View } from 'react-native';
 import { CommentMenuState, getCommentMenuState } from './comment-menu';
 import { CommentNotices } from './comment-notices';
 import { CommentUserInfo, getCommentUserInfoHTML } from './comment-user-info';
@@ -18,6 +18,7 @@ import { ShowNewChildLiveCommentsButton } from './show-new-child-live-comments-b
 import { memo, useRef } from 'react';
 import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
+import { measureAnchorRect } from '../services/web-anchor';
 
 export interface FastCommentsCommentWithStore {
     comment: RNComment;
@@ -73,9 +74,7 @@ export function FastCommentsCommentView(props: CommentViewProps) {
     // Web anchors the menu as a dropdown under this row's trigger.
     const menuButtonRef = useRef<TouchableOpacity>(null);
     const measureMenuAnchor = (): { bottom: number; right: number } | undefined => {
-        if (Platform.OS !== 'web') return undefined;
-        const button = menuButtonRef.current as unknown as { getBoundingClientRect?: () => { bottom: number; right: number } } | null;
-        const rect = button?.getBoundingClientRect?.();
+        const rect = measureAnchorRect(menuButtonRef);
         return rect ? { bottom: rect.bottom, right: rect.right } : undefined;
     };
 

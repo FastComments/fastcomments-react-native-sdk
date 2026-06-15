@@ -44,6 +44,9 @@ describe('editorHtmlToServerHtml', () => {
             .toBe('look [img]https://x.com/a.webp[/img]');
         expect(editorHtmlToServerHtml('<img src="https://x.com/a.gif">'))
             .toBe('[img]https://x.com/a.gif[/img]');
+        // Some sanitizers/serializers emit single-quoted attributes.
+        expect(editorHtmlToServerHtml("<img src='https://x.com/a.png'>"))
+            .toBe('[img]https://x.com/a.png[/img]');
     });
 });
 

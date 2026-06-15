@@ -43,18 +43,19 @@ export function PageReactsBar({ store, styles }: PageReactsBarProps) {
     if (!pageReactConfig || !pageReactConfig.reacts || pageReactConfig.reacts.length === 0) return null;
 
     const toggle = (reactId: string) => {
-        const isSelected = !reactedIds.includes(reactId);
+        // The state this toggle moves TO (the react is currently unselected).
+        const willSelect = !reactedIds.includes(reactId);
         // Optimistic: mirror the web extension, revert only on failure.
-        setReactedIds((prev) => (isSelected ? [...prev, reactId] : prev.filter((id) => id !== reactId)));
-        setCounts((prev) => ({ ...prev, [reactId]: Math.max(0, (prev[reactId] ?? 0) + (isSelected ? 1 : -1)) }));
+        setReactedIds((prev) => (willSelect ? [...prev, reactId] : prev.filter((id) => id !== reactId)));
+        setCounts((prev) => ({ ...prev, [reactId]: Math.max(0, (prev[reactId] ?? 0) + (willSelect ? 1 : -1)) }));
         void (async () => {
             try {
-                const ok = await setPageReact(store, reactId, isSelected);
+                const ok = await setPageReact(store, reactId, willSelect);
                 if (!ok) throw new Error('page react rejected');
             } catch (e) {
                 console.error('Failed to save page react', e);
-                setReactedIds((prev) => (isSelected ? prev.filter((id) => id !== reactId) : [...prev, reactId]));
-                setCounts((prev) => ({ ...prev, [reactId]: Math.max(0, (prev[reactId] ?? 0) + (isSelected ? -1 : 1)) }));
+                setReactedIds((prev) => (willSelect ? prev.filter((id) => id !== reactId) : [...prev, reactId]));
+                setCounts((prev) => ({ ...prev, [reactId]: Math.max(0, (prev[reactId] ?? 0) + (willSelect ? -1 : 1)) }));
             }
         })();
     };

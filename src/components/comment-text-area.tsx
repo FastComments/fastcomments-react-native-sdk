@@ -13,7 +13,6 @@ import {
     TouchableOpacity,
     Image,
     Platform,
-    type ViewStyle,
 } from "react-native";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -27,6 +26,7 @@ import { MentionPopup, MentionPopupHandle } from './mention-popup';
 import { MentionPortal } from './mention-portal';
 import { MentionUser } from '../services/mentions';
 import { detectMentionQuery, htmlToPlainText, replaceActiveMention } from '../services/mention-detection';
+import { measureAnchorRect, useAnchoredPosition } from '../services/web-anchor';
 
 // Library's own event types follow snake->camelCase with `strikeThrough`.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -137,43 +137,25 @@ export function CommentTextArea({
     const mentionActiveRef = useRef<boolean>(false);
     const [imageUploadProgress, setImageUploadProgress] = useState<number | null>(null);
     const [showGifBrowser, setShowGifBrowser] = useState(false);
-    const [gifPopoverStyle, setGifPopoverStyle] = useState<ViewStyle | null>(null);
     const gifButtonRef = useRef<TouchableOpacity>(null);
     const storeConfig = useStoreValue(store, (s) => s.config);
 
     // Anchor the GIF popover under its toolbar button. On web the popover is
     // portaled to document.body (the virtualized list clips/overpaints inline
     // overlays), so position it with page coordinates measured off the button.
-    useEffect(() => {
-        if (Platform.OS !== 'web' || !showGifBrowser) return;
-        const win = globalThis as unknown as {
-            addEventListener?: (t: string, h: () => void, c?: boolean) => void;
-            removeEventListener?: (t: string, h: () => void, c?: boolean) => void;
-            scrollX?: number;
-            scrollY?: number;
+    const gifPopoverStyle = useAnchoredPosition(showGifBrowser, ({ scrollX, scrollY }) => {
+        const rect = measureAnchorRect(gifButtonRef);
+        if (!rect) return null;
+        const viewportWidth = document.documentElement.clientWidth;
+        const panelWidth = 340;
+        const left = Math.max(8, Math.min(rect.left, viewportWidth - panelWidth - 8));
+        return {
+            position: 'absolute',
+            top: rect.bottom + scrollY + 4,
+            left: left + scrollX,
+            zIndex: 2147483000,
         };
-        const reposition = () => {
-            const button = gifButtonRef.current as unknown as { getBoundingClientRect?: () => { bottom: number; left: number } } | null;
-            const rect = button?.getBoundingClientRect?.();
-            if (!rect || typeof document === 'undefined') return;
-            const viewportWidth = document.documentElement.clientWidth;
-            const panelWidth = 340;
-            const left = Math.max(8, Math.min(rect.left, viewportWidth - panelWidth - 8));
-            setGifPopoverStyle({
-                position: 'absolute',
-                top: rect.bottom + (win.scrollY ?? 0) + 4,
-                left: left + (win.scrollX ?? 0),
-                zIndex: 2147483000,
-            });
-        };
-        reposition();
-        win.addEventListener?.('scroll', reposition, true);
-        win.addEventListener?.('resize', reposition);
-        return () => {
-            win.removeEventListener?.('scroll', reposition, true);
-            win.removeEventListener?.('resize', reposition);
-        };
-    }, [showGifBrowser]);
+    });
     const [active, setActive] = useState<ActiveFormats>({ bold: false, italic: false, underline: false, strikethrough: false, code: false });
     const [mentionQuery, setMentionQuery] = useState<string | undefined>(undefined);
     // On web the composer lives inside the scrollable comment list (as its
@@ -300,8 +282,16 @@ export function CommentTextArea({
     // Return the FULL value: silently truncating here lost everything past the
     // limit with no warning. Length is validated (visibly) at submit time.
     // Web-attached images append as [img] tokens, the wire format directly.
-    output.getValue = () =>
-        htmlRef.current + pendingImages.map((src) => `[img]${src}[/img]`).join('');
+    // Assigned in a commit-phase effect (not during render) and reading current
+    // values from refs, so it stays correct under concurrent rendering.
+    const pendingImagesRef = useRef<string[]>(pendingImages);
+    useEffect(() => {
+        pendingImagesRef.current = pendingImages;
+    }, [pendingImages]);
+    useEffect(() => {
+        output.getValue = () =>
+            htmlRef.current + pendingImagesRef.current.map((src) => `[img]${src}[/img]`).join('');
+    }, [output]);
 
     const onChangeHtml = useCallback((e: NativeSyntheticEvent<OnChangeHtmlEvent>) => {
         const next = e.nativeEvent.value;

@@ -211,7 +211,7 @@ export function CommentVote(props: CommentVoteProps) {
             <Text
                 testID={`likeCount-${comment._id}`}
                 accessibilityLabel="likeCount"
-                style={[styles.commentVote?.votesDownText, upCount === 0 && styles.commentVote?.votesZeroText]}
+                style={[styles.commentVote?.votesUpText, upCount === 0 && styles.commentVote?.votesZeroText]}
             >
                 {upCount.toLocaleString()}
             </Text>
