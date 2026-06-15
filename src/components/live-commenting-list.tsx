@@ -13,6 +13,7 @@ import { PaginationNext } from './pagination-next';
 import { PaginationPrev } from './pagination-prev';
 import { canPaginateNext, paginateNext, paginatePrev } from '../services/pagination';
 import { CommentViewProps, FastCommentsCommentView } from './comment';
+import { commentRowPropsAreEqual } from './comment-row-equal';
 import { FastCommentsLiveCommentingService, isLiveChatStyle } from '../services/fastcomments-live-commenting';
 import { LiveCommentingTopArea } from './live-commenting-top-area';
 import { FastCommentsRNConfig } from '../types/react-native-config';
@@ -35,7 +36,13 @@ export interface LiveCommentingListProps {
     service: MutableRefObject<FastCommentsLiveCommentingService | undefined>;
 }
 
-const CommentViewMemo = React.memo<CommentViewProps>((props) => FastCommentsCommentView(props));
+// Rows self-subscribe to their own comment for content, so the parent should not
+// re-render every row when one comment changes (that re-runs react-native-render-html
+// and flashes images). See comment-row-equal for the comparator rationale.
+const CommentViewMemo = React.memo<CommentViewProps>(
+    (props) => FastCommentsCommentView(props),
+    commentRowPropsAreEqual
+);
 
 const customHTMLElementModels = {
     // Inline emoticon/react images flow with the text...

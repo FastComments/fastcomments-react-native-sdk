@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.0.1
+
+### Fixed
+
+- Voting a comment (or any single-comment update) flashed images in other comments: the list re-rendered every row on each store change, which re-ran react-native-render-html and reloaded the images. Comment rows now re-render only when their own layout inputs change (each row already self-subscribes to its content), so unrelated rows and their images stay put. Also removes a lot of wasted render work on every interaction.
+
 ## 5.0.0
 
 Major release: a complete visual redesign on a semantic theme-token layer, the `FastCommentsLiveChat` widget, first-class web support via `react-native-web`, and an upgrade of the dev/test/example toolchain to React Native 0.81 / React 19. The SDK source only uses stable RN APIs, so a consumer's integration code is unaffected; the break is the supported RN/React floor.
