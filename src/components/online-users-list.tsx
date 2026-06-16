@@ -70,9 +70,6 @@ export function OnlineUsersList({ store, styles, onClose, fill, showOffline }: O
     const ou = styles.onlineUsers;
     // Named users we did not load (large rooms) + anonymous users (never named).
     const remaining = Math.max(0, totalCount - onlineUsers.length - anonCount) + anonCount;
-    // Singular vs plural, so a lone viewer reads "1 User Online", not "1 users online".
-    const countTemplate = (totalCount === 1 ? translations.USER_ONLINE : translations.USERS_ONLINE) || `[count] Online`;
-    const title = countTemplate.replace('[count]', String(totalCount));
     const onlineLabel = translations.ONLINE_USERS_SECTION_ONLINE || 'Online';
     const offlineLabel = translations.ONLINE_USERS_SECTION_OFFLINE || 'Offline';
     const loadMoreLabel = translations.ONLINE_USERS_LOAD_MORE || 'Load more';
@@ -92,19 +89,20 @@ export function OnlineUsersList({ store, styles, onClose, fill, showOffline }: O
 
     return (
         <View style={fill ? ou?.panelFill : ou?.panel} testID="onlineUsersList" accessibilityLabel="onlineUsersList">
-            <View style={ou?.panelHeader}>
-                <Text style={ou?.panelTitle}>{title}</Text>
-                {onClose && (
+            {/* No count title: the live-chat header already shows the online count,
+                and the section subheaders label the lists (matches the web panel). */}
+            {onClose && (
+                <View style={[ou?.panelHeader, { justifyContent: 'flex-end' }]}>
                     <TouchableOpacity onPress={onClose} testID="onlineUsersListClose" accessibilityLabel="onlineUsersListClose">
                         <Image
                             source={imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_CROSS_WHITE : FastCommentsImageAsset.ICON_CROSS]}
                             style={ou?.panelCloseIcon}
                         />
                     </TouchableOpacity>
-                )}
-            </View>
+                </View>
+            )}
             <ScrollView style={[ou?.panelScroll, fill ? { flex: 1, minHeight: 0 } : null]}>
-                {showOffline && <Text style={[ou?.subheader, ou?.subheaderFirst]}>{onlineLabel}</Text>}
+                <Text style={[ou?.subheader, ou?.subheaderFirst]}>{onlineLabel}</Text>
                 {onlineUsers.map((u) => renderRow(u, false))}
                 {remaining > 0 && (
                     <Text style={ou?.moreText}>
