@@ -16,6 +16,12 @@ export const createPresenceSlice: StateCreator<
     },
     wsConnected: false,
     subscriberCount: 0,
+    onlineUsers: [],
+    onlineUsersTotalCount: 0,
+    onlineUsersAnonCount: 0,
+
+    setOnlineUsers: (users, totalCount, anonCount) =>
+        set({ onlineUsers: users, onlineUsersTotalCount: totalCount, onlineUsersAnonCount: anonCount }),
 
     setUsersOnline: (userIds, online) =>
         set((state) => {

@@ -18,6 +18,13 @@ export interface UserPresenceState {
     userIdsToCommentIds: Record<string, string[]>;
 }
 
+/** A user currently online on this page (for the live-chat facepile / user list). **/
+export interface OnlineUser {
+    id: string;
+    displayName: string;
+    avatarSrc?: string;
+}
+
 export interface UserNotificationState {
     isOpen: boolean;
     isLoading: boolean;

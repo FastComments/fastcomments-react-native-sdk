@@ -1,6 +1,5 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
     FlatList,
     ListRenderItemInfo,
     NativeScrollEvent,
@@ -9,6 +8,7 @@ import {
     View,
 } from 'react-native';
 import { FastCommentsLiveCommentingService } from '../services/fastcomments-live-commenting';
+import { ListLoadingSkeleton, Skeleton } from './skeleton';
 import { resolveStyles } from '../resources/resolve-styles';
 import { isDarkColor, resolveTheme } from '../resources/themes';
 import { FastCommentsThemeOverrides } from '../types/fastcomments-theme';
@@ -284,7 +284,7 @@ export const FastCommentsFeed = forwardRef<FastCommentsFeedHandle, FastCommentsF
     if (isLoading) {
         return (
             <View style={[effectiveStyles.root, effectiveStyles.loadingOverlay]}>
-                <ActivityIndicator size="large" />
+                <ListLoadingSkeleton />
             </View>
         );
     }
@@ -318,7 +318,9 @@ export const FastCommentsFeed = forwardRef<FastCommentsFeedHandle, FastCommentsF
                 onEndReached={onEndReached}
                 onScroll={onScroll}
                 scrollEventThrottle={16}
-                ListFooterComponent={isPaging ? <ActivityIndicator size="small" /> : null}
+                ListFooterComponent={
+                    isPaging ? <Skeleton style={{ height: 40, marginVertical: 8, marginHorizontal: 16 }} /> : null
+                }
             />
             <FeedPostComposer
                 translations={translations}

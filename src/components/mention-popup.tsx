@@ -1,12 +1,12 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
     Image,
     ScrollView,
     Text,
     TouchableOpacity,
     View,
 } from 'react-native';
+import { ListLoadingSkeleton } from './skeleton';
 import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
 import { IFastCommentsStyles } from '../types';
@@ -125,12 +125,7 @@ export const MentionPopup = forwardRef<MentionPopupHandle, MentionPopupProps>(fu
             style={popupStyle}
         >
             {loading && users.length === 0 && (
-                <View style={[{ flexDirection: 'row', alignItems: 'center' }, styles.mentionPopup?.loadingRow]}>
-                    <ActivityIndicator size="small" />
-                    <Text style={[{ marginLeft: 8 }, styles.mentionPopup?.loadingText]}>
-                        {translations.MENTION_SEARCHING}
-                    </Text>
-                </View>
+                <ListLoadingSkeleton rows={3} />
             )}
             {!loading && users.length === 0 && query.trim().length > 0 && (
                 <View style={styles.mentionPopup?.emptyRow}>

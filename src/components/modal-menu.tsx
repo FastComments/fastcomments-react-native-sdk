@@ -1,8 +1,10 @@
 import {Dispatch, ReactNode, SetStateAction, useRef, useState, type ComponentRef} from 'react';
-import {ActivityIndicator, Image, ImageURISource, Modal, Platform, Text, TouchableOpacity, View} from "react-native";
+import {Image, ImageURISource, Modal, Platform, Text, TouchableOpacity, View} from "react-native";
+import {SavingShimmer} from "./saving-shimmer";
+import {Skeleton} from "./skeleton";
 import {IFastCommentsStyles} from "../types";
 import {MentionPortal} from './mention-portal';
-import {measureAnchorRect, useAnchoredPosition, useDismissOnOutsideClick} from '../services/web-anchor';
+import {measureAnchorRect, placeVertical, useAnchoredPosition, useDismissOnOutsideClick} from '../services/web-anchor';
 
 export const CAN_CLOSE = true;
 export const CAN_NOT_CLOSE = false;
@@ -18,6 +20,8 @@ export interface ModalMenuItem {
 
 /** Viewport rect of the trigger, captured when the menu was requested. **/
 export interface ModalMenuAnchor {
+    /** Trigger top - lets the dropdown flip above when there's no room below. **/
+    top: number
     bottom: number
     right: number
 }
@@ -74,16 +78,18 @@ export function ModalMenu({
     // edit form) remain centered modals on every platform.
     const isWebDropdown = Platform.OS === 'web' && typeof document !== 'undefined';
     const isMenuOpen = isWebDropdown && activeModalId === 'menu';
-    const dropdownPosition = useAnchoredPosition(isMenuOpen, ({ scrollX, scrollY }) => {
+    const dropdownPosition = useAnchoredPosition(isMenuOpen, ({ scrollX, scrollY, overlayHeight, viewportHeight }) => {
         const rect = anchor ?? measureAnchorRect(openButtonRef);
         if (!rect) return null;
+        const { top, maxHeight } = placeVertical({ anchor: rect, scrollY, overlayHeight, viewportHeight });
         return {
             position: 'absolute',
-            top: rect.bottom + scrollY + 4,
+            top,
+            maxHeight,
             left: Math.max(8, rect.right - MENU_DROPDOWN_WIDTH) + scrollX,
             zIndex: 2147483000,
         };
-    }, [anchor]);
+    }, [anchor], dropdownRef);
     useDismissOnOutsideClick(isMenuOpen, () => void close(false), [openButtonRef, dropdownRef]);
 
     const menuOptions = items.map((item) =>
@@ -120,7 +126,7 @@ export function ModalMenu({
             <MentionPortal>
                 <View ref={dropdownRef} style={[dropdownPosition ?? { position: 'absolute', top: 0, left: 0, opacity: 0 }, styles.modalMenu?.dropdown]}>
                     {menuOptions}
-                    {isLoading && <ActivityIndicator size="small"/>}
+                    {isLoading && <Skeleton style={{height: 28, margin: 8}}/>}
                 </View>
             </MentionPortal>
         ) : null)
@@ -140,11 +146,7 @@ export function ModalMenu({
                         >
                             {<Image source={closeIcon} style={styles.modalMenu?.menuCancelIcon}/>}
                         </TouchableOpacity>
-                        {
-                            isLoading && <View style={styles.modalMenu?.loadingView}>
-                                <ActivityIndicator size="large"/>
-                            </View>
-                        }
+                        <SavingShimmer active={isLoading} color={'rgba(120,130,150,0.16)'}/>
                     </View>
                 </View>
             </Modal>

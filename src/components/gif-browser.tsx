@@ -1,5 +1,4 @@
 import {
-    ActivityIndicator,
     BackHandler,
     FlatList,
     Platform,
@@ -9,6 +8,7 @@ import {
     TouchableOpacity,
     View
 } from "react-native";
+import {Skeleton} from "./skeleton";
 import {FastCommentsImageAsset, IFastCommentsStyles, ImageAssetConfig} from "../types";
 import {useEffect, useRef, useState} from "react";
 import {FastCommentsRNConfig} from "../types/react-native-config";
@@ -254,7 +254,13 @@ export function GifBrowser({
     return <View style={styles.gifBrowser?.centeredView} testID="gifBrowserModal" accessibilityLabel="gifBrowserModal">
         <View style={styles.gifBrowser?.modalView}>
             {
-                isInitialLoad ? <ActivityIndicator size="large"/> : <FlatList
+                isInitialLoad ? (
+                    <View style={{padding: 12}}>
+                        <Skeleton style={{height: 110, marginBottom: 10}}/>
+                        <Skeleton style={{height: 110, marginBottom: 10}}/>
+                        <Skeleton style={{height: 110}}/>
+                    </View>
+                ) : <FlatList
                     style={styles.gifBrowser?.list}
                     data={gifs}
                     keyExtractor={(item: [string, number, number]) => item[0]}
@@ -271,7 +277,7 @@ export function GifBrowser({
                         <View>
                             {
                                 isFetching
-                                    ? <ActivityIndicator size="large"/>
+                                    ? <Skeleton style={{height: 80, margin: 12}}/>
                                     : null
                             }
                         </View>

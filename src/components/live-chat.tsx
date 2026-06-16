@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { FastCommentsLiveCommenting } from './live-commenting';
 import { FastCommentsRNConfig } from '../types/react-native-config';
+import { buildChatConfig } from '../services/chat-config';
 import { FastCommentsThemeOverrides } from '../types/fastcomments-theme';
 import { FastCommentsCallbacks, IFastCommentsStyles, ImageAssetConfig } from '../types';
 
@@ -22,17 +23,7 @@ export interface FastCommentsLiveChatProps {
  * Any of these presets can be overridden via `config`.
  */
 export function FastCommentsLiveChat({ config, theme, styles, callbacks, assets }: FastCommentsLiveChatProps) {
-    const chatConfig = useMemo<FastCommentsRNConfig>(() => ({
-        defaultSortDirection: 'NF',
-        newCommentsToBottom: true,
-        inputAfterComments: true,
-        showLiveStatus: true,
-        showLiveRightAway: true,
-        enableInfiniteScrolling: true,
-        maxReplyDepth: 0,
-        disableVoting: true,
-        ...config,
-    }), [config]);
+    const chatConfig = useMemo<FastCommentsRNConfig>(() => buildChatConfig(config), [config]);
     return (
         <FastCommentsLiveCommenting
             config={chatConfig}

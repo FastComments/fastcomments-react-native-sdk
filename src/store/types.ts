@@ -9,6 +9,7 @@ import type { RNComment } from '../types/react-native-comment';
 import type { FeedPost } from '../types/feed-post';
 import type {
     FastCommentsSortDirection,
+    OnlineUser,
     UserNotificationState,
     UserPresenceState,
 } from '../types/fastcomments-state';
@@ -125,7 +126,16 @@ export interface PresenceSlice {
      * presence-update events (`sc` field). Surfaced by the live-status bar.
      */
     subscriberCount: number;
+    /**
+     * Online users on this page with avatar/name, for the live-chat facepile and
+     * user list. Loaded from getOnlineUsers (the same API the web widget uses);
+     * refreshed when presence changes. `usersOnlineMap` above is only id->bool.
+     */
+    onlineUsers: OnlineUser[];
+    onlineUsersTotalCount: number;
+    onlineUsersAnonCount: number;
 
+    setOnlineUsers: (users: OnlineUser[], totalCount: number, anonCount: number) => void;
     setUsersOnline: (userIds: string[], online: boolean) => void;
     replaceUsersOnlineMap: (map: Record<string, boolean>) => void;
     setUserIdsToCommentIds: (map: Record<string, string[]>) => void;

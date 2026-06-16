@@ -11,6 +11,7 @@ import { CommentReplyToggle } from './comment-reply-toggle';
 import { useState } from 'react';
 import { ReplyArea } from './reply-area';
 import { CommentDisplayDate } from './comment-dispay-date';
+import { isLiveChatStyle } from '../services/fastcomments-live-commenting';
 import { FastCommentsRNConfig } from '../types/react-native-config';
 import { CAN_CLOSE } from './modal-menu';
 import type { FastCommentsStore } from '../store/types';
@@ -56,7 +57,7 @@ export function CommentBottom(props: CommentBottomProps) {
     return (
         <View style={styles.commentBottom?.root}>
             <View style={styles.commentBottom?.commentBottomToolbar}>
-                {config.renderDateBelowComment && (
+                {config.renderDateBelowComment && !isLiveChatStyle(config) && (
                     <CommentDisplayDate
                         date={comment.date}
                         translations={translations}

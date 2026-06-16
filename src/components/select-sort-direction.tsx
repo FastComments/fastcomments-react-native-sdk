@@ -5,7 +5,7 @@ import { ModalMenu } from './modal-menu';
 import { MentionPortal } from './mention-portal';
 import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
-import { measureAnchorRect, useAnchoredPosition, useDismissOnOutsideClick } from '../services/web-anchor';
+import { measureAnchorRect, placeVertical, useAnchoredPosition, useDismissOnOutsideClick } from '../services/web-anchor';
 
 const SortDirectionTranslationsById: Record<string, string> = {
     OF: 'OLDEST_FIRST',
@@ -39,16 +39,18 @@ export function SelectSortDirection({ store, styles }: SelectSortDirectionProps)
     // Web: a dropdown anchored under the trigger (right edges aligned),
     // portaled to the body with page coordinates so the comment list cannot
     // clip or overpaint it. Closes on outside click, scroll-tracked.
-    const dropdownPosition = useAnchoredPosition(isOpen, ({ scrollX, scrollY }) => {
+    const dropdownPosition = useAnchoredPosition(isOpen, ({ scrollX, scrollY, overlayHeight, viewportHeight }) => {
         const rect = measureAnchorRect(buttonRef);
         if (!rect) return null;
+        const { top, maxHeight } = placeVertical({ anchor: rect, scrollY, overlayHeight, viewportHeight });
         return {
             position: 'absolute',
-            top: rect.bottom + scrollY + 4,
+            top,
+            maxHeight,
             left: Math.max(8, rect.right - DROPDOWN_WIDTH) + scrollX,
             zIndex: 2147483000,
         };
-    });
+    }, [], dropdownRef);
     useDismissOnOutsideClick(isOpen, () => setIsOpen(false), [buttonRef, dropdownRef]);
 
     const openButtonContent = (

@@ -6,6 +6,7 @@ import { ImageAssetConfig, RNComment } from '../types';
 import { useState } from 'react';
 import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
+import { isLiveChatStyle } from '../services/fastcomments-live-commenting';
 
 export interface LiveCommentingBottomAreaProps
     extends Pick<
@@ -36,6 +37,7 @@ export function LiveCommentingBottomArea(props: LiveCommentingBottomAreaProps) {
         translations,
     } = props;
     const inputAfterComments = useStoreValue(store, (s) => !!s.config.inputAfterComments);
+    const isChat = useStoreValue(store, (s) => isLiveChatStyle(s.config));
     const [parentComment, setParentComment] = useState<RNComment | null>();
 
     props.callbackObserver.replyingTo = (comment) => {
@@ -43,7 +45,7 @@ export function LiveCommentingBottomArea(props: LiveCommentingBottomAreaProps) {
     };
 
     return (
-        <View style={styles.bottomArea?.root}>
+        <View style={[styles.bottomArea?.root, isChat && styles.bottomArea?.chatDivider]}>
             <View>
                 {inputAfterComments && (
                     <View style={styles.bottomArea?.replyArea}>
