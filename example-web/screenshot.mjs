@@ -15,8 +15,10 @@ const WIDTH = 430;
 const shots = [
     // 'content' = tall viewport (so the virtualized list mounts every row) then
     // clip down to the actual thread height. 'viewport' = a phone-sized screen.
-    { name: 'light', query: `?urlId=${URL_ID}&sort=OF`, mode: 'content', height: 1700 },
-    { name: 'dark', query: `?urlId=${URL_ID}&sort=OF&theme=dark`, mode: 'content', height: 1700 },
+    // light/dark show the regular threaded commenting widget (widget=comments);
+    // the default widget is now live chat, so we request comments explicitly.
+    { name: 'light', query: `?urlId=${URL_ID}&sort=OF&widget=comments`, mode: 'content', height: 1700 },
+    { name: 'dark', query: `?urlId=${URL_ID}&sort=OF&theme=dark&widget=comments`, mode: 'content', height: 1700 },
     { name: 'chat', query: `?urlId=${URL_ID}&widget=chat`, mode: 'viewport', height: 900 },
 ];
 
