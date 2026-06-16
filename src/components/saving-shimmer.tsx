@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Platform, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Animated, StyleSheet, View } from 'react-native';
+import { acquireShimmerDriver, shimmerProgress } from './shimmer-driver';
 
 export interface SavingShimmerProps {
     active: boolean;
@@ -14,27 +15,17 @@ export interface SavingShimmerProps {
  * mask the content underneath.
  */
 export function SavingShimmer({ active, color = 'rgba(255,255,255,0.5)' }: SavingShimmerProps) {
-    const progress = useRef(new Animated.Value(0)).current;
     const [width, setWidth] = useState(0);
 
+    // Attach to the shared shimmer loop while active (one loop drives all sweeps).
     useEffect(() => {
         if (!active) return;
-        progress.setValue(0);
-        const loop = Animated.loop(
-            Animated.timing(progress, {
-                toValue: 1,
-                duration: 1100,
-                easing: Easing.inOut(Easing.ease),
-                useNativeDriver: Platform.OS !== 'web',
-            })
-        );
-        loop.start();
-        return () => loop.stop();
-    }, [active, progress]);
+        return acquireShimmerDriver();
+    }, [active]);
 
     if (!active) return null;
     const band = Math.max(48, width * 0.35);
-    const translateX = progress.interpolate({ inputRange: [0, 1], outputRange: [-band, width + band] });
+    const translateX = shimmerProgress.interpolate({ inputRange: [0, 1], outputRange: [-band, width + band] });
 
     return (
         <View
