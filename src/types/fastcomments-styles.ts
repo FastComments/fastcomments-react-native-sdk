@@ -378,10 +378,22 @@ export interface IFastCommentsStyles {
         newPostsBannerText?: TextStyle
         post?: ViewStyle
         postHeader?: ViewStyle
+        postAvatar?: ImageStyle
+        postHeaderText?: ViewStyle
         postTitle?: TextStyle
         postAuthor?: TextStyle
         postContent?: TextStyle
         postDate?: TextStyle
+        postMenuButton?: ViewStyle
+        postMenuDot?: ViewStyle
+        postActions?: ViewStyle
+        postActionButton?: ViewStyle
+        postActionLabel?: TextStyle
+        commentsModalScrim?: ViewStyle
+        commentsModalSheet?: ViewStyle
+        commentsModalHeader?: ViewStyle
+        commentsModalTitle?: TextStyle
+        commentsModalCloseIcon?: ImageStyle
         composer?: ViewStyle
         composerHeader?: ViewStyle
         composerAvatar?: ImageStyle

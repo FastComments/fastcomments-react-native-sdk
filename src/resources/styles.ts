@@ -1749,8 +1749,18 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
             postHeader: {
                 flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'space-between',
                 marginBottom: t.spacing.xs + 2
+            },
+            postAvatar: {
+                width: t.avatar.sm,
+                height: t.avatar.sm,
+                borderRadius: t.radius.pill,
+                marginRight: t.spacing.sm,
+                backgroundColor: t.colors.surfaceRaised
+            },
+            postHeaderText: {
+                flex: 1,
+                minWidth: 0
             },
             postTitle: {
                 fontSize: t.fontSize.lg,
@@ -1760,7 +1770,8 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
             },
             postAuthor: {
                 fontSize: t.fontSize.base,
-                color: t.colors.textSecondary,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.textPrimary,
                 flexShrink: 1
             },
             followPill: {
@@ -1798,6 +1809,72 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
             postDate: {
                 fontSize: t.fontSize.base,
                 color: t.colors.textSecondary
+            },
+            // Three-dot post menu (delete on own posts).
+            postMenuButton: {
+                paddingVertical: t.spacing.xs,
+                paddingHorizontal: t.spacing.sm,
+                marginLeft: t.spacing.sm,
+                alignItems: 'center',
+                justifyContent: 'center'
+            },
+            postMenuDot: {
+                width: 4,
+                height: 4,
+                borderRadius: t.radius.pill,
+                marginVertical: 1.5,
+                backgroundColor: t.colors.textSecondary
+            },
+            // Comment + Share action row beneath the reactions.
+            postActions: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginTop: t.spacing.sm
+            },
+            postActionButton: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: t.spacing.xs,
+                paddingHorizontal: t.spacing.sm,
+                marginRight: t.spacing.md
+            },
+            postActionLabel: {
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.medium,
+                color: t.colors.textSecondary
+            },
+            // Per-post comments modal (FastCommentsLiveCommenting for urlId post:<id>).
+            commentsModalScrim: {
+                flex: 1,
+                backgroundColor: '#00000066',
+                justifyContent: 'flex-end'
+            },
+            commentsModalSheet: {
+                maxHeight: '88%',
+                backgroundColor: t.colors.background,
+                borderTopLeftRadius: t.radius.lg,
+                borderTopRightRadius: t.radius.lg,
+                overflow: 'hidden'
+            },
+            commentsModalHeader: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: t.spacing.sm,
+                paddingHorizontal: t.spacing.md,
+                borderBottomWidth: hairline,
+                borderBottomColor: t.colors.border
+            },
+            commentsModalTitle: {
+                flex: 1,
+                fontSize: t.fontSize.lg,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.textPrimary,
+                marginRight: t.spacing.sm
+            },
+            commentsModalCloseIcon: {
+                width: 16,
+                height: 16
             },
             composer: {
                 padding: t.spacing.md,

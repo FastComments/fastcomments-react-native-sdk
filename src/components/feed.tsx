@@ -232,12 +232,13 @@ export const FastCommentsFeed = forwardRef<FastCommentsFeedHandle, FastCommentsF
                 styles={effectiveStyles}
                 customToolbarButtons={customToolbarButtons}
                 store={store}
+                callbacks={callbacks}
                 currentUser={currentUser}
                 followStateProvider={followStateProvider}
                 followStateRevision={followStateRevision}
             />
         ),
-        [translations, effectiveStyles, customToolbarButtons, store, currentUser, followStateProvider, followStateRevision]
+        [translations, effectiveStyles, customToolbarButtons, store, callbacks, currentUser, followStateProvider, followStateRevision]
     );
 
     const empty = (
