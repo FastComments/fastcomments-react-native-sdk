@@ -299,6 +299,44 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 borderRadius: t.radius.pill,
                 backgroundColor: t.colors.onlineIndicator
             },
+            // Offline presence dot: muted grey (web uses #c4c4c4).
+            rowDotOffline: {
+                width: 8,
+                height: 8,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.colors.border
+            },
+            // Section subheaders ("Online" / "Offline") with a hairline divider above,
+            // matching the web panel's `.fc-ou-subheader`.
+            subheader: {
+                marginTop: t.spacing.md,
+                marginBottom: t.spacing.xs,
+                paddingTop: t.spacing.sm,
+                borderTopWidth: hairline,
+                borderColor: t.colors.border,
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.medium,
+                color: t.colors.textSecondary
+            },
+            // The first subheader sits flush against the header - no divider/extra gap.
+            subheaderFirst: {
+                marginTop: t.spacing.xs,
+                paddingTop: 0,
+                borderTopWidth: 0
+            },
+            loadMore: {
+                marginTop: t.spacing.sm,
+                paddingTop: t.spacing.sm,
+                paddingBottom: t.spacing.sm,
+                borderWidth: hairline,
+                borderColor: t.colors.border,
+                borderRadius: t.radius.sm,
+                alignItems: 'center'
+            },
+            loadMoreText: {
+                fontSize: t.fontSize.base,
+                color: t.colors.textSecondary
+            },
             moreText: {
                 paddingTop: t.spacing.sm,
                 paddingBottom: t.spacing.sm,

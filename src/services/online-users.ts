@@ -65,6 +65,46 @@ export async function loadOnlineUsers(
     }
 }
 
+export interface LoadOfflineUsersResult {
+    users: OnlineUser[];
+    nextAfterUserId: string | null;
+    nextAfterName: string | null;
+}
+
+/**
+ * Load a page of the page's OFFLINE users (avatar + name), via the same
+ * getOfflineUsers endpoint the web widget's online-users panel uses for its
+ * "Offline" section. Offline users aren't presence-driven, so callers hold the
+ * accumulated list themselves and page with the returned nextAfter* cursor.
+ */
+export async function loadOfflineUsers(
+    store: FastCommentsStore,
+    opts?: { afterUserId?: string; afterName?: string }
+): Promise<LoadOfflineUsersResult | null> {
+    const state = store.getState();
+    const tenantId = state.config.tenantId;
+    const urlId = state.config.urlId;
+    if (!tenantId || !urlId) return null;
+    try {
+        const response = await state.sdk.publicApi.getOfflineUsers({
+            tenantId,
+            urlId,
+            afterUserId: opts?.afterUserId,
+            afterName: opts?.afterName,
+        });
+        if (response.status !== 'success') return null;
+        const latest = store.getState();
+        return {
+            users: (response.users || []).map((u) => toOnlineUser(u, latest.translations)),
+            nextAfterUserId: response.nextAfterUserId ?? null,
+            nextAfterName: response.nextAfterName ?? null,
+        };
+    } catch (e) {
+        console.error('Failed to load offline users', e);
+        return null;
+    }
+}
+
 // Ensure the initial online-users snapshot is loaded exactly once per store,
 // no matter how many online-users widgets mount (the in-header facepile and a
 // standalone side list can both call this; only the first actually fetches).

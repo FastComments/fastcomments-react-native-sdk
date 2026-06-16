@@ -49,6 +49,14 @@ export interface IFastCommentsStyles {
         rowAvatar?: ImageStyle
         rowName?: TextStyle
         rowDot?: ViewStyle
+        /** Muted presence dot for offline users. **/
+        rowDotOffline?: ViewStyle
+        /** "Online" / "Offline" section subheaders. **/
+        subheader?: TextStyle
+        subheaderFirst?: TextStyle
+        /** "Load more" button for paging the offline list. **/
+        loadMore?: ViewStyle
+        loadMoreText?: TextStyle
         moreText?: TextStyle
     },
     bottomArea?: {
