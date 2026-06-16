@@ -12,22 +12,41 @@ export interface LiveStatusBarProps {
     styles: IFastCommentsStyles;
 }
 
+// Refresh the online-users list at most this often. Presence frames (p-u) can
+// arrive many times per second in a busy room; this caps the getOnlineUsers
+// network/render cost while still keeping the facepile reasonably fresh.
+const MIN_REFRESH_MS = 4000;
+
 export function LiveStatusBar({ store, styles }: LiveStatusBarProps) {
     const wsConnected = useStoreValue(store, (s) => s.wsConnected);
     const subscriberCount = useStoreValue(store, (s) => s.subscriberCount);
     const translations = useStoreValue(store, (s) => s.translations);
     const [listOpen, setListOpen] = useState(false);
 
-    // Keep the facepile/list fresh: load once, then refresh (debounced) whenever
-    // the subscriber count changes (a user joined or left).
-    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Keep the facepile/list fresh on join/leave (subscriberCount changes), but
+    // throttle to at most one fetch per MIN_REFRESH_MS. When a refresh is already
+    // pending we coalesce into it rather than resetting the timer - a pure
+    // trailing debounce would starve under continuous churn and never refresh
+    // until a quiet gap. The first change (incl. mount) fires immediately.
+    const lastLoadRef = useRef(0);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
-        if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => void loadOnlineUsers(store), 600);
-        return () => {
-            if (debounceRef.current) clearTimeout(debounceRef.current);
-        };
+        if (timerRef.current) return; // already scheduled; let it fire
+        const wait = Math.max(0, MIN_REFRESH_MS - (Date.now() - lastLoadRef.current));
+        timerRef.current = setTimeout(() => {
+            timerRef.current = null;
+            lastLoadRef.current = Date.now();
+            void loadOnlineUsers(store);
+        }, wait);
     }, [store, subscriberCount]);
+    // Clear any pending refresh on unmount only (not on every count change, which
+    // would defeat the throttle).
+    useEffect(
+        () => () => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+        },
+        []
+    );
 
     const statusText = wsConnected ? translations.LIVE : translations.DISCONNECTED;
     // Fall back to a plain string when the server did not send the live-chat
