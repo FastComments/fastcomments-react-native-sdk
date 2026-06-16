@@ -1,4 +1,4 @@
-import { View, Text, Image, Linking, ActivityIndicator, TextInput, useWindowDimensions, TouchableOpacity } from 'react-native';
+import { View, Text, Image, Linking, TextInput, useWindowDimensions, TouchableOpacity } from 'react-native';
 import { FastCommentsImageAsset, ImageAssetConfig } from '../types';
 import { getDefaultAvatarSrc } from '../services/default-avatar';
 import { ModalMenu } from './modal-menu';
@@ -7,6 +7,7 @@ import { ThreeDot } from './three-dot';
 import { NotificationBell } from './notification-bell';
 import { CommentAreaMessage } from './comment-area-message';
 import { CommentTextArea, FocusObserver, ValueObserver, EmoticonBarConfig } from './comment-text-area';
+import { SavingShimmer } from './saving-shimmer';
 import type { CommentData, CreateCommentPublic200Response, PublicComment } from 'fastcomments-sdk';
 import { getActionTenantId, getActionURLID } from '../services/tenants';
 import { newBroadcastId } from '../services/broadcast-id';
@@ -158,7 +159,10 @@ async function submit(
         parentComment,
         onReplySuccess,
         onAuthenticationChange,
-    }: Pick<ReplyAreaProps, 'store' | 'parentComment' | 'onReplySuccess' | 'onAuthenticationChange'>,
+        clearEditor,
+    }: Pick<ReplyAreaProps, 'store' | 'parentComment' | 'onReplySuccess' | 'onAuthenticationChange'> & {
+        clearEditor?: () => void;
+    },
     replyState: CommentReplyState,
     setReplyState: (patch: Partial<CommentReplyState>) => void
 ) {
@@ -351,6 +355,8 @@ async function submit(
             patch.email = undefined;
             patch.websiteUrl = undefined;
             patch.comment = '';
+            // Clear the editor only now (success), not before/while saving.
+            clearEditor?.();
         }
         setReplyState(patch);
 
@@ -489,7 +495,7 @@ export function ReplyArea(props: ReplyAreaProps) {
                             else if (ssoConfig.loginCallback) ssoConfig.loginCallback('');
                         }}
                     >
-                        <Image source={imageAssets[FastCommentsImageAsset.ICON_BUBBLE_WHITE]} style={{ width: 22, height: 22 }} />
+                        <Image source={imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_BUBBLE : FastCommentsImageAsset.ICON_BUBBLE_WHITE]} style={{ width: 22, height: 22 }} />
                         <Text style={styles.replyArea?.ssoLoginButtonText}>{translations.LOG_IN}</Text>
                     </TouchableOpacity>
                 </View>
@@ -498,7 +504,7 @@ export function ReplyArea(props: ReplyAreaProps) {
             ssoLoginWrapper = (
                 <View style={styles.replyArea?.ssoLoginWrapper}>
                     <View style={styles.replyArea?.ssoLoginButton}>
-                        <Image source={imageAssets[FastCommentsImageAsset.ICON_BUBBLE_WHITE]} style={{ width: 22, height: 22 }} />
+                        <Image source={imageAssets[hasDarkBackground ? FastCommentsImageAsset.ICON_BUBBLE : FastCommentsImageAsset.ICON_BUBBLE_WHITE]} style={{ width: 22, height: 22 }} />
                         <Text style={styles.replyArea?.ssoLoginButtonText}>{translations.LOG_IN_TO_COMMENT}</Text>
                     </View>
                 </View>
@@ -584,6 +590,8 @@ export function ReplyArea(props: ReplyAreaProps) {
                     onFocus={() =>
                         needsAuth && !commentReplyState.showAuthInputForm && setCommentReplyState({ showAuthInputForm: true })
                     }
+                    onSubmit={() => handleSubmit()}
+                    saving={commentReplyState.isReplySaving}
                     pickImage={pickImage}
                     pickGIF={pickGIF}
                 />
@@ -592,17 +600,17 @@ export function ReplyArea(props: ReplyAreaProps) {
 
         const handleSubmit = async () => {
             const latestValue = valueGetter.getValue ? valueGetter.getValue() : '';
-            setCommentReplyState({ comment: latestValue });
             if (commentReplyState.showSuccessMessage && !parentComment) {
                 setCommentReplyState({ showSuccessMessage: false });
             } else {
                 setCommentReplyState({ isReplySaving: true });
                 try {
-                    // Pass the latest editor value directly: setCommentReplyState
-                    // above is queued, so commentReplyState still holds the prior
-                    // (empty) text on this tick.
+                    // Pass the latest editor value directly (the editor owns its
+                    // text; we don't mirror it into state, which would re-sync the
+                    // `value` prop and flicker the box). The editor is cleared
+                    // imperatively (clearEditor) ONLY on a successful submit.
                     await submit(
-                        { store, parentComment, onReplySuccess, onAuthenticationChange },
+                        { store, parentComment, onReplySuccess, onAuthenticationChange, clearEditor: () => valueGetter.reset?.() },
                         { ...commentReplyState, comment: latestValue },
                         setCommentReplyState
                     );
@@ -615,11 +623,12 @@ export function ReplyArea(props: ReplyAreaProps) {
 
         // Inline mode anchors an icon-only send button inside the comment box
         // (the standalone labeled button is not rendered).
-        const inlineSubmitButton = useInlineSubmitButton && !commentReplyState.isReplySaving ? (
+        const inlineSubmitButton = useInlineSubmitButton ? (
             <TouchableOpacity
                 testID="inlineSendButton"
                 accessibilityLabel="inlineSendButton"
                 style={styles.replyArea?.inlineSubmitButton}
+                disabled={commentReplyState.isReplySaving}
                 onPress={handleSubmit}
             >
                 <Image
@@ -645,13 +654,14 @@ export function ReplyArea(props: ReplyAreaProps) {
             </View>
         );
 
-        if (!commentReplyState.isReplySaving && !useInlineSubmitButton) {
+        if (!useInlineSubmitButton) {
             commentSubmitButton = (
                 <View style={styles.replyArea?.replyButtonWrapper}>
                     <TouchableOpacity
                         testID="sendButton"
                         accessibilityLabel="sendButton"
                         style={styles.replyArea?.replyButton}
+                        disabled={commentReplyState.isReplySaving}
                         onPress={handleSubmit}
                     >
                         <Text style={styles.replyArea?.replyButtonText}>
@@ -659,13 +669,17 @@ export function ReplyArea(props: ReplyAreaProps) {
                         </Text>
                         <Image
                             source={
+                                // Icon must match the button's onPrimary text color, not the
+                                // page background: the filled button is `primary` (off-black in
+                                // the light theme), so the icon is white there and dark in the
+                                // dark theme (light button). This is the inverse of hasDarkBackground.
                                 parentComment
                                     ? hasDarkBackground
-                                        ? imageAssets[FastCommentsImageAsset.ICON_RETURN_WHITE]
-                                        : imageAssets[FastCommentsImageAsset.ICON_RETURN]
+                                        ? imageAssets[FastCommentsImageAsset.ICON_RETURN]
+                                        : imageAssets[FastCommentsImageAsset.ICON_RETURN_WHITE]
                                     : hasDarkBackground
-                                    ? imageAssets[FastCommentsImageAsset.ICON_BUBBLE_WHITE]
-                                    : imageAssets[FastCommentsImageAsset.ICON_BUBBLE]
+                                    ? imageAssets[FastCommentsImageAsset.ICON_BUBBLE]
+                                    : imageAssets[FastCommentsImageAsset.ICON_BUBBLE_WHITE]
                             }
                             style={styles.replyArea?.replyButtonIcon}
                         />
@@ -813,11 +827,6 @@ export function ReplyArea(props: ReplyAreaProps) {
             {ssoLoginWrapper}
             {displayError}
             {topBarInputAreaAndSubmit}
-            {commentReplyState.isReplySaving && (
-                <View style={styles.replyArea?.loadingView}>
-                    <ActivityIndicator size="large" />
-                </View>
-            )}
         </View>
     );
 }

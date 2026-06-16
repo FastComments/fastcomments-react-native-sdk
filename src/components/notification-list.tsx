@@ -1,6 +1,7 @@
 import {memo} from 'react';
 import {useEffect, useState} from 'react';
-import {ActivityIndicator, FlatList, ListRenderItemInfo, Text, useWindowDimensions, View} from "react-native";
+import {FlatList, ListRenderItemInfo, Text, useWindowDimensions, View} from "react-native";
+import {ListLoadingSkeleton, Skeleton} from "./skeleton";
 import {RenderHTMLConfigProvider, TRenderEngineProvider} from "react-native-render-html";
 import {
     FastCommentsCallbacks,
@@ -73,7 +74,7 @@ export function NotificationList({imageAssets, onError, onNotificationSelected, 
     }, []);
 
     if (isLoading) {
-        return <View><ActivityIndicator size="small"/></View>
+        return <ListLoadingSkeleton rows={4}/>
     }
 
     if (loadFailed) {
@@ -112,7 +113,7 @@ export function NotificationList({imageAssets, onError, onNotificationSelected, 
     const footerLoadingIndicator = <View>
         {
             isFetchingNextPage
-                ? <ActivityIndicator size="small"/>
+                ? <Skeleton style={{height: 32, marginVertical: 8, marginHorizontal: 12}}/>
                 : null
         }
     </View>;

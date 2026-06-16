@@ -2,7 +2,7 @@ import { RenderHTMLSource } from 'react-native-render-html';
 import { Image, Pressable, TouchableOpacity, View } from 'react-native';
 import { CommentMenuState, getCommentMenuState } from './comment-menu';
 import { CommentNotices } from './comment-notices';
-import { CommentUserInfo, getCommentUserInfoHTML } from './comment-user-info';
+import { CommentUserInfo, getCommentUserInfoHTML, getCommentChatNameHTML, getCommentChatHTML } from './comment-user-info';
 import { CommentDisplayDate } from './comment-dispay-date';
 import { CommentBottom } from './comment-bottom';
 import {
@@ -19,12 +19,13 @@ import { memo, useRef, type ComponentRef } from 'react';
 import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
 import { measureAnchorRect } from '../services/web-anchor';
+import { isLiveChatStyle } from '../services/fastcomments-live-commenting';
 
 export interface FastCommentsCommentWithStore {
     comment: RNComment;
     config: FastCommentsRNConfig;
     imageAssets: ImageAssetConfig;
-    openCommentMenu: (comment: RNComment, menuState: CommentMenuState, anchor?: { bottom: number; right: number }) => void;
+    openCommentMenu: (comment: RNComment, menuState: CommentMenuState, anchor?: { top: number; bottom: number; right: number }) => void;
     onReplySuccess: (comment: RNComment) => void;
     requestSetReplyingTo: (comment: RNComment | null) => Promise<boolean>;
     setRepliesHidden: (comment: RNComment, hidden: boolean) => void;
@@ -73,9 +74,9 @@ export function FastCommentsCommentView(props: CommentViewProps) {
 
     // Web anchors the menu as a dropdown under this row's trigger.
     const menuButtonRef = useRef<ComponentRef<typeof TouchableOpacity>>(null);
-    const measureMenuAnchor = (): { bottom: number; right: number } | undefined => {
+    const measureMenuAnchor = (): { top: number; bottom: number; right: number } | undefined => {
         const rect = measureAnchorRect(menuButtonRef);
-        return rect ? { bottom: rect.bottom, right: rect.right } : undefined;
+        return rect ? { top: rect.top, bottom: rect.bottom, right: rect.right } : undefined;
     };
 
     const html = comment.isDeleted
@@ -85,6 +86,10 @@ export function FastCommentsCommentView(props: CommentViewProps) {
         : comment.commentHTML;
 
     const renderCommentInline = config.renderCommentInline;
+    const isChat = isLiveChatStyle(config);
+    const menuDotStyle = config.hasDarkBackground
+        ? [styles.comment?.menuDot, { backgroundColor: '#fff' }]
+        : styles.comment?.menuDot;
     const usePressableEditTrigger = config.usePressToEdit;
     const isReadonly = config.readonly;
     const menuState = isReadonly ? null : getCommentMenuState(store, comment);
@@ -100,10 +105,17 @@ export function FastCommentsCommentView(props: CommentViewProps) {
           })}${htmlWrapped}</div>`
         : htmlWrapped;
 
+    // Live chat: name flows inline with the message text (Twitch-style), so we
+    // inject the bold name + badges + label into the message HTML itself rather
+    // than rendering a separate name line above it.
+    const chatHTML = isChat
+        ? getCommentChatHTML(getCommentChatNameHTML({ comment, config, translations }), html)
+        : finalHTML;
+
     const content = (
         <View style={styles.comment?.subRoot}>
             <View style={styles.comment?.topRight}>
-                {!config.renderDateBelowComment && (
+                {!config.renderDateBelowComment && !isLiveChatStyle(config) && (
                     <CommentDisplayDate
                         date={comment.date}
                         translations={translations}
@@ -141,22 +153,22 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                         style={{ padding: 5 }}
                         onPress={() => openCommentMenu(comment, menuState!, measureMenuAnchor())}
                     >
-                        <Image
-                            source={
-                                imageAssets[
-                                    config.hasDarkBackground
-                                        ? FastCommentsImageAsset.ICON_EDIT_SMALL_WHITE
-                                        : FastCommentsImageAsset.ICON_EDIT_SMALL
-                                ]
-                            }
-                            style={{ width: 16, height: 16 }}
-                        />
+                        {/* Three vertical dots (kebab), never a pencil - matches the web widget. */}
+                        <View style={styles.comment?.menuDots}>
+                            <View style={menuDotStyle} />
+                            <View style={menuDotStyle} />
+                            <View style={menuDotStyle} />
+                        </View>
                     </TouchableOpacity>
                 )}
             </View>
             <View style={styles.comment?.contentWrapper}>
                 <CommentNotices comment={comment} styles={styles} translations={translations} />
-                {!renderCommentInline && (
+                {isChat ? (
+                    // Compact chat layout: small avatar on the left, with the name
+                    // row (badges, labels, activity dot, unverified) AND the message
+                    // stacked in the column beside it - no full-width text under the
+                    // avatar, and nothing dropped.
                     <CommentUserInfo
                         comment={comment}
                         config={config}
@@ -164,9 +176,25 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                         styles={styles}
                         translations={translations}
                         store={store}
-                    />
+                        compact
+                    >
+                        <CommentHTMLRenderMemo html={chatHTML} width={Math.max(0, width - 56)} />
+                    </CommentUserInfo>
+                ) : (
+                    <>
+                        {!renderCommentInline && (
+                            <CommentUserInfo
+                                comment={comment}
+                                config={config}
+                                imageAssets={imageAssets}
+                                styles={styles}
+                                translations={translations}
+                                store={store}
+                            />
+                        )}
+                        <CommentHTMLRenderMemo html={finalHTML} width={width} />
+                    </>
                 )}
-                <CommentHTMLRenderMemo html={finalHTML} width={width} />
                 {config.renderLikesToRight && (
                     <CommentVote
                         comment={comment}
@@ -179,33 +207,38 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                     />
                 )}
             </View>
-            <CommentBottom
-                comment={comment}
-                store={store}
-                config={config}
-                translations={translations}
-                imageAssets={imageAssets}
-                styles={styles}
-                onVoteSuccess={onVoteSuccess}
-                onReplySuccess={onReplySuccess}
-                onAuthenticationChange={onAuthenticationChange}
-                pickGIF={pickGIF}
-                pickImage={pickImage}
-                requestSetReplyingTo={requestSetReplyingTo}
-                setRepliesHidden={setRepliesHidden}
-            />
-            {!comment.repliesHidden && (
-                <View style={styles.comment?.children}>
-                    {comment.hiddenChildrenCount ? (
-                        <ShowNewChildLiveCommentsButton
-                            comment={comment}
-                            translations={translations}
-                            styles={styles}
-                            store={store}
-                        />
-                    ) : null}
-                </View>
+            {/* Live chat hides the per-message reply/vote toolbar (matches the web
+                live-chat); replies are posted through the single bottom composer. */}
+            {!isChat && (
+                <CommentBottom
+                    comment={comment}
+                    store={store}
+                    config={config}
+                    translations={translations}
+                    imageAssets={imageAssets}
+                    styles={styles}
+                    onVoteSuccess={onVoteSuccess}
+                    onReplySuccess={onReplySuccess}
+                    onAuthenticationChange={onAuthenticationChange}
+                    pickGIF={pickGIF}
+                    pickImage={pickImage}
+                    requestSetReplyingTo={requestSetReplyingTo}
+                    setRepliesHidden={setRepliesHidden}
+                />
             )}
+            {/* Only mount the children container when it actually holds the
+                "show new replies" button - otherwise it's an empty View with a
+                16px top margin on every single comment. */}
+            {!comment.repliesHidden && comment.hiddenChildrenCount ? (
+                <View style={styles.comment?.children}>
+                    <ShowNewChildLiveCommentsButton
+                        comment={comment}
+                        translations={translations}
+                        styles={styles}
+                        store={store}
+                    />
+                </View>
+            ) : null}
         </View>
     );
 
@@ -243,7 +276,7 @@ export function FastCommentsCommentView(props: CommentViewProps) {
             style={styles.comment?.root}
         >
             {rail}
-            <View style={styles.comment?.rowContent}>{contentWrapped}</View>
+            <View style={isChat ? styles.comment?.chatRowContent : styles.comment?.rowContent}>{contentWrapped}</View>
         </View>
     );
 }

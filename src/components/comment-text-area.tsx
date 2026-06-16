@@ -8,12 +8,12 @@ import { useStoreValue } from "../store/hooks";
 import {
     Text,
     View,
-    ActivityIndicator,
     ScrollView,
     TouchableOpacity,
     Image,
     Platform,
 } from "react-native";
+import { Skeleton } from './skeleton';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     EnrichedTextInput,
@@ -24,9 +24,10 @@ import type { NativeSyntheticEvent } from 'react-native';
 import { GifBrowser } from './gif-browser';
 import { MentionPopup, MentionPopupHandle } from './mention-popup';
 import { MentionPortal } from './mention-portal';
+import { SavingShimmer } from './saving-shimmer';
 import { MentionUser } from '../services/mentions';
 import { detectMentionQuery, htmlToPlainText, replaceActiveMention } from '../services/mention-detection';
-import { measureAnchorRect, useAnchoredPosition } from '../services/web-anchor';
+import { measureAnchorRect, placeVertical, useAnchoredPosition } from '../services/web-anchor';
 
 // Library's own event types follow snake->camelCase with `strikeThrough`.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,6 +53,8 @@ function ensureWebEditorFillStyles() {
 
 export interface ValueObserver {
     getValue?: () => string
+    /** Imperatively clear the editor (used to clear ONLY after a successful submit). **/
+    reset?: () => void
 }
 
 export interface FocusObserver {
@@ -80,6 +83,10 @@ export interface CommentTextAreaProps extends Pick<FastCommentsCallbacks, 'pickI
     styles: IFastCommentsStyles
     output: ValueObserver
     onFocus?: () => void
+    /** Submit the comment (web: Ctrl/Cmd+Enter inside the editor). **/
+    onSubmit?: () => void
+    /** Show the in-flight save shimmer over the editor box. **/
+    saving?: boolean
     value?: string
     toolbarButtons?: ToolbarButtonConfig
 }
@@ -113,6 +120,8 @@ export function CommentTextArea({
     styles,
     output,
     onFocus,
+    onSubmit,
+    saving,
     pickImage,
     pickGIF,
     value,
@@ -135,27 +144,34 @@ export function CommentTextArea({
     const editorBoxRef = useRef<View>(null);
     const mentionPopupRef = useRef<MentionPopupHandle>(null);
     const mentionActiveRef = useRef<boolean>(false);
+    // The once-attached keydown listener reads onSubmit through a ref so it always
+    // calls the latest handler without re-binding.
+    const onSubmitRef = useRef<(() => void) | undefined>(onSubmit);
     const [imageUploadProgress, setImageUploadProgress] = useState<number | null>(null);
     const [showGifBrowser, setShowGifBrowser] = useState(false);
     const gifButtonRef = useRef<React.ComponentRef<typeof TouchableOpacity>>(null);
+    const gifPopoverRef = useRef<View>(null);
     const storeConfig = useStoreValue(store, (s) => s.config);
 
     // Anchor the GIF popover under its toolbar button. On web the popover is
     // portaled to document.body (the virtualized list clips/overpaints inline
     // overlays), so position it with page coordinates measured off the button.
-    const gifPopoverStyle = useAnchoredPosition(showGifBrowser, ({ scrollX, scrollY }) => {
+    const gifPopoverStyle = useAnchoredPosition(showGifBrowser, ({ scrollX, scrollY, overlayHeight, viewportHeight }) => {
         const rect = measureAnchorRect(gifButtonRef);
         if (!rect) return null;
         const viewportWidth = document.documentElement.clientWidth;
         const panelWidth = 340;
         const left = Math.max(8, Math.min(rect.left, viewportWidth - panelWidth - 8));
+        // Flip only - GifBrowser self-caps at maxHeight 420 with internal scroll,
+        // so we don't clamp (and risk clipping) the wrapper.
+        const { top } = placeVertical({ anchor: rect, scrollY, overlayHeight, viewportHeight });
         return {
             position: 'absolute',
-            top: rect.bottom + scrollY + 4,
+            top,
             left: left + scrollX,
             zIndex: 2147483000,
         };
-    });
+    }, [], gifPopoverRef);
     const [active, setActive] = useState<ActiveFormats>({ bold: false, italic: false, underline: false, strikethrough: false, code: false });
     const [mentionQuery, setMentionQuery] = useState<string | undefined>(undefined);
     // On web the composer lives inside the scrollable comment list (as its
@@ -164,6 +180,7 @@ export function CommentTextArea({
     // the editor box) to escape both. Native keeps the in-flow `absolute` overlay.
     const [mentionOverlayStyle, setMentionOverlayStyle] = useState<Record<string, unknown> | null>(null);
     mentionActiveRef.current = mentionQuery !== undefined;
+    onSubmitRef.current = onSubmit;
 
     const buttons = { ...defaultToolbarButtons, ...toolbarButtons };
 
@@ -181,13 +198,20 @@ export function CommentTextArea({
         // The tsconfig has no DOM lib (this is an RN project), so we type the web
         // key event minimally rather than relying on the global KeyboardEvent
         // (which resolves to react-native's unrelated KeyboardEvent type).
-        type WebKeyEvent = { key: string; preventDefault: () => void; stopPropagation: () => void };
+        type WebKeyEvent = { key: string; ctrlKey?: boolean; metaKey?: boolean; preventDefault: () => void; stopPropagation: () => void };
         const node = wrapperRef.current as unknown as {
             addEventListener?: (t: string, h: (e: WebKeyEvent) => void, c?: boolean) => void;
             removeEventListener?: (t: string, h: (e: WebKeyEvent) => void, c?: boolean) => void;
         } | null;
         if (!node || typeof node.addEventListener !== 'function') return;
         const onKeyDown = (e: WebKeyEvent) => {
+            // Ctrl/Cmd+Enter submits the comment, regardless of mention state.
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                e.stopPropagation();
+                onSubmitRef.current?.();
+                return;
+            }
             if (!mentionActiveRef.current) return;
             const key = e.key;
             if (key === 'Escape') {
@@ -291,6 +315,15 @@ export function CommentTextArea({
     useEffect(() => {
         output.getValue = () =>
             htmlRef.current + pendingImagesRef.current.map((src) => `[img]${src}[/img]`).join('');
+        // Imperative clear so the host can empty the editor ONLY after a
+        // successful submit, instead of round-tripping through the `value` prop
+        // (which would flicker the text on every submit).
+        output.reset = () => {
+            htmlRef.current = '';
+            setPendingImages([]);
+            editorRef.current?.setValue('');
+            setMentionQuery(undefined);
+        };
     }, [output]);
 
     const onChangeHtml = useCallback((e: NativeSyntheticEvent<OnChangeHtmlEvent>) => {
@@ -436,6 +469,10 @@ export function CommentTextArea({
                             fontSize: styles.commentTextArea?.text?.fontSize,
                         }}
                     />
+                    <SavingShimmer
+                        active={!!saving}
+                        color={hasDarkBackground ? 'rgba(255,255,255,0.10)' : 'rgba(120,130,150,0.16)'}
+                    />
                 </View>
 
                 <MentionPortal>
@@ -576,6 +613,7 @@ export function CommentTextArea({
             {showGifBrowser && (
                 <MentionPortal>
                     <View
+                        ref={gifPopoverRef}
                         style={[
                             Platform.OS === 'web'
                                 ? (gifPopoverStyle ?? { position: 'absolute', top: 0, left: 0, opacity: 0 })
@@ -601,7 +639,7 @@ export function CommentTextArea({
             {imageUploadProgress !== null && (
                 <View style={styles.commentTextArea?.imageUploadModalCenteredView}>
                     <View style={styles.commentTextArea?.imageUploadModalContent}>
-                        <ActivityIndicator size={styles.commentTextArea?.imageUploadModalProgressSpinnerSize} />
+                        <Skeleton style={{ width: 140, height: 8, marginBottom: 10 }} />
                         <Text style={styles.commentTextArea?.imageUploadModalProgressText}>
                             {Math.round(imageUploadProgress * 100)}%
                         </Text>

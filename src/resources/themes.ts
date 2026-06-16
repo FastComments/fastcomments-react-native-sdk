@@ -32,8 +32,8 @@ export function getLightTheme(): FastCommentsTheme {
             onlineIndicator: '#16A34A',
             liveChatHeaderBackground: '#F4F4F5',
             liveChatHeaderText: '#18181B',
-            liveChatConnectedDot: '#16A34A',
-            liveChatDisconnectedDot: '#DC2626',
+            liveChatConnectedDot: '#DC2626',
+            liveChatDisconnectedDot: '#9CA3AF',
             liveChatUserCountText: '#52525B',
         },
         spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 },
@@ -71,8 +71,8 @@ export function getDarkTheme(): FastCommentsTheme {
         onlineIndicator: '#22C55E',
         liveChatHeaderBackground: '#1C1E23',
         liveChatHeaderText: '#F4F4F5',
-        liveChatConnectedDot: '#22C55E',
-        liveChatDisconnectedDot: '#EF4444',
+        liveChatConnectedDot: '#EF4444',
+        liveChatDisconnectedDot: '#6B7280',
         liveChatUserCountText: '#A1A1AA',
     };
     return theme;

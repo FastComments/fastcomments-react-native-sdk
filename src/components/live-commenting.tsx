@@ -1,5 +1,6 @@
 import { CommentAreaMessage } from './comment-area-message';
-import { ActivityIndicator, BackHandler, Platform, Text, View } from 'react-native';
+import { BackHandler, Platform, Text, View } from 'react-native';
+import { ListLoadingSkeleton } from './skeleton';
 import { FastCommentsLiveCommentingService } from '../services/fastcomments-live-commenting';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -184,7 +185,7 @@ export function FastCommentsLiveCommenting({ config, theme, styles: stylesProp, 
         if (isLoading) {
             return (
                 <View style={[styles.root, styles.loadingOverlay]} testID="loadingOverlay">
-                    <ActivityIndicator size="large" />
+                    <ListLoadingSkeleton />
                 </View>
             );
         }

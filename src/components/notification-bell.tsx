@@ -4,7 +4,7 @@ import { useMemo, useRef, useState, type ComponentRef } from 'react';
 import { IFastCommentsStyles } from '../types';
 import { NotificationList } from './notification-list';
 import { MentionPortal } from './mention-portal';
-import { measureAnchorRect, useAnchoredPosition, useDismissOnOutsideClick } from '../services/web-anchor';
+import { measureAnchorRect, placeVertical, useAnchoredPosition, useDismissOnOutsideClick } from '../services/web-anchor';
 import { FastCommentsCallbacks } from '../types';
 import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
@@ -36,16 +36,19 @@ export function NotificationBell({
     const bellRef = useRef<ComponentRef<typeof TouchableOpacity>>(null);
     const dropdownRef = useRef<View>(null);
     const isWebDropdown = Platform.OS === 'web' && typeof document !== 'undefined';
-    const dropdownPosition = useAnchoredPosition(isWebDropdown && isOpen, ({ scrollX, scrollY }) => {
+    const dropdownPosition = useAnchoredPosition(isWebDropdown && isOpen, ({ scrollX, scrollY, overlayHeight, viewportHeight }) => {
         const rect = measureAnchorRect(bellRef);
         if (!rect) return null;
+        // Flip only - the list keeps its own maxHeight (440) + internal scroll,
+        // so we don't clamp the wrapper (which would clip the nested scroller).
+        const { top } = placeVertical({ anchor: rect, scrollY, overlayHeight, viewportHeight });
         return {
             position: 'absolute',
-            top: rect.bottom + scrollY + 4,
+            top,
             left: Math.max(8, rect.right - NOTIFICATION_DROPDOWN_WIDTH) + scrollX,
             zIndex: 2147483000,
         };
-    });
+    }, [], dropdownRef);
     useDismissOnOutsideClick(isWebDropdown && isOpen, () => setNotificationsListOpen(false), [bellRef, dropdownRef]);
 
     // The dropdown wrapper is the card; flatten the list's own modal chrome

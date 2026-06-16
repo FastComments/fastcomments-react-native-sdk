@@ -6,7 +6,8 @@ import RenderHtml, {
     RenderHTMLConfigProvider,
     TRenderEngineProvider,
 } from 'react-native-render-html';
-import { ActivityIndicator, FlatList, Linking, ListRenderItemInfo, NativeScrollEvent, NativeSyntheticEvent, useWindowDimensions, View, Text } from 'react-native';
+import { FlatList, Linking, ListRenderItemInfo, NativeScrollEvent, NativeSyntheticEvent, Platform, useWindowDimensions, View, Text } from 'react-native';
+import { Skeleton } from './skeleton';
 import { FastCommentsCallbacks, IFastCommentsStyles, ImageAssetConfig, RNComment, ThreadLineSlot } from '../types';
 import React, { MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { PaginationNext } from './pagination-next';
@@ -14,6 +15,8 @@ import { PaginationPrev } from './pagination-prev';
 import { canPaginateNext, paginateNext, paginatePrev } from '../services/pagination';
 import { CommentViewProps, FastCommentsCommentView } from './comment';
 import { commentRowPropsAreEqual } from './comment-row-equal';
+import { ChatListItem, interleaveDateSeparators, isDateSeparator } from '../services/chat-date-separators';
+import { DateSeparator } from './date-separator';
 import { FastCommentsLiveCommentingService, isLiveChatStyle } from '../services/fastcomments-live-commenting';
 import { LiveCommentingTopArea } from './live-commenting-top-area';
 import { FastCommentsRNConfig } from '../types/react-native-config';
@@ -29,7 +32,7 @@ export interface LiveCommentingListProps {
     config: FastCommentsRNConfig;
     imageAssets: ImageAssetConfig;
     onReplySuccess: (comment: RNComment) => void;
-    openCommentMenu: (comment: RNComment, menuState: CommentMenuState, anchor?: { bottom: number; right: number }) => void;
+    openCommentMenu: (comment: RNComment, menuState: CommentMenuState, anchor?: { top: number; bottom: number; right: number }) => void;
     requestSetReplyingTo: (comment: RNComment | null) => Promise<boolean>;
     styles: IFastCommentsStyles;
     store: FastCommentsStore;
@@ -208,9 +211,18 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
     // from the TOP edge, auto-scroll keeps the newest message in view like the
     // Android LiveChatView (pause while scrolled up, resume at the bottom).
     const chatStyle = isLiveChatStyle(config);
-    const listRef = useRef<FlatList<RNComment>>(null);
-    const isNearBottomRef = useRef(true);
-    const initialScrollDoneRef = useRef(false);
+    // Chat mode interleaves day separators between messages from different days.
+    const listData = useMemo<ChatListItem[]>(
+        () => (chatStyle ? interleaveDateSeparators(viewableComments) : viewableComments),
+        [chatStyle, viewableComments]
+    );
+    const listRef = useRef<FlatList<ChatListItem>>(null);
+    // Whether to keep the chat pinned to the newest message. Starts true (load),
+    // flips false only when the user scrolls up, true again at the bottom.
+    const stickToBottomRef = useRef(true);
+    // Timestamp of our last programmatic scroll, so onScroll can ignore the
+    // scroll event it echoes (which would otherwise wrongly unstick us mid-load).
+    const lastAutoScrollRef = useRef(0);
     const lastCommentIdRef = useRef<string | undefined>(undefined);
     const currentUserId = useStoreValue(store, (s) => {
         const user = s.currentUser;
@@ -219,32 +231,75 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
     const lastComment = chatStyle && viewableComments.length > 0
         ? viewableComments[viewableComments.length - 1]
         : undefined;
+    const scrollChatToBottom = (animated: boolean) => {
+        lastAutoScrollRef.current = Date.now();
+        const list = listRef.current;
+        if (!list) return;
+        list.scrollToEnd({ animated });
+        // Web: VirtualizedList.scrollToEnd computes against its measured content
+        // length, which can be a few px stale while layout settles (async HTML /
+        // image measuring) - leaving the list a hair short of the bottom. For the
+        // non-animated pins (load + retries), snap the DOM scroller to its true
+        // max next frame; the browser clamps scrollTop, so this is pixel-exact.
+        if (!animated && Platform.OS === 'web' && typeof requestAnimationFrame !== 'undefined') {
+            requestAnimationFrame(() => {
+                const node = list.getScrollableNode?.() as
+                    | { scrollTop?: number; scrollHeight?: number }
+                    | null;
+                if (node && typeof node.scrollHeight === 'number') {
+                    node.scrollTop = node.scrollHeight;
+                }
+            });
+        }
+    };
+
+    // New message arrived: follow it to the bottom if we're sticking there (or
+    // it is the current user's own message).
     useEffect(() => {
         if (!chatStyle || !lastComment) return;
         const previousId = lastCommentIdRef.current;
         lastCommentIdRef.current = lastComment._id;
         if (previousId === lastComment._id) return;
-        // Initial load also lands here, scrolling the chat to the newest message.
-        if (isNearBottomRef.current || (currentUserId !== undefined && lastComment.userId === currentUserId)) {
-            listRef.current?.scrollToEnd({ animated: true });
+        if (stickToBottomRef.current || (currentUserId !== undefined && lastComment.userId === currentUserId)) {
+            scrollChatToBottom(true);
         }
     }, [chatStyle, lastComment?._id, currentUserId]);
 
-    // The mount effect can fire before web layout settles, leaving the chat
-    // parked at the oldest message; pin to the bottom once content has size.
+    // Steady-state pinning: every content-size change while sticking (covers new
+    // messages, late image/HTML measuring, etc.). The lastComment effect above
+    // handles following a brand-new message.
     const onContentSizeChange = () => {
-        if (!chatStyle) return;
-        if (!initialScrollDoneRef.current && viewableComments.length > 0) {
-            initialScrollDoneRef.current = true;
-            listRef.current?.scrollToEnd({ animated: false });
-        }
+        if (!chatStyle || viewableComments.length === 0) return;
+        if (stickToBottomRef.current) scrollChatToBottom(false);
     };
+    // INITIAL load only: web layout settles asynchronously (virtualized batches +
+    // react-native-render-html measuring), so the first paint's content size is
+    // unreliable. Fire a few timed retries ONCE when comments first appear - not
+    // on every length change (onContentSizeChange already covers later growth).
+    // Timers are tracked in a ref and cleared on unmount so a message arriving
+    // mid-window can't cancel the in-flight initial retries.
+    const initialPinDoneRef = useRef(false);
+    const initialPinTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+    useEffect(() => {
+        if (initialPinDoneRef.current || !chatStyle || viewableComments.length === 0 || !stickToBottomRef.current) return;
+        initialPinDoneRef.current = true;
+        initialPinTimersRef.current = [0, 120, 300, 600].map((d) =>
+            setTimeout(() => {
+                if (stickToBottomRef.current) scrollChatToBottom(false);
+            }, d)
+        );
+    }, [chatStyle, viewableComments.length]);
+    useEffect(() => () => initialPinTimersRef.current.forEach(clearTimeout), []);
 
     const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         if (!chatStyle) return;
         const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
         const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
-        isNearBottomRef.current = distanceFromBottom < 80;
+        // Ignore the scroll event echoed by our own programmatic scroll (it can
+        // report a mid-layout position and wrongly unstick us during load).
+        if (Date.now() - lastAutoScrollRef.current > 250) {
+            stickToBottomRef.current = distanceFromBottom < 80;
+        }
         if (contentOffset.y < 40 && !isFetchingNextPageRef.current && canPaginateNext(store)) {
             // Known v1 limitation: prepending can shift the scroll position on
             // RN versions without maintainVisibleContentPosition on Android.
@@ -260,24 +315,29 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
         }
     };
 
-    const renderItem = (info: ListRenderItemInfo<RNComment>) => (
-        <CommentViewMemo
-            comment={info.item}
-            config={config}
-            setRepliesHidden={setRepliesHidden}
-            imageAssets={imageAssets}
-            translations={translations}
-            store={store}
-            styles={styles!}
-            onAuthenticationChange={callbacks?.onAuthenticationChange}
-            onReplySuccess={onReplySuccess}
-            onVoteSuccess={callbacks?.onVoteSuccess}
-            openCommentMenu={openCommentMenu}
-            pickImage={callbacks?.pickImage}
-            requestSetReplyingTo={requestSetReplyingTo}
-            width={width}
-        />
-    );
+    const renderItem = (info: ListRenderItemInfo<ChatListItem>) => {
+        if (isDateSeparator(info.item)) {
+            return <DateSeparator date={info.item.date} translations={translations} styles={styles!} />;
+        }
+        return (
+            <CommentViewMemo
+                comment={info.item}
+                config={config}
+                setRepliesHidden={setRepliesHidden}
+                imageAssets={imageAssets}
+                translations={translations}
+                store={store}
+                styles={styles!}
+                onAuthenticationChange={callbacks?.onAuthenticationChange}
+                onReplySuccess={onReplySuccess}
+                onVoteSuccess={callbacks?.onVoteSuccess}
+                openCommentMenu={openCommentMenu}
+                pickImage={callbacks?.pickImage}
+                requestSetReplyingTo={requestSetReplyingTo}
+                width={width}
+            />
+        );
+    };
 
     const demoHtml = useMemo(
         () => (translations.DEMO_CREATE_ACCT ? { html: translations.DEMO_CREATE_ACCT } : { html: '' }),
@@ -325,8 +385,8 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
                     testID="recyclerViewComments"
                     accessibilityLabel="recyclerViewComments"
                     style={styles.commentsWrapper}
-                    contentContainerStyle={styles.commentsListContent}
-                    data={viewableComments}
+                    contentContainerStyle={chatStyle ? [styles.commentsListContent, { paddingBottom: 8 }] : styles.commentsListContent}
+                    data={listData}
                     keyExtractor={(item, index) => (item && item._id !== undefined ? item._id : `missing-${index}`)}
                     maxToRenderPerBatch={PAGE_SIZE}
                     onScroll={chatStyle ? onScroll : undefined}
@@ -352,7 +412,11 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
                     }
                     ListFooterComponent={
                         <View>
-                            {isFetchingNextPage ? <ActivityIndicator size="small" /> : paginationAfterComments}
+                            {isFetchingNextPage ? (
+                                <Skeleton style={{ height: 36, marginVertical: 8, marginHorizontal: 16 }} />
+                            ) : (
+                                paginationAfterComments
+                            )}
                         </View>
                     }
                 />

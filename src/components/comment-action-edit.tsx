@@ -1,4 +1,5 @@
-import { View, Text, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
+import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { SavingShimmer } from './saving-shimmer';
 import { FastCommentsCallbacks, FastCommentsImageAsset } from '../types';
 import { useState } from 'react';
 import type { CommentTextUpdateRequest } from 'fastcomments-sdk';
@@ -100,11 +101,13 @@ export function CommentActionEdit({
                     store={store}
                     value={comment.comment}
                     output={valueGetter}
+                    saving={isLoading}
                     pickImage={pickImage}
                     pickGIF={pickGIF}
                 />
                 <TouchableOpacity
-                    style={styles.commentEditModal?.saveButton}
+                    style={[styles.commentEditModal?.saveButton, { overflow: 'hidden' }]}
+                    disabled={isLoading}
                     onPress={async () => {
                         setLoading(true);
                         try {
@@ -120,6 +123,7 @@ export function CommentActionEdit({
                     }}
                 >
                     <Text style={styles.commentEditModal?.saveButtonText}>{translations.SAVE}</Text>
+                    <SavingShimmer active={isLoading} />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.commentEditModal?.modalCancel} onPress={() => close(false)}>
                     <Image
@@ -133,11 +137,6 @@ export function CommentActionEdit({
                         style={{ width: 16, height: 16 }}
                     />
                 </TouchableOpacity>
-                {isLoading && (
-                    <View style={styles.commentEditModal?.loadingView}>
-                        <ActivityIndicator size="large" />
-                    </View>
-                )}
             </View>
         </View>
     );

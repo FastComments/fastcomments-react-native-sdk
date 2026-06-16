@@ -179,6 +179,119 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 fontSize: t.fontSize.base,
                 fontWeight: t.fontWeight.semibold,
                 color: t.colors.liveChatUserCountText
+            },
+            right: {
+                flexDirection: 'row',
+                alignItems: 'center'
+            }
+        },
+        onlineUsers: {
+            facepile: {
+                flexDirection: 'row',
+                alignItems: 'center'
+            },
+            faceWrapper: {
+                width: t.avatar.sm,
+                height: t.avatar.sm,
+                borderRadius: t.radius.pill,
+                borderWidth: 2,
+                borderColor: t.colors.background,
+                backgroundColor: t.colors.surface,
+                alignItems: 'center',
+                justifyContent: 'center'
+            },
+            faceWrapperOverlap: {
+                marginLeft: -10
+            },
+            faceAvatar: {
+                width: '100%',
+                height: '100%',
+                borderRadius: t.radius.pill
+            },
+            faceDot: {
+                position: 'absolute',
+                right: -1,
+                bottom: -1,
+                width: 8,
+                height: 8,
+                borderRadius: t.radius.pill,
+                borderWidth: 2,
+                borderColor: t.colors.background,
+                backgroundColor: t.colors.onlineIndicator
+            },
+            faceOverflow: {
+                backgroundColor: t.colors.surfaceRaised
+            },
+            faceOverflowText: {
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.textSecondary
+            },
+            modalScrim: {
+                flex: 1,
+                backgroundColor: '#00000066',
+                alignItems: 'center',
+                justifyContent: 'center'
+            },
+            panel: {
+                width: 320,
+                maxWidth: '92%',
+                maxHeight: '70%',
+                backgroundColor: t.colors.surfaceRaised,
+                borderRadius: t.radius.lg,
+                paddingTop: t.spacing.md,
+                paddingBottom: t.spacing.md,
+                ...modalShadow
+            },
+            panelHeader: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingLeft: t.spacing.md,
+                paddingRight: t.spacing.md,
+                paddingBottom: t.spacing.sm
+            },
+            panelTitle: {
+                fontSize: t.fontSize.lg,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.textPrimary
+            },
+            panelCloseIcon: {
+                width: 16,
+                height: 16
+            },
+            panelScroll: {
+                paddingLeft: t.spacing.md,
+                paddingRight: t.spacing.md
+            },
+            row: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingTop: t.spacing.sm,
+                paddingBottom: t.spacing.sm
+            },
+            rowAvatar: {
+                width: t.avatar.sm,
+                height: t.avatar.sm,
+                borderRadius: t.radius.pill,
+                marginRight: t.spacing.sm
+            },
+            rowName: {
+                flex: 1,
+                fontSize: t.fontSize.body,
+                color: t.colors.textPrimary
+            },
+            rowDot: {
+                width: 8,
+                height: 8,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.colors.onlineIndicator
+            },
+            moreText: {
+                paddingTop: t.spacing.sm,
+                paddingBottom: t.spacing.sm,
+                fontSize: t.fontSize.base,
+                color: t.colors.textSecondary
             }
         },
         bottomArea: {
@@ -194,6 +307,11 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 paddingLeft: t.spacing.md,
                 paddingRight: t.spacing.md,
                 borderBottomWidth: hairline,
+                borderColor: t.colors.border
+            },
+            // Live chat: rule between the scrolling message list and the composer.
+            chatDivider: {
+                borderTopWidth: hairline,
                 borderColor: t.colors.border
             }
         },
@@ -216,6 +334,11 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
             rowContent: {
                 flex: 1,
                 paddingTop: t.spacing.lg
+            },
+            // Live chat: dense rows, not the article-style inter-comment gap.
+            chatRowContent: {
+                flex: 1,
+                paddingTop: t.spacing.sm
             },
             threadLine: {
                 position: 'absolute',
@@ -250,6 +373,48 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 color: t.colors.textSecondary,
                 textAlignVertical: 'center',
             },
+            dateSeparator: {
+                alignItems: 'center',
+                paddingTop: t.spacing.md,
+                paddingBottom: t.spacing.xs,
+            },
+            dateSeparatorText: {
+                fontSize: t.fontSize.base,
+                color: t.colors.textSecondary,
+            },
+            chatRow: {
+                flexDirection: 'row',
+                alignItems: 'center',
+            },
+            chatAvatarWrapper: {
+                width: 24,
+                height: 24,
+                borderRadius: t.radius.pill,
+                marginRight: t.spacing.sm,
+                position: 'relative',
+            },
+            chatAvatar: {
+                width: 24,
+                height: 24,
+                borderRadius: t.radius.pill,
+            },
+            // Three-dot (kebab) menu trigger, matching the web widget's
+            // `.menu-btn i` styling (4px circles stacked vertically).
+            menuDots: {
+                alignItems: 'center',
+                justifyContent: 'center',
+            },
+            menuDot: {
+                width: 4,
+                height: 4,
+                borderRadius: t.radius.pill,
+                marginVertical: 1.5,
+                backgroundColor: t.colors.textPrimary,
+            },
+            chatBody: {
+                flex: 1,
+                minWidth: 0,
+            },
             pin: {
                 alignSelf: 'center',
                 width: 18,
@@ -266,7 +431,8 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
             contentWrapper: {},
             text: {
                 marginLeft: t.spacing.xs,
-                marginTop: t.spacing.sm,
+                // 5px right gap so the text never bleeds under the top-right menu button.
+                paddingRight: 5,
                 fontSize: t.fontSize.body,
                 lineHeight: 21,
                 color: t.colors.textPrimary
@@ -348,8 +514,19 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
             loadingView: {
                 ...LoadingOverlay
             },
+            // Match the reply Submit button exactly: filled primary bg, centered
+            // onPrimary text.
             saveButton: {
-                marginTop: t.spacing.md
+                ...filledButton,
+                marginTop: t.spacing.md,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center'
+            },
+            saveButtonText: {
+                color: t.colors.onPrimary,
+                fontWeight: t.fontWeight.semibold,
+                fontSize: t.fontSize.base
             }
         },
         commentAreaMessage: {
@@ -690,6 +867,12 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
             infoRight: {
                 flexDirection: 'column',
                 justifyContent: 'center'
+            },
+            chatHeader: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                columnGap: t.spacing.xs,
             },
             label: {
                 fontSize: t.fontSize.base,

@@ -1,4 +1,5 @@
-import { View, Text, Image, TextInput, ActivityIndicator, Button, Linking } from 'react-native';
+import { View, Text, Image, TextInput, Button, Linking } from 'react-native';
+import { SavingShimmer } from './saving-shimmer';
 import type {
     FastCommentsCallbacks,
     RNComment,
@@ -368,11 +369,7 @@ export function CommentVote(props: CommentVoteProps) {
             {pendingVoteMessage}
             {auth}
             {error}
-            {voteState.isLoading && (
-                <View style={styles.commentVote?.loadingView}>
-                    <ActivityIndicator size="small" />
-                </View>
-            )}
+            <SavingShimmer active={!!voteState.isLoading} color={'rgba(120,130,150,0.16)'} />
         </View>
     );
 }

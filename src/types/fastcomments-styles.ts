@@ -26,11 +26,34 @@ export interface IFastCommentsStyles {
         connectionText?: TextStyle
         userCountChip?: ViewStyle
         userCountText?: TextStyle
+        right?: ViewStyle
+    },
+    /** Live-chat online-users facepile (header) and user list (panel). **/
+    onlineUsers?: {
+        facepile?: ViewStyle
+        faceWrapper?: ViewStyle
+        faceWrapperOverlap?: ViewStyle
+        faceAvatar?: ImageStyle
+        faceDot?: ViewStyle
+        faceOverflow?: ViewStyle
+        faceOverflowText?: TextStyle
+        modalScrim?: ViewStyle
+        panel?: ViewStyle
+        panelHeader?: ViewStyle
+        panelTitle?: TextStyle
+        panelCloseIcon?: ImageStyle
+        panelScroll?: ViewStyle
+        row?: ViewStyle
+        rowAvatar?: ImageStyle
+        rowName?: TextStyle
+        rowDot?: ViewStyle
+        moreText?: TextStyle
     },
     bottomArea?: {
         root?: ViewStyle,
         replyArea?: ViewStyle,
         separator?: ViewStyle,
+        chatDivider?: ViewStyle,
     },
     commentsWrapper?: ViewStyle
     commentsListContent?: ViewStyle
@@ -38,6 +61,8 @@ export interface IFastCommentsStyles {
         root?: ViewStyle
         /** Content column right of the nesting rail; the inter-row gap lives here as paddingTop. **/
         rowContent?: ViewStyle
+        /** Live chat: dense row padding in place of the article-style inter-comment gap. **/
+        chatRowContent?: ViewStyle
         /** Vertical continuation line for an ancestor branch with more rows below. **/
         threadLine?: ViewStyle
         /** Rounded corner hooking the nesting line into this row's avatar. **/
@@ -45,6 +70,17 @@ export interface IFastCommentsStyles {
         subRoot?: ViewStyle
         topRight?: ViewStyle
         displayDate?: TextStyle
+        /** Live chat: day divider container/text between messages from different days. **/
+        dateSeparator?: ViewStyle
+        dateSeparatorText?: TextStyle
+        /** Live chat compact message layout: avatar on the left, name + text in a column. **/
+        chatRow?: ViewStyle
+        chatAvatarWrapper?: ViewStyle
+        chatAvatar?: ImageStyle
+        chatBody?: ViewStyle
+        /** Three-dot (kebab) menu trigger container + individual dot. **/
+        menuDots?: ViewStyle
+        menuDot?: ViewStyle
         pin?: ImageStyle
         lock?: ViewStyle
         emptyState?: ViewStyle
@@ -154,6 +190,8 @@ export interface IFastCommentsStyles {
         root?: ViewStyle
         infoLeft?: ViewStyle
         infoRight?: ViewStyle
+        /** Live chat compact: the name line (badges + label + username + unverified), inline. **/
+        chatHeader?: ViewStyle
     }
     commentUserInfoAsHTML?: {
         label?: string
