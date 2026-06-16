@@ -441,7 +441,12 @@ export interface IFastCommentsStyles {
         composerMediaToolbar?: ViewStyle
         postMediaGallery?: ViewStyle
         postMediaImage?: ImageStyle
+        postMediaCarousel?: ViewStyle
+        postMediaNav?: ViewStyle
+        postMediaNavButton?: ViewStyle
+        postMediaNavText?: TextStyle
         postMediaDots?: ViewStyle
+        postMediaDotButton?: ViewStyle
         postMediaDot?: ViewStyle
         postMediaDotActive?: ViewStyle
         postLinks?: ViewStyle

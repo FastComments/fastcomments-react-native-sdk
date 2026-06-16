@@ -2132,18 +2132,47 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 borderRadius: t.radius.md,
                 resizeMode: 'cover'
             },
-            // Multi-image carousel page indicator.
+            // Multi-image carousel: relative wrapper for the overlaid nav arrows.
+            postMediaCarousel: {
+                position: 'relative'
+            },
+            postMediaNav: {
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                width: 44,
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 2
+            },
+            postMediaNavButton: {
+                width: 32,
+                height: 32,
+                borderRadius: t.radius.pill,
+                backgroundColor: 'rgba(0,0,0,0.45)',
+                justifyContent: 'center',
+                alignItems: 'center'
+            },
+            postMediaNavText: {
+                color: '#FFFFFF',
+                fontSize: 22,
+                lineHeight: 24,
+                fontWeight: t.fontWeight.bold
+            },
+            // Page indicator dots (tappable).
             postMediaDots: {
                 flexDirection: 'row',
                 justifyContent: 'center',
                 alignItems: 'center',
                 marginTop: t.spacing.xs
             },
+            postMediaDotButton: {
+                padding: 4
+            },
             postMediaDot: {
                 width: 6,
                 height: 6,
                 borderRadius: t.radius.pill,
-                marginHorizontal: 3,
                 backgroundColor: t.colors.border
             },
             postMediaDotActive: {
