@@ -5,7 +5,7 @@ import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
 import { OnlineUsersFacepile } from './online-users-facepile';
 import { OnlineUsersList } from './online-users-list';
-import { loadOnlineUsers } from '../services/online-users';
+import { ensureOnlineUsersLoaded } from '../services/online-users';
 
 export interface LiveStatusBarProps {
     store: FastCommentsStore;
@@ -18,11 +18,11 @@ export function LiveStatusBar({ store, styles }: LiveStatusBarProps) {
     const translations = useStoreValue(store, (s) => s.translations);
     const [listOpen, setListOpen] = useState(false);
 
-    // Load the initial online-users snapshot once. Join/leave churn is then
-    // applied incrementally from presence frames (see applyOnlineUsersPresenceUpdate
-    // in live.ts) - no full re-fetch per change, matching the web widget.
+    // Load the initial online-users snapshot once (deduped across widgets). Join/
+    // leave churn is then applied incrementally from presence frames (see
+    // applyOnlineUsersPresenceUpdate in live.ts) - no full re-fetch per change.
     useEffect(() => {
-        void loadOnlineUsers(store);
+        ensureOnlineUsersLoaded(store);
     }, [store]);
 
     const statusText = wsConnected ? translations.LIVE : translations.DISCONNECTED;

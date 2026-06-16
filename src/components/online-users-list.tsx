@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
 import { View, Image, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { FastCommentsImageAsset, IFastCommentsStyles } from '../types';
 import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
 import { getDefaultAvatarSrc } from '../services/default-avatar';
+import { ensureOnlineUsersLoaded } from '../services/online-users';
 
 export interface OnlineUsersListProps {
     store: FastCommentsStore;
@@ -18,6 +20,12 @@ export function OnlineUsersList({ store, styles, onClose }: OnlineUsersListProps
     const imageAssets = useStoreValue(store, (s) => s.imageAssets);
     const translations = useStoreValue(store, (s) => s.translations);
     const hasDarkBackground = useStoreValue(store, (s) => !!s.config.hasDarkBackground);
+
+    // Self-load the snapshot so the list works standalone (e.g. as a sidebar
+    // next to the chat); deduped if another widget already loaded it.
+    useEffect(() => {
+        ensureOnlineUsersLoaded(store);
+    }, [store]);
 
     const ou = styles.onlineUsers;
     // Named users we did not load (large rooms) + anonymous users (never named).

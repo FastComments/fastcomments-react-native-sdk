@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
 import { View, Image, Text, TouchableOpacity } from 'react-native';
 import { IFastCommentsStyles } from '../types';
 import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
 import { getDefaultAvatarSrc } from '../services/default-avatar';
+import { ensureOnlineUsersLoaded } from '../services/online-users';
 
 export interface OnlineUsersFacepileProps {
     store: FastCommentsStore;
@@ -18,6 +20,12 @@ export function OnlineUsersFacepile({ store, styles, onPress, max = 4 }: OnlineU
     const onlineUsers = useStoreValue(store, (s) => s.onlineUsers);
     const totalCount = useStoreValue(store, (s) => s.onlineUsersTotalCount);
     const imageAssets = useStoreValue(store, (s) => s.imageAssets);
+
+    // Self-load the snapshot so this works standalone (e.g. next to the chat
+    // with the header hidden); deduped if the header already loaded it.
+    useEffect(() => {
+        ensureOnlineUsersLoaded(store);
+    }, [store]);
 
     if (!onlineUsers.length) return null;
     const shown = onlineUsers.slice(0, max);

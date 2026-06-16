@@ -33,9 +33,15 @@ export interface FastCommentsLiveCommentingProps {
     styles?: IFastCommentsStyles;
     callbacks?: FastCommentsCallbacks;
     assets?: ImageAssetConfig;
+    /**
+     * Called once with the internal store after it is created. Use it to render
+     * store-driven widgets (e.g. OnlineUsersList / OnlineUsersFacepile) alongside
+     * the widget against the same live state.
+     */
+    onStoreReady?: (store: FastCommentsStore) => void;
 }
 
-export function FastCommentsLiveCommenting({ config, theme, styles: stylesProp, callbacks, assets }: FastCommentsLiveCommentingProps) {
+export function FastCommentsLiveCommenting({ config, theme, styles: stylesProp, callbacks, assets, onStoreReady }: FastCommentsLiveCommentingProps) {
     const styles = useMemo(() => resolveStyles(stylesProp, theme), [stylesProp, theme]);
 
     const storeRef = useRef<FastCommentsStore | null>(null);
@@ -47,6 +53,13 @@ export function FastCommentsLiveCommenting({ config, theme, styles: stylesProp, 
         storeRef.current = FastCommentsLiveCommentingService.createStoreFromConfig({ ...config, hasDarkBackground }, assets);
     }
     const store = storeRef.current!;
+
+    // Hand the store to the host once (store identity is stable for this mount).
+    const onStoreReadyRef = useRef(onStoreReady);
+    onStoreReadyRef.current = onStoreReady;
+    useEffect(() => {
+        onStoreReadyRef.current?.(store);
+    }, [store]);
 
     const imageAssets = useStoreValue(store, (s) => s.imageAssets);
     const blockingErrorMessage = useStoreValue(store, (s) => s.blockingErrorMessage);

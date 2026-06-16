@@ -65,6 +65,18 @@ export async function loadOnlineUsers(
     }
 }
 
+// Ensure the initial online-users snapshot is loaded exactly once per store,
+// no matter how many online-users widgets mount (the in-header facepile and a
+// standalone side list can both call this; only the first actually fetches).
+const initialLoadRequested = new WeakSet<FastCommentsStore>();
+export function ensureOnlineUsersLoaded(store: FastCommentsStore): void {
+    if (initialLoadRequested.has(store)) return;
+    initialLoadRequested.add(store);
+    // Already populated (header loaded it, or seeded by presence/tests)? Skip.
+    if (store.getState().onlineUsers.length > 0) return;
+    void loadOnlineUsers(store);
+}
+
 // Per-store enrich queue: a burst of joins is coalesced into one getUsersInfo
 // call. Scoped per store (WeakMap) so multiple widgets on a page don't collide.
 interface EnrichState {
