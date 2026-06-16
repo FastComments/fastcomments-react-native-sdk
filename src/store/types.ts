@@ -113,6 +113,18 @@ export interface ConfigSlice {
     rememberBroadcastId: (id: string) => void;
 }
 
+/** A presence frame already split into named joins/leaves + an anon-count delta. */
+export interface OnlineUsersPresencePayload {
+    /** Named (non-anonymous) user ids that just joined. **/
+    joinedNamed: string[];
+    /** Named user ids that just left. **/
+    leftNamed: string[];
+    /** Net change to the anonymous-online count (+joins, -leaves). **/
+    anonDelta: number;
+    /** New total online count (the presence `sc`), if present in the frame. **/
+    totalCount?: number;
+}
+
 export interface PresenceSlice {
     userPresenceState: UserPresenceState;
     /**
@@ -135,7 +147,18 @@ export interface PresenceSlice {
     onlineUsersTotalCount: number;
     onlineUsersAnonCount: number;
 
+    /** Full replace - initial getOnlineUsers load and pagination append. **/
     setOnlineUsers: (users: OnlineUser[], totalCount: number, anonCount: number) => void;
+    /** Merge enriched name/avatar into existing online users (by id); never adds new ids. **/
+    upsertOnlineUsers: (users: OnlineUser[]) => void;
+    /** Remove online users by id (a presence leave). **/
+    removeOnlineUsers: (ids: string[]) => void;
+    /**
+     * Atomically apply a presence frame to the online-users list: add placeholder
+     * rows for joined named users, drop left users, adjust the anonymous count,
+     * and set the total - so a join/leave never re-fetches the whole list.
+     */
+    applyOnlineUsersPresence: (payload: OnlineUsersPresencePayload) => void;
     setUsersOnline: (userIds: string[], online: boolean) => void;
     replaceUsersOnlineMap: (map: Record<string, boolean>) => void;
     setUserIdsToCommentIds: (map: Record<string, string[]>) => void;

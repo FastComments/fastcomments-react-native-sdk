@@ -6,6 +6,7 @@ import { removeCommentOnClient } from './remove-comment-on-client';
 import { repositionComment } from './comment-positioning';
 import { incOverallCommentCount } from './comment-count';
 import { handleNewCustomConfig } from './custom-config';
+import { applyOnlineUsersPresenceUpdate } from './online-users';
 import type { FastCommentsStore } from '../store/types';
 
 const SubscriberInstanceById: Record<string, SubscriberInstance | void> = {};
@@ -38,6 +39,8 @@ export function handleLiveEvent(store: FastCommentsStore, dataJSON: WebsocketLiv
             break;
 
         case 'p-u': {
+            // Activity-dot presence map (keyed by raw id, incl. anon) + the
+            // status-bar subscriber count.
             if (dataJSON.uj && dataJSON.uj.length > 0) {
                 state.setUsersOnline(dataJSON.uj, true);
             }
@@ -47,6 +50,9 @@ export function handleLiveEvent(store: FastCommentsStore, dataJSON: WebsocketLiv
             if (typeof dataJSON.sc === 'number') {
                 state.setSubscriberCount(Math.max(dataJSON.sc, 1));
             }
+            // Incrementally update the online-users list/facepile (add/remove +
+            // debounced name/avatar enrich) instead of re-fetching the whole list.
+            applyOnlineUsersPresenceUpdate(store, { uj: dataJSON.uj, ul: dataJSON.ul, sc: dataJSON.sc });
             break;
         }
 
