@@ -265,22 +265,31 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
         }
     }, [chatStyle, lastComment?._id, currentUserId]);
 
-    // Web layout settles asynchronously (virtualized batches + react-native-render-html
-    // measuring content), so a single scroll-to-bottom on load is unreliable. Pin
-    // on every content-size change AND via a few timed retries, while sticking.
+    // Steady-state pinning: every content-size change while sticking (covers new
+    // messages, late image/HTML measuring, etc.). The lastComment effect above
+    // handles following a brand-new message.
     const onContentSizeChange = () => {
         if (!chatStyle || viewableComments.length === 0) return;
         if (stickToBottomRef.current) scrollChatToBottom(false);
     };
+    // INITIAL load only: web layout settles asynchronously (virtualized batches +
+    // react-native-render-html measuring), so the first paint's content size is
+    // unreliable. Fire a few timed retries ONCE when comments first appear - not
+    // on every length change (onContentSizeChange already covers later growth).
+    // Timers are tracked in a ref and cleared on unmount so a message arriving
+    // mid-window can't cancel the in-flight initial retries.
+    const initialPinDoneRef = useRef(false);
+    const initialPinTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
     useEffect(() => {
-        if (!chatStyle || viewableComments.length === 0 || !stickToBottomRef.current) return;
-        const timers = [0, 120, 300, 600].map((d) =>
+        if (initialPinDoneRef.current || !chatStyle || viewableComments.length === 0 || !stickToBottomRef.current) return;
+        initialPinDoneRef.current = true;
+        initialPinTimersRef.current = [0, 120, 300, 600].map((d) =>
             setTimeout(() => {
                 if (stickToBottomRef.current) scrollChatToBottom(false);
             }, d)
         );
-        return () => timers.forEach(clearTimeout);
     }, [chatStyle, viewableComments.length]);
+    useEffect(() => () => initialPinTimersRef.current.forEach(clearTimeout), []);
 
     const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         if (!chatStyle) return;
