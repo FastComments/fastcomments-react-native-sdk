@@ -10,10 +10,16 @@ export interface OnlineUsersListProps {
     store: FastCommentsStore;
     styles: IFastCommentsStyles;
     onClose?: () => void;
+    /**
+     * Fill the parent container (a flex column, like the web sidebar) instead of
+     * the default centered modal card. Use when rendering as a sidebar next to
+     * the chat.
+     */
+    fill?: boolean;
 }
 
 /** A panel listing the page's online users (avatar + name + presence dot). */
-export function OnlineUsersList({ store, styles, onClose }: OnlineUsersListProps) {
+export function OnlineUsersList({ store, styles, onClose, fill }: OnlineUsersListProps) {
     const onlineUsers = useStoreValue(store, (s) => s.onlineUsers);
     const totalCount = useStoreValue(store, (s) => s.onlineUsersTotalCount);
     const anonCount = useStoreValue(store, (s) => s.onlineUsersAnonCount);
@@ -30,11 +36,14 @@ export function OnlineUsersList({ store, styles, onClose }: OnlineUsersListProps
     const ou = styles.onlineUsers;
     // Named users we did not load (large rooms) + anonymous users (never named).
     const remaining = Math.max(0, totalCount - onlineUsers.length - anonCount) + anonCount;
+    // Singular vs plural, so a lone viewer reads "1 User Online", not "1 users online".
+    const countTemplate = (totalCount === 1 ? translations.USER_ONLINE : translations.USERS_ONLINE) || `[count] Online`;
+    const title = countTemplate.replace('[count]', String(totalCount));
 
     return (
-        <View style={ou?.panel} testID="onlineUsersList" accessibilityLabel="onlineUsersList">
+        <View style={fill ? ou?.panelFill : ou?.panel} testID="onlineUsersList" accessibilityLabel="onlineUsersList">
             <View style={ou?.panelHeader}>
-                <Text style={ou?.panelTitle}>{translations.USERS_ONLINE?.replace('[count]', String(totalCount)) || `${totalCount} Online`}</Text>
+                <Text style={ou?.panelTitle}>{title}</Text>
                 {onClose && (
                     <TouchableOpacity onPress={onClose} testID="onlineUsersListClose" accessibilityLabel="onlineUsersListClose">
                         <Image
@@ -44,7 +53,7 @@ export function OnlineUsersList({ store, styles, onClose }: OnlineUsersListProps
                     </TouchableOpacity>
                 )}
             </View>
-            <ScrollView style={ou?.panelScroll}>
+            <ScrollView style={[ou?.panelScroll, fill ? { flex: 1, minHeight: 0 } : null]}>
                 {onlineUsers.map((u) => (
                     <View key={u.id} style={ou?.row}>
                         <Image

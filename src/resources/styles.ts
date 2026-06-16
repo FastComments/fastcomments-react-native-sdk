@@ -233,6 +233,7 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 alignItems: 'center',
                 justifyContent: 'center'
             },
+            // Modal card (centered popover from the header facepile): sized + chrome.
             panel: {
                 width: 320,
                 maxWidth: '92%',
@@ -242,6 +243,17 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 paddingTop: t.spacing.md,
                 paddingBottom: t.spacing.md,
                 ...modalShadow
+            },
+            // Sidebar mode (`fill`): a flex column that fills its container, header
+            // fixed and the scroll area consuming the rest - mirrors the web widget's
+            // `.fc-online-users-panel` (display:flex; flex-direction:column).
+            panelFill: {
+                flex: 1,
+                alignSelf: 'stretch',
+                minHeight: 0,
+                backgroundColor: t.colors.surfaceRaised,
+                paddingTop: t.spacing.md,
+                paddingBottom: t.spacing.md,
             },
             panelHeader: {
                 flexDirection: 'row',

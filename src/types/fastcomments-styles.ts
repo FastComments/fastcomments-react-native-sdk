@@ -39,6 +39,8 @@ export interface IFastCommentsStyles {
         faceOverflowText?: TextStyle
         modalScrim?: ViewStyle
         panel?: ViewStyle
+        /** Sidebar (fill) variant of the panel: fills its container as a flex column. **/
+        panelFill?: ViewStyle
         panelHeader?: ViewStyle
         panelTitle?: TextStyle
         panelCloseIcon?: ImageStyle
