@@ -35,7 +35,7 @@ const [store, setStore] = useState(null);
   <FastCommentsFeed config={config} onStoreReady={(s) => setStore(() => s)} />
 </View>;`;
 
-export function FeedScreen({ mode, shell, panelHeight }: ScreenProps) {
+export function FeedScreen({ mode, shell }: ScreenProps) {
     const theme = mode === 'dark' ? getDarkTheme() : getLightTheme();
     // Hide the built-in composer; we place a standalone one above the feed,
     // driven by the feed's own store (so new posts appear instantly).
@@ -49,7 +49,8 @@ export function FeedScreen({ mode, shell, panelHeight }: ScreenProps) {
             title="Social Feed"
             subtitle="A standalone post composer (rich text, media, links, tags, custom toolbar buttons) driven by the feed's own live store, plus posts with avatars, typed image layouts, reactions, comments, and share. Mirrors the Android SDK's separate FeedPostCreateView + FastCommentsFeedView."
             tags={[{ label: 'demo tenant' }, { label: 'simple sso', brand: true }, { label: 'standalone composer' }]}
-            panelHeight={panelHeight}
+            panelHeight={800}
+            panelWidth={500}
             code={CODE}
             codeLabel="FeedScreen.tsx"
         >

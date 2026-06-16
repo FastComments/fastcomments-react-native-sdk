@@ -16,6 +16,8 @@ export interface DemoChromeProps {
     tags?: DemoTag[];
     /** Height of the live-widget panel (the widget renders its own scroll inside). */
     panelHeight: number;
+    /** Optional fixed panel width (centered). Defaults to full content width. */
+    panelWidth?: number;
     code?: string;
     codeLabel?: string;
     children: ReactNode;
@@ -23,7 +25,7 @@ export interface DemoChromeProps {
 
 // Equivalent of the React showcase's _DemoChrome: breadcrumb + title + subtitle +
 // tags, a bordered panel holding the live widget, and a copy-paste code block.
-export function DemoChrome({ shell, breadcrumb, title, subtitle, tags, panelHeight, code, codeLabel, children }: DemoChromeProps) {
+export function DemoChrome({ shell, breadcrumb, title, subtitle, tags, panelHeight, panelWidth, code, codeLabel, children }: DemoChromeProps) {
     return (
         <View style={{ gap: 24 }}>
             <View style={{ borderBottomWidth: 1, borderBottomColor: shell.border, paddingBottom: 18, gap: 8 }}>
@@ -70,6 +72,9 @@ export function DemoChrome({ shell, breadcrumb, title, subtitle, tags, panelHeig
             <View
                 style={{
                     height: panelHeight,
+                    width: panelWidth ?? '100%',
+                    maxWidth: '100%',
+                    alignSelf: panelWidth ? 'center' : 'stretch',
                     borderWidth: 1,
                     borderColor: shell.border,
                     borderRadius: 18,
