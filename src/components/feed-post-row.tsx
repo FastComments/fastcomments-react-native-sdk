@@ -1,5 +1,5 @@
 import { memo, useMemo, useState } from 'react';
-import { Image, Modal, Share, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Image, Linking, Modal, Share, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import RenderHtml, { type MixedStyleDeclaration } from 'react-native-render-html';
 import type { FeedPost } from '../types/feed-post';
 import type { FeedCustomToolbarButton } from '../types/feed-custom-toolbar-button';
@@ -160,6 +160,24 @@ function FeedPostRowImpl({ post, translations, styles, customToolbarButtons, sto
 
             {post.media && post.media.length > 0 ? (
                 <FeedPostMediaGallery postId={post.id} media={post.media} styles={styles} />
+            ) : null}
+
+            {post.links && post.links.length > 0 ? (
+                <View style={f?.postLinks}>
+                    {post.links.map((link, i) => (
+                        <TouchableOpacity
+                            key={`${link.url}-${i}`}
+                            testID={`feedPostLink-${post.id}-${i}`}
+                            accessibilityLabel="feedPostLink"
+                            style={f?.postLinkButton}
+                            onPress={() => link.url && void Linking.openURL(link.url)}
+                        >
+                            <Text style={f?.postLinkButtonText} numberOfLines={1}>
+                                {link.title || link.text || link.url}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
             ) : null}
 
             {store ? (

@@ -2126,12 +2126,47 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 marginTop: t.spacing.xs + 2,
                 marginBottom: t.spacing.xs + 2
             },
+            // Dimensions are computed at render from the image aspect ratio +
+            // measured width (single = full width, multi = carousel page width).
             postMediaImage: {
-                width: 200,
-                height: 200,
-                marginRight: t.spacing.sm,
                 borderRadius: t.radius.md,
                 resizeMode: 'cover'
+            },
+            // Multi-image carousel page indicator.
+            postMediaDots: {
+                flexDirection: 'row',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginTop: t.spacing.xs
+            },
+            postMediaDot: {
+                width: 6,
+                height: 6,
+                borderRadius: t.radius.pill,
+                marginHorizontal: 3,
+                backgroundColor: t.colors.border
+            },
+            postMediaDotActive: {
+                backgroundColor: t.colors.primary
+            },
+            // TASK posts: action buttons rendered from the post's links.
+            postLinks: {
+                marginTop: t.spacing.sm
+            },
+            postLinkButton: {
+                paddingVertical: t.spacing.sm,
+                paddingHorizontal: t.spacing.md,
+                borderRadius: t.radius.md,
+                borderWidth: hairline,
+                borderColor: t.colors.border,
+                backgroundColor: t.colors.surfaceRaised,
+                marginBottom: t.spacing.xs,
+                alignItems: 'center'
+            },
+            postLinkButtonText: {
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.medium,
+                color: t.colors.link
             },
             reactionsRow: {
                 flexDirection: 'row',
