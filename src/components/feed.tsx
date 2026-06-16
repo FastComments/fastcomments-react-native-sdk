@@ -12,8 +12,7 @@ import { ListLoadingSkeleton, Skeleton } from './skeleton';
 import { resolveStyles } from '../resources/resolve-styles';
 import { isDarkColor, resolveTheme } from '../resources/themes';
 import { FastCommentsThemeOverrides } from '../types/fastcomments-theme';
-import { addTranslationsToStore } from '../services/translations';
-import { createFeedPost, loadFeedPosts } from '../services/feed';
+import { loadFeedPosts, setupFeedTranslations } from '../services/feed';
 import { teardownFeedLive } from '../services/feed-live';
 import {
     getFeedScrollOffset,
@@ -21,10 +20,10 @@ import {
 } from '../services/feed-scroll-memory';
 import { startFeedStatsPoll, stopFeedStatsPoll } from '../services/feed-stats';
 import { FeedNewPostsBanner } from './feed-new-posts-banner';
-import { FeedPostComposer } from './feed-post-composer';
+import { FastCommentsFeedPostCreate } from './feed-post-create';
 import { FeedPostRow } from './feed-post-row';
 import type { FastCommentsRNConfig } from '../types/react-native-config';
-import type { CreateFeedPostParams, FeedPost } from '../types/feed-post';
+import type { FeedPost } from '../types/feed-post';
 import type { FeedCustomToolbarButton } from '../types/feed-custom-toolbar-button';
 import type { FollowStateProvider } from '../types/follow-state-provider';
 import type {
@@ -113,36 +112,10 @@ export const FastCommentsFeed = forwardRef<FastCommentsFeedHandle, FastCommentsF
         let cancelled = false;
         async function init() {
             setIsLoading(true);
-            // Translations: pull the comment-ui set once on mount. The Feed
-            // is rendered standalone so it doesn't piggyback on the comments
-            // GET. We don't fail the feed load if this errors - the feed
-            // simply renders with empty translation strings.
-            // comment-ui supplies shared keys (date phrasing for getPrettyDate,
-            // common error messages); feed-ui supplies feed-specific copy.
-            // allSettled so a missing namespace (e.g. server doesn't have the
-            // file yet) doesn't drop the other one.
-            const sdk = store.getState().sdk;
-            const results = await Promise.allSettled([
-                sdk.publicApi.getTranslations({
-                    namespace: 'widgets',
-                    component: 'comment-ui',
-                    useFullTranslationIds: true,
-                    locale: config.locale,
-                }),
-                sdk.publicApi.getTranslations({
-                    namespace: 'widgets',
-                    component: 'feed-ui',
-                    useFullTranslationIds: true,
-                    locale: config.locale,
-                }),
-            ]);
-            if (!cancelled) {
-                for (const r of results) {
-                    if (r.status === 'fulfilled' && r.value.translations) {
-                        addTranslationsToStore(store, r.value.translations);
-                    }
-                }
-            }
+            // Translations: pull the feed's UI copy once on mount (comment-ui +
+            // feed-ui). The Feed is standalone so it doesn't piggyback on the
+            // comments GET; failures just render empty strings.
+            await setupFeedTranslations(store, config.locale);
 
             await loadFeedPosts(store);
             if (!cancelled) {
@@ -234,10 +207,6 @@ export const FastCommentsFeed = forwardRef<FastCommentsFeedHandle, FastCommentsF
         });
     };
 
-    const onSubmit = async (params: CreateFeedPostParams) => {
-        await createFeedPost(store, params);
-    };
-
     const onEndReached = async () => {
         if (isPaging || !feedHasMore || !feedAfterId) return;
         setIsPaging(true);
@@ -322,13 +291,23 @@ export const FastCommentsFeed = forwardRef<FastCommentsFeedHandle, FastCommentsF
                     isPaging ? <Skeleton style={{ height: 40, marginVertical: 8, marginHorizontal: 16 }} /> : null
                 }
             />
-            <FeedPostComposer
-                translations={translations}
-                styles={effectiveStyles}
-                submit={onSubmit}
-                store={store}
-                pickImage={callbacks?.pickImage}
-            />
+            {!config.hideFeedComposer && (
+                <FastCommentsFeedPostCreate
+                    store={store}
+                    styles={effectiveStyles}
+                    pickImage={callbacks?.pickImage}
+                    pickGIF={callbacks?.pickGIF}
+                    onError={callbacks?.onError}
+                    onPostCreated={() => {
+                        // Jump to the top so the new post (prepended) is visible.
+                        try {
+                            listRef.current?.scrollToOffset({ offset: 0, animated: true });
+                        } catch (e) {
+                            // ignore - jest's FlatList mock may not implement scrollToOffset.
+                        }
+                    }}
+                />
+            )}
         </View>
     );
 });

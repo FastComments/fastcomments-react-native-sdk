@@ -1805,6 +1805,121 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 borderTopColor: t.colors.border,
                 backgroundColor: t.colors.surface
             },
+            // Author header (avatar + name), mirroring Android's composer form header.
+            composerHeader: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginBottom: t.spacing.sm
+            },
+            composerAvatar: {
+                width: t.avatar.sm,
+                height: t.avatar.sm,
+                borderRadius: t.radius.pill,
+                marginRight: t.spacing.sm,
+                backgroundColor: t.colors.surfaceRaised
+            },
+            composerAuthorName: {
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.textPrimary,
+                flex: 1
+            },
+            // Attached-link chips + the add-link input row.
+            composerLinkList: {
+                marginTop: t.spacing.sm
+            },
+            composerLinkPreview: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: t.spacing.xs,
+                paddingHorizontal: t.spacing.sm,
+                marginBottom: t.spacing.xs,
+                borderWidth: hairline,
+                borderColor: t.colors.border,
+                borderRadius: t.radius.sm,
+                backgroundColor: t.colors.inputBackground
+            },
+            composerLinkPreviewText: {
+                flex: 1,
+                fontSize: t.fontSize.base,
+                color: t.colors.link,
+                marginRight: t.spacing.sm
+            },
+            composerLinkRemove: {
+                fontSize: t.fontSize.base,
+                color: t.colors.textSecondary
+            },
+            composerLinkRow: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginTop: t.spacing.sm
+            },
+            composerLinkInput: {
+                flex: 1,
+                borderWidth: 1,
+                borderColor: t.colors.border,
+                borderRadius: t.radius.md,
+                padding: t.spacing.sm + 2,
+                fontSize: t.fontSize.base,
+                color: t.colors.textPrimary,
+                backgroundColor: t.colors.inputBackground
+            },
+            composerLinkAddButton: {
+                marginLeft: t.spacing.sm,
+                paddingVertical: t.spacing.sm,
+                paddingHorizontal: t.spacing.md,
+                borderRadius: t.radius.md,
+                backgroundColor: t.colors.surfaceRaised
+            },
+            composerLinkAddButtonText: {
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.medium,
+                color: t.colors.textPrimary
+            },
+            // Composer action row: custom toolbar buttons + (add-link) trigger.
+            composerToolbar: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                marginTop: t.spacing.sm
+            },
+            composerToolbarButton: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: t.spacing.xs,
+                paddingHorizontal: t.spacing.sm,
+                marginRight: t.spacing.sm,
+                borderRadius: t.radius.sm,
+                backgroundColor: t.colors.surfaceRaised
+            },
+            composerToolbarButtonIcon: {
+                width: 18,
+                height: 18,
+                marginRight: t.spacing.xs
+            },
+            composerToolbarButtonLabel: {
+                fontSize: t.fontSize.base,
+                color: t.colors.textPrimary
+            },
+            // Footer: cancel + submit.
+            composerActions: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                marginTop: t.spacing.md
+            },
+            composerCancel: {
+                paddingVertical: t.spacing.sm,
+                paddingHorizontal: t.spacing.lg,
+                marginRight: t.spacing.sm,
+                borderRadius: t.radius.md
+            },
+            composerCancelText: {
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.medium,
+                color: t.colors.textSecondary
+            },
             composerInputTitle: {
                 borderWidth: 1,
                 borderColor: t.colors.border,

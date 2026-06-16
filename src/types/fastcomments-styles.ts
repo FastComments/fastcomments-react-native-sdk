@@ -383,11 +383,29 @@ export interface IFastCommentsStyles {
         postContent?: TextStyle
         postDate?: TextStyle
         composer?: ViewStyle
+        composerHeader?: ViewStyle
+        composerAvatar?: ImageStyle
+        composerAuthorName?: TextStyle
         composerInputTitle?: TextStyle
         composerInput?: TextStyle
         composerSubmit?: ViewStyle
         composerSubmitText?: TextStyle
         composerSubmitDisabled?: ViewStyle
+        composerActions?: ViewStyle
+        composerCancel?: ViewStyle
+        composerCancelText?: TextStyle
+        composerLinkList?: ViewStyle
+        composerLinkPreview?: ViewStyle
+        composerLinkPreviewText?: TextStyle
+        composerLinkRemove?: TextStyle
+        composerLinkRow?: ViewStyle
+        composerLinkInput?: TextStyle
+        composerLinkAddButton?: ViewStyle
+        composerLinkAddButtonText?: TextStyle
+        composerToolbar?: ViewStyle
+        composerToolbarButton?: ViewStyle
+        composerToolbarButtonIcon?: ImageStyle
+        composerToolbarButtonLabel?: TextStyle
         customToolbar?: ViewStyle
         customToolbarButton?: ViewStyle
         customToolbarButtonIcon?: ImageStyle
