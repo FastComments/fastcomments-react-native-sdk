@@ -2154,21 +2154,24 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 alignItems: 'center'
             },
             // Chevron drawn from two borders (a View, not a glyph) so it sits dead
-            // center in the round button regardless of platform font metrics.
+            // center in the round button regardless of platform font metrics. The
+            // ink is biased toward the border corner, which lands ~1.8px above the
+            // box center after a 45deg rotation; the parent-frame translateY (last
+            // in the array -> applied after the rotate) pushes it back to center.
             postMediaChevron: {
                 width: 8,
                 height: 8,
                 borderColor: '#FFFFFF'
             },
             postMediaChevronPrev: {
-                borderBottomWidth: 2,
+                borderTopWidth: 2,
                 borderLeftWidth: 2,
-                transform: [{ rotate: '45deg' }, { translateX: 1 }]
+                transform: [{ translateY: 1.8 }, { rotate: '-45deg' }]
             },
             postMediaChevronNext: {
                 borderTopWidth: 2,
                 borderRightWidth: 2,
-                transform: [{ rotate: '45deg' }, { translateX: -1 }]
+                transform: [{ translateY: 1.8 }, { rotate: '45deg' }]
             },
             // Page indicator dots (tappable).
             postMediaDots: {
