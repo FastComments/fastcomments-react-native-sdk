@@ -4,7 +4,7 @@
 
 ## Live Demo
 
-Try every widget live at <https://fastcomments.com/commenting-system-for-react-native> (the component browser, rendered with react-native-web).
+Try every widget live at <https://fastcomments.com/commenting-system-for-react-native>.
 
 ## Installation
 
