@@ -2153,25 +2153,24 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 justifyContent: 'center',
                 alignItems: 'center'
             },
-            // Chevron drawn from two borders (a View, not a glyph) so it sits dead
-            // center in the round button regardless of platform font metrics. The
-            // ink is biased toward the border corner, which lands ~1.8px above the
-            // box center after a 45deg rotation; the parent-frame translateY (last
-            // in the array -> applied after the rotate) pushes it back to center.
+            // Caret drawn as a CSS-style triangle (a 0x0 View with colored borders),
+            // not a glyph - it's vertically symmetric, so it centers in the round
+            // button with no transform/font-metric fudging.
             postMediaChevron: {
-                width: 8,
-                height: 8,
-                borderColor: '#FFFFFF'
+                width: 0,
+                height: 0,
+                borderTopWidth: 5,
+                borderBottomWidth: 5,
+                borderTopColor: 'transparent',
+                borderBottomColor: 'transparent'
             },
             postMediaChevronPrev: {
-                borderTopWidth: 2,
-                borderLeftWidth: 2,
-                transform: [{ translateY: 1.8 }, { rotate: '-45deg' }]
+                borderRightWidth: 7,
+                borderRightColor: '#FFFFFF'
             },
             postMediaChevronNext: {
-                borderTopWidth: 2,
-                borderRightWidth: 2,
-                transform: [{ translateY: 1.8 }, { rotate: '45deg' }]
+                borderLeftWidth: 7,
+                borderLeftColor: '#FFFFFF'
             },
             // Page indicator dots (tappable).
             postMediaDots: {
