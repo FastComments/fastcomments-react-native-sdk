@@ -107,6 +107,7 @@ export interface IFastCommentsStyles {
     }
     commentMenu?: {
         itemIcon?: ImageStyle
+        itemIconGlyph?: TextStyle
     }
     commentEditModal?: {
         centeredView?: ViewStyle

@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction } from 'react';
 import { FastCommentsCallbacks, FastCommentsImageAsset } from '../types';
-import { Image } from 'react-native';
+import { Image, Text } from 'react-native';
 import { showConfirmDialog } from '../services/dialogs';
 import type { PublicBlockFromCommentParams } from 'fastcomments-sdk';
 import { showError } from '../services/show-error';
@@ -79,6 +79,37 @@ async function setCommentPinStatus(
     }
 }
 
+async function setCommentLockStatus(
+    comment: RNComment,
+    store: FastCommentsStore,
+    doLock: boolean,
+    onError?: (title: string, message: string) => void
+) {
+    const state = store.getState();
+    const sdk = state.sdk;
+    const tenantId = state.config.tenantId!;
+    const broadcastId = newBroadcastId(store);
+    const response = doLock
+        ? await sdk.publicApi.lockComment({
+              tenantId,
+              commentId: comment._id,
+              broadcastId,
+              sso: state.ssoConfigString,
+          })
+        : await sdk.publicApi.unLockComment({
+              tenantId,
+              commentId: comment._id,
+              broadcastId,
+              sso: state.ssoConfigString,
+          });
+    if (response.status === 'success') {
+        store.getState().mergeCommentFields(comment._id, { isLocked: doLock });
+    } else {
+        const translations = state.translations;
+        showError(':(', translations.ERROR_MESSAGE, translations.DISMISS, onError);
+    }
+}
+
 async function setCommentBlockedStatus(
     comment: RNComment,
     store: FastCommentsStore,
@@ -150,8 +181,11 @@ async function setCommentFlaggedStatus(
 
 export interface CommentMenuState {
     canEdit: boolean;
+    canDelete: boolean;
     canPin: boolean;
-    canBlockOrFlag: boolean;
+    canLock: boolean;
+    canBlock: boolean;
+    canFlag: boolean;
 }
 
 export function getCommentMenuState(store: FastCommentsStore, comment: RNComment): CommentMenuState {
@@ -161,24 +195,21 @@ export function getCommentMenuState(store: FastCommentsStore, comment: RNComment
         !!currentUser &&
         'id' in currentUser &&
         (comment.userId === currentUser.id || comment.anonUserId === currentUser.id);
-    const canEdit =
-        !comment.isDeleted &&
-        !!(
-            currentUser &&
-            'authorized' in currentUser &&
-            !!currentUser.authorized &&
-            (state.isSiteAdmin || isMyComment)
-        );
-    const canPin = state.isSiteAdmin && !comment.parentId;
+    const authorized = !!(currentUser && 'authorized' in currentUser && !!currentUser.authorized);
+    const isAdmin = state.isSiteAdmin;
+    const isLocked = !!comment.isLocked;
+    // Author or admin can manage their comment; a locked comment is editable
+    // only by an admin and deletable by nobody (matches the web widget).
+    const canManage = !comment.isDeleted && authorized && (isAdmin || isMyComment);
+    const canEdit = canManage && (!isLocked || isAdmin);
+    const canDelete = canManage && !isLocked;
+    const canPin = isAdmin && !comment.parentId;
+    const canLock = isAdmin && !comment.isDeleted;
     const canBlockOrFlag =
-        !comment.isDeleted &&
-        !comment.isByAdmin &&
-        !comment.isByModerator &&
-        !isMyComment &&
-        !!currentUser &&
-        'authorized' in currentUser &&
-        !!currentUser.authorized;
-    return { canEdit, canPin, canBlockOrFlag };
+        !comment.isDeleted && !comment.isByAdmin && !comment.isByModerator && !isMyComment && authorized;
+    const canBlock = canBlockOrFlag && !state.config.disableBlocking;
+    const canFlag = canBlockOrFlag;
+    return { canEdit, canDelete, canPin, canLock, canBlock, canFlag };
 }
 
 export interface GetCommentMenuItemsProps
@@ -206,7 +237,7 @@ export function getCommentMenuItems(
         styles,
         store,
     }: GetCommentMenuItemsProps,
-    { canEdit, canPin, canBlockOrFlag }: CommentMenuState
+    { canEdit, canDelete, canPin, canLock, canBlock, canFlag }: CommentMenuState
 ) {
     const state = store.getState();
     const hasDarkBackground = !!state.config.hasDarkBackground;
@@ -317,7 +348,18 @@ export function getCommentMenuItems(
         );
     }
 
-    if (canEdit) {
+    if (canLock) {
+        const locking = !comment.isLocked;
+        menuItems.push({
+            id: locking ? 'lock' : 'unlock',
+            label: locking ? state.translations.COMMENT_MENU_LOCK : state.translations.COMMENT_MENU_UNLOCK,
+            // No lock icon in the asset set; render a glyph (ModalMenuItem.icon is a ReactNode).
+            icon: <Text style={styles.commentMenu?.itemIconGlyph}>{locking ? '🔒' : '🔓'}</Text>,
+            handler: async () => setCommentLockStatus(comment, store, locking, onError),
+        });
+    }
+
+    if (canDelete) {
         menuItems.push({
             id: 'delete',
             label: state.translations.COMMENT_MENU_DELETE,
@@ -344,7 +386,7 @@ export function getCommentMenuItems(
         });
     }
 
-    if (canBlockOrFlag) {
+    if (canBlock) {
         const promptBlock = async (doBlock: boolean) => {
             const fresh = store.getState();
             if (!fresh.translations.BLOCK_CONFIRM_MESSAGE) {
@@ -434,7 +476,9 @@ export function getCommentMenuItems(
                       },
                   }
         );
+    }
 
+    if (canFlag) {
         menuItems.push(
             comment.isFlagged
                 ? {

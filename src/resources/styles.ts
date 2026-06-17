@@ -534,6 +534,15 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 height: 24,
                 aspectRatio: 1,
                 resizeMode: 'contain'
+            },
+            // Glyph fallback for menu items without an image asset (e.g. lock),
+            // sized to occupy the same 24px box as the image icons.
+            itemIconGlyph: {
+                width: 24,
+                height: 24,
+                fontSize: 17,
+                lineHeight: 24,
+                textAlign: 'center'
             }
         },
         commentEditModal: {

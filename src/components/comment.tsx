@@ -93,7 +93,14 @@ export function FastCommentsCommentView(props: CommentViewProps) {
     const usePressableEditTrigger = config.usePressToEdit;
     const isReadonly = config.readonly;
     const menuState = isReadonly ? null : getCommentMenuState(store, comment);
-    const shouldShowMenu = menuState && (menuState.canEdit || menuState.canPin || menuState.canBlockOrFlag);
+    const shouldShowMenu =
+        menuState &&
+        (menuState.canEdit ||
+            menuState.canDelete ||
+            menuState.canPin ||
+            menuState.canLock ||
+            menuState.canBlock ||
+            menuState.canFlag);
     const htmlWrapped = `<div style="${styles.comment?.textHTML || ''}">${html}</div>`;
     const finalHTML = renderCommentInline
         ? `<div style="flex-direction:row">${getCommentUserInfoHTML({
