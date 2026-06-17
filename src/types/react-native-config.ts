@@ -16,6 +16,8 @@ export interface FastCommentsRNConfig extends FastCommentsCommentWidgetConfig {
     showLiveStatus?: boolean
     /** When true (default), the FastCommentsFeed remembers its FlatList scroll offset across unmount/remount, keyed by tenantId + urlId. **/
     preserveFeedScrollPosition?: boolean
+    /** Hide the post composer built into FastCommentsFeed (e.g. when placing a standalone FastCommentsFeedPostCreate elsewhere). **/
+    hideFeedComposer?: boolean
     /** Render the submit button as an icon inside the comment box (replaces the standalone labeled button). **/
     useInlineSubmitButton?: boolean
     /** With useShowCommentsToggle: how many comments render above the Show Comments toggle while collapsed (mirrors the web widget's countAboveToggle). **/

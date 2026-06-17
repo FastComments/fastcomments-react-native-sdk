@@ -85,6 +85,8 @@ export interface CommentTextAreaProps extends Pick<FastCommentsCallbacks, 'pickI
     onFocus?: () => void
     /** Submit the comment (web: Ctrl/Cmd+Enter inside the editor). **/
     onSubmit?: () => void
+    /** Fires with the editor HTML on every change (e.g. to enable a submit button). **/
+    onChange?: (html: string) => void
     /** Show the in-flight save shimmer over the editor box. **/
     saving?: boolean
     value?: string
@@ -121,6 +123,7 @@ export function CommentTextArea({
     output,
     onFocus,
     onSubmit,
+    onChange,
     saving,
     pickImage,
     pickGIF,
@@ -326,9 +329,14 @@ export function CommentTextArea({
         };
     }, [output]);
 
+    // Mirror onChange through a ref so the once-created callback always calls the
+    // latest handler without re-binding (same pattern as onSubmitRef).
+    const onChangeRef = useRef<((html: string) => void) | undefined>(onChange);
+    onChangeRef.current = onChange;
     const onChangeHtml = useCallback((e: NativeSyntheticEvent<OnChangeHtmlEvent>) => {
         const next = e.nativeEvent.value;
         htmlRef.current = next;
+        onChangeRef.current?.(next);
         setMentionQuery(detectMentionQuery(next));
     }, []);
 

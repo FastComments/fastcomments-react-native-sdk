@@ -1,21 +1,16 @@
 import { Text, View, Modal } from 'react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { IFastCommentsStyles } from '../types';
 import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
 import { OnlineUsersFacepile } from './online-users-facepile';
 import { OnlineUsersList } from './online-users-list';
-import { loadOnlineUsers } from '../services/online-users';
+import { ensureOnlineUsersLoaded } from '../services/online-users';
 
 export interface LiveStatusBarProps {
     store: FastCommentsStore;
     styles: IFastCommentsStyles;
 }
-
-// Refresh the online-users list at most this often. Presence frames (p-u) can
-// arrive many times per second in a busy room; this caps the getOnlineUsers
-// network/render cost while still keeping the facepile reasonably fresh.
-const MIN_REFRESH_MS = 4000;
 
 export function LiveStatusBar({ store, styles }: LiveStatusBarProps) {
     const wsConnected = useStoreValue(store, (s) => s.wsConnected);
@@ -23,30 +18,12 @@ export function LiveStatusBar({ store, styles }: LiveStatusBarProps) {
     const translations = useStoreValue(store, (s) => s.translations);
     const [listOpen, setListOpen] = useState(false);
 
-    // Keep the facepile/list fresh on join/leave (subscriberCount changes), but
-    // throttle to at most one fetch per MIN_REFRESH_MS. When a refresh is already
-    // pending we coalesce into it rather than resetting the timer - a pure
-    // trailing debounce would starve under continuous churn and never refresh
-    // until a quiet gap. The first change (incl. mount) fires immediately.
-    const lastLoadRef = useRef(0);
-    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Load the initial online-users snapshot once (deduped across widgets). Join/
+    // leave churn is then applied incrementally from presence frames (see
+    // applyOnlineUsersPresenceUpdate in live.ts) - no full re-fetch per change.
     useEffect(() => {
-        if (timerRef.current) return; // already scheduled; let it fire
-        const wait = Math.max(0, MIN_REFRESH_MS - (Date.now() - lastLoadRef.current));
-        timerRef.current = setTimeout(() => {
-            timerRef.current = null;
-            lastLoadRef.current = Date.now();
-            void loadOnlineUsers(store);
-        }, wait);
-    }, [store, subscriberCount]);
-    // Clear any pending refresh on unmount only (not on every count change, which
-    // would defeat the throttle).
-    useEffect(
-        () => () => {
-            if (timerRef.current) clearTimeout(timerRef.current);
-        },
-        []
-    );
+        ensureOnlineUsersLoaded(store);
+    }, [store]);
 
     const statusText = wsConnected ? translations.LIVE : translations.DISCONNECTED;
     // Fall back to a plain string when the server did not send the live-chat

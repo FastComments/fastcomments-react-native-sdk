@@ -6,8 +6,29 @@ import type {
     FeedPostMediaItemAsset,
 } from '../types/feed-post';
 import type { FeedPost as SDKFeedPost } from 'fastcomments-sdk';
+import type { FastCommentsRNConfig } from '../types/react-native-config';
 import { newBroadcastId } from './broadcast-id';
 import { persistSubscriberState } from './live';
+import { addTranslationsToStore } from './translations';
+
+/**
+ * Load the feed's UI copy into the store: comment-ui (shared keys: date phrasing
+ * for getPrettyDate, common errors) + feed-ui (feed-specific). allSettled so a
+ * missing namespace doesn't drop the other; never throws (renders with empty
+ * strings on failure). Shared by FastCommentsFeed and the standalone composer.
+ */
+export async function setupFeedTranslations(store: FastCommentsStore, locale?: string): Promise<void> {
+    const sdk = store.getState().sdk;
+    const results = await Promise.allSettled([
+        sdk.publicApi.getTranslations({ namespace: 'widgets', component: 'comment-ui', useFullTranslationIds: true, locale }),
+        sdk.publicApi.getTranslations({ namespace: 'widgets', component: 'feed-ui', useFullTranslationIds: true, locale }),
+    ]);
+    for (const r of results) {
+        if (r.status === 'fulfilled' && r.value.translations) {
+            addTranslationsToStore(store, r.value.translations);
+        }
+    }
+}
 
 /**
  * The typed SDK already maps the wire `_id` to `id` and parses `createdAt` to
@@ -34,6 +55,7 @@ function toFeedPost(
         myReacts,
         commentCount: post.commentCount,
         media: post.media,
+        links: post.links,
     };
 }
 
@@ -50,6 +72,30 @@ function toFeedPosts(
         if (n) out.push(n);
     }
     return out;
+}
+
+/** Plain-text preview of HTML content, used as a comments page title. */
+function feedContentPreview(contentHTML: string | undefined): string {
+    if (!contentHTML) return '';
+    const text = contentHTML.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return text.length > 100 ? `${text.slice(0, 97)}…` : text;
+}
+
+/**
+ * Build the comments-widget config for a single feed post. Mirrors the Android
+ * SDK's `createCommentsSDKForPost`: same tenant + SSO as the feed, the urlId
+ * namespaced as `post:<id>` (this is how a post's comment thread is associated),
+ * and a pageTitle from the post title or a content preview.
+ */
+export function buildPostCommentsConfig(
+    post: Pick<FeedPost, 'id' | 'title' | 'contentHTML'>,
+    feedConfig: FastCommentsRNConfig
+): FastCommentsRNConfig {
+    return {
+        ...feedConfig,
+        urlId: `post:${post.id}`,
+        pageTitle: post.title || feedContentPreview(post.contentHTML) || undefined,
+    };
 }
 
 interface FetchOptions {
@@ -158,6 +204,7 @@ export async function createFeedPost(
                 tags: params.tags,
                 meta: params.meta,
                 media: params.media,
+                links: params.links,
             },
         });
         if (response.status !== 'success' || !response.feedPost) {

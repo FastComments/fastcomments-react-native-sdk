@@ -16,6 +16,18 @@ export interface FeedPostMediaItem {
     sizes: FeedPostMediaItemAsset[];
 }
 
+/**
+ * A link attached to a feed post. For TASK-style posts these render as action
+ * buttons (label from `text`/`title`, action = `url`); for link posts they show
+ * as a preview. Mirrors the SDK `FeedPostLink`.
+ */
+export interface FeedPostLink {
+    url?: string;
+    title?: string;
+    text?: string;
+    description?: string;
+}
+
 export interface FeedPost {
     id: string;
     tenantId: string;
@@ -37,6 +49,8 @@ export interface FeedPost {
     myReacts?: Record<string, boolean>;
     commentCount?: number | null;
     media?: FeedPostMediaItem[];
+    /** Attached links - rendered as a preview or as TASK action buttons. */
+    links?: FeedPostLink[];
 }
 
 export interface CreateFeedPostParams {
@@ -47,4 +61,5 @@ export interface CreateFeedPostParams {
     tags?: string[];
     meta?: Record<string, string>;
     media?: FeedPostMediaItem[];
+    links?: FeedPostLink[];
 }

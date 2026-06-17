@@ -19,6 +19,16 @@ function storeWithOnlineUsers(count: number, total = count) {
         urlId: 'online-users-test',
         apiHost: 'https://fastcomments.com',
     });
+    // The widgets self-load their snapshot on mount (ensureOnlineUsersLoaded);
+    // stub the endpoint so these render-only tests never hit the network.
+    (store.getState().sdk.publicApi as any).getOnlineUsers = async () => ({
+        status: 'success',
+        users: [],
+        totalCount: total,
+        anonCount: 0,
+        nextAfterUserId: null,
+        nextAfterName: null,
+    });
     const users = Array.from({ length: count }, (_, i) => ({
         id: `u${i}`,
         displayName: `User ${i}`,

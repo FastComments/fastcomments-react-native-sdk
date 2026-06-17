@@ -39,6 +39,8 @@ export interface IFastCommentsStyles {
         faceOverflowText?: TextStyle
         modalScrim?: ViewStyle
         panel?: ViewStyle
+        /** Sidebar (fill) variant of the panel: fills its container as a flex column. **/
+        panelFill?: ViewStyle
         panelHeader?: ViewStyle
         panelTitle?: TextStyle
         panelCloseIcon?: ImageStyle
@@ -47,6 +49,14 @@ export interface IFastCommentsStyles {
         rowAvatar?: ImageStyle
         rowName?: TextStyle
         rowDot?: ViewStyle
+        /** Muted presence dot for offline users. **/
+        rowDotOffline?: ViewStyle
+        /** "Online" / "Offline" section subheaders. **/
+        subheader?: TextStyle
+        subheaderFirst?: TextStyle
+        /** "Load more" button for paging the offline list. **/
+        loadMore?: ViewStyle
+        loadMoreText?: TextStyle
         moreText?: TextStyle
     },
     bottomArea?: {
@@ -368,16 +378,46 @@ export interface IFastCommentsStyles {
         newPostsBannerText?: TextStyle
         post?: ViewStyle
         postHeader?: ViewStyle
+        postAvatar?: ImageStyle
+        postHeaderText?: ViewStyle
         postTitle?: TextStyle
         postAuthor?: TextStyle
         postContent?: TextStyle
         postDate?: TextStyle
+        postMenuButton?: ViewStyle
+        postMenuDot?: ViewStyle
+        postActions?: ViewStyle
+        postActionButton?: ViewStyle
+        postActionLabel?: TextStyle
+        commentsModalScrim?: ViewStyle
+        commentsModalSheet?: ViewStyle
+        commentsModalHeader?: ViewStyle
+        commentsModalTitle?: TextStyle
+        commentsModalCloseIcon?: ImageStyle
         composer?: ViewStyle
+        composerHeader?: ViewStyle
+        composerAvatar?: ImageStyle
+        composerAuthorName?: TextStyle
         composerInputTitle?: TextStyle
         composerInput?: TextStyle
         composerSubmit?: ViewStyle
         composerSubmitText?: TextStyle
         composerSubmitDisabled?: ViewStyle
+        composerActions?: ViewStyle
+        composerCancel?: ViewStyle
+        composerCancelText?: TextStyle
+        composerLinkList?: ViewStyle
+        composerLinkPreview?: ViewStyle
+        composerLinkPreviewText?: TextStyle
+        composerLinkRemove?: TextStyle
+        composerLinkRow?: ViewStyle
+        composerLinkInput?: TextStyle
+        composerLinkAddButton?: ViewStyle
+        composerLinkAddButtonText?: TextStyle
+        composerToolbar?: ViewStyle
+        composerToolbarButton?: ViewStyle
+        composerToolbarButtonIcon?: ImageStyle
+        composerToolbarButtonLabel?: TextStyle
         customToolbar?: ViewStyle
         customToolbarButton?: ViewStyle
         customToolbarButtonIcon?: ImageStyle
@@ -401,6 +441,19 @@ export interface IFastCommentsStyles {
         composerMediaToolbar?: ViewStyle
         postMediaGallery?: ViewStyle
         postMediaImage?: ImageStyle
+        postMediaCarousel?: ViewStyle
+        postMediaNav?: ViewStyle
+        postMediaNavButton?: ViewStyle
+        postMediaChevron?: ViewStyle
+        postMediaChevronPrev?: ViewStyle
+        postMediaChevronNext?: ViewStyle
+        postMediaDots?: ViewStyle
+        postMediaDotButton?: ViewStyle
+        postMediaDot?: ViewStyle
+        postMediaDotActive?: ViewStyle
+        postLinks?: ViewStyle
+        postLinkButton?: ViewStyle
+        postLinkButtonText?: TextStyle
         reactionsRow?: ViewStyle
         reactionChip?: ViewStyle
         reactionChipActive?: ViewStyle

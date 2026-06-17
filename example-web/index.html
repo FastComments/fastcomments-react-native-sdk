@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FastComments React Native SDK - Web Example</title>
     <style>
+      /* Brand fonts (same families the React showcase uses) so the showcase
+         chrome's 'Manrope'/'Inter' fontFamily values resolve; falls back to
+         system-ui if they fail to load. */
+      @font-face {
+        font-family: "Manrope";
+        src: url("https://fastcomments.com/fonts/Manrope-VariableFont_wght.woff2") format("woff2");
+        font-weight: 200 800; font-display: swap;
+      }
+      @font-face {
+        font-family: "Inter";
+        src: url("https://fastcomments.com/fonts/Inter-VariableFont_slnt,wght.woff2") format("woff2");
+        font-weight: 100 900; font-display: swap;
+      }
       html, body, #root { height: 100%; margin: 0; padding: 0; }
       /* Make #root a flex container so react-native-web's AppContainer (flex: 1)
          resolves to the full viewport height instead of collapsing to content. */

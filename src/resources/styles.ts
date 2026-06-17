@@ -233,6 +233,7 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 alignItems: 'center',
                 justifyContent: 'center'
             },
+            // Modal card (centered popover from the header facepile): sized + chrome.
             panel: {
                 width: 320,
                 maxWidth: '92%',
@@ -242,6 +243,17 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 paddingTop: t.spacing.md,
                 paddingBottom: t.spacing.md,
                 ...modalShadow
+            },
+            // Sidebar mode (`fill`): a flex column that fills its container, header
+            // fixed and the scroll area consuming the rest - mirrors the web widget's
+            // `.fc-online-users-panel` (display:flex; flex-direction:column).
+            panelFill: {
+                flex: 1,
+                alignSelf: 'stretch',
+                minHeight: 0,
+                backgroundColor: t.colors.surfaceRaised,
+                paddingTop: t.spacing.md,
+                paddingBottom: t.spacing.md,
             },
             panelHeader: {
                 flexDirection: 'row',
@@ -286,6 +298,44 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 height: 8,
                 borderRadius: t.radius.pill,
                 backgroundColor: t.colors.onlineIndicator
+            },
+            // Offline presence dot: muted grey (web uses #c4c4c4).
+            rowDotOffline: {
+                width: 8,
+                height: 8,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.colors.border
+            },
+            // Section subheaders ("Online" / "Offline") with a hairline divider above,
+            // matching the web panel's `.fc-ou-subheader`.
+            subheader: {
+                marginTop: t.spacing.md,
+                marginBottom: t.spacing.xs,
+                paddingTop: t.spacing.sm,
+                borderTopWidth: hairline,
+                borderColor: t.colors.border,
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.medium,
+                color: t.colors.textSecondary
+            },
+            // The first subheader sits flush against the header - no divider/extra gap.
+            subheaderFirst: {
+                marginTop: t.spacing.xs,
+                paddingTop: 0,
+                borderTopWidth: 0
+            },
+            loadMore: {
+                marginTop: t.spacing.sm,
+                paddingTop: t.spacing.sm,
+                paddingBottom: t.spacing.sm,
+                borderWidth: hairline,
+                borderColor: t.colors.border,
+                borderRadius: t.radius.sm,
+                alignItems: 'center'
+            },
+            loadMoreText: {
+                fontSize: t.fontSize.base,
+                color: t.colors.textSecondary
             },
             moreText: {
                 paddingTop: t.spacing.sm,
@@ -1699,8 +1749,18 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
             postHeader: {
                 flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'space-between',
                 marginBottom: t.spacing.xs + 2
+            },
+            postAvatar: {
+                width: t.avatar.sm,
+                height: t.avatar.sm,
+                borderRadius: t.radius.pill,
+                marginRight: t.spacing.sm,
+                backgroundColor: t.colors.surfaceRaised
+            },
+            postHeaderText: {
+                flex: 1,
+                minWidth: 0
             },
             postTitle: {
                 fontSize: t.fontSize.lg,
@@ -1710,7 +1770,8 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
             },
             postAuthor: {
                 fontSize: t.fontSize.base,
-                color: t.colors.textSecondary,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.textPrimary,
                 flexShrink: 1
             },
             followPill: {
@@ -1749,11 +1810,192 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 fontSize: t.fontSize.base,
                 color: t.colors.textSecondary
             },
+            // Three-dot post menu (delete on own posts).
+            postMenuButton: {
+                paddingVertical: t.spacing.xs,
+                paddingHorizontal: t.spacing.sm,
+                marginLeft: t.spacing.sm,
+                alignItems: 'center',
+                justifyContent: 'center'
+            },
+            postMenuDot: {
+                width: 4,
+                height: 4,
+                borderRadius: t.radius.pill,
+                marginVertical: 1.5,
+                backgroundColor: t.colors.textSecondary
+            },
+            // Comment + Share action row beneath the reactions.
+            postActions: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginTop: t.spacing.sm
+            },
+            postActionButton: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: t.spacing.xs,
+                paddingHorizontal: t.spacing.sm,
+                marginRight: t.spacing.md
+            },
+            postActionLabel: {
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.medium,
+                color: t.colors.textSecondary
+            },
+            // Per-post comments modal (FastCommentsLiveCommenting for urlId post:<id>).
+            commentsModalScrim: {
+                flex: 1,
+                backgroundColor: '#00000066',
+                justifyContent: 'flex-end'
+            },
+            commentsModalSheet: {
+                maxHeight: '88%',
+                backgroundColor: t.colors.background,
+                borderTopLeftRadius: t.radius.lg,
+                borderTopRightRadius: t.radius.lg,
+                overflow: 'hidden'
+            },
+            commentsModalHeader: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: t.spacing.sm,
+                paddingHorizontal: t.spacing.md,
+                borderBottomWidth: hairline,
+                borderBottomColor: t.colors.border
+            },
+            commentsModalTitle: {
+                flex: 1,
+                fontSize: t.fontSize.lg,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.textPrimary,
+                marginRight: t.spacing.sm
+            },
+            commentsModalCloseIcon: {
+                width: 16,
+                height: 16
+            },
             composer: {
                 padding: t.spacing.md,
                 borderTopWidth: hairline,
                 borderTopColor: t.colors.border,
                 backgroundColor: t.colors.surface
+            },
+            // Author header (avatar + name), mirroring Android's composer form header.
+            composerHeader: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginBottom: t.spacing.sm
+            },
+            composerAvatar: {
+                width: t.avatar.sm,
+                height: t.avatar.sm,
+                borderRadius: t.radius.pill,
+                marginRight: t.spacing.sm,
+                backgroundColor: t.colors.surfaceRaised
+            },
+            composerAuthorName: {
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold,
+                color: t.colors.textPrimary,
+                flex: 1
+            },
+            // Attached-link chips + the add-link input row.
+            composerLinkList: {
+                marginTop: t.spacing.sm
+            },
+            composerLinkPreview: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: t.spacing.xs,
+                paddingHorizontal: t.spacing.sm,
+                marginBottom: t.spacing.xs,
+                borderWidth: hairline,
+                borderColor: t.colors.border,
+                borderRadius: t.radius.sm,
+                backgroundColor: t.colors.inputBackground
+            },
+            composerLinkPreviewText: {
+                flex: 1,
+                fontSize: t.fontSize.base,
+                color: t.colors.link,
+                marginRight: t.spacing.sm
+            },
+            composerLinkRemove: {
+                fontSize: t.fontSize.base,
+                color: t.colors.textSecondary
+            },
+            composerLinkRow: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginTop: t.spacing.sm
+            },
+            composerLinkInput: {
+                flex: 1,
+                borderWidth: 1,
+                borderColor: t.colors.border,
+                borderRadius: t.radius.md,
+                padding: t.spacing.sm + 2,
+                fontSize: t.fontSize.base,
+                color: t.colors.textPrimary,
+                backgroundColor: t.colors.inputBackground
+            },
+            composerLinkAddButton: {
+                marginLeft: t.spacing.sm,
+                paddingVertical: t.spacing.sm,
+                paddingHorizontal: t.spacing.md,
+                borderRadius: t.radius.md,
+                backgroundColor: t.colors.surfaceRaised
+            },
+            composerLinkAddButtonText: {
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.medium,
+                color: t.colors.textPrimary
+            },
+            // Composer action row: custom toolbar buttons + (add-link) trigger.
+            composerToolbar: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                marginTop: t.spacing.sm
+            },
+            composerToolbarButton: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: t.spacing.xs,
+                paddingHorizontal: t.spacing.sm,
+                marginRight: t.spacing.sm,
+                borderRadius: t.radius.sm,
+                backgroundColor: t.colors.surfaceRaised
+            },
+            composerToolbarButtonIcon: {
+                width: 18,
+                height: 18,
+                marginRight: t.spacing.xs
+            },
+            composerToolbarButtonLabel: {
+                fontSize: t.fontSize.base,
+                color: t.colors.textPrimary
+            },
+            // Footer: cancel + submit.
+            composerActions: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                marginTop: t.spacing.md
+            },
+            composerCancel: {
+                paddingVertical: t.spacing.sm,
+                paddingHorizontal: t.spacing.lg,
+                marginRight: t.spacing.sm,
+                borderRadius: t.radius.md
+            },
+            composerCancelText: {
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.medium,
+                color: t.colors.textSecondary
             },
             composerInputTitle: {
                 borderWidth: 1,
@@ -1884,12 +2126,89 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 marginTop: t.spacing.xs + 2,
                 marginBottom: t.spacing.xs + 2
             },
+            // Dimensions are computed at render from the image aspect ratio +
+            // measured width (single = full width, multi = carousel page width).
             postMediaImage: {
-                width: 200,
-                height: 200,
-                marginRight: t.spacing.sm,
                 borderRadius: t.radius.md,
                 resizeMode: 'cover'
+            },
+            // Multi-image carousel: relative wrapper for the overlaid nav arrows.
+            postMediaCarousel: {
+                position: 'relative'
+            },
+            postMediaNav: {
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                width: 44,
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 2
+            },
+            postMediaNavButton: {
+                width: 32,
+                height: 32,
+                borderRadius: t.radius.pill,
+                backgroundColor: 'rgba(0,0,0,0.45)',
+                justifyContent: 'center',
+                alignItems: 'center'
+            },
+            // Caret drawn as a CSS-style triangle (a 0x0 View with colored borders),
+            // not a glyph - it's vertically symmetric, so it centers in the round
+            // button with no transform/font-metric fudging.
+            postMediaChevron: {
+                width: 0,
+                height: 0,
+                borderTopWidth: 5,
+                borderBottomWidth: 5,
+                borderTopColor: 'transparent',
+                borderBottomColor: 'transparent'
+            },
+            postMediaChevronPrev: {
+                borderRightWidth: 7,
+                borderRightColor: '#FFFFFF'
+            },
+            postMediaChevronNext: {
+                borderLeftWidth: 7,
+                borderLeftColor: '#FFFFFF'
+            },
+            // Page indicator dots (tappable).
+            postMediaDots: {
+                flexDirection: 'row',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginTop: t.spacing.xs
+            },
+            postMediaDotButton: {
+                padding: 4
+            },
+            postMediaDot: {
+                width: 6,
+                height: 6,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.colors.border
+            },
+            postMediaDotActive: {
+                backgroundColor: t.colors.primary
+            },
+            // TASK posts: action buttons rendered from the post's links.
+            postLinks: {
+                marginTop: t.spacing.sm
+            },
+            postLinkButton: {
+                paddingVertical: t.spacing.sm,
+                paddingHorizontal: t.spacing.md,
+                borderRadius: t.radius.md,
+                borderWidth: hairline,
+                borderColor: t.colors.border,
+                backgroundColor: t.colors.surfaceRaised,
+                marginBottom: t.spacing.xs,
+                alignItems: 'center'
+            },
+            postLinkButtonText: {
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.medium,
+                color: t.colors.link
             },
             reactionsRow: {
                 flexDirection: 'row',
