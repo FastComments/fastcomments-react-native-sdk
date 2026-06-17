@@ -19,7 +19,9 @@ function LegacyWidget() {
       urlId: search.get('urlId') || 'native-test',
       showLiveRightAway: true,
       countAll: true,
-      apiHost: '/_fc',
+      // Dev routes through the Vite proxy; the deployed bundle is same-origin
+      // with fastcomments.com, so it uses the default host.
+      ...(import.meta.env.DEV ? { apiHost: '/_fc' } : {}),
       simpleSSO: {
         username: 'Demo User',
         email: 'demo-user@fctest.com',

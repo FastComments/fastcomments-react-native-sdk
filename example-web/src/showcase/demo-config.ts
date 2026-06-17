@@ -18,14 +18,16 @@ export const CHAT_URL_ID = 'fastcomments-rn-showcase-chat';
 export const FEED_URL_ID = 'fastcomments-rn-showcase-feed';
 
 export function buildConfig(urlId: string, overrides?: Partial<FastCommentsRNConfig>): FastCommentsRNConfig {
+    // Localhost dev routes through the Vite proxy ('/_fc' -> fastcomments.com) to
+    // dodge CORS. The deployed bundle is served same-origin from fastcomments.com,
+    // so it talks to the default host directly (omit apiHost). Native talks direct.
+    const apiHost = Platform.OS === 'web' && import.meta.env.DEV ? '/_fc' : undefined;
     return {
         tenantId: 'demo',
         urlId,
         showLiveRightAway: true,
         countAll: true,
-        // In the browser, route through the Vite dev proxy ('/_fc' -> fastcomments.com)
-        // to avoid CORS. Native builds talk to the host directly.
-        ...(Platform.OS === 'web' ? { apiHost: '/_fc' } : {}),
+        ...(apiHost ? { apiHost } : {}),
         simpleSSO: DEMO_SIMPLE_SSO,
         ...overrides,
     };

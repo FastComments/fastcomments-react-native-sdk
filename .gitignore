@@ -69,3 +69,4 @@ example/src/**/*.js
 index.js
 src/**/*.js
 .claude/
+demo-dist/
