@@ -61,6 +61,7 @@ export function getDefaultImageAssets(): ImageAssetConfig {
         [FastCommentsImageAsset.ICON_BLOCK]: require('./icons/ban.png'),
         [FastCommentsImageAsset.ICON_BLOCK_WHITE]: require('./icons/ban_white.png'),
         [FastCommentsImageAsset.ICON_FLAG]: require('./icons/flag.png'),
+        [FastCommentsImageAsset.ICON_FLAG_WHITE]: require('./icons/flag_white.png'),
         [FastCommentsImageAsset.AVATAR_DEFAULT]: require('./avatars/unknown-person-v2.png'),
     };
 }

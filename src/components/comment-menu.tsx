@@ -489,8 +489,8 @@ export function getCommentMenuItems(
                               source={
                                   state.imageAssets[
                                       hasDarkBackground
-                                          ? FastCommentsImageAsset.ICON_BLOCK_WHITE
-                                          : FastCommentsImageAsset.ICON_BLOCK
+                                          ? FastCommentsImageAsset.ICON_FLAG_WHITE
+                                          : FastCommentsImageAsset.ICON_FLAG
                                   ]
                               }
                               style={styles.commentMenu?.itemIcon}
@@ -514,8 +514,8 @@ export function getCommentMenuItems(
                               source={
                                   state.imageAssets[
                                       hasDarkBackground
-                                          ? FastCommentsImageAsset.ICON_BLOCK_WHITE
-                                          : FastCommentsImageAsset.ICON_BLOCK
+                                          ? FastCommentsImageAsset.ICON_FLAG_WHITE
+                                          : FastCommentsImageAsset.ICON_FLAG
                                   ]
                               }
                               style={styles.commentMenu?.itemIcon}

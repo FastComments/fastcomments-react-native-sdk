@@ -57,6 +57,7 @@ export enum FastCommentsImageAsset {
     ICON_BLOCK,
     ICON_BLOCK_WHITE,
     ICON_FLAG,
+    ICON_FLAG_WHITE,
     AVATAR_DEFAULT,
     ICON_HEART,
     ICON_HEART_ACTIVE

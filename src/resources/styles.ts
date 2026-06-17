@@ -422,6 +422,7 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 fontSize: t.fontSize.base,
                 color: t.colors.textSecondary,
                 textAlignVertical: 'center',
+                marginRight: 3,
             },
             dateSeparator: {
                 alignItems: 'center',
