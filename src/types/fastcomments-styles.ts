@@ -444,7 +444,9 @@ export interface IFastCommentsStyles {
         postMediaCarousel?: ViewStyle
         postMediaNav?: ViewStyle
         postMediaNavButton?: ViewStyle
-        postMediaNavText?: TextStyle
+        postMediaChevron?: ViewStyle
+        postMediaChevronPrev?: ViewStyle
+        postMediaChevronNext?: ViewStyle
         postMediaDots?: ViewStyle
         postMediaDotButton?: ViewStyle
         postMediaDot?: ViewStyle

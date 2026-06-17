@@ -2153,11 +2153,22 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 justifyContent: 'center',
                 alignItems: 'center'
             },
-            postMediaNavText: {
-                color: '#FFFFFF',
-                fontSize: 22,
-                lineHeight: 24,
-                fontWeight: t.fontWeight.bold
+            // Chevron drawn from two borders (a View, not a glyph) so it sits dead
+            // center in the round button regardless of platform font metrics.
+            postMediaChevron: {
+                width: 8,
+                height: 8,
+                borderColor: '#FFFFFF'
+            },
+            postMediaChevronPrev: {
+                borderBottomWidth: 2,
+                borderLeftWidth: 2,
+                transform: [{ rotate: '45deg' }, { translateX: 1 }]
+            },
+            postMediaChevronNext: {
+                borderTopWidth: 2,
+                borderRightWidth: 2,
+                transform: [{ rotate: '45deg' }, { translateX: -1 }]
             },
             // Page indicator dots (tappable).
             postMediaDots: {

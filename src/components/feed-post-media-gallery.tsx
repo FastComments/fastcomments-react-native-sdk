@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Image, NativeScrollEvent, NativeSyntheticEvent, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Image, NativeScrollEvent, NativeSyntheticEvent, ScrollView, TouchableOpacity, View } from 'react-native';
 import type { IFastCommentsStyles } from '../types';
 import type { FeedPostMediaItem, FeedPostMediaItemAsset } from '../types/feed-post';
 
@@ -105,7 +105,7 @@ export function FeedPostMediaGallery({ postId, media, styles }: FeedPostMediaGal
                         onPress={() => goTo(active - 1)}
                     >
                         <View style={f?.postMediaNavButton}>
-                            <Text style={f?.postMediaNavText}>‹</Text>
+                            <View style={[f?.postMediaChevron, f?.postMediaChevronPrev]} />
                         </View>
                     </TouchableOpacity>
                 ) : null}
@@ -117,7 +117,7 @@ export function FeedPostMediaGallery({ postId, media, styles }: FeedPostMediaGal
                         onPress={() => goTo(active + 1)}
                     >
                         <View style={f?.postMediaNavButton}>
-                            <Text style={f?.postMediaNavText}>›</Text>
+                            <View style={[f?.postMediaChevron, f?.postMediaChevronNext]} />
                         </View>
                     </TouchableOpacity>
                 ) : null}
