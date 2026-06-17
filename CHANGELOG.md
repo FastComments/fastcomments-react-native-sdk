@@ -1,5 +1,26 @@
 # Changelog
 
+## 5.1.0
+
+### New
+
+- **Live chat streaming UX**: `FastCommentsLiveChat` now matches the web live-chat widget. Compact Twitch-style rows (small avatar with the activity dot, bold name inlined with the message), periodic day separators, no per-message dates or per-message reply/vote bar, a red "Live" dot, and a divider above the composer. Ctrl/Cmd+Enter submits; the composer shimmers in place during a save instead of showing a spinner or flickering the text.
+- **Online users**: a red presence dot, an always-on count, and `OnlineUsersFacepile` + `OnlineUsersList` widgets. The list has Online/Offline sections (offline paginated via `getOfflineUsers`) and a `fill` mode for sidebar layouts. Presence is now applied **incrementally** from websocket frames (add/remove + a debounced `getUsersInfo` enrich) instead of re-fetching the whole list - matching the web widget.
+- **Feed parity with the Android SDK**:
+  - `FastCommentsFeedPostCreate` - a standalone post composer (Android `FeedPostCreateView` equivalent): author header, a rich enriched-editor body, media attachments, link attachments, tags (`tagSupplier`), custom toolbar buttons, and cancel/loading/error. Drive it from the feed's own store via `onStoreReady`, or pass it a `config`.
+  - Post rows gain author avatars, rich HTML content, a comment button that opens the post's comments (`urlId = "post:<id>"`, like Android), share, and a delete menu.
+  - Typed image layouts: single images render full-width at their aspect ratio; multiple render as a navigable carousel; link-only posts render action buttons.
+  - `config.hideFeedComposer` to suppress the built-in composer.
+- **Store access**: `FastCommentsLiveChat` / `FastCommentsLiveCommenting` / `FastCommentsFeed` accept `onStoreReady(store)`, and the `FastCommentsStore` type is exported, so hosts can render store-driven widgets (e.g. the online-users list) alongside a widget.
+- **Loaders**: every spinner is replaced with a shimmer (a sized `Skeleton` or a row-based `ListLoadingSkeleton`), all driven by one shared animation loop.
+- **Anchored popovers** (GIF picker, comment/sort/notification menus) now detect available space and flip above the trigger when there is no room below.
+
+### Fixed
+
+- Reliable scroll-to-bottom on live-chat load (pins the DOM scroller to its true max so the last message isn't clipped), and the per-message reply/vote toolbar no longer adds dead vertical space.
+- Submit buttons (reply, SSO login, edit save) share one filled style, and their icons follow the button text color instead of the page background.
+- The comment menu is a three-dot kebab in both modes.
+
 ## 5.0.1
 
 ### Fixed
