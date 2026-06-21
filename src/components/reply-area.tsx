@@ -8,10 +8,11 @@ import { NotificationBell } from './notification-bell';
 import { CommentAreaMessage } from './comment-area-message';
 import { CommentTextArea, FocusObserver, ValueObserver, EmoticonBarConfig } from './comment-text-area';
 import { SavingShimmer } from './saving-shimmer';
-import type { CommentData, CreateCommentPublic200Response, PublicComment } from 'fastcomments-sdk';
+import type { APIError, CommentData, PublicComment } from 'fastcomments-sdk';
 import { getActionTenantId, getActionURLID } from '../services/tenants';
 import { newBroadcastId } from '../services/broadcast-id';
 import { handleNewCustomConfig } from '../services/custom-config';
+import { responseExtras } from '../services/api-response-extras';
 import { editorHtmlToServerHtml, isEditorHtmlEffectivelyEmpty } from '../services/editor/editor-html-to-server-html';
 import { isIdentifiedUser } from '../services/user-auth-state';
 import { incOverallCommentCount } from '../services/comment-count';
@@ -49,7 +50,7 @@ interface CommentReplyState {
     isReplySaving: boolean;
     showSuccessMessage: boolean;
     showAuthInputForm: boolean;
-    lastSaveResponse?: CreateCommentPublic200Response;
+    lastSaveResponse?: Partial<APIError>;
     /** Set when the comment exceeds the tenant's character limit. **/
     tooLongLimit?: number;
 }
@@ -271,10 +272,11 @@ async function submit(
         });
 
         let showSuccessMessage = false;
-        if (response.customConfig)
+        const responseCustomConfig = responseExtras(response).customConfig;
+        if (responseCustomConfig)
             handleNewCustomConfig(
                 store,
-                response.customConfig as unknown as Parameters<typeof handleNewCustomConfig>[1]
+                responseCustomConfig as unknown as Parameters<typeof handleNewCustomConfig>[1]
             );
         const wasSuccessful = response.status === 'success' && !!response.comment;
         const comment: RNComment | null = wasSuccessful
@@ -339,8 +341,9 @@ async function submit(
                 onAuthenticationChange && onAuthenticationChange('authentication-failed', null, comment);
             }
         }
-        if (response.maxCharacterLength && response.maxCharacterLength !== latest.config.maxCommentCharacterLength) {
-            latest.mergeConfig({ maxCommentCharacterLength: response.maxCharacterLength });
+        const responseMaxCharacterLength = responseExtras(response).maxCharacterLength;
+        if (responseMaxCharacterLength && responseMaxCharacterLength !== latest.config.maxCommentCharacterLength) {
+            latest.mergeConfig({ maxCommentCharacterLength: responseMaxCharacterLength });
         }
 
         const patch: Partial<CommentReplyState> = {
@@ -362,7 +365,7 @@ async function submit(
 
         if (wasSuccessful && comment) onReplySuccess && onReplySuccess(comment);
     } catch (caught: unknown) {
-        const errorResponse = caught as Partial<CreateCommentPublic200Response> | undefined;
+        const errorResponse = caught as Partial<APIError> | undefined;
         if (errorResponse && errorResponse.customConfig) {
             handleNewCustomConfig(
                 store,
@@ -378,7 +381,7 @@ async function submit(
             isReplySaving: false,
             showAuthInputForm: false,
             showSuccessMessage: false,
-            lastSaveResponse: errorResponse as CreateCommentPublic200Response | undefined,
+            lastSaveResponse: errorResponse,
         });
     }
 }

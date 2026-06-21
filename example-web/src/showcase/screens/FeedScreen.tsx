@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
-import { FastCommentsFeed, FastCommentsFeedPostCreate, getDarkTheme, getLightTheme } from '../sdk';
+import { FastCommentsFeed, FeedPostComposer, getDarkTheme, getLightTheme } from '../sdk';
 import type { FastCommentsStore } from '../sdk';
 import { DemoChrome } from '../chrome/DemoChrome';
 import { buildConfig, FEED_URL_ID } from '../demo-config';
 import type { ScreenProps } from '../types';
 
-const CODE = `import { FastCommentsFeed, FastCommentsFeedPostCreate } from 'fastcomments-react-native-sdk';
+const CODE = `import { FastCommentsFeed, FeedPostComposer } from 'fastcomments-react-native-sdk';
 
 const config = {
   tenantId: 'demo',
@@ -22,14 +22,9 @@ const [store, setStore] = useState(null);
 
 <View style={{ flex: 1 }}>
   {store && (
-    <FastCommentsFeedPostCreate
+    <FeedPostComposer
       store={store}
       tagSupplier={() => ['showcase']}
-      toolbarButtons={[{
-        id: 'demo-image',
-        label: '🖼 Demo image',
-        onPress: (api) => api.addMedia('https://picsum.photos/seed/' + Date.now() + '/600/400'),
-      }]}
     />
   )}
   <FastCommentsFeed config={config} onStoreReady={(s) => setStore(() => s)} />
@@ -56,17 +51,10 @@ export function FeedScreen({ mode, shell }: ScreenProps) {
         >
             <View style={{ flex: 1 }}>
                 {store ? (
-                    <FastCommentsFeedPostCreate
+                    <FeedPostComposer
                         store={store}
                         theme={theme}
                         tagSupplier={() => ['showcase']}
-                        toolbarButtons={[
-                            {
-                                id: 'demo-image',
-                                label: '🖼 Demo image',
-                                onPress: (api) => api.addMedia(`https://picsum.photos/seed/${Date.now()}/600/400`),
-                            },
-                        ]}
                     />
                 ) : null}
                 <FastCommentsFeed key={mode} config={config} theme={theme} onStoreReady={(s) => setStore(() => s)} />

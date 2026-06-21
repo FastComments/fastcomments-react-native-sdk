@@ -1,6 +1,7 @@
 import { getActionTenantId } from '../services/tenants';
 import { showConfirmDialog } from '../services/dialogs';
 import { newBroadcastId } from '../services/broadcast-id';
+import { responseExtras } from '../services/api-response-extras';
 import { removeCommentOnClient } from '../services/remove-comment-on-client';
 import { RNComment } from '../types';
 import { showError } from '../services/show-error';
@@ -43,7 +44,7 @@ async function deleteComment(
     } else {
         const translations = state.translations;
         const message =
-            response.code === 'edit-key-invalid' ? translations.LOGIN_TO_DELETE : translations.DELETE_FAILURE;
+            responseExtras(response).code === 'edit-key-invalid' ? translations.LOGIN_TO_DELETE : translations.DELETE_FAILURE;
         showError(':(', message, translations.DISMISS, onError);
     }
 }

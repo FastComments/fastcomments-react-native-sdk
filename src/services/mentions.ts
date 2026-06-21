@@ -1,4 +1,4 @@
-import type { SearchUsers200Response } from 'fastcomments-sdk';
+import type { SearchUsersResult } from 'fastcomments-sdk';
 import type { FastCommentsStore } from '../store/types';
 
 export interface MentionUser {
@@ -38,7 +38,7 @@ export async function searchMentionUsers(params: SearchUsersParams): Promise<Men
     });
     // The SDK's typed parser requires a 'sections' field that the legacy
     // (non-sectioned) endpoint omits, so parse the raw JSON instead.
-    const response = (await apiResponse.raw.json()) as Partial<SearchUsers200Response>;
+    const response = (await apiResponse.raw.json()) as Partial<SearchUsersResult>;
     if (response.status !== 'success' || !response.users) return [];
     return response.users.map((user) => ({
         id: user.id,

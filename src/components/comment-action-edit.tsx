@@ -5,6 +5,7 @@ import { useState } from 'react';
 import type { CommentTextUpdateRequest } from 'fastcomments-sdk';
 import { getActionTenantId } from '../services/tenants';
 import { newBroadcastId } from '../services/broadcast-id';
+import { responseExtras } from '../services/api-response-extras';
 import {
     CommentTextArea,
     ValueObserver,
@@ -57,7 +58,7 @@ async function saveCommentText(
     } else {
         const translations = state.translations;
         const message =
-            response.code === 'edit-key-invalid' ? translations.LOGIN_TO_EDIT : translations.ERROR_MESSAGE;
+            responseExtras(response).code === 'edit-key-invalid' ? translations.LOGIN_TO_EDIT : translations.ERROR_MESSAGE;
         showError(':(', message, translations.DISMISS, onError);
     }
 }

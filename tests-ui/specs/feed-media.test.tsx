@@ -15,6 +15,7 @@
 import React from 'react';
 import { render, act } from '@testing-library/react-native';
 import { FastCommentsFeed } from '../../src/components/feed';
+import { FeedPostComposer } from '../../src/components/feed-post-composer';
 import { setupTestContext, teardownTestContext, TestContext } from '../framework/harness/test-context';
 import { buildSDKConfig } from '../framework/harness/build-config';
 import { pollUntil, sleep } from '../framework/harness/poll';
@@ -84,28 +85,29 @@ maybe('Feed media-attach (dual-instance)', () => {
 
         await pollUntil(
             () =>
-                !!b.queryByTestId('postContentEditText') &&
-                !!b.queryByTestId('feedComposerAttachMedia'),
+                !!b.queryByTestId('feedPostCreate') &&
+                !!b.queryByTestId('toolbarImageButton'),
             { timeoutMs: 15000, label: 'B composer ready' }
         );
         await pollUntil(
-            () => !!a.queryByTestId('postContentEditText') && !!a.queryByTestId('recyclerViewFeed'),
+            () => !!a.queryByTestId('feedPostCreate') && !!a.queryByTestId('recyclerViewFeed'),
             { timeoutMs: 15000, label: 'A composer + recycler ready' }
         );
         await sleep(500);
 
-        // 1. Tap attach. The host's pickImage returns the remote URL; we
-        // expect the preview chip with testID feedComposerAttachedMedia-0.
-        pressViaProp(b.getByTestId('feedComposerAttachMedia'));
+        // 1. Tap the toolbar image button. The host's pickImage returns the
+        // remote URL, which the composer attaches to the post (preview chip
+        // feedComposerAttachedMedia-0) rather than inserting into the text.
+        pressViaProp(b.getByTestId('toolbarImageButton'));
         await pollUntil(() => !!b.queryByTestId('feedComposerAttachedMedia-0'), {
             timeoutMs: 5000,
             label: 'B preview chip visible',
         });
 
-        // 2. Submit a post with media. We supply text too so the test stays
+        // 2. Submit a post with media. We supply a title too so the test stays
         // robust if any future server-side validation requires content.
         const bText = `Feed media post from B ${Date.now()}`;
-        changeTextViaProp(b.getByTestId('postContentEditText'), bText);
+        changeTextViaProp(b.getByTestId('postTitleEditText'), bText);
         pressViaProp(b.getByTestId('submitPostButton'));
 
         await pollUntil(() => !!b.queryByText(bText), {
@@ -140,4 +142,43 @@ maybe('Feed media-attach (dual-instance)', () => {
             { timeoutMs: 15000, label: 'A renders the post media gallery' }
         );
     }, 180000);
+
+    it('standalone composer toolbar image + GIF buttons attach media to the post', async () => {
+        ctx = await setupTestContext({ emailPrefix: 'feedtoolbar', urlIdLabel: 'feed-toolbar-media' });
+        const sso = ctx.ssoFor('userA');
+        const cfg = buildSDKConfig({ tenant: ctx.tenant, urlId: ctx.urlId, ssoToken: sso });
+
+        // Mount the composer in self-managed (config) mode so it builds its own
+        // store + loads translations, without a FastCommentsFeed (whose loading
+        // skeleton would be unrelated to what we're asserting). Host callbacks
+        // return public http URLs: the image/GIF toolbar buttons hand these to
+        // addMedia (via onAttachMedia), which wraps each as a single-asset remote
+        // media item - no /upload-image round-trip.
+        const composer = render(
+            <FeedPostComposer
+                config={cfg}
+                pickImage={async () => REMOTE_IMAGE_URL}
+                pickGIF={async () => REMOTE_IMAGE_URL}
+            />
+        );
+        ctx.onTeardown(() => composer.unmount());
+
+        // The image/GIF buttons live in the shared WYSIWYG toolbar (same as the
+        // comment editor); attaching to the post is the feed-only behavior.
+        await pollUntil(() => !!composer.queryByTestId('toolbarImageButton'), {
+            timeoutMs: 15000,
+            label: 'composer image button',
+        });
+        pressViaProp(composer.getByTestId('toolbarImageButton'));
+        await pollUntil(() => !!composer.queryByTestId('feedComposerAttachedMedia-0'), {
+            timeoutMs: 5000,
+            label: 'image preview chip',
+        });
+
+        pressViaProp(composer.getByTestId('toolbarGifButton'));
+        await pollUntil(() => !!composer.queryByTestId('feedComposerAttachedMedia-1'), {
+            timeoutMs: 5000,
+            label: 'gif preview chip',
+        });
+    }, 120000);
 });

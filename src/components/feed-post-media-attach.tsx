@@ -22,7 +22,9 @@ export interface FeedPostMediaAttachProps {
     styles: IFastCommentsStyles;
     items: AttachedMediaPending[];
     disabled?: boolean;
-    onPick: () => void;
+    /** When provided, renders an attach button. Omit to show a preview-only strip
+     *  (the feed composer picks media from the editor toolbar instead). */
+    onPick?: () => void;
     onRemove: (key: string) => void;
 }
 
@@ -75,19 +77,21 @@ export function FeedPostMediaAttach({
                     ))}
                 </ScrollView>
             )}
-            <View style={styles.feed?.composerMediaToolbar}>
-                <TouchableOpacity
-                    testID="feedComposerAttachMedia"
-                    accessibilityLabel="feedComposerAttachMedia"
-                    style={styles.feed?.composerMediaAttachButton}
-                    onPress={onPick}
-                    disabled={disabled}
-                >
-                    <Text style={styles.feed?.composerMediaAttachButtonText}>
-                        {translations.FEED_MEDIA_ATTACH}
-                    </Text>
-                </TouchableOpacity>
-            </View>
+            {onPick && (
+                <View style={styles.feed?.composerMediaToolbar}>
+                    <TouchableOpacity
+                        testID="feedComposerAttachMedia"
+                        accessibilityLabel="feedComposerAttachMedia"
+                        style={styles.feed?.composerMediaAttachButton}
+                        onPress={onPick}
+                        disabled={disabled}
+                    >
+                        <Text style={styles.feed?.composerMediaAttachButtonText}>
+                            {translations.FEED_MEDIA_ATTACH}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            )}
         </View>
     );
 }

@@ -4,6 +4,7 @@ import { Image, Text } from 'react-native';
 import { showConfirmDialog } from '../services/dialogs';
 import type { PublicBlockFromCommentParams } from 'fastcomments-sdk';
 import { showError } from '../services/show-error';
+import { responseExtras } from '../services/api-response-extras';
 import { CommentActionEdit, DirtyRef } from './comment-action-edit';
 import { CommentPromptDelete } from './comment-action-delete';
 import { repositionComment } from '../services/comment-positioning';
@@ -35,7 +36,7 @@ async function startEditingComment(
     } else {
         const translations = state.translations;
         const message =
-            response.code === 'edit-key-invalid' ? translations.LOGIN_TO_EDIT : translations.FAILED_TO_SAVE_EDIT;
+            responseExtras(response).code === 'edit-key-invalid' ? translations.LOGIN_TO_EDIT : translations.FAILED_TO_SAVE_EDIT;
         showError(':(', message, translations.DISMISS, onError);
     }
 }
@@ -172,7 +173,7 @@ async function setCommentFlaggedStatus(
         const translations = state.translations;
         showError(
             ':(',
-            response.translatedError ? response.translatedError : translations.ERROR_MESSAGE,
+            responseExtras(response).translatedError ?? translations.ERROR_MESSAGE,
             translations.DISMISS,
             onError
         );

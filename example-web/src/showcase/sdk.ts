@@ -6,7 +6,7 @@ export {
     FastCommentsLiveCommenting,
     FastCommentsLiveChat,
     FastCommentsFeed,
-    FastCommentsFeedPostCreate,
+    FeedPostComposer,
     GifBrowser,
     OnlineUsersList,
     getLightTheme,

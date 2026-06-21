@@ -3,6 +3,7 @@ import {CommonHTTPResponse} from "../types/dto/common-http-response";
 import {GetUserNotificationsResponse, UserNotification} from "../types";
 import {NotificationType} from "fastcomments-typescript";
 import type { RenderableUserNotification } from "fastcomments-sdk";
+import { responseExtras } from "./api-response-extras";
 // Enums are runtime values: the bare `fastcomments-sdk` entry is type-only
 // (export type *), so value imports must come from the /server (or /browser)
 // barrel where the enums exist as real exports.
@@ -87,11 +88,12 @@ export async function getUserNotifications(request: GetUserNotificationsRequest)
         unreadOnly: request.unreadOnly,
         sso: getSSO(state.config),
     });
+    const extras = responseExtras(response);
     return {
         status: response.status,
-        code: response.code,
-        reason: response.reason,
-        translatedError: response.translatedError,
+        code: extras.code,
+        reason: extras.reason,
+        translatedError: extras.translatedError,
         translations: response.translations,
         notifications: response.notifications.map(mapNotification),
         isSubscribed: response.isSubscribed,
@@ -105,11 +107,12 @@ export async function getUserUnreadNotificationCount(request: GetUserUnreadNotif
         tenantId: state.config.tenantId,
         sso: getSSO(state.config),
     });
+    const extras = responseExtras(response);
     return {
         status: response.status,
-        code: response.code,
-        reason: response.reason,
-        translatedError: response.translatedError,
+        code: extras.code,
+        reason: extras.reason,
+        translatedError: extras.translatedError,
         count: response.count,
     };
 }
@@ -151,10 +154,11 @@ export async function getNotificationTranslations(store: FastCommentsStore): Pro
     }
     // The SDK types translations as Record<string, string>; this endpoint
     // is documented to return the UserNotificationTranslations key set.
+    const extras = responseExtras(response);
     const typed: GetTranslationsResponse<UserNotificationTranslations> = {
         status: response.status,
-        code: response.code,
-        reason: response.reason,
+        code: extras.code,
+        reason: extras.reason,
         translations: response.translations as Record<UserNotificationTranslations, string>,
     };
     return typed;
@@ -194,10 +198,11 @@ export async function changePageSubscriptionStateForUser(request: SubscriptionSt
             : UpdateUserNotificationPageSubscriptionStatusSubscribedOrUnsubscribedEnum.unsubscribe,
         sso: getSSO(state.config),
     });
+    const extras = responseExtras(response);
     return {
         status: response.status,
-        code: response.code,
-        reason: response.reason,
-        translatedError: response.translatedError,
+        code: extras.code,
+        reason: extras.reason,
+        translatedError: extras.translatedError,
     };
 }
