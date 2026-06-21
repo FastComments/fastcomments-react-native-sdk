@@ -2248,6 +2248,19 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 color: t.colors.textPrimary,
                 fontWeight: t.fontWeight.medium
             },
+            reactionLikeButton: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: t.spacing.xs,
+                paddingHorizontal: t.spacing.sm + 2,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.colors.surface,
+                marginRight: t.spacing.xs + 2,
+                marginBottom: t.spacing.xs + 2
+            },
+            reactionLikeButtonActive: {
+                backgroundColor: t.colors.pressed
+            },
             reactionPickerButton: {
                 paddingVertical: t.spacing.xs,
                 paddingHorizontal: t.spacing.sm + 2,

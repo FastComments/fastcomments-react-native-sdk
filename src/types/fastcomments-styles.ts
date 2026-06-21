@@ -460,6 +460,8 @@ export interface IFastCommentsStyles {
         reactionChipActive?: ViewStyle
         reactionChipGlyph?: TextStyle
         reactionChipCount?: TextStyle
+        reactionLikeButton?: ViewStyle
+        reactionLikeButtonActive?: ViewStyle
         reactionPickerButton?: ViewStyle
         reactionPickerButtonText?: TextStyle
         reactionPickerOverlay?: ViewStyle

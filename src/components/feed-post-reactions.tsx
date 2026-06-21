@@ -51,7 +51,15 @@ export function FeedPostReactions({
     const reactsMap = post.reacts ?? {};
     const myReacts = post.myReacts ?? {};
 
-    const visibleChips = reactionSet.filter((r) => (reactsMap[r.key] ?? 0) > 0);
+    // The Like button owns the default 'l' reaction (parity with Android/web);
+    // the chip strip shows every *other* reaction that has a non-zero count.
+    const LIKE_KEY = 'l';
+    const likeDescriptor = reactionSet.find((r) => r.key === LIKE_KEY);
+    const likeCount = reactsMap[LIKE_KEY] ?? 0;
+    const likedByMe = !!myReacts[LIKE_KEY];
+    const visibleChips = reactionSet.filter(
+        (r) => r.key !== LIKE_KEY && (reactsMap[r.key] ?? 0) > 0
+    );
 
     async function send(reactType: string, isUndo: boolean) {
         const result = await reactToFeedPost(store, post.id, reactType, isUndo);
@@ -63,6 +71,10 @@ export function FeedPostReactions({
     const onChipPress = (descriptor: FeedReactionDescriptor) => {
         const alreadyReacted = !!myReacts[descriptor.key];
         void send(descriptor.key, alreadyReacted);
+    };
+
+    const onLikePress = () => {
+        void send(LIKE_KEY, likedByMe);
     };
 
     const onPickerItemPress = (descriptor: FeedReactionDescriptor) => {
@@ -104,45 +116,61 @@ export function FeedPostReactions({
             })}
 
             <TouchableOpacity
-                testID={`feedReactionPickerButton-${post.id}`}
-                accessibilityLabel={`feedReactionPickerButton-${post.id}`}
+                testID={`feedReactionLikeButton-${post.id}`}
+                accessibilityLabel={`feedReactionLikeButton-${post.id}`}
                 accessibilityRole="button"
-                onPress={() => setPickerOpen(true)}
-                style={styles.feed?.reactionPickerButton}
+                accessibilityHint={translations.FEED_REACTION_PICK}
+                onPress={onLikePress}
+                onLongPress={() => setPickerOpen(true)}
+                style={
+                    likedByMe
+                        ? [styles.feed?.reactionLikeButton, styles.feed?.reactionLikeButtonActive]
+                        : styles.feed?.reactionLikeButton
+                }
             >
-                <Text style={styles.feed?.reactionPickerButtonText}>
-                    {translations.FEED_REACTION_PICK}
-                </Text>
+                {likeDescriptor && (
+                    <Text style={styles.feed?.reactionChipGlyph}>{likeDescriptor.glyph}</Text>
+                )}
+                {likeCount > 0 && (
+                    <Text
+                        testID={`feedReactionLikeCount-${post.id}`}
+                        style={styles.feed?.reactionChipCount}
+                    >
+                        {String(likeCount)}
+                    </Text>
+                )}
             </TouchableOpacity>
 
-            <Modal
-                visible={pickerOpen}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setPickerOpen(false)}
-            >
-                <Pressable
-                    style={styles.feed?.reactionPickerOverlay}
-                    onPress={() => setPickerOpen(false)}
+            {pickerOpen && (
+                <Modal
+                    visible
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setPickerOpen(false)}
                 >
-                    <Pressable style={styles.feed?.reactionPickerSheet}>
-                        {reactionSet.map((descriptor) => (
-                            <TouchableOpacity
-                                key={descriptor.key}
-                                testID={`feedReactionPickerItem-${descriptor.key}`}
-                                accessibilityLabel={reactionLabel(translations, descriptor.translationKey)}
-                                accessibilityRole="button"
-                                onPress={() => onPickerItemPress(descriptor)}
-                                style={styles.feed?.reactionPickerItem}
-                            >
-                                <Text style={styles.feed?.reactionPickerItemGlyph}>
-                                    {descriptor.glyph}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
+                    <Pressable
+                        style={styles.feed?.reactionPickerOverlay}
+                        onPress={() => setPickerOpen(false)}
+                    >
+                        <Pressable style={styles.feed?.reactionPickerSheet}>
+                            {reactionSet.map((descriptor) => (
+                                <TouchableOpacity
+                                    key={descriptor.key}
+                                    testID={`feedReactionPickerItem-${descriptor.key}`}
+                                    accessibilityLabel={reactionLabel(translations, descriptor.translationKey)}
+                                    accessibilityRole="button"
+                                    onPress={() => onPickerItemPress(descriptor)}
+                                    style={styles.feed?.reactionPickerItem}
+                                >
+                                    <Text style={styles.feed?.reactionPickerItemGlyph}>
+                                        {descriptor.glyph}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </Pressable>
                     </Pressable>
-                </Pressable>
-            </Modal>
+                </Modal>
+            )}
         </View>
     );
 }

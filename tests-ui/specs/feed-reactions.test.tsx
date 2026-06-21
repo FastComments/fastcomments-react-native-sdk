@@ -37,6 +37,22 @@ function pressViaProp(element: TestInstanceLike) {
     throw new Error('No onPress prop found in the ancestor chain');
 }
 
+function longPressViaProp(element: TestInstanceLike) {
+    let cursor: TestInstanceLike | null = element;
+    while (cursor) {
+        const onLongPress = cursor.props?.onLongPress;
+        if (typeof onLongPress === 'function') {
+            const fn = onLongPress as () => void;
+            act(() => {
+                fn();
+            });
+            return;
+        }
+        cursor = cursor.parent;
+    }
+    throw new Error('No onLongPress prop found in the ancestor chain');
+}
+
 function changeTextViaProp(element: TestInstanceLike, value: string) {
     const onChangeText = element.props?.onChangeText;
     if (typeof onChangeText !== 'function') {
@@ -69,20 +85,20 @@ maybe('Feed reactions (dual-instance)', () => {
         ctx.onTeardown(() => b.unmount());
 
         await pollUntil(
-            () => !!a.queryByTestId('postContentEditText') &&
+            () => !!a.queryByTestId('feedPostCreate') &&
                 !!a.queryByTestId('recyclerViewFeed'),
             { timeoutMs: 15000, label: "A composer + recycler ready" }
         );
         await pollUntil(
-            () => !!b.queryByTestId('postContentEditText') &&
+            () => !!b.queryByTestId('feedPostCreate') &&
                 !!b.queryByTestId('recyclerViewFeed'),
             { timeoutMs: 15000, label: "B composer + recycler ready" }
         );
         await sleep(500);
 
-        // A creates a post.
+        // A creates a post (title field; the composer body is the WYSIWYG editor).
         const aText = `Reactions probe ${Date.now()}`;
-        changeTextViaProp(a.getByTestId('postContentEditText'), aText);
+        changeTextViaProp(a.getByTestId('postTitleEditText'), aText);
         pressViaProp(a.getByTestId('submitPostButton'));
 
         await pollUntil(() => !!a.queryByText(aText), {
@@ -115,9 +131,9 @@ maybe('Feed reactions (dual-instance)', () => {
         const wrapperTestId = (reactionsWrappers[0].props as { testID: string }).testID;
         const postId = wrapperTestId.replace('feedPostReactions-', '');
 
-        // B opens the picker and selects heart.
-        const pickerBtn = b.getByTestId(`feedReactionPickerButton-${postId}`);
-        pressViaProp(pickerBtn);
+        // B long-presses the Like button to open the picker, then selects heart.
+        const likeBtn = b.getByTestId(`feedReactionLikeButton-${postId}`);
+        longPressViaProp(likeBtn);
         await pollUntil(() => !!b.queryByTestId('feedReactionPickerItem-h'), {
             timeoutMs: 5000,
             label: "B picker open",
