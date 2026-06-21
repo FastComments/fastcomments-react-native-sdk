@@ -48,6 +48,16 @@ describe('online-users incremental presence', () => {
         expect(store.getState().onlineUsers).toEqual([{ id: 'b', displayName: 'Bob', avatarSrc: 'x' }]);
     });
 
+    it('upserts isPrivate onto a placeholder even when name/avatar are unchanged', () => {
+        // A private user enriches to { displayName: '', isPrivate: true } - same
+        // empty name/avatar as the placeholder, so the merge must key off isPrivate
+        // too or the row stays a nameless placeholder and renders blank.
+        const store = makeStore();
+        store.getState().setOnlineUsers([{ id: 'p', displayName: '' }], 1, 0);
+        store.getState().upsertOnlineUsers([{ id: 'p', displayName: '', isPrivate: true }]);
+        expect(store.getState().onlineUsers).toEqual([{ id: 'p', displayName: '', isPrivate: true }]);
+    });
+
     it('parses the anon: prefix and clamps the total to >= 1', () => {
         const store = makeStore();
         applyOnlineUsersPresenceUpdate(store, { uj: ['u1', 'anon:x', 'anon:y'], ul: [], sc: 3 });

@@ -120,7 +120,7 @@ export function FastCommentsFeedPostCreate(props: FastCommentsFeedPostCreateProp
     // Stable observer for reading/clearing the editor HTML imperatively.
     const output = useMemo<ValueObserver>(() => ({}), []);
 
-    const authorName = userField<string>(currentUser, 'username') || translations.FEED_COMPOSER_ANONYMOUS || 'Anonymous';
+    const authorName = userField<string>(currentUser, 'username') || translations.FEED_COMPOSER_ANONYMOUS;
     const authorAvatar = userField<string>(currentUser, 'avatarSrc');
 
     const canSubmit = !busy && (hasText || attached.length > 0 || links.length > 0 || title.trim().length > 0);
@@ -211,7 +211,7 @@ export function FastCommentsFeedPostCreate(props: FastCommentsFeedPostCreateProp
 
             const res = await createFeedPost(store, params);
             if ('error' in res) {
-                setError(translations.FEED_LOAD_FAILED || res.error);
+                setError(translations.FEED_LOAD_FAILED);
                 onPostCreateError?.(res.error);
                 return;
             }
@@ -274,7 +274,7 @@ export function FastCommentsFeedPostCreate(props: FastCommentsFeedPostCreateProp
                         <View key={`${link.url}-${i}`} style={f?.composerLinkPreview}>
                             <Text style={f?.composerLinkPreviewText} numberOfLines={1}>{link.title || link.url}</Text>
                             <TouchableOpacity onPress={() => setLinks((prev) => prev.filter((_, idx) => idx !== i))}>
-                                <Text style={f?.composerLinkRemove}>{translations.FEED_COMPOSER_REMOVE_LINK || '✕'}</Text>
+                                <Text style={f?.composerLinkRemove}>{translations.FEED_COMPOSER_REMOVE_LINK}</Text>
                             </TouchableOpacity>
                         </View>
                     ))}
@@ -287,7 +287,7 @@ export function FastCommentsFeedPostCreate(props: FastCommentsFeedPostCreateProp
                         testID="feedComposerLinkInput"
                         accessibilityLabel="feedComposerLinkInput"
                         style={f?.composerLinkInput}
-                        placeholder={translations.FEED_COMPOSER_LINK_PLACEHOLDER || 'https://…'}
+                        placeholder={translations.FEED_COMPOSER_LINK_PLACEHOLDER}
                         value={linkDraft}
                         onChangeText={setLinkDraft}
                         autoCapitalize="none"
@@ -295,7 +295,7 @@ export function FastCommentsFeedPostCreate(props: FastCommentsFeedPostCreateProp
                         onSubmitEditing={onAddLink}
                     />
                     <TouchableOpacity style={f?.composerLinkAddButton} onPress={onAddLink}>
-                        <Text style={f?.composerLinkAddButtonText}>{translations.FEED_COMPOSER_ADD_LINK || 'Add'}</Text>
+                        <Text style={f?.composerLinkAddButtonText}>{translations.FEED_COMPOSER_ADD_LINK}</Text>
                     </TouchableOpacity>
                 </View>
             ) : null}
@@ -310,7 +310,7 @@ export function FastCommentsFeedPostCreate(props: FastCommentsFeedPostCreateProp
                             onPress={() => setShowLinkInput(true)}
                             disabled={busy}
                         >
-                            <Text style={f?.composerToolbarButtonLabel}>{translations.FEED_COMPOSER_LINK_BUTTON || '🔗'}</Text>
+                            <Text style={f?.composerToolbarButtonLabel}>{translations.FEED_COMPOSER_LINK_BUTTON}</Text>
                         </TouchableOpacity>
                     )}
                     {(toolbarButtons ?? []).map((btn) => (
@@ -347,7 +347,7 @@ export function FastCommentsFeedPostCreate(props: FastCommentsFeedPostCreateProp
                             onCancel?.();
                         }}
                     >
-                        <Text style={f?.composerCancelText}>{translations.FEED_COMPOSER_CANCEL || 'Cancel'}</Text>
+                        <Text style={f?.composerCancelText}>{translations.FEED_COMPOSER_CANCEL}</Text>
                     </TouchableOpacity>
                 )}
                 <TouchableOpacity

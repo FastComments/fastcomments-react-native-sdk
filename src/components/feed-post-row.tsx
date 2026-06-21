@@ -111,10 +111,10 @@ function FeedPostRowImpl({ post, translations, styles, customToolbarButtons, sto
     const onDelete = () => {
         if (!store) return;
         showConfirmDialog({
-            title: translations.FEED_DELETE_POST_TITLE || translations.DELETE || 'Delete post',
-            message: translations.FEED_DELETE_POST_CONFIRM || 'Delete this post?',
-            confirmText: translations.DELETE || 'Delete',
-            cancelText: translations.CANCEL || translations.DISMISS || 'Cancel',
+            title: translations.FEED_DELETE_POST_TITLE,
+            message: translations.FEED_DELETE_POST_CONFIRM,
+            confirmText: translations.DELETE,
+            cancelText: translations.CANCEL,
             destructive: true,
             onConfirm: () => void deleteFeedPost(store, post.id),
             onCancel: () => undefined,
@@ -193,7 +193,7 @@ function FeedPostRowImpl({ post, translations, styles, customToolbarButtons, sto
                         onPress={() => setCommentsOpen(true)}
                     >
                         <Text style={f?.postActionLabel}>
-                            {(translations.FEED_COMMENTS || 'Comments')}
+                            {translations.FEED_COMMENTS}
                             {typeof post.commentCount === 'number' && post.commentCount > 0 ? ` (${post.commentCount})` : ''}
                         </Text>
                     </TouchableOpacity>
@@ -203,7 +203,7 @@ function FeedPostRowImpl({ post, translations, styles, customToolbarButtons, sto
                         style={f?.postActionButton}
                         onPress={() => void sharePost(post)}
                     >
-                        <Text style={f?.postActionLabel}>{translations.FEED_SHARE || 'Share'}</Text>
+                        <Text style={f?.postActionLabel}>{translations.FEED_SHARE}</Text>
                     </TouchableOpacity>
                 </View>
             ) : null}
@@ -222,7 +222,7 @@ function FeedPostRowImpl({ post, translations, styles, customToolbarButtons, sto
                         <View style={f?.commentsModalSheet}>
                             <View style={f?.commentsModalHeader}>
                                 <Text style={f?.commentsModalTitle}>
-                                    {post.title || translations.FEED_COMMENTS || 'Comments'}
+                                    {post.title || translations.FEED_COMMENTS}
                                 </Text>
                                 <TouchableOpacity
                                     testID={`feedPostCommentsClose-${post.id}`}

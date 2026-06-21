@@ -41,8 +41,9 @@ describe('getDaySeparatorLabel', () => {
     };
 
     it('labels today and yesterday', () => {
-        expect(getDaySeparatorLabel(atNoon(0), {})).toBe('Today');
-        expect(getDaySeparatorLabel(atNoon(1), {})).toBe('Yesterday');
+        const t = { TODAY: 'Today', YESTERDAY: 'Yesterday' };
+        expect(getDaySeparatorLabel(atNoon(0), t)).toBe('Today');
+        expect(getDaySeparatorLabel(atNoon(1), t)).toBe('Yesterday');
     });
 
     it('uses translations when provided', () => {

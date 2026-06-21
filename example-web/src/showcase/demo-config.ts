@@ -8,6 +8,10 @@ export const DEMO_SIMPLE_SSO = {
     username: 'Demo User',
     email: 'demo-user@fctest.com',
     avatar: 'https://i.pravatar.cc/200?u=fastcomments0',
+    // SSO users default to a private activity profile, which makes the server mask
+    // them in the online-users list (empty displayName + isPrivate). The demo wants
+    // the user visible by name everywhere, so opt into a public profile.
+    isProfileActivityPrivate: false,
 };
 
 // Seeded thread (also used by screenshot.mjs) so the commenting demo shows real
