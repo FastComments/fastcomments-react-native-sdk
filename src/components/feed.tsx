@@ -20,7 +20,7 @@ import {
 } from '../services/feed-scroll-memory';
 import { startFeedStatsPoll, stopFeedStatsPoll } from '../services/feed-stats';
 import { FeedNewPostsBanner } from './feed-new-posts-banner';
-import { FastCommentsFeedPostCreate } from './feed-post-create';
+import { FeedPostComposer } from './feed-post-composer';
 import { FeedPostRow } from './feed-post-row';
 import type { FastCommentsRNConfig } from '../types/react-native-config';
 import type { FeedPost } from '../types/feed-post';
@@ -293,7 +293,7 @@ export const FastCommentsFeed = forwardRef<FastCommentsFeedHandle, FastCommentsF
                 }
             />
             {!config.hideFeedComposer && (
-                <FastCommentsFeedPostCreate
+                <FeedPostComposer
                     store={store}
                     styles={effectiveStyles}
                     pickImage={callbacks?.pickImage}

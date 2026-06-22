@@ -26,6 +26,8 @@ export interface FastCommentsThemeColors {
     onPrimary: string;
     link: string;
     danger: string;
+    /** Caution accent: unapproved/awaiting-moderation comment border. */
+    warning: string;
     actionButton: string;
     replyButton: string;
     toggleRepliesButton: string;

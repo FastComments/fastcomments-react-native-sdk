@@ -14,6 +14,7 @@ import { cleanupSubscriber, persistSubscriberState } from './live';
 import { getDefaultImageAssets } from '../resources';
 import { showError } from './show-error';
 import { createFastCommentsStore } from '../store/create-store';
+import { ensureTranslationComponentLoaded } from './translations';
 import type { FastCommentsStore } from '../store/types';
 
 interface FastCommentsInternalState {
@@ -213,6 +214,13 @@ export class FastCommentsLiveCommentingService {
             }
 
             state.setIsSiteAdmin(!!response.isSiteAdmin);
+            if (response.isSiteAdmin) {
+                // Admins get the moderation menu (approve/spam/ban/badges/view-by-IP).
+                // Its labels live in the `comment-ui-moderation` component, which the
+                // base comment-ui bundle does not include - load it eagerly so the
+                // menu items render with copy instead of empty strings.
+                void ensureTranslationComponentLoaded(store, 'comment-ui-moderation');
+            }
             state.setHasBillingIssue(!!response.hasBillingIssue);
             internalState.lastGenDate = response.lastGenDate;
             if (response.commentCount !== undefined && Number.isFinite(response.commentCount)) {

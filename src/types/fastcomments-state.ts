@@ -23,6 +23,8 @@ export interface OnlineUser {
     id: string;
     displayName: string;
     avatarSrc?: string;
+    /** Private profile: render the PRIVATE_PROFILE label instead of displayName. */
+    isPrivate?: boolean;
 }
 
 export interface UserNotificationState {

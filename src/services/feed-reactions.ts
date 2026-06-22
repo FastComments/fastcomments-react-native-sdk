@@ -8,6 +8,7 @@
 import type { FastCommentsStore } from '../store/types';
 import type { ReactBodyParams } from 'fastcomments-sdk';
 import { newBroadcastId } from './broadcast-id';
+import { responseError } from './api-response-extras';
 
 export type FeedReactionResult = { ok: true; isUndo: boolean } | { error: string };
 
@@ -51,7 +52,7 @@ export async function reactToFeedPost(
         });
         if (response.status !== 'success') {
             store.getState().setFeedPostReacts(postId, prevReacts, prevMyReacts);
-            return { error: response.code ?? response.reason ?? 'react-failed' };
+            return { error: responseError(response, 'react-failed') };
         }
         return { ok: true, isUndo: response.isUndo ?? isUndo };
     } catch (e) {

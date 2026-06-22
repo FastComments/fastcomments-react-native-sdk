@@ -33,7 +33,7 @@ export const createPresenceSlice: StateCreator<
             for (const u of incoming) {
                 const prev = byId.get(u.id);
                 if (!prev) continue;
-                if (prev.displayName !== u.displayName || prev.avatarSrc !== u.avatarSrc) {
+                if (prev.displayName !== u.displayName || prev.avatarSrc !== u.avatarSrc || prev.isPrivate !== u.isPrivate) {
                     byId.set(u.id, { ...prev, ...u });
                     changed = true;
                 }

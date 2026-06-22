@@ -1,5 +1,6 @@
 import type { FastCommentsStore } from '../store/types';
 import type { OnlineUser } from '../types/fastcomments-state';
+import { ensureTranslationComponentLoaded } from './translations';
 
 export interface LoadOnlineUsersResult {
     nextAfterUserId: string | null;
@@ -20,10 +21,14 @@ const ANON_PREFIX = 'anon:';
 // Coalesce a burst of joins into one getUsersInfo call (matches the web widget).
 const ENRICH_DEBOUNCE_MS = 500;
 
-/** Map a server page-user to a store OnlineUser, masking private profiles. */
-function toOnlineUser(entry: PageUserEntryLike, translations: Record<string, string>): OnlineUser {
+/**
+ * Map a server page-user to a store OnlineUser. Private profiles are flagged
+ * (not labeled) here so the PRIVATE_PROFILE label is resolved at render time -
+ * that keeps mapping independent of whether translations have loaded yet.
+ */
+function toOnlineUser(entry: PageUserEntryLike): OnlineUser {
     if (entry.isPrivate) {
-        return { id: entry.id, displayName: translations.PRIVATE_PROFILE || 'Private', avatarSrc: undefined };
+        return { id: entry.id, displayName: '', avatarSrc: undefined, isPrivate: true };
     }
     return { id: entry.id, displayName: entry.displayName, avatarSrc: entry.avatarSrc ?? undefined };
 }
@@ -52,7 +57,7 @@ export async function loadOnlineUsers(
         });
         if (response.status !== 'success') return null;
         const latest = store.getState();
-        const mapped: OnlineUser[] = (response.users || []).map((u) => toOnlineUser(u, latest.translations));
+        const mapped: OnlineUser[] = (response.users || []).map((u) => toOnlineUser(u));
         const users = opts?.append ? [...latest.onlineUsers, ...mapped] : mapped;
         latest.setOnlineUsers(users, response.totalCount ?? users.length, response.anonCount ?? 0);
         return {
@@ -95,7 +100,7 @@ export async function loadOfflineUsers(
         if (response.status !== 'success') return null;
         const latest = store.getState();
         return {
-            users: (response.users || []).map((u) => toOnlineUser(u, latest.translations)),
+            users: (response.users || []).map((u) => toOnlineUser(u)),
             nextAfterUserId: response.nextAfterUserId ?? null,
             nextAfterName: response.nextAfterName ?? null,
         };
@@ -105,6 +110,13 @@ export async function loadOfflineUsers(
     }
 }
 
+// The section labels ("Online"/"Offline"/"Load more") and the private-profile
+// placeholder live in the comment-ui-online-users namespace, which the comments
+// payload doesn't carry, so load it on demand and merge it in.
+function ensureOnlineUsersTranslations(store: FastCommentsStore): Promise<void> {
+    return ensureTranslationComponentLoaded(store, 'comment-ui-online-users');
+}
+
 // Ensure the initial online-users snapshot is loaded exactly once per store,
 // no matter how many online-users widgets mount (the in-header facepile and a
 // standalone side list can both call this; only the first actually fetches).
@@ -112,9 +124,13 @@ const initialLoadRequested = new WeakSet<FastCommentsStore>();
 export function ensureOnlineUsersLoaded(store: FastCommentsStore): void {
     if (initialLoadRequested.has(store)) return;
     initialLoadRequested.add(store);
-    // Already populated (header loaded it, or seeded by presence/tests)? Skip.
-    if (store.getState().onlineUsers.length > 0) return;
-    void loadOnlineUsers(store);
+    // Labels and the user snapshot are independent (private users are flagged,
+    // not labeled, at map time), so fetch them in parallel. The labels are always
+    // needed; the snapshot only when nobody (header, presence, tests) has it yet.
+    void ensureOnlineUsersTranslations(store);
+    if (store.getState().onlineUsers.length === 0) {
+        void loadOnlineUsers(store);
+    }
 }
 
 // Per-store enrich queue: a burst of joins is coalesced into one getUsersInfo
@@ -161,7 +177,7 @@ async function flushEnrich(store: FastCommentsStore) {
         const onlineIds = new Set(latest.onlineUsers.map((u) => u.id));
         const enriched = response.users
             .filter((u) => onlineIds.has(u.id))
-            .map((u) => toOnlineUser(u, latest.translations));
+            .map((u) => toOnlineUser(u));
         if (enriched.length > 0) latest.upsertOnlineUsers(enriched);
     } catch {
         // Swallow - presence events keep the list roughly correct regardless.

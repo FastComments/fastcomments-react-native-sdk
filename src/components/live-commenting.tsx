@@ -21,7 +21,7 @@ import { LiveCommentingList } from './live-commenting-list';
 import { LiveStatusBar } from './live-status-bar';
 import { CAN_CLOSE, CAN_NOT_CLOSE, ModalMenu } from './modal-menu';
 import { getCommentMenuItems, OpenCommentMenuRequest } from './comment-menu';
-import { addTranslationsToStore } from '../services/translations';
+import { ensureTranslationComponentLoaded } from '../services/translations';
 import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
 
@@ -91,7 +91,14 @@ export function FastCommentsLiveCommenting({ config, theme, styles: stylesProp, 
     const loadAsync = async () => {
         if (service.current) {
             setLoading(true);
-            await service.current.fetchRemoteState(false);
+            // RN-only live-widget copy (day-separator "Today", online-users overflow)
+            // is served separately from the comments payload, so fetch it in parallel
+            // with the comments and merge it on top. Both writes merge over the current
+            // store, so the order they resolve in doesn't matter.
+            await Promise.all([
+                service.current.fetchRemoteState(false),
+                ensureTranslationComponentLoaded(store, 'comment-ui-react-native'),
+            ]);
             setLoading(false);
             setIsLoaded(true);
             // Surface root-level comments as the "rendered" list.
@@ -140,19 +147,7 @@ export function FastCommentsLiveCommenting({ config, theme, styles: stylesProp, 
         const replyDirtyCheck = store.getState().replyDirtyCheck;
         const replyIsDirty = replyDirtyCheck ? replyDirtyCheck() : true;
         if (!force && !comment && isReplyingToParentIdRef.current && replyIsDirty) {
-            const s = store.getState();
-            if (!s.translations.CONFIRM_CANCEL_REPLY) {
-                const sdk = s.sdk;
-                const translationsResponse = await sdk.publicApi.getTranslations({
-                    namespace: 'widgets',
-                    component: 'comment-ui-cancel',
-                    useFullTranslationIds: true,
-                    locale: s.config.locale,
-                });
-                if (translationsResponse.status === 'success' && translationsResponse.translations) {
-                    addTranslationsToStore(store, translationsResponse.translations);
-                }
-            }
+            await ensureTranslationComponentLoaded(store, 'comment-ui-cancel');
             const t = store.getState().translations;
             return new Promise<typeof CAN_CLOSE | typeof CAN_NOT_CLOSE>((resolve) => {
                 showConfirmDialog({

@@ -405,7 +405,7 @@ export function LiveCommentingList(props: LiveCommentingListProps) {
                                 style={styles.comment?.emptyState}
                             >
                                 <Text style={styles.comment?.emptyStateText}>
-                                    {translations.NO_COMMENTS || 'No comments yet'}
+                                    {translations.NO_COMMENTS}
                                 </Text>
                             </View>
                         ) : null

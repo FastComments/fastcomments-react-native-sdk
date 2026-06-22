@@ -4,14 +4,19 @@ import { Image } from 'react-native';
 import { showConfirmDialog } from '../services/dialogs';
 import type { PublicBlockFromCommentParams } from 'fastcomments-sdk';
 import { showError } from '../services/show-error';
+import { responseExtras } from '../services/api-response-extras';
 import { CommentActionEdit, DirtyRef } from './comment-action-edit';
 import { CommentPromptDelete } from './comment-action-delete';
+import { CommentActionBan } from './comment-action-ban';
+import { CommentActionBadge } from './comment-action-badge';
+import { CommentActionViewByIP } from './comment-action-view-ip';
 import { repositionComment } from '../services/comment-positioning';
 import { CAN_CLOSE, CAN_NOT_CLOSE, ModalMenuItem } from './modal-menu';
 import { IFastCommentsStyles, RNComment } from '../types';
 import type { FastCommentsCommentPositions } from '../types/dto/websocket-live-event';
 import { addTranslationsToStore } from '../services/translations';
 import { newBroadcastId } from '../services/broadcast-id';
+import { getActionTenantId } from '../services/tenants';
 import type { FastCommentsStore } from '../store/types';
 
 async function startEditingComment(
@@ -35,7 +40,7 @@ async function startEditingComment(
     } else {
         const translations = state.translations;
         const message =
-            response.code === 'edit-key-invalid' ? translations.LOGIN_TO_EDIT : translations.FAILED_TO_SAVE_EDIT;
+            responseExtras(response).code === 'edit-key-invalid' ? translations.LOGIN_TO_EDIT : translations.FAILED_TO_SAVE_EDIT;
         showError(':(', message, translations.DISMISS, onError);
     }
 }
@@ -73,6 +78,84 @@ async function setCommentPinStatus(
             };
             repositionComment(comment._id, positions, store);
         }
+    } else {
+        const translations = state.translations;
+        showError(':(', translations.ERROR_MESSAGE, translations.DISMISS, onError);
+    }
+}
+
+async function setCommentLockStatus(
+    comment: RNComment,
+    store: FastCommentsStore,
+    doLock: boolean,
+    onError?: (title: string, message: string) => void
+) {
+    const state = store.getState();
+    const sdk = state.sdk;
+    const tenantId = state.config.tenantId!;
+    const broadcastId = newBroadcastId(store);
+    const response = doLock
+        ? await sdk.publicApi.lockComment({
+              tenantId,
+              commentId: comment._id,
+              broadcastId,
+              sso: state.ssoConfigString,
+          })
+        : await sdk.publicApi.unLockComment({
+              tenantId,
+              commentId: comment._id,
+              broadcastId,
+              sso: state.ssoConfigString,
+          });
+    if (response.status === 'success') {
+        store.getState().mergeCommentFields(comment._id, { isLocked: doLock });
+    } else {
+        const translations = state.translations;
+        showError(':(', translations.ERROR_MESSAGE, translations.DISMISS, onError);
+    }
+}
+
+async function setCommentApprovalStatus(
+    comment: RNComment,
+    store: FastCommentsStore,
+    approved: boolean,
+    onError?: (title: string, message: string) => void
+) {
+    const state = store.getState();
+    const response = await state.sdk.moderationApi.postSetCommentApprovalStatus({
+        tenantId: getActionTenantId({ store, tenantId: comment.tenantId }),
+        commentId: comment._id,
+        approved,
+        // Tag our own write so the live echo is filtered out - otherwise the
+        // server's broadcast would remove the (now unapproved) comment from our
+        // own view instead of leaving it styled in place.
+        broadcastId: newBroadcastId(store),
+        sso: state.ssoConfigString,
+    });
+    if (response.status === 'success') {
+        store.getState().mergeCommentFields(comment._id, { approved });
+    } else {
+        const translations = state.translations;
+        showError(':(', translations.ERROR_MESSAGE, translations.DISMISS, onError);
+    }
+}
+
+async function setCommentSpamStatus(
+    comment: RNComment,
+    store: FastCommentsStore,
+    spam: boolean,
+    onError?: (title: string, message: string) => void
+) {
+    const state = store.getState();
+    const response = await state.sdk.moderationApi.postSetCommentSpamStatus({
+        tenantId: getActionTenantId({ store, tenantId: comment.tenantId }),
+        commentId: comment._id,
+        spam,
+        broadcastId: newBroadcastId(store),
+        sso: state.ssoConfigString,
+    });
+    if (response.status === 'success') {
+        store.getState().mergeCommentFields(comment._id, { isSpam: spam });
     } else {
         const translations = state.translations;
         showError(':(', translations.ERROR_MESSAGE, translations.DISMISS, onError);
@@ -141,7 +224,7 @@ async function setCommentFlaggedStatus(
         const translations = state.translations;
         showError(
             ':(',
-            response.translatedError ? response.translatedError : translations.ERROR_MESSAGE,
+            responseExtras(response).translatedError ?? translations.ERROR_MESSAGE,
             translations.DISMISS,
             onError
         );
@@ -150,8 +233,19 @@ async function setCommentFlaggedStatus(
 
 export interface CommentMenuState {
     canEdit: boolean;
+    canDelete: boolean;
     canPin: boolean;
-    canBlockOrFlag: boolean;
+    canLock: boolean;
+    canBlock: boolean;
+    canFlag: boolean;
+    // Moderator actions (site admin / moderator only), parity with the web
+    // widget's moderation extension.
+    canApprove: boolean;
+    canMarkSpam: boolean;
+    canBan: boolean;
+    canGiveBadge: boolean;
+    canRemoveBadge: boolean;
+    canViewByIP: boolean;
 }
 
 export function getCommentMenuState(store: FastCommentsStore, comment: RNComment): CommentMenuState {
@@ -161,24 +255,45 @@ export function getCommentMenuState(store: FastCommentsStore, comment: RNComment
         !!currentUser &&
         'id' in currentUser &&
         (comment.userId === currentUser.id || comment.anonUserId === currentUser.id);
-    const canEdit =
-        !comment.isDeleted &&
-        !!(
-            currentUser &&
-            'authorized' in currentUser &&
-            !!currentUser.authorized &&
-            (state.isSiteAdmin || isMyComment)
-        );
-    const canPin = state.isSiteAdmin && !comment.parentId;
+    const authorized = !!(currentUser && 'authorized' in currentUser && !!currentUser.authorized);
+    const isAdmin = state.isSiteAdmin;
+    const isLocked = !!comment.isLocked;
+    // Author or admin can manage their comment; a locked comment is editable
+    // only by an admin and deletable by nobody (matches the web widget).
+    const canManage = !comment.isDeleted && authorized && (isAdmin || isMyComment);
+    const canEdit = canManage && (!isLocked || isAdmin);
+    const canDelete = canManage && !isLocked;
+    const canPin = isAdmin && !comment.parentId;
+    const canLock = isAdmin && !comment.isDeleted;
     const canBlockOrFlag =
-        !comment.isDeleted &&
-        !comment.isByAdmin &&
-        !comment.isByModerator &&
-        !isMyComment &&
-        !!currentUser &&
-        'authorized' in currentUser &&
-        !!currentUser.authorized;
-    return { canEdit, canPin, canBlockOrFlag };
+        !comment.isDeleted && !comment.isByAdmin && !comment.isByModerator && !isMyComment && authorized;
+    const canBlock = canBlockOrFlag && !state.config.disableBlocking;
+    const canFlag = canBlockOrFlag;
+    // Moderation actions require admin/moderator. They authorize server-side via
+    // the SSO token (the same credential pin/lock use), so no extra client check.
+    const canApprove = isAdmin && !comment.isDeleted;
+    const canMarkSpam = isAdmin && !comment.isDeleted;
+    const canBan = isAdmin && !comment.isDeleted && !isMyComment;
+    // Badges target registered (logged-in) users, identified by userId.
+    const canGiveBadge = isAdmin && !!comment.userId;
+    const canRemoveBadge = isAdmin && !!comment.userId && !!comment.badges?.length;
+    // The web hides view-by-IP for SSO sessions because it redirects to the
+    // dashboard; here it opens an in-app list, so it's available to any admin.
+    const canViewByIP = isAdmin;
+    return {
+        canEdit,
+        canDelete,
+        canPin,
+        canLock,
+        canBlock,
+        canFlag,
+        canApprove,
+        canMarkSpam,
+        canBan,
+        canGiveBadge,
+        canRemoveBadge,
+        canViewByIP,
+    };
 }
 
 export interface GetCommentMenuItemsProps
@@ -206,11 +321,28 @@ export function getCommentMenuItems(
         styles,
         store,
     }: GetCommentMenuItemsProps,
-    { canEdit, canPin, canBlockOrFlag }: CommentMenuState
+    {
+        canEdit,
+        canDelete,
+        canPin,
+        canLock,
+        canBlock,
+        canFlag,
+        canApprove,
+        canMarkSpam,
+        canBan,
+        canGiveBadge,
+        canRemoveBadge,
+        canViewByIP,
+    }: CommentMenuState
 ) {
     const state = store.getState();
     const hasDarkBackground = !!state.config.hasDarkBackground;
     const menuItems: ModalMenuItem[] = [];
+    // Picks the light/dark icon variant for the current background.
+    const imgIcon = (light: FastCommentsImageAsset, dark: FastCommentsImageAsset) => (
+        <Image source={state.imageAssets[hasDarkBackground ? dark : light]} style={styles.commentMenu?.itemIcon} />
+    );
 
     if (canEdit) {
         const isDirtyRef: DirtyRef = {};
@@ -317,7 +449,79 @@ export function getCommentMenuItems(
         );
     }
 
-    if (canEdit) {
+    if (canLock) {
+        const locking = !comment.isLocked;
+        menuItems.push({
+            id: locking ? 'lock' : 'unlock',
+            label: locking ? state.translations.COMMENT_MENU_LOCK : state.translations.COMMENT_MENU_UNLOCK,
+            icon: locking
+                ? imgIcon(FastCommentsImageAsset.ICON_LOCK, FastCommentsImageAsset.ICON_LOCK_WHITE)
+                : imgIcon(FastCommentsImageAsset.ICON_UNLOCK, FastCommentsImageAsset.ICON_UNLOCK_WHITE),
+            handler: async () => setCommentLockStatus(comment, store, locking, onError),
+        });
+    }
+
+    if (canApprove) {
+        // `approved === false` means the comment is awaiting approval.
+        const approving = comment.approved === false;
+        menuItems.push({
+            id: approving ? 'approve' : 'unapprove',
+            label: approving ? state.translations.COMMENT_MENU_APPROVE : state.translations.COMMENT_MENU_UNAPPROVE,
+            // Web parity: approve uses the check icon, unapprove the eye-slash.
+            icon: approving
+                ? imgIcon(FastCommentsImageAsset.ICON_APPROVE, FastCommentsImageAsset.ICON_APPROVE_WHITE)
+                : imgIcon(FastCommentsImageAsset.ICON_EYE_SLASH, FastCommentsImageAsset.ICON_EYE_SLASH_WHITE),
+            handler: async () => setCommentApprovalStatus(comment, store, approving, onError),
+        });
+    }
+
+    if (canMarkSpam) {
+        const markingSpam = !comment.isSpam;
+        menuItems.push({
+            id: markingSpam ? 'spam' : 'not-spam',
+            label: markingSpam ? state.translations.COMMENT_MENU_SPAM : state.translations.COMMENT_MENU_NOT_SPAM,
+            icon: imgIcon(FastCommentsImageAsset.ICON_SPAM, FastCommentsImageAsset.ICON_SPAM_WHITE),
+            handler: async () => setCommentSpamStatus(comment, store, markingSpam, onError),
+        });
+    }
+
+    if (canGiveBadge) {
+        menuItems.push({
+            id: 'give-badge',
+            label: state.translations.COMMENT_MENU_GIVE_BADGE,
+            icon: imgIcon(FastCommentsImageAsset.ICON_BADGE, FastCommentsImageAsset.ICON_BADGE_WHITE),
+            handler: async (setModalId) => setModalId('give-badge'),
+            subModalContent: (close) => (
+                <CommentActionBadge comment={comment} mode="give" store={store} styles={styles} onError={onError} close={close} />
+            ),
+        });
+    }
+
+    if (canRemoveBadge) {
+        menuItems.push({
+            id: 'remove-badge',
+            label: state.translations.COMMENT_MENU_REMOVE_BADGE,
+            icon: imgIcon(FastCommentsImageAsset.ICON_BADGE_REMOVE, FastCommentsImageAsset.ICON_BADGE_REMOVE_WHITE),
+            handler: async (setModalId) => setModalId('remove-badge'),
+            subModalContent: (close) => (
+                <CommentActionBadge comment={comment} mode="remove" store={store} styles={styles} onError={onError} close={close} />
+            ),
+        });
+    }
+
+    if (canViewByIP) {
+        menuItems.push({
+            id: 'view-by-ip',
+            label: state.translations.VIEW_ALL_FROM_IP,
+            icon: imgIcon(FastCommentsImageAsset.ICON_IP, FastCommentsImageAsset.ICON_IP_WHITE),
+            handler: async (setModalId) => setModalId('view-by-ip'),
+            subModalContent: (close) => (
+                <CommentActionViewByIP comment={comment} store={store} styles={styles} close={close} />
+            ),
+        });
+    }
+
+    if (canDelete) {
         menuItems.push({
             id: 'delete',
             label: state.translations.COMMENT_MENU_DELETE,
@@ -344,7 +548,7 @@ export function getCommentMenuItems(
         });
     }
 
-    if (canBlockOrFlag) {
+    if (canBlock) {
         const promptBlock = async (doBlock: boolean) => {
             const fresh = store.getState();
             if (!fresh.translations.BLOCK_CONFIRM_MESSAGE) {
@@ -434,7 +638,9 @@ export function getCommentMenuItems(
                       },
                   }
         );
+    }
 
+    if (canFlag) {
         menuItems.push(
             comment.isFlagged
                 ? {
@@ -445,8 +651,8 @@ export function getCommentMenuItems(
                               source={
                                   state.imageAssets[
                                       hasDarkBackground
-                                          ? FastCommentsImageAsset.ICON_BLOCK_WHITE
-                                          : FastCommentsImageAsset.ICON_BLOCK
+                                          ? FastCommentsImageAsset.ICON_FLAG_WHITE
+                                          : FastCommentsImageAsset.ICON_FLAG
                                   ]
                               }
                               style={styles.commentMenu?.itemIcon}
@@ -470,8 +676,8 @@ export function getCommentMenuItems(
                               source={
                                   state.imageAssets[
                                       hasDarkBackground
-                                          ? FastCommentsImageAsset.ICON_BLOCK_WHITE
-                                          : FastCommentsImageAsset.ICON_BLOCK
+                                          ? FastCommentsImageAsset.ICON_FLAG_WHITE
+                                          : FastCommentsImageAsset.ICON_FLAG
                                   ]
                               }
                               style={styles.commentMenu?.itemIcon}
@@ -488,6 +694,18 @@ export function getCommentMenuItems(
                       },
                   }
         );
+    }
+
+    if (canBan) {
+        menuItems.push({
+            id: 'ban',
+            label: state.translations.COMMENT_MENU_BAN,
+            icon: imgIcon(FastCommentsImageAsset.ICON_BAN, FastCommentsImageAsset.ICON_BAN_WHITE),
+            handler: async (setModalId) => setModalId('ban'),
+            subModalContent: (close) => (
+                <CommentActionBan comment={comment} store={store} styles={styles} onError={onError} close={close} />
+            ),
+        });
     }
 
     return menuItems;

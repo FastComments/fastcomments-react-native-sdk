@@ -10,6 +10,7 @@ import type { FastCommentsRNConfig } from '../types/react-native-config';
 import { newBroadcastId } from './broadcast-id';
 import { persistSubscriberState } from './live';
 import { addTranslationsToStore } from './translations';
+import { responseError } from './api-response-extras';
 
 /**
  * Load the feed's UI copy into the store: comment-ui (shared keys: date phrasing
@@ -139,7 +140,7 @@ export async function loadFeedPosts(
 
         if (response.status !== 'success') {
             store.getState().setFeedLoadFailed(true);
-            return { error: response.code ?? response.reason ?? 'load-failed' };
+            return { error: responseError(response, 'load-failed') };
         }
 
         const posts = toFeedPosts(response.feedPosts, response.myReacts);
@@ -208,7 +209,7 @@ export async function createFeedPost(
             },
         });
         if (response.status !== 'success' || !response.feedPost) {
-            return { error: response.code ?? response.reason ?? 'create-failed' };
+            return { error: responseError(response, 'create-failed') };
         }
         const created = toFeedPost(response.feedPost, undefined);
         if (!created) return { error: 'no-id' };
@@ -322,7 +323,7 @@ export async function deleteFeedPost(
             sso: state.ssoConfigString || undefined,
         });
         if (response.status !== 'success') {
-            return { error: response.code ?? response.reason ?? 'delete-failed' };
+            return { error: responseError(response, 'delete-failed') };
         }
         store.getState().removeFeedPost(postId);
         return { ok: true };

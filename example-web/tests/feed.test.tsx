@@ -7,7 +7,7 @@ import * as React from 'react';
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { FeedPostRow } from '../../src/components/feed-post-row';
-import { FastCommentsFeedPostCreate } from '../../src/components/feed-post-create';
+import { FeedPostComposer } from '../../src/components/feed-post-composer';
 import { FastCommentsLiveCommentingService } from '../../src/services/fastcomments-live-commenting';
 import { getDefaultFastCommentsStyles } from '../../src/resources/styles';
 import type { FeedPost } from '../../src/types/feed-post';
@@ -60,10 +60,10 @@ describe('FeedPostRow', () => {
     });
 });
 
-describe('FastCommentsFeedPostCreate', () => {
+describe('FeedPostComposer', () => {
     it('renders the author header, title field, and submit button', () => {
         const store = makeStore();
-        const { getByTestId } = render(<FastCommentsFeedPostCreate store={store} styles={styles} />);
+        const { getByTestId } = render(<FeedPostComposer store={store} styles={styles} />);
         expect(getByTestId('feedPostCreate')).toBeTruthy();
         expect(getByTestId('postTitleEditText')).toBeTruthy();
         expect(getByTestId('submitPostButton')).toBeTruthy();

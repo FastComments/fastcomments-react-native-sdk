@@ -114,6 +114,15 @@ export default defineConfig({
       'lodash',
       'fastcomments-typescript',
       'react-native-enriched',
+      // The SDK dist is CJS with `export *` re-exports. The published npm dep is
+      // auto-pre-bundled, but if you point `fastcomments-sdk` at the local source
+      // via a `file:` link (for SDK development) it becomes a symlink that Vite
+      // treats as source and serves raw - and served raw, its `export *` names
+      // (e.g. `VoteBodyParamsVoteDirEnum` from `/server`) aren't statically
+      // detectable ("doesn't provide an export named ..."). Force pre-bundling so
+      // esbuild does the CJS->ESM interop and exposes all of them either way.
+      'fastcomments-sdk',
+      'fastcomments-sdk/server',
     ],
     exclude: ['react-native'],
   },

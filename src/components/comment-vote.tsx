@@ -10,9 +10,10 @@ import { FastCommentsImageAsset } from '../types';
 import { VoteStyle } from 'fastcomments-typescript';
 import { useState } from 'react';
 import { VoteBodyParamsVoteDirEnum } from 'fastcomments-sdk/server';
-import type { VoteBodyParams, VoteComment200Response } from 'fastcomments-sdk';
+import type { VoteBodyParams, VoteResponse } from 'fastcomments-sdk';
 import { getActionTenantId } from '../services/tenants';
 import { newBroadcastId } from '../services/broadcast-id';
+import { responseExtras } from '../services/api-response-extras';
 import { userNeedsAuthToAct } from '../services/user-auth-state';
 import { Pressable } from 'react-native';
 import { FastCommentsRNConfig } from '../types/react-native-config';
@@ -35,7 +36,7 @@ interface VoteState {
     isAwaitingVerification?: boolean;
     authEmail?: string;
     authUserName?: string;
-    voteResponse?: VoteComment200Response;
+    voteResponse?: VoteResponse;
     requestFailed?: boolean;
 }
 
@@ -143,7 +144,7 @@ async function doVote(
                 }
                 patch.voteEditKey = response.editKey;
                 store.getState().mergeCommentFields(comment._id, patch);
-                onVoteSuccess && onVoteSuccess(comment, response.voteId!, voteState.voteDir!, response.status);
+                onVoteSuccess && onVoteSuccess(comment, response.voteId!, voteState.voteDir!, 'success');
                 setVoteState({ isAwaitingVerification: false });
             } else if ((response.status as string) === 'pending-verification') {
                 const patch: Partial<RNComment> = { myVoteId: response.voteId, voteEditKey: response.editKey };
@@ -334,22 +335,23 @@ export function CommentVote(props: CommentVoteProps) {
 
     let error = null;
     const lastVoteResponse = voteState.voteResponse;
+    const lastVoteError = responseExtras(lastVoteResponse);
     if (lastVoteResponse && lastVoteResponse.status === 'failed') {
-        if (lastVoteResponse.code === 'banned') {
+        if (lastVoteError.code === 'banned') {
             let bannedText = translations.BANNED_VOTING;
-            if (lastVoteResponse.bannedUntil) {
+            if (lastVoteError.bannedUntil) {
                 bannedText +=
                     ' ' +
                     translations.BAN_ENDS.replace(
                         '[endsText]',
-                        new Date(lastVoteResponse.bannedUntil).toLocaleString()
+                        new Date(lastVoteError.bannedUntil).toLocaleString()
                     );
             }
             error = <Text style={styles.commentVote?.voteError}>{bannedText}</Text>;
-        } else if (lastVoteResponse.code && lastVoteResponse.code in ErrorCodesToMessageIds) {
+        } else if (lastVoteError.code && lastVoteError.code in ErrorCodesToMessageIds) {
             error = (
                 <Text style={styles.commentVote?.voteError}>
-                    {translations[ErrorCodesToMessageIds[lastVoteResponse.code]]}
+                    {translations[ErrorCodesToMessageIds[lastVoteError.code]]}
                 </Text>
             );
         } else {

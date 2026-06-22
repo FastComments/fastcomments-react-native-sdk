@@ -91,6 +91,13 @@ export interface CommentTextAreaProps extends Pick<FastCommentsCallbacks, 'pickI
     saving?: boolean
     value?: string
     toolbarButtons?: ToolbarButtonConfig
+    /**
+     * When set, the image/GIF toolbar buttons hand the resolved media URL here
+     * instead of inserting it into the editor. The feed composer uses this to
+     * attach media to the post rather than the post text. Emoticons are
+     * unaffected (they always go into the editor).
+     */
+    onAttachMedia?: (url: string) => void
 }
 
 type ActiveFormats = {
@@ -129,6 +136,7 @@ export function CommentTextArea({
     pickGIF,
     value,
     toolbarButtons,
+    onAttachMedia,
 }: CommentTextAreaProps) {
     const translations = useStoreValue(store, (s) => s.translations);
     const hasDarkBackground = useStoreValue(store, (s) => !!s.config.hasDarkBackground);
@@ -276,6 +284,10 @@ export function CommentTextArea({
         }
     };
 
+    // Image/GIF toolbar picks go here: to the post (when onAttachMedia is set,
+    // e.g. the feed composer) or into the editor text (the default for comments).
+    const deliverMedia = onAttachMedia ?? insertImage;
+
     useEffect(() => {
         if (value !== undefined && value !== htmlRef.current) {
             let editorValue = value;
@@ -381,7 +393,7 @@ export function CommentTextArea({
                     : null;
             if (!photoData) return;
             if (typeof photoData === 'string' && photoData.startsWith('http')) {
-                insertImage(photoData);
+                deliverMedia(photoData);
                 return;
             }
             setImageUploadProgress(0);
@@ -409,7 +421,7 @@ export function CommentTextArea({
                 };
                 xhr.send(formData);
             });
-            insertImage(url);
+            deliverMedia(url);
         } catch (err) {
             console.error('Image upload failed:', err);
             setImageUploadProgress(null);
@@ -424,7 +436,7 @@ export function CommentTextArea({
         }
         try {
             const url = await pickGIF();
-            if (url) insertImage(url);
+            if (url) deliverMedia(url);
         } catch (err) {
             console.error('GIF pick failed:', err);
         }
@@ -637,7 +649,7 @@ export function CommentTextArea({
                             cancelled={() => setShowGifBrowser(false)}
                             pickedGIF={(gifPath) => {
                                 setShowGifBrowser(false);
-                                insertImage(gifPath);
+                                deliverMedia(gifPath);
                             }}
                         />
                     </View>

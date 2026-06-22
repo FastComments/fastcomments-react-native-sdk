@@ -59,7 +59,7 @@ export function getDaySeparatorLabel(dateStr: string, translations: Record<strin
     const d = new Date(dateStr);
     const startOfDay = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
     const diffDays = Math.round((startOfDay(new Date()) - startOfDay(d)) / 86_400_000);
-    if (diffDays === 0) return translations.TODAY || 'Today';
-    if (diffDays === 1) return translations.YESTERDAY || 'Yesterday';
+    if (diffDays === 0) return translations.TODAY;
+    if (diffDays === 1) return translations.YESTERDAY;
     return d.toLocaleDateString();
 }

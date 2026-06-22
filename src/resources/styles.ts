@@ -422,6 +422,7 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 fontSize: t.fontSize.base,
                 color: t.colors.textSecondary,
                 textAlignVertical: 'center',
+                marginRight: 3,
             },
             dateSeparator: {
                 alignItems: 'center',
@@ -470,6 +471,15 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 width: 18,
                 height: 18,
             },
+            // Locked-comment padlock indicator (web parity), sized like the small
+            // lock the web shows in the comment's top-right.
+            lock: {
+                alignSelf: 'center',
+                width: 16,
+                height: 16,
+                resizeMode: 'contain',
+                marginRight: t.spacing.xs,
+            },
             emptyState: {
                 padding: t.spacing.xl,
                 alignItems: 'center'
@@ -479,6 +489,20 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 fontSize: t.fontSize.base
             },
             contentWrapper: {},
+            // Moderation-state borders (web parity): a moderator sees spam comments
+            // boxed in red and unapproved (awaiting-moderation) comments in orange.
+            spamBorder: {
+                borderWidth: 1,
+                borderColor: t.colors.danger,
+                borderRadius: t.radius.md,
+                padding: t.spacing.sm,
+            },
+            unapprovedBorder: {
+                borderWidth: 1,
+                borderColor: t.colors.warning,
+                borderRadius: t.radius.md,
+                padding: t.spacing.sm,
+            },
             text: {
                 marginLeft: t.spacing.xs,
                 // 5px right gap so the text never bleeds under the top-right menu button.
@@ -577,6 +601,223 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 color: t.colors.onPrimary,
                 fontWeight: t.fontWeight.semibold,
                 fontSize: t.fontSize.base
+            }
+        },
+        commentModerationModal: {
+            centeredView: {
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginTop: 22
+            },
+            modalView: {
+                width: '100%',
+                maxWidth: 420,
+                maxHeight: '90%',
+                margin: t.spacing.xl,
+                backgroundColor: t.colors.surfaceRaised,
+                borderRadius: t.radius.lg,
+                paddingTop: 35,
+                paddingLeft: t.spacing.lg,
+                paddingRight: t.spacing.lg,
+                paddingBottom: t.spacing.lg,
+                ...modalShadow
+            },
+            scroll: {
+                width: '100%'
+            },
+            modalCancel: {
+                position: 'absolute',
+                top: t.spacing.md,
+                right: t.spacing.md,
+                zIndex: 1
+            },
+            title: {
+                color: t.colors.textPrimary,
+                fontSize: t.fontSize.lg,
+                fontWeight: t.fontWeight.bold,
+                marginBottom: t.spacing.sm
+            },
+            message: {
+                color: t.colors.textSecondary,
+                fontSize: t.fontSize.body,
+                marginBottom: t.spacing.md
+            },
+            section: {
+                marginBottom: t.spacing.md
+            },
+            optionRow: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingTop: t.spacing.sm,
+                paddingBottom: t.spacing.sm
+            },
+            optionLabel: {
+                flex: 1,
+                color: t.colors.textPrimary,
+                fontSize: t.fontSize.body,
+                paddingRight: t.spacing.md
+            },
+            toggle: {
+                paddingTop: t.spacing.xs,
+                paddingBottom: t.spacing.xs,
+                paddingLeft: t.spacing.md,
+                paddingRight: t.spacing.md,
+                borderRadius: t.radius.pill,
+                borderWidth: hairline,
+                borderColor: t.colors.border,
+                backgroundColor: t.colors.surface
+            },
+            toggleActive: {
+                paddingTop: t.spacing.xs,
+                paddingBottom: t.spacing.xs,
+                paddingLeft: t.spacing.md,
+                paddingRight: t.spacing.md,
+                borderRadius: t.radius.pill,
+                borderWidth: hairline,
+                borderColor: t.colors.primary,
+                backgroundColor: t.colors.primary
+            },
+            toggleText: {
+                color: t.colors.textSecondary,
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold
+            },
+            toggleTextActive: {
+                color: t.colors.onPrimary,
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold
+            },
+            choiceRow: {
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                marginTop: t.spacing.xs
+            },
+            choice: {
+                paddingTop: t.spacing.xs,
+                paddingBottom: t.spacing.xs,
+                paddingLeft: t.spacing.md,
+                paddingRight: t.spacing.md,
+                borderRadius: t.radius.pill,
+                borderWidth: hairline,
+                borderColor: t.colors.border,
+                backgroundColor: t.colors.surface,
+                marginRight: t.spacing.sm,
+                marginBottom: t.spacing.sm
+            },
+            choiceActive: {
+                paddingTop: t.spacing.xs,
+                paddingBottom: t.spacing.xs,
+                paddingLeft: t.spacing.md,
+                paddingRight: t.spacing.md,
+                borderRadius: t.radius.pill,
+                borderWidth: hairline,
+                borderColor: t.colors.primary,
+                backgroundColor: t.colors.primary,
+                marginRight: t.spacing.sm,
+                marginBottom: t.spacing.sm
+            },
+            choiceText: {
+                color: t.colors.textSecondary,
+                fontSize: t.fontSize.base
+            },
+            choiceTextActive: {
+                color: t.colors.onPrimary,
+                fontSize: t.fontSize.base,
+                fontWeight: t.fontWeight.semibold
+            },
+            input: {
+                borderWidth: hairline,
+                borderColor: t.colors.border,
+                borderRadius: t.radius.md,
+                backgroundColor: t.colors.inputBackground,
+                color: t.colors.textPrimary,
+                paddingTop: t.spacing.sm,
+                paddingBottom: t.spacing.sm,
+                paddingLeft: t.spacing.md,
+                paddingRight: t.spacing.md,
+                fontSize: t.fontSize.body,
+                minHeight: 40
+            },
+            primaryButton: {
+                ...filledButton,
+                marginTop: t.spacing.md,
+                alignItems: 'center',
+                justifyContent: 'center'
+            },
+            primaryButtonText: {
+                color: t.colors.onPrimary,
+                fontWeight: t.fontWeight.semibold,
+                fontSize: t.fontSize.base
+            },
+            dangerButton: {
+                backgroundColor: t.colors.danger,
+                borderRadius: t.radius.md,
+                paddingTop: t.spacing.sm + 2,
+                paddingBottom: t.spacing.sm + 2,
+                paddingLeft: t.spacing.lg,
+                paddingRight: t.spacing.lg,
+                marginTop: t.spacing.md,
+                alignItems: 'center',
+                justifyContent: 'center'
+            },
+            dangerButtonText: {
+                color: t.colors.onPrimary,
+                fontWeight: t.fontWeight.semibold,
+                fontSize: t.fontSize.base
+            },
+            listItem: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingTop: t.spacing.sm,
+                paddingBottom: t.spacing.sm,
+                borderBottomWidth: hairline,
+                borderBottomColor: t.colors.border
+            },
+            listItemTitle: {
+                color: t.colors.textPrimary,
+                fontSize: t.fontSize.body,
+                fontWeight: t.fontWeight.semibold
+            },
+            listItemSubtitle: {
+                color: t.colors.textSecondary,
+                fontSize: t.fontSize.base
+            },
+            badgeImage: {
+                width: 28,
+                height: 28,
+                borderRadius: t.radius.sm,
+                marginRight: t.spacing.md,
+                resizeMode: 'contain'
+            },
+            emptyText: {
+                color: t.colors.textSecondary,
+                fontSize: t.fontSize.body,
+                textAlign: 'center',
+                paddingTop: t.spacing.lg,
+                paddingBottom: t.spacing.lg
+            },
+            link: {
+                color: t.colors.link
+            },
+            headerLink: {
+                color: t.colors.link,
+                fontSize: t.fontSize.lg,
+                fontWeight: t.fontWeight.bold,
+                marginBottom: t.spacing.sm
+            },
+            loadMore: {
+                color: t.colors.link,
+                fontSize: t.fontSize.body,
+                fontWeight: t.fontWeight.semibold,
+                textAlign: 'center',
+                paddingTop: t.spacing.md,
+                paddingBottom: t.spacing.md
+            },
+            loadingView: {
+                ...LoadingOverlay,
+                minHeight: 120
             }
         },
         commentAreaMessage: {
@@ -2237,6 +2478,19 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
                 fontSize: t.fontSize.base,
                 color: t.colors.textPrimary,
                 fontWeight: t.fontWeight.medium
+            },
+            reactionLikeButton: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: t.spacing.xs,
+                paddingHorizontal: t.spacing.sm + 2,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.colors.surface,
+                marginRight: t.spacing.xs + 2,
+                marginBottom: t.spacing.xs + 2
+            },
+            reactionLikeButtonActive: {
+                backgroundColor: t.colors.pressed
             },
             reactionPickerButton: {
                 paddingVertical: t.spacing.xs,

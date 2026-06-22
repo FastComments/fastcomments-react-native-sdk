@@ -92,10 +92,12 @@ export interface IFastCommentsStyles {
         menuDots?: ViewStyle
         menuDot?: ViewStyle
         pin?: ImageStyle
-        lock?: ViewStyle
+        lock?: ImageStyle
         emptyState?: ViewStyle
         emptyStateText?: TextStyle
         contentWrapper?: ViewStyle
+        spamBorder?: ViewStyle
+        unapprovedBorder?: ViewStyle
         text?: MixedStyleDeclaration
         /** Per-tag styles for the comment body HTML renderer (e.g. link color via `a`). **/
         textLinkStyles?: MixedStyleRecord
@@ -115,6 +117,41 @@ export interface IFastCommentsStyles {
         loadingView?: ViewStyle
         saveButton?: ViewStyle
         saveButtonText?: TextStyle
+    }
+    /** Shared styling for the moderator sub-modals (ban, badges, view-by-IP). */
+    commentModerationModal?: {
+        centeredView?: ViewStyle
+        modalView?: ViewStyle
+        scroll?: ViewStyle
+        modalCancel?: ViewStyle
+        title?: TextStyle
+        message?: TextStyle
+        section?: ViewStyle
+        optionRow?: ViewStyle
+        optionLabel?: TextStyle
+        toggle?: ViewStyle
+        toggleActive?: ViewStyle
+        toggleText?: TextStyle
+        toggleTextActive?: TextStyle
+        choiceRow?: ViewStyle
+        choice?: ViewStyle
+        choiceActive?: ViewStyle
+        choiceText?: TextStyle
+        choiceTextActive?: TextStyle
+        input?: TextStyle
+        primaryButton?: ViewStyle
+        primaryButtonText?: TextStyle
+        dangerButton?: ViewStyle
+        dangerButtonText?: TextStyle
+        listItem?: ViewStyle
+        listItemTitle?: TextStyle
+        listItemSubtitle?: TextStyle
+        badgeImage?: ImageStyle
+        emptyText?: TextStyle
+        link?: TextStyle
+        headerLink?: TextStyle
+        loadMore?: TextStyle
+        loadingView?: ViewStyle
     }
     commentAreaMessage?: {
         wrapper?: ViewStyle
@@ -459,6 +496,8 @@ export interface IFastCommentsStyles {
         reactionChipActive?: ViewStyle
         reactionChipGlyph?: TextStyle
         reactionChipCount?: TextStyle
+        reactionLikeButton?: ViewStyle
+        reactionLikeButtonActive?: ViewStyle
         reactionPickerButton?: ViewStyle
         reactionPickerButtonText?: TextStyle
         reactionPickerOverlay?: ViewStyle

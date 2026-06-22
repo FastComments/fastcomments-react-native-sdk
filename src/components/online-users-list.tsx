@@ -70,9 +70,9 @@ export function OnlineUsersList({ store, styles, onClose, fill, showOffline }: O
     const ou = styles.onlineUsers;
     // Named users we did not load (large rooms) + anonymous users (never named).
     const remaining = Math.max(0, totalCount - onlineUsers.length - anonCount) + anonCount;
-    const onlineLabel = translations.ONLINE_USERS_SECTION_ONLINE || 'Online';
-    const offlineLabel = translations.ONLINE_USERS_SECTION_OFFLINE || 'Offline';
-    const loadMoreLabel = translations.ONLINE_USERS_LOAD_MORE || 'Load more';
+    const onlineLabel = translations.ONLINE_USERS_SECTION_ONLINE;
+    const offlineLabel = translations.ONLINE_USERS_SECTION_OFFLINE;
+    const loadMoreLabel = translations.ONLINE_USERS_LOAD_MORE;
 
     const renderRow = (u: OnlineUser, offline: boolean) => (
         <View key={`${offline ? 'off' : 'on'}-${u.id}`} style={ou?.row}>
@@ -80,7 +80,7 @@ export function OnlineUsersList({ store, styles, onClose, fill, showOffline }: O
                 source={u.avatarSrc ? { uri: u.avatarSrc } : getDefaultAvatarSrc(imageAssets)}
                 style={ou?.rowAvatar}
             />
-            <Text style={ou?.rowName} numberOfLines={1}>{u.displayName}</Text>
+            <Text style={ou?.rowName} numberOfLines={1}>{u.isPrivate ? translations.PRIVATE_PROFILE : u.displayName}</Text>
             <View style={offline ? ou?.rowDotOffline : ou?.rowDot} />
         </View>
     );
@@ -106,7 +106,7 @@ export function OnlineUsersList({ store, styles, onClose, fill, showOffline }: O
                 {onlineUsers.map((u) => renderRow(u, false))}
                 {remaining > 0 && (
                     <Text style={ou?.moreText}>
-                        {(translations.AND_N_MORE_ONLINE || '+[count] more online').replace('[count]', String(remaining))}
+                        {translations.AND_N_MORE_ONLINE.replace('[count]', String(remaining))}
                     </Text>
                 )}
 
