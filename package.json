@@ -59,7 +59,6 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@types/ws": "^8.18.1",
-    "fastcomments-sdk": "file:../fastcomments-sdk-js",
     "jest": "^29.0.3",
     "pod-install": "^0.1.0",
     "prettier": "^2.0.5",
@@ -75,6 +74,7 @@
   },
   "dependencies": {
     "@types/lodash": "^4.14.184",
+    "fastcomments-sdk": "^5.0.2",
     "fastcomments-typescript": "^3.0.0",
     "lodash": "^4.17.21",
     "react-native-render-html": "^6.3.4",

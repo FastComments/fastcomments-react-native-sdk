@@ -100,7 +100,13 @@ export function FastCommentsCommentView(props: CommentViewProps) {
             menuState.canPin ||
             menuState.canLock ||
             menuState.canBlock ||
-            menuState.canFlag);
+            menuState.canFlag ||
+            menuState.canApprove ||
+            menuState.canMarkSpam ||
+            menuState.canBan ||
+            menuState.canGiveBadge ||
+            menuState.canRemoveBadge ||
+            menuState.canViewByIP);
     const htmlWrapped = `<div style="${styles.comment?.textHTML || ''}">${html}</div>`;
     const finalHTML = renderCommentInline
         ? `<div style="flex-direction:row">${getCommentUserInfoHTML({
@@ -146,9 +152,16 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                     />
                 )}
                 {comment.isLocked && (
-                    <View
+                    <Image
                         testID={`lockIcon-${comment._id}`}
                         accessibilityLabel="lockIcon"
+                        source={
+                            imageAssets[
+                                config.hasDarkBackground
+                                    ? FastCommentsImageAsset.ICON_LOCK_WHITE
+                                    : FastCommentsImageAsset.ICON_LOCK
+                            ]
+                        }
                         style={styles.comment?.lock}
                     />
                 )}
@@ -169,7 +182,18 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                     </TouchableOpacity>
                 )}
             </View>
-            <View style={styles.comment?.contentWrapper}>
+            <View
+                style={[
+                    styles.comment?.contentWrapper,
+                    // Web parity: spam = red box, unapproved (awaiting moderation) =
+                    // orange box. Spam wins if a comment is somehow both.
+                    comment.isSpam
+                        ? styles.comment?.spamBorder
+                        : comment.approved === false
+                        ? styles.comment?.unapprovedBorder
+                        : null,
+                ]}
+            >
                 <CommentNotices comment={comment} styles={styles} translations={translations} />
                 {isChat ? (
                     // Compact chat layout: small avatar on the left, with the name

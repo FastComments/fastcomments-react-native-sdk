@@ -104,3 +104,88 @@ describe('getCommentMenuState', () => {
         expect(lockedItems.map((i) => i.id)).toContain('unlock');
     });
 });
+
+describe('getCommentMenuState (moderation actions)', () => {
+    it('admin gets approve/spam/ban/view-by-IP on another user comment', () => {
+        const store = makeStore();
+        store.getState().setCurrentUser(user('admin'));
+        store.getState().setIsSiteAdmin(true);
+        expect(getCommentMenuState(store, asComment({ userId: 'author' }))).toMatchObject({
+            canApprove: true,
+            canMarkSpam: true,
+            canBan: true,
+            canViewByIP: true,
+        });
+    });
+
+    it('non-admin gets no moderation actions', () => {
+        const store = makeStore();
+        store.getState().setCurrentUser(user('viewer'));
+        expect(getCommentMenuState(store, asComment({ userId: 'author' }))).toMatchObject({
+            canApprove: false,
+            canMarkSpam: false,
+            canBan: false,
+            canGiveBadge: false,
+            canRemoveBadge: false,
+            canViewByIP: false,
+        });
+    });
+
+    it('admin cannot ban their own comment', () => {
+        const store = makeStore();
+        store.getState().setCurrentUser(user('admin'));
+        store.getState().setIsSiteAdmin(true);
+        expect(getCommentMenuState(store, asComment({ userId: 'admin' })).canBan).toBe(false);
+    });
+
+    it('give badge requires a registered user; remove badge also requires existing badges', () => {
+        const store = makeStore();
+        store.getState().setCurrentUser(user('admin'));
+        store.getState().setIsSiteAdmin(true);
+
+        // anon comment (no userId): no badge actions
+        const anon = getCommentMenuState(store, asComment({ anonUserId: 'anon1' }));
+        expect(anon.canGiveBadge).toBe(false);
+        expect(anon.canRemoveBadge).toBe(false);
+
+        // registered user, no badges: can give, cannot remove
+        const noBadges = getCommentMenuState(store, asComment({ userId: 'author' }));
+        expect(noBadges.canGiveBadge).toBe(true);
+        expect(noBadges.canRemoveBadge).toBe(false);
+
+        // registered user with badges: can give and remove
+        const withBadges = getCommentMenuState(store, asComment({ userId: 'author', badges: [{ id: 'b1' } as never] }));
+        expect(withBadges.canGiveBadge).toBe(true);
+        expect(withBadges.canRemoveBadge).toBe(true);
+    });
+
+    it('getCommentMenuItems emits the moderation items for an admin', () => {
+        const store = makeStore();
+        store.getState().setCurrentUser(user('admin'));
+        store.getState().setIsSiteAdmin(true);
+        const styles = getDefaultFastCommentsStyles();
+
+        // approved=false -> "approve"; not spam -> "spam"; has a userId+badges -> both badge items
+        const comment = asComment({ userId: 'author', approved: false, badges: [{ id: 'b1' } as never] });
+        const ids = getCommentMenuItems({ comment, store, styles }, getCommentMenuState(store, comment)).map((i) => i.id);
+        expect(ids).toEqual(expect.arrayContaining(['approve', 'spam', 'ban', 'give-badge', 'remove-badge', 'view-by-ip']));
+
+        // approved (true) + already spam -> the inverse toggle ids
+        const moderated = asComment({ userId: 'author', approved: true, isSpam: true });
+        const moderatedIds = getCommentMenuItems({ comment: moderated, store, styles }, getCommentMenuState(store, moderated)).map(
+            (i) => i.id
+        );
+        expect(moderatedIds).toEqual(expect.arrayContaining(['unapprove', 'not-spam']));
+    });
+
+    it('a non-admin viewer gets no moderation menu items', () => {
+        const store = makeStore();
+        store.getState().setCurrentUser(user('viewer'));
+        const styles = getDefaultFastCommentsStyles();
+        const comment = asComment({ userId: 'author' });
+        const ids = getCommentMenuItems({ comment, store, styles }, getCommentMenuState(store, comment)).map((i) => i.id);
+        for (const modId of ['approve', 'unapprove', 'spam', 'not-spam', 'ban', 'give-badge', 'remove-badge', 'view-by-ip']) {
+            expect(ids).not.toContain(modId);
+        }
+    });
+});

@@ -1,7 +1,6 @@
 import {Dispatch, ReactNode, SetStateAction, useRef, useState, type ComponentRef} from 'react';
 import {Image, ImageURISource, Modal, Platform, Text, TouchableOpacity, View} from "react-native";
 import {SavingShimmer} from "./saving-shimmer";
-import {Skeleton} from "./skeleton";
 import {IFastCommentsStyles} from "../types";
 import {MentionPortal} from './mention-portal';
 import {measureAnchorRect, placeVertical, useAnchoredPosition, useDismissOnOutsideClick} from '../services/web-anchor';
@@ -49,7 +48,8 @@ export function ModalMenu({
     styles,
 }: ModalMenuProps) {
     const [activeModalId, setModalIdVisible] = useState<string | null>(isOpen ? 'menu' : null);
-    const [isLoading, setLoading] = useState(false);
+    // Which item is mid-action: that row shimmers (rather than a bottom-of-menu bar).
+    const [loadingItemId, setLoadingItemId] = useState<string | null>(null);
     const openButtonRef = useRef<ComponentRef<typeof TouchableOpacity>>(null);
     const dropdownRef = useRef<View>(null);
 
@@ -97,8 +97,8 @@ export function ModalMenu({
             key={item.id}
             testID={`menuItem-${item.id}`}
             accessibilityLabel={`menuItem-${item.id}`}
-            style={styles.modalMenu?.menuOptionButton} onPress={async () => {
-            setLoading(true);
+            style={[styles.modalMenu?.menuOptionButton, { overflow: 'hidden' }]} onPress={async () => {
+            setLoadingItemId(item.id);
             let openedSubModal = false;
             await item.handler((newModalId) => {
                 if (newModalId === null) {
@@ -108,7 +108,7 @@ export function ModalMenu({
                     setModalIdVisible(newModalId);
                 }
             });
-            setLoading(false);
+            setLoadingItemId(null);
             // Selecting an item closes the menu unless it navigated to a
             // sub-modal. The web outside-click listener now excludes the menu
             // content (so it no longer doubles as the "selected, close it"
@@ -118,6 +118,8 @@ export function ModalMenu({
         >
             {item.icon}
             <Text style={styles.modalMenu?.menuOptionText}>{item.label}</Text>
+            {/* The acting row shimmers in place while its handler runs. */}
+            {loadingItemId === item.id && <SavingShimmer active color={'rgba(120,130,150,0.22)'} />}
         </TouchableOpacity>
     );
 
@@ -126,7 +128,6 @@ export function ModalMenu({
             <MentionPortal>
                 <View ref={dropdownRef} style={[dropdownPosition ?? { position: 'absolute', top: 0, left: 0, opacity: 0 }, styles.modalMenu?.dropdown]}>
                     {menuOptions}
-                    {isLoading && <Skeleton style={{height: 28, margin: 8}}/>}
                 </View>
             </MentionPortal>
         ) : null)
@@ -146,7 +147,6 @@ export function ModalMenu({
                         >
                             {<Image source={closeIcon} style={styles.modalMenu?.menuCancelIcon}/>}
                         </TouchableOpacity>
-                        <SavingShimmer active={isLoading} color={'rgba(120,130,150,0.16)'}/>
                     </View>
                 </View>
             </Modal>
