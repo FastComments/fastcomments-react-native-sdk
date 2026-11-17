@@ -20,6 +20,10 @@ Object.defineProperty(globalThis, 'performance', {
 // consumer supplies their own list.
 require('react-native/jest/setup');
 
+// RN's setup stubs requestAnimationFrame with `jest.now()`, which only exists from Jest 29.5 (this repo runs 29.0),
+// so any JS-driven Animated.timing (e.g. the poll result bars) threw "jest.now is not a function" on its first frame.
+globalThis.requestAnimationFrame = (callback) => setTimeout(() => callback(Date.now()), 0);
+
 if (typeof (globalThis as any).WebSocket === 'undefined') {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     (globalThis as any).WebSocket = require('ws');

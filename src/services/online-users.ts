@@ -113,7 +113,7 @@ export async function loadOfflineUsers(
 // The section labels ("Online"/"Offline"/"Load more") and the private-profile
 // placeholder live in the comment-ui-online-users namespace, which the comments
 // payload doesn't carry, so load it on demand and merge it in.
-function ensureOnlineUsersTranslations(store: FastCommentsStore): Promise<void> {
+function ensureOnlineUsersTranslations(store: FastCommentsStore): Promise<boolean> {
     return ensureTranslationComponentLoaded(store, 'comment-ui-online-users');
 }
 

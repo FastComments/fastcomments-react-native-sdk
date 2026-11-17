@@ -7,12 +7,18 @@ import { repositionComment } from './comment-positioning';
 import { incOverallCommentCount } from './comment-count';
 import { handleNewCustomConfig } from './custom-config';
 import { applyOnlineUsersPresenceUpdate } from './online-users';
+import { applyPollUpdate } from './polls';
 import type { FastCommentsStore } from '../store/types';
 
 const SubscriberInstanceById: Record<string, SubscriberInstance | void> = {};
 
 export function handleLiveEvent(store: FastCommentsStore, dataJSON: WebsocketLiveEvent) {
     const state = store.getState();
+    // Tallies are full snapshots, so our own echo is applied rather than filtered (see applyPollUpdate).
+    if (dataJSON.type === 'poll-update') {
+        applyPollUpdate(store, dataJSON);
+        return;
+    }
     if ('broadcastId' in dataJSON && state.broadcastIdsSent.has(dataJSON.broadcastId)) {
         return;
     }

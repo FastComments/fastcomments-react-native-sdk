@@ -1,6 +1,6 @@
 {
   "name": "fastcomments-react-native-sdk",
-  "version": "5.2.0",
+  "version": "5.3.0",
   "description": "React Native FastComments Components. Add live commenting to any React Native application.",
   "main": "index.ts",
   "react-native": "index.ts",
@@ -74,7 +74,7 @@
   },
   "dependencies": {
     "@types/lodash": "^4.14.184",
-    "fastcomments-sdk": "^5.0.2",
+    "fastcomments-sdk": "^6.1.0",
     "fastcomments-typescript": "^3.0.0",
     "lodash": "^4.17.21",
     "react-native-render-html": "^6.3.4",

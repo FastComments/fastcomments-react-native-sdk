@@ -1,5 +1,24 @@
 # Changelog
 
+## 5.3.0
+
+### New
+
+- **Comment polls**, matching the web widget's polls extension. Polls appear once the tenant's widget customization sets `pollCreation` (who can attach polls: everyone, or admins only); `pollVoting` controls whether anonymous viewers can vote.
+  - `PollCard` under a comment: tap an option to vote, change your vote, show/hide results, animated result bars, live tallies from other voters over the websocket (`poll-update` events), a close date that flips the card to closed on screen, and a privacy line saying whether your vote carries your name.
+  - "Require a vote to see results" polls hide tallies until you vote or the poll closes.
+  - `PollVotersModal`: who voted for what on public and admins-only polls, paged, with a debounced name search.
+  - `PollBuilder` composer in the reply box, opened from a new toolbar button: question, 2 to 10 options, close after 1 day / 3 days / 1 week, privacy (anonymous, admins, public) and the require-vote setting. A half-written poll blocks the submit and points at the missing field instead of being dropped. Typing in it re-renders only the composer, not the editor around it.
+  - Poll labels load on demand from the `comment-ui-polls` translation component.
+  - `IFastCommentsStyles.polls` styles every part of the card, composer and voter list, with light and dark palettes from the theme.
+- `CommentTextArea` accepts `toolbarExtra` (extra toolbar buttons) and `inputBottom` (content inside the input frame, under the text).
+- `useTranslationComponent(store, component, enabled)` hook, and `ensureTranslationComponentLoaded` now resolves whether the strings arrived.
+
+### Changed
+
+- `fastcomments-sdk` 6.1.0 (poll endpoints and types).
+- The `example/` app is upgraded to React Native 0.81.6 with `react-native-enriched`, and gains an `AppPollsManualTest` screen for testing polls across two devices.
+
 ## 5.1.0
 
 ### New
