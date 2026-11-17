@@ -20,6 +20,9 @@ import type { FastCommentsStore } from '../store/types';
 import { useStoreValue } from '../store/hooks';
 import { measureAnchorRect } from '../services/web-anchor';
 import { isLiveChatStyle } from '../services/fastcomments-live-commenting';
+import { arePollsEnabled } from '../services/polls';
+import { useTranslationComponent } from '../services/translations';
+import { PollCard } from './poll-card';
 
 export interface FastCommentsCommentWithStore {
     comment: RNComment;
@@ -71,6 +74,11 @@ export function FastCommentsCommentView(props: CommentViewProps) {
     // Subscribe to this specific comment so we re-render only on its mutations.
     const liveComment = useStoreValue(store, (s) => s.byId[propComment._id]);
     const comment = liveComment ?? propComment;
+    // The server's pollCreation is merged into the store config, not the host's config prop.
+    const pollsEnabled = useStoreValue(store, (s) => arePollsEnabled(s.config));
+    const hasPoll = !!comment.poll && !comment.isDeleted && pollsEnabled;
+    const pollTranslationsLoaded = useTranslationComponent(store, 'comment-ui-polls', hasPoll);
+    const showPoll = hasPoll && pollTranslationsLoaded;
 
     // Web anchors the menu as a dropdown under this row's trigger.
     const menuButtonRef = useRef<ComponentRef<typeof TouchableOpacity>>(null);
@@ -225,6 +233,9 @@ export function FastCommentsCommentView(props: CommentViewProps) {
                         )}
                         <CommentHTMLRenderMemo html={finalHTML} width={width} />
                     </>
+                )}
+                {showPoll && (
+                    <PollCard comment={comment} store={store} styles={styles} translations={translations} />
                 )}
                 {config.renderLikesToRight && (
                     <CommentVote

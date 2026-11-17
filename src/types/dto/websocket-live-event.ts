@@ -1,6 +1,7 @@
 import {FastCommentsBadge, FastCommentsCommentWidgetConfig, FastCommentsWidgetComment } from "fastcomments-typescript";
 import {UserNotification} from "../user-notification";
 import {FeedPost} from "../feed-post";
+import type {CommentPollOption} from "fastcomments-sdk";
 
 export interface FastCommentsUserBadge extends FastCommentsBadge {
     userId?: string;
@@ -146,7 +147,20 @@ export interface WebsocketLiveDeletedFeedPostReactEvent {
     feedPostReact: WebsocketLiveFeedPostReact;
 }
 
-export type WebsocketLiveEvent = WebsocketLiveNewBadgeEvent
+/** Tally change on a comment's poll. Carries only the counts and close date, never the question or settings. */
+export interface WebsocketLivePollUpdateEvent {
+    broadcastId?: string;
+    type: 'poll-update';
+    commentId: string;
+    poll: {
+        options: CommentPollOption[];
+        totalVotes: number;
+        closesAt?: string | null;
+    };
+}
+
+export type WebsocketLiveEvent = WebsocketLivePollUpdateEvent
+    | WebsocketLiveNewBadgeEvent
     | WebsocketLiveRemovedBadgeEvent
     | WebsocketLiveNotificationEvent
     | WebsocketLivePresenceUpdate

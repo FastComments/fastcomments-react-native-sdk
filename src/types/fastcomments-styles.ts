@@ -505,4 +505,78 @@ export interface IFastCommentsStyles {
         reactionPickerItem?: ViewStyle
         reactionPickerItemGlyph?: TextStyle
     }
+    /** Polls: the card under a comment, the composer inside the reply box, and the voter list. Mirrors the web widget's poll styles. **/
+    polls?: {
+        card?: ViewStyle
+        question?: TextStyle
+        options?: ViewStyle
+        option?: ViewStyle
+        /** Pressed state of an option the viewer can vote on. **/
+        optionPressed?: ViewStyle
+        optionSelected?: ViewStyle
+        /** The result bar filling the option chip from its start edge. **/
+        optionBar?: ViewStyle
+        optionBarSelected?: ViewStyle
+        optionMark?: ViewStyle
+        optionMarkSelected?: ViewStyle
+        /** Check drawn inside a selected mark (a rotated corner; color comes from borderColor). **/
+        optionCheck?: ViewStyle
+        optionLabel?: TextStyle
+        optionPercent?: TextStyle
+        footer?: ViewStyle
+        footerSpacer?: ViewStyle
+        helpText?: TextStyle
+        errorText?: TextStyle
+        savedPill?: ViewStyle
+        savedCheck?: ViewStyle
+        savedText?: TextStyle
+        link?: TextStyle
+        linkDisabled?: TextStyle
+        savingShimmerColor?: string
+        /** Poll button in the comment editor toolbar: three bars, colored by backgroundColor. **/
+        toolbarIcon?: ViewStyle
+        toolbarIconBar?: ViewStyle
+        builder?: ViewStyle
+        builderQuestionInput?: TextStyle
+        builderQuestionInputFocused?: TextStyle
+        builderPlaceholderColor?: string
+        builderOption?: ViewStyle
+        builderOptionFocused?: ViewStyle
+        builderOptionInput?: TextStyle
+        builderRemoveOption?: ViewStyle
+        builderRemoveOptionText?: TextStyle
+        builderAddOption?: ViewStyle
+        builderAddOptionMark?: ViewStyle
+        builderAddOptionMarkText?: TextStyle
+        builderAddOptionText?: TextStyle
+        builderPill?: ViewStyle
+        builderPillActive?: ViewStyle
+        builderPillText?: TextStyle
+        builderPillTextActive?: TextStyle
+        builderCheckbox?: ViewStyle
+        builderCheckboxBox?: ViewStyle
+        builderCheckboxBoxChecked?: ViewStyle
+        builderCheckboxText?: TextStyle
+        builderPrivacy?: ViewStyle
+        builderPrivacyButton?: ViewStyle
+        builderPrivacyButtonText?: TextStyle
+        builderHelpIcon?: ViewStyle
+        builderHelpIconText?: TextStyle
+        builderRemove?: TextStyle
+        votersScrim?: ViewStyle
+        votersDialog?: ViewStyle
+        votersHeader?: ViewStyle
+        votersTitle?: TextStyle
+        votersClose?: ViewStyle
+        votersCloseText?: TextStyle
+        votersSearch?: TextStyle
+        votersBody?: ViewStyle
+        votersRow?: ViewStyle
+        votersRowLast?: ViewStyle
+        votersName?: TextStyle
+        votersChoice?: TextStyle
+        votersStatus?: TextStyle
+        votersPager?: ViewStyle
+        votersCount?: TextStyle
+    }
 }

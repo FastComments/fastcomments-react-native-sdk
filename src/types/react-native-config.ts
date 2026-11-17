@@ -1,4 +1,5 @@
 import { FastCommentsCommentWidgetConfig } from "fastcomments-typescript";
+import type { PollCreationMode, PollVotingMode } from "fastcomments-sdk";
 
 /** React-Native specific config has more configuration than other libraries. **/
 export interface FastCommentsRNConfig extends FastCommentsCommentWidgetConfig {
@@ -24,4 +25,8 @@ export interface FastCommentsRNConfig extends FastCommentsCommentWidgetConfig {
     countAboveToggle?: number
     /** Hide the top bar above the comment input (logged-in username, avatar, logout menu, and notification bell). **/
     hideTopBar?: boolean
+    /** Who can attach polls to new comments. Comes from the tenant's widget customization; polls render only while it is set. **/
+    pollCreation?: PollCreationMode | null
+    /** Whether anonymous viewers can vote on polls. Comes from the tenant's widget customization. **/
+    pollVoting?: PollVotingMode | null
 }

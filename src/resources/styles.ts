@@ -1,7 +1,7 @@
 import {IFastCommentsStyles} from "../types";
 import {FastCommentsTheme} from "../types/fastcomments-theme";
-import {Platform, StyleSheet, ViewStyle} from "react-native";
-import {getLightTheme} from "./themes";
+import {Platform, StyleSheet, TextStyle, ViewStyle} from "react-native";
+import {getLightTheme, isDarkColor} from "./themes";
 
 // The loading state is a sole, full-area render (the widget early-returns this
 // while fetching). It must NOT be `position: absolute`: an absolutely-positioned
@@ -2527,6 +2527,495 @@ export function getDefaultFastCommentsStyles(theme?: FastCommentsTheme): IFastCo
             reactionPickerItemGlyph: {
                 fontSize: 26
             }
+        },
+        polls: getPollStyles(t)
+    };
+}
+
+interface PollPalette {
+    accent: string;
+    accentText: string;
+    textMuted: string;
+    chipBg: string;
+    chipBgPressed: string;
+    chipText: string;
+    border: string;
+    barTrack: string;
+    barSelected: string;
+    markBg: string;
+    danger: string;
+    shadowOpacity: number;
+    shimmer: string;
+}
+
+// The web widget's poll tokens (--fc-q-* in comment-ui.polls.extension.ts), light and `.dark`.
+const POLL_PALETTE_LIGHT: PollPalette = {
+    accent: '#333333',
+    accentText: '#FFFFFF',
+    textMuted: '#666666',
+    chipBg: '#F6F7F8',
+    chipBgPressed: '#ECECEC',
+    chipText: '#171717',
+    border: '#BFBFBF',
+    barTrack: '#E5E5E5',
+    barSelected: '#D9D9D9',
+    markBg: '#FFFFFF',
+    danger: '#C44A3F',
+    shadowOpacity: 0.04,
+    shimmer: 'rgba(120,130,150,0.16)'
+};
+
+const POLL_PALETTE_DARK: PollPalette = {
+    accent: '#FFFFFF',
+    accentText: '#181A1B',
+    textMuted: '#AEAEAE',
+    chipBg: '#181A1B',
+    chipBgPressed: '#2A2C2D',
+    chipText: '#FFFFFF',
+    border: '#424242',
+    barTrack: '#353535',
+    barSelected: '#4A4C4D',
+    markBg: '#2A2C2D',
+    danger: '#E0766C',
+    shadowOpacity: 0.4,
+    shimmer: 'rgba(255,255,255,0.10)'
+};
+
+function getPollStyles(t: FastCommentsTheme): NonNullable<IFastCommentsStyles['polls']> {
+    const p = isDarkColor(t.colors.background) ? POLL_PALETTE_DARK : POLL_PALETTE_LIGHT;
+    const chipShadow: ViewStyle = Platform.select({
+        web: { boxShadow: `0px 1px 2px rgba(0,0,0,${p.shadowOpacity})` },
+        ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: p.shadowOpacity, shadowRadius: 1 },
+        default: {}
+    });
+    // Web chips round every corner but the top-start one (border-start-start-radius: 0).
+    const chipShape: ViewStyle = { borderRadius: 11, borderTopStartRadius: 0 };
+    const markShape: ViewStyle = { borderRadius: 6, borderTopStartRadius: 0 };
+    const helpText = { fontSize: t.fontSize.base, color: p.textMuted, lineHeight: Math.round(t.fontSize.base * 1.4) };
+    // Sized like the web widget renders its pill buttons, which also suits a touch target.
+    const pill: ViewStyle = {
+        paddingVertical: 6,
+        paddingHorizontal: 16,
+        borderWidth: 1,
+        borderColor: p.border,
+        borderRadius: t.radius.pill,
+        backgroundColor: 'transparent'
+    };
+    // Web only in practice: the browser's focus ring. Chrome draws `outline-style: auto` at any width, so set a style too.
+    // The inputs show focus themselves (question underline, option chip border, search pill).
+    const noFocusRing: TextStyle = { outlineStyle: 'solid', outlineWidth: 0 };
+    // A rotated corner: the short side and the long side of a check mark.
+    // The web's check icon is a 3/24 stroke at 12px, so 1.5.
+    const check: ViewStyle = {
+        width: 5,
+        height: 9,
+        marginTop: -2,
+        borderRightWidth: 1.5,
+        borderBottomWidth: 1.5,
+        borderColor: p.accentText,
+        transform: [{ rotate: '45deg' }]
+    };
+    return {
+        // .comment-content .fc-q-area (6px) + .fc-q-card--poll (12px block start, 2px inline start).
+        card: {
+            paddingTop: 18,
+            paddingStart: 2
+        },
+        question: {
+            marginBottom: 10,
+            fontSize: t.fontSize.body,
+            fontWeight: t.fontWeight.semibold,
+            lineHeight: Math.round(t.fontSize.body * 1.3),
+            letterSpacing: -0.15,
+            color: t.colors.textPrimary
+        },
+        options: {
+            rowGap: 8
+        },
+        option: {
+            ...chipShape,
+            ...chipShadow,
+            position: 'relative',
+            flexDirection: 'row',
+            alignItems: 'center',
+            columnGap: 12,
+            // Phone-width padding from the web's max-width: 500px rule.
+            paddingVertical: 10,
+            paddingHorizontal: 12,
+            overflow: 'hidden',
+            borderWidth: 1,
+            borderColor: 'transparent',
+            backgroundColor: p.chipBg
+        },
+        optionPressed: {
+            backgroundColor: p.chipBgPressed
+        },
+        optionSelected: {
+            borderColor: p.accent
+        },
+        optionBar: {
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            start: 0,
+            // Full width; PollCard scales it down to the option's percent.
+            end: 0,
+            backgroundColor: p.barTrack
+        },
+        optionBarSelected: {
+            backgroundColor: p.barSelected
+        },
+        optionMark: {
+            ...markShape,
+            width: 18,
+            height: 18,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: p.border,
+            backgroundColor: p.markBg
+        },
+        optionMarkSelected: {
+            borderColor: p.accent,
+            backgroundColor: p.accent
+        },
+        optionCheck: check,
+        optionLabel: {
+            flex: 1,
+            minWidth: 0,
+            fontSize: t.fontSize.base,
+            fontWeight: t.fontWeight.semibold,
+            lineHeight: Math.round(t.fontSize.base * 1.4),
+            color: p.chipText
+        },
+        optionPercent: {
+            minWidth: 36,
+            textAlign: 'right',
+            fontSize: t.fontSize.base,
+            // Inherits the chip's weight on the web.
+            fontWeight: t.fontWeight.semibold,
+            fontVariant: ['tabular-nums'],
+            color: p.textMuted
+        },
+        footer: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            rowGap: 6,
+            columnGap: 10,
+            marginTop: 12
+        },
+        footerSpacer: {
+            flexGrow: 1
+        },
+        helpText,
+        errorText: {
+            ...helpText,
+            fontWeight: t.fontWeight.semibold,
+            color: p.danger
+        },
+        savedPill: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            columnGap: 6,
+            paddingVertical: 4,
+            paddingHorizontal: 10,
+            borderRadius: t.radius.pill,
+            backgroundColor: p.chipBg
+        },
+        savedCheck: {
+            ...check,
+            width: 5,
+            height: 9,
+            marginTop: -2,
+            borderColor: p.accent
+        },
+        savedText: {
+            fontSize: t.fontSize.base,
+            fontWeight: t.fontWeight.semibold,
+            color: p.accent
+        },
+        link: {
+            fontSize: t.fontSize.base,
+            fontWeight: t.fontWeight.semibold,
+            color: t.colors.textPrimary,
+            textDecorationLine: 'underline'
+        },
+        linkDisabled: {
+            color: p.textMuted,
+            textDecorationLine: 'none'
+        },
+        savingShimmerColor: p.shimmer,
+        toolbarIcon: {
+            width: 16,
+            height: 16,
+            justifyContent: 'space-between',
+            paddingVertical: 2
+        },
+        toolbarIconBar: {
+            height: 2.5,
+            borderRadius: 0.5,
+            backgroundColor: t.colors.textPrimary
+        },
+        // .comment-input .fc-q-poll--editing-area: inside the input frame, under the text.
+        builder: {
+            paddingTop: 4,
+            paddingHorizontal: 6,
+            paddingBottom: 12
+        },
+        // The underline is always reserved and only colored on focus, so focusing doesn't shift the layout.
+        builderQuestionInput: {
+            minHeight: 24,
+            marginBottom: 10,
+            paddingVertical: 2,
+            paddingHorizontal: 0,
+            fontSize: t.fontSize.body,
+            fontWeight: t.fontWeight.semibold,
+            color: t.colors.textPrimary,
+            borderWidth: 0,
+            borderBottomWidth: 2,
+            borderBottomColor: 'transparent',
+            ...noFocusRing
+        },
+        builderQuestionInputFocused: {
+            borderBottomColor: p.accent
+        },
+        builderPlaceholderColor: p.textMuted,
+        builderOption: {
+            ...chipShape,
+            ...chipShadow,
+            flexDirection: 'row',
+            alignItems: 'center',
+            columnGap: 12,
+            paddingVertical: 6,
+            paddingStart: 14,
+            paddingEnd: 6,
+            borderWidth: 1,
+            borderColor: 'transparent',
+            backgroundColor: p.chipBg
+        },
+        builderOptionFocused: {
+            borderColor: p.accent
+        },
+        builderOptionInput: {
+            flex: 1,
+            minWidth: 0,
+            paddingVertical: 4,
+            paddingHorizontal: 0,
+            fontSize: t.fontSize.base,
+            fontWeight: t.fontWeight.semibold,
+            color: p.chipText,
+            borderWidth: 0,
+            ...noFocusRing
+        },
+        builderRemoveOption: {
+            ...markShape,
+            width: 26,
+            height: 26,
+            alignItems: 'center',
+            justifyContent: 'center'
+        },
+        builderRemoveOptionText: {
+            fontSize: 18,
+            lineHeight: 20,
+            color: p.textMuted
+        },
+        builderAddOption: {
+            ...chipShape,
+            flexDirection: 'row',
+            alignItems: 'center',
+            columnGap: 12,
+            paddingVertical: 10,
+            paddingHorizontal: 12,
+            borderWidth: 1,
+            borderStyle: 'dashed',
+            borderColor: p.border,
+            backgroundColor: 'transparent'
+        },
+        builderAddOptionMark: {
+            ...markShape,
+            width: 18,
+            height: 18,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderStyle: 'dashed',
+            borderColor: p.border
+        },
+        builderAddOptionMarkText: {
+            fontSize: 15,
+            lineHeight: 17,
+            color: t.colors.textPrimary
+        },
+        builderAddOptionText: {
+            fontSize: t.fontSize.base,
+            fontWeight: t.fontWeight.semibold,
+            color: t.colors.textPrimary
+        },
+        builderPill: pill,
+        builderPillActive: {
+            borderColor: p.accent,
+            backgroundColor: p.accent
+        },
+        builderPillText: {
+            fontSize: t.fontSize.base,
+            fontWeight: t.fontWeight.semibold,
+            color: t.colors.textPrimary
+        },
+        builderPillTextActive: {
+            color: p.accentText
+        },
+        builderCheckbox: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            columnGap: 6
+        },
+        builderCheckboxBox: {
+            width: 16,
+            height: 16,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: p.border,
+            borderRadius: 3,
+            backgroundColor: p.markBg
+        },
+        builderCheckboxBoxChecked: {
+            borderColor: p.accent,
+            backgroundColor: p.accent
+        },
+        builderCheckboxText: {
+            fontSize: t.fontSize.base,
+            color: t.colors.textPrimary
+        },
+        builderPrivacy: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            columnGap: 6
+        },
+        // The web uses a native select here, which renders slimmer than its pill buttons.
+        builderPrivacyButton: {
+            ...pill,
+            paddingVertical: 3,
+            paddingHorizontal: 8
+        },
+        builderPrivacyButtonText: {
+            fontSize: t.fontSize.base,
+            color: t.colors.textPrimary
+        },
+        // Sized to fit a base-size glyph: the theme never generates text below fontSize.base.
+        builderHelpIcon: {
+            width: 20,
+            height: 20,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: p.border,
+            borderRadius: 10
+        },
+        builderHelpIconText: {
+            fontSize: t.fontSize.base,
+            lineHeight: t.fontSize.base + 2,
+            color: p.textMuted
+        },
+        builderRemove: {
+            fontSize: t.fontSize.base,
+            fontWeight: t.fontWeight.semibold,
+            color: p.danger,
+            textDecorationLine: 'underline'
+        },
+        votersScrim: {
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+            backgroundColor: 'rgba(0,0,0,0.45)'
+        },
+        votersDialog: {
+            width: '100%',
+            maxWidth: 420,
+            maxHeight: 560,
+            rowGap: 10,
+            padding: 16,
+            borderRadius: 12,
+            backgroundColor: p.chipBg,
+            ...Platform.select({
+                web: { boxShadow: '0px 12px 40px rgba(0,0,0,0.3)' },
+                default: { shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 12 }
+            })
+        },
+        votersHeader: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            columnGap: 12
+        },
+        votersTitle: {
+            fontSize: 16,
+            fontWeight: t.fontWeight.bold,
+            color: p.chipText
+        },
+        votersClose: {
+            paddingHorizontal: 6
+        },
+        votersCloseText: {
+            fontSize: 19,
+            lineHeight: 22,
+            color: p.chipText
+        },
+        votersSearch: {
+            paddingVertical: 7,
+            paddingHorizontal: 10,
+            borderWidth: 1,
+            borderColor: p.border,
+            borderRadius: t.radius.pill,
+            fontSize: t.fontSize.base,
+            color: p.chipText,
+            backgroundColor: 'transparent',
+            ...noFocusRing
+        },
+        votersBody: {
+            flexGrow: 0,
+            minHeight: 80
+        },
+        votersRow: {
+            flexDirection: 'row',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            columnGap: 12,
+            paddingVertical: 7,
+            borderBottomWidth: 1,
+            borderBottomColor: p.border
+        },
+        votersRowLast: {
+            borderBottomWidth: 0
+        },
+        votersName: {
+            flexShrink: 1,
+            fontSize: t.fontSize.base,
+            color: p.chipText
+        },
+        votersChoice: {
+            maxWidth: '55%',
+            textAlign: 'right',
+            fontSize: t.fontSize.base,
+            color: p.textMuted
+        },
+        votersStatus: {
+            paddingVertical: 16,
+            textAlign: 'center',
+            fontSize: t.fontSize.base,
+            color: p.textMuted
+        },
+        votersPager: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            columnGap: 12
+        },
+        votersCount: {
+            fontSize: t.fontSize.base,
+            color: p.textMuted
         }
     };
 }

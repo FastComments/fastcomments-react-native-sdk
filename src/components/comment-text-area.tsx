@@ -98,6 +98,10 @@ export interface CommentTextAreaProps extends Pick<FastCommentsCallbacks, 'pickI
      * unaffected (they always go into the editor).
      */
     onAttachMedia?: (url: string) => void
+    /** Extra buttons appended to the editor toolbar (the reply box's poll button). **/
+    toolbarExtra?: React.ReactNode
+    /** Rendered inside the input frame under the text (the poll composer). **/
+    inputBottom?: React.ReactNode
 }
 
 type ActiveFormats = {
@@ -137,6 +141,8 @@ export function CommentTextArea({
     value,
     toolbarButtons,
     onAttachMedia,
+    toolbarExtra,
+    inputBottom,
 }: CommentTextAreaProps) {
     const translations = useStoreValue(store, (s) => s.translations);
     const hasDarkBackground = useStoreValue(store, (s) => !!s.config.hasDarkBackground);
@@ -489,6 +495,7 @@ export function CommentTextArea({
                             fontSize: styles.commentTextArea?.text?.fontSize,
                         }}
                     />
+                    {inputBottom}
                     <SavingShimmer
                         active={!!saving}
                         color={hasDarkBackground ? 'rgba(255,255,255,0.10)' : 'rgba(120,130,150,0.16)'}
@@ -605,6 +612,7 @@ export function CommentTextArea({
                         />
                     </TouchableOpacity>
                 )}
+                {toolbarExtra}
             </View>
 
             {pendingImages.length > 0 && (

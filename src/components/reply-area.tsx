@@ -8,7 +8,10 @@ import { NotificationBell } from './notification-bell';
 import { CommentAreaMessage } from './comment-area-message';
 import { CommentTextArea, FocusObserver, ValueObserver, EmoticonBarConfig } from './comment-text-area';
 import { SavingShimmer } from './saving-shimmer';
-import type { APIError, CommentData, PublicComment } from 'fastcomments-sdk';
+import type { APIError, CommentData, CommentPollInput, PublicComment } from 'fastcomments-sdk';
+import { buildPollInput, canCreatePoll } from '../services/polls';
+import { useTranslationComponent } from '../services/translations';
+import { PollBuilder, type PollBuilderObserver, PollToolbarIcon } from './poll-builder';
 import { getActionTenantId, getActionURLID } from '../services/tenants';
 import { newBroadcastId } from '../services/broadcast-id';
 import { handleNewCustomConfig } from '../services/custom-config';
@@ -151,6 +154,8 @@ function publicCommentToRNComment(
         editKey: comment.editKey,
         requiresVerification: comment.requiresVerification,
         nestedChildrenCount: comment.nestedChildrenCount ?? undefined,
+        poll: comment.poll ?? undefined,
+        myPollVotes: comment.myPollVotes,
     };
 }
 
@@ -161,8 +166,11 @@ async function submit(
         onReplySuccess,
         onAuthenticationChange,
         clearEditor,
+        preparePoll,
     }: Pick<ReplyAreaProps, 'store' | 'parentComment' | 'onReplySuccess' | 'onAuthenticationChange'> & {
         clearEditor?: () => void;
+        /** The attached poll, undefined for none, or false to cancel the submit (the composer shows why). **/
+        preparePoll?: () => CommentPollInput | false | undefined;
     },
     replyState: CommentReplyState,
     setReplyState: (patch: Partial<CommentReplyState>) => void
@@ -212,6 +220,13 @@ async function submit(
         return;
     }
 
+    // After the text check, like the web widget: a half-written poll cancels the submit rather than being dropped.
+    const poll = preparePoll ? preparePoll() : undefined;
+    if (poll === false) {
+        setReplyState({ isReplySaving: false });
+        return;
+    }
+
     const tenantIdToUse = getActionTenantId({ store, tenantId: parentComment?.tenantId });
     const urlIdToUse = getActionURLID({ store, urlId: parentComment?.urlId });
 
@@ -257,6 +272,7 @@ async function submit(
         meta: state.config.commentMeta,
         moderationGroupIds: state.config.moderationGroupIds,
         isFromMyAccountPage: state.config.tenantId === 'all',
+        poll,
     };
     const broadcastId = newBroadcastId(store);
 
@@ -413,6 +429,17 @@ export function ReplyArea(props: ReplyAreaProps) {
     const enableCommenterLinks = useStoreValue(store, (s) => !!s.config.enableCommenterLinks);
     const ssoConfig = useStoreValue(store, (s) => s.config.sso || s.config.simpleSSO);
     const inlineReactImages = useStoreValue(store, (s) => s.config.inlineReactImages);
+    const isSiteAdmin = useStoreValue(store, (s) => s.isSiteAdmin);
+    const pollCreation = useStoreValue(store, (s) => s.config.pollCreation);
+    const useSingleLineCommentInput = useStoreValue(store, (s) => !!s.config.useSingleLineCommentInput);
+    const pollCreationAllowed = canCreatePoll({ pollCreation, useSingleLineCommentInput }, isSiteAdmin);
+    const canAddPoll = useTranslationComponent(store, 'comment-ui-polls', pollCreationAllowed) && pollCreationAllowed;
+    // Only whether a poll is attached lives here; the draft itself stays in PollBuilder (see PollBuilderObserver).
+    const [pollAttached, setPollAttached] = useState(false);
+    const [pollFocusRequest, setPollFocusRequest] = useState(0);
+    const pollAttachedRef = useRef(pollAttached);
+    pollAttachedRef.current = pollAttached;
+    const pollObserver = useRef<PollBuilderObserver>({}).current;
 
     // Mirror the web widget (frontend/shared/get-reply-area-html.ts): a guest must
     // supply a name (and email, unless the tenant allows fully-anonymous) before
@@ -451,7 +478,7 @@ export function ReplyArea(props: ReplyAreaProps) {
         if (!parentComment) return;
         store.getState().setReplyDirtyCheck(() => {
             const getValue = valueGetterRef.current.getValue;
-            return !isEditorHtmlEffectivelyEmpty(getValue ? getValue() : '');
+            return pollAttachedRef.current || !isEditorHtmlEffectivelyEmpty(getValue ? getValue() : '');
         });
         return () => store.getState().setReplyDirtyCheck(null);
     }, [parentComment?._id]);
@@ -582,8 +609,36 @@ export function ReplyArea(props: ReplyAreaProps) {
                     <Image source={{ uri: src }} style={styles.commentTextAreaEmoticonBar?.icon} />,
                 ]);
             }
+            const pollToolbarButton = canAddPoll ? (
+                <TouchableOpacity
+                    testID="toolbarPollButton"
+                    role="button"
+                    aria-label={translations.INSERT_POLL}
+                    aria-selected={pollAttached}
+                    style={[styles.commentTextArea?.toolbarFormatButton, pollAttached && styles.commentTextArea?.toolbarFormatButtonActive]}
+                    // Like the web button: attaches a poll, or returns to the one already attached.
+                    onPress={() => (pollAttached ? setPollFocusRequest(pollFocusRequest + 1) : setPollAttached(true))}
+                    activeOpacity={0.7}
+                >
+                    <PollToolbarIcon styles={styles} />
+                </TouchableOpacity>
+            ) : null;
+            const pollBuilder =
+                canAddPoll && pollAttached ? (
+                    <PollBuilder
+                        observer={pollObserver}
+                        focusRequest={pollFocusRequest}
+                        onRemove={() => setPollAttached(false)}
+                        imageAssets={imageAssets}
+                        hasDarkBackground={hasDarkBackground}
+                        styles={styles}
+                        translations={translations}
+                    />
+                ) : null;
             commentInputAreaContent = (
                 <CommentTextArea
+                    toolbarExtra={pollToolbarButton}
+                    inputBottom={pollBuilder}
                     emoticonBarConfig={emoticonBarConfig}
                     styles={styles}
                     store={store}
@@ -613,7 +668,28 @@ export function ReplyArea(props: ReplyAreaProps) {
                     // `value` prop and flicker the box). The editor is cleared
                     // imperatively (clearEditor) ONLY on a successful submit.
                     await submit(
-                        { store, parentComment, onReplySuccess, onAuthenticationChange, clearEditor: () => valueGetter.reset?.() },
+                        {
+                            store,
+                            parentComment,
+                            onReplySuccess,
+                            onAuthenticationChange,
+                            clearEditor: () => {
+                                valueGetter.reset?.();
+                                setPollAttached(false);
+                            },
+                            preparePoll: () => {
+                                const draft = pollAttachedRef.current && canAddPoll ? pollObserver.getDraft?.() : undefined;
+                                if (!draft) {
+                                    return undefined;
+                                }
+                                const result = buildPollInput(draft, store.getState().translations);
+                                if ('error' in result) {
+                                    pollObserver.showError?.(result.error, result.focusOptionId);
+                                    return false;
+                                }
+                                return result.input;
+                            },
+                        },
                         { ...commentReplyState, comment: latestValue },
                         setCommentReplyState
                     );

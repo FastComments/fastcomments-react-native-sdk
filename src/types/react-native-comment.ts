@@ -1,4 +1,8 @@
 import { FastCommentsWidgetComment } from "fastcomments-typescript";
+import type { CommentPoll } from "fastcomments-sdk";
+
+/** The comments fetch is read as raw JSON, so closesAt can arrive as an ISO string rather than a Date. */
+export type RNCommentPoll = Omit<CommentPoll, 'closesAt'> & { closesAt?: Date | string | null };
 
 /**
  * Nesting-rail slot kinds, one per indent level (left to right). 'line' = an
@@ -35,4 +39,13 @@ export interface RNComment extends FastCommentsWidgetComment {
     hidden?: boolean;
     /** Live-only count of children that have arrived but are still hidden. */
     hiddenChildrenCount?: number;
+    poll?: RNCommentPoll | null;
+    /** Option ids the viewer voted for, tagged by the server like isVotedUp. */
+    myPollVotes?: string[];
+    /** The viewer toggled results on or off; unset means the default for the poll's state. */
+    pollShowResults?: boolean;
+    pollSaving?: boolean;
+    pollError?: string;
+    /** Bumped by each live poll-update, so a vote response can tell a newer tally arrived while it was in flight. */
+    pollUpdateCount?: number;
 }

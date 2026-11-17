@@ -15,6 +15,7 @@ import { getDefaultImageAssets } from '../resources';
 import { showError } from './show-error';
 import { createFastCommentsStore } from '../store/create-store';
 import { ensureTranslationComponentLoaded } from './translations';
+import { arePollsEnabled } from './polls';
 import type { FastCommentsStore } from '../store/types';
 
 interface FastCommentsInternalState {
@@ -220,6 +221,10 @@ export class FastCommentsLiveCommentingService {
                 // base comment-ui bundle does not include - load it eagerly so the
                 // menu items render with copy instead of empty strings.
                 void ensureTranslationComponentLoaded(store, 'comment-ui-moderation');
+            }
+            if (arePollsEnabled(store.getState().config)) {
+                // Poll labels live in their own component, like the web widget's polls extension.
+                void ensureTranslationComponentLoaded(store, 'comment-ui-polls');
             }
             state.setHasBillingIssue(!!response.hasBillingIssue);
             internalState.lastGenDate = response.lastGenDate;
